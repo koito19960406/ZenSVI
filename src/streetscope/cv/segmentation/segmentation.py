@@ -183,7 +183,17 @@ def create_mapillary_vistas_label_colormap():
 
     return labels
 
-def get_resized_dimensions(image, max_size=2048):
+def get_resized_dimensions(image: cv2.Mat, max_size: int = 2048) -> Tuple[int, int]:
+    """
+    Get the resized dimensions of an image based on a maximum size.
+
+    Args:
+        image (cv2.Mat): Input image in OpenCV format.
+        max_size (int, optional): Maximum size for the larger side of the image. Defaults to 2048.
+
+    Returns:
+        Tuple[int, int]: Tuple containing new height and width.
+    """
     height, width = image.shape[:2]
 
     # Determine the larger side
@@ -203,49 +213,108 @@ def get_resized_dimensions(image, max_size=2048):
     return (height, width)
 
 class ImageDataset(Dataset):
-    def __init__(self, dir_input: Union[str, Path], rgb = True) -> None:
+    """
+    Custom Dataset class for images.
+    """
+
+    def __init__(self, dir_input: Union[str, Path], rgb: bool = True) -> None:
+        """
+        Initialize the ImageDataset.
+
+        Args:
+            dir_input (Union[str, Path]): Input directory containing image files.
+            rgb (bool, optional): Flag to convert images to RGB. Defaults to True.
+        """
         self.dir_input = Path(dir_input)
         self.image_files = list(self.dir_input.glob("*.jpg"))
         self.rgb = rgb
 
     def __len__(self) -> int:
+        """
+        Get the length of the dataset.
+
+        Returns:
+            int: Number of image files in the dataset.
+        """
         return len(self.image_files)
 
-    def __getitem__(self, idx: int) -> Tuple[str, cv2.Mat]:
+    def __getitem__(self, idx: int) -> Tuple[str, cv2.Mat, Tuple[int, int]]:
+        """
+        Get an item from the dataset.
+
+        Args:
+            idx (int): Index of the image.
+
+        Returns:
+            Tuple[str, cv2.Mat, Tuple[int, int]]: Tuple containing image file path, image data, and original image dimensions.
+        """
         image_file = self.image_files[idx]
         img = cv2.imread(str(image_file))
         original_img_shape = get_resized_dimensions(img)
         if self.rgb:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        # img = cv2.resize(img, (1024, 1024))
         return str(image_file), img, original_img_shape
 
-    def collate_fn(self, data: List[Tuple[str, cv2.Mat]]) -> Tuple[List[str], torch.Tensor]:
+    def collate_fn(self, data: List[Tuple[str, cv2.Mat, Tuple[int, int]]]) -> Tuple[List[str], List[cv2.Mat], List[Tuple[int, int]]]:
+        """
+        Custom collate function for the dataset.
+
+        Args:
+            data (List[Tuple[str, cv2.Mat, Tuple[int, int]]]): List of tuples containing image file path, image data, and original image dimensions.
+
+        Returns:
+            Tuple[List[str], List[cv2.Mat], List[Tuple[int, int]]]: Tuple containing lists of image file paths, image data, and original image dimensions.
+        """
         image_files, images, original_img_shape = zip(*data)
-        # images = torch.stack([torch.from_numpy(img) for img in images])
         return list(image_files), list(images), list(original_img_shape)
 
 class Segmenter:
     def __init__(self, model_name="facebook/mask2former-swin-tiny-cityscapes-semantic", dataset="cityscapes"):
+        """
+        Initialize the Segmenter with a model and dataset.
+
+        Args:
+            model_name (str): The name of the pre-trained model.
+            dataset (str): The name of the dataset.
+        """
         self.device = self._get_device()
         self.model, self.processor = self._get_model_processor(model_name)
         self.color_map = self._create_color_map(dataset)
+        self.label_map = self._create_label_map(dataset)
 
     def _get_model_processor(self, model_name):
-        #TODO add other models
+        """
+        Get the model and processor for the given model name.
+
+        Args:
+            model_name (str): The name of the pre-trained model.
+
+        Returns:
+            Tuple: The model and processor.
+        """
+        # Add other models in the future
         if "mask2former" in model_name:
             processor = AutoImageProcessor.from_pretrained(model_name)
             model = Mask2FormerForUniversalSegmentation.from_pretrained(model_name).to(self.device)
         return model, processor
-    
-    # Modify the _create_color_map method inside the Segmenter class
+
     def _create_color_map(self, dataset):
+        """
+        Create a color map based on the given dataset.
+
+        Args:
+            dataset (str): The name of the dataset.
+
+        Returns:
+            np.ndarray: A color map.
+        """
         if dataset == "cityscapes":
             labels = create_cityscapes_label_colormap()
         elif dataset == "mapillary":
             labels = create_mapillary_vistas_label_colormap()
         else:
             raise ValueError(f"Unknown dataset: {dataset}")
+
         labels = [label for label in labels if label.trainId != -1]
         train_ids = np.array([label.trainId for label in labels], dtype=np.uint8)
         colors = np.array([label.color for label in labels], dtype=np.uint8)
@@ -258,55 +327,132 @@ class Segmenter:
 
         return color_map
 
+    def _create_label_map(self, dataset):
+        """
+        Create a label map based on the given dataset.
+
+        Args:
+            dataset (str): The name of the dataset.
+
+        Returns:
+            Dict[Tuple, Label]: A dictionary mapping colors to labels.
+        """
+        if dataset == "cityscapes":
+            labels = create_cityscapes_label_colormap()
+        elif dataset == "mapillary":
+            labels = create_mapillary_vistas_label_colormap()
+        else:
+            raise ValueError(f"Unknown dataset: {dataset}")
+
+        color_to_label = {}
+        for label in labels:
+            color = label.color
+            color_to_label[color] = label
+
+        return color_to_label
+
     def _get_device(self) -> torch.device:
+        """
+        Get the appropriate device for running the model.
+
+        Returns:
+            torch.device: The device to use for running the model.
+        """
         if torch.cuda.is_available():
             return torch.device("cuda")
-        # elif torch.backends.mps.is_available():
-        #     return torch.device("mps")
         else:
             return torch.device("cpu")
 
     def _calculate_pixel_ratios(self, segmented_img):
+        """
+        Calculate pixel ratios for each class in the segmented image.
+
+        Args:
+            segmented_img (numpy.ndarray): Segmented image.
+
+        Returns:
+            dict: A dictionary with class names as keys and pixel ratios as values.
+        """
         unique, counts = np.unique(segmented_img, return_counts=True)
         total_pixels = np.sum(counts)
         pixel_ratios = {self.train_id_to_name[train_id]: count / total_pixels for train_id, count in zip(unique, counts)}
 
         return pixel_ratios
-    
-    # Add this method inside the Segmenter class
+
     def _save_pixel_ratios_as_csv(self, pixel_ratio_dict, dir_output):
+        """
+        Save pixel ratios dictionary as a CSV file.
+
+        Args:
+            pixel_ratio_dict (dict): Dictionary with class names as keys and pixel ratios as values.
+            dir_output (pathlib.Path): Output directory path.
+        """
         pixel_ratios_df = pd.DataFrame(pixel_ratio_dict).transpose()
         pixel_ratios_df.fillna(0, inplace=True)
+        pixel_ratios_df.index.names = ["filename_key"]
         pixel_ratios_df.to_csv(dir_output / "pixel_ratios.csv")
 
-        
     def _panoptic_segmentation(self, images, original_img_shape):
+        """
+        Perform panoptic segmentation on the given images.
+
+        Args:
+            images (list): List of input images.
+            original_img_shape (tuple): Original image shape.
+
+        Returns:
+            list: List of panoptic segmentation outputs.
+        """
         inputs = self.processor(images=images, task_inputs=["panoptic"], return_tensors="pt").to(self.model.device)
         outputs = self.model(**inputs)
         return self.processor.post_process_panoptic_segmentation(outputs, target_sizes=original_img_shape)
 
     def _semantic_segmentation(self, images, original_img_shape):
+        """
+        Perform semantic segmentation on the given images.
+
+        Args:
+            images (list): List of input images.
+            original_img_shape (tuple): Original image shape.
+
+        Returns:
+            tuple: Tuple containing list of semantic segmentation outputs and list of pixel ratios.
+        """
         inputs = self.processor(images=images, return_tensors="pt").to(self.model.device)
         with torch.no_grad():
             outputs = self.model(**inputs)
-        # you can pass them to processor for postprocessing
         segmentations = self.processor.post_process_semantic_segmentation(outputs, target_sizes=original_img_shape)
 
-        # Calculate pixel ratios
         pixel_ratios = [self._calculate_pixel_ratios(segmentation.cpu().numpy()) for segmentation in segmentations]
 
         return segmentations, pixel_ratios
 
     def _trainid_to_color(self, segmented_img):
+        """
+        Convert segmented image with train IDs to a colored image.
+
+        Args:
+            segmented_img (numpy.ndarray): Segmented image with train IDs.
+
+        Returns:
+            numpy.ndarray: Colored segmented image.
+        """
         colored_img = self.color_map[segmented_img]
         return colored_img
 
     def _save_panoptic_segmentation_image(self, image_file, img, dir_output, output):
+        """
+        Save the panoptic segmentation image as a blended image with the original input image.
+
+        Args:
+            image_file (str): The input image file path.
+            img (np.array): The input image in the format of a NumPy array.
+            dir_output (Path): The output directory path to save the blended image.
+            output (dict): The output dictionary containing the segmentation data.
+        """
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        # img = img.transpose(1, 2, 0)  # Change img shape to (H, W, C)
         segmented_img = output["segmentation"].cpu().numpy()
         colored_segmented_img = self._trainid_to_color(segmented_img)
-        # colored_segmented_img = colored_segmented_img.transpose(1, 2, 0)  # Change colored_segmented_img shape to (H, W, C)
         
         alpha = 0.5
         blend_img = cv2.addWeighted(img, alpha, colored_segmented_img, 1 - alpha, 0)
@@ -315,28 +461,58 @@ class Segmenter:
         cv2.imwrite(str(output_file), cv2.cvtColor(blend_img, cv2.COLOR_RGB2BGR))
         
     def _save_semantic_segmentation_image(self, image_file, img, dir_output, output):
-        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        """
+        Save the semantic segmentation image as a colored segmented image and/or a blended image with the original input image.
+
+        Args:
+            image_file (str): The input image file path.
+            img (np.array): The input image in the format of a NumPy array.
+            dir_output (Path): The output directory path to save the colored segmented and/or blended image.
+            output (Tensor): The output tensor containing the semantic segmentation data.
+        """
         colored_segmented_img = self._trainid_to_color(output.cpu().numpy())
-        # img = cv2.resize(img, (colored_segmented_img.shape[1], colored_segmented_img.shape[0]))
         alpha = 0.5
         blend_img = cv2.addWeighted(img, alpha, colored_segmented_img, 1 - alpha, 0)
 
         output_file = dir_output / Path(image_file).name
-        # save images one by one
+        
+        # Save images based on specified options
         if "segmented_image" in self.save_image_options:
-            # save colored segmented image as "XXX_colored_segmented.jpg"
-            cv2.imwrite(str(output_file.with_name(output_file.stem + "_colored_segmented" + output_file.suffix)), cv2.cvtColor(colored_segmented_img, cv2.COLOR_RGB2BGR))
+            cv2.imwrite(str(output_file.with_name(output_file.stem + "_colored_segmented.png")), cv2.cvtColor(colored_segmented_img, cv2.COLOR_RGB2BGR))
         if "blend_image" in self.save_image_options:
-            # save blended image as "XXX_blend.jpg"
-            cv2.imwrite(str(output_file.with_name(output_file.stem + "_blend" + output_file.suffix)), cv2.cvtColor(blend_img, cv2.COLOR_RGB2BGR))
+            cv2.imwrite(str(output_file.with_name(output_file.stem + "_blend.png")), cv2.cvtColor(blend_img, cv2.COLOR_RGB2BGR))
 
     def _save_segmentation_image(self, task, image_file, img, dir_output, output):
+        """
+        Save the segmentation image based on the given task.
+
+        Args:
+            task (str): The segmentation task, either "panoptic" or "semantic".
+            image_file (str): The input image file path.
+            img (np.array): The input image in the format of a NumPy array.
+            dir_output (Path): The output directory path to save the segmentation images.
+            output (dict or Tensor): The output data containing the segmentation results.
+        """
         if task == "panoptic":
             self._save_panoptic_segmentation_image(image_file, img, dir_output, output)
         elif task == "semantic":
             self._save_semantic_segmentation_image(image_file, img, dir_output, output)
 
     def _process_images(self, task, image_files, images, dir_output, pixel_ratio_dict, original_img_shape):
+        """
+        Process the input images for segmentation and save the output images.
+
+        Args:
+            task (str): The segmentation task to perform, either "panoptic" or "semantic".
+            image_files (List[str]): The list of file paths of the input images.
+            images (List[ndarray]): The list of input images in the form of numpy arrays.
+            dir_output (Path): The output directory where the segmented images will be saved.
+            pixel_ratio_dict (defaultdict): A dictionary to store the pixel ratios of the segmented images.
+            original_img_shape (List[Tuple[int, int]]): The original shapes of the input images.
+
+        Returns:
+            None
+        """
         outputs = None
         pixel_ratios = None
         if task == "panoptic":
@@ -352,7 +528,22 @@ class Segmenter:
                 pixel_ratio_dict[image_file_key] = pixel_ratio
 
     # Modify the segment method inside the Segmenter class
-    def segment(self, dir_input: Union[str, Path], dir_output: Union[str, Path], task="semantic", batch_size=1, num_workers=0, save_image_options = ["segmented_image", "blend_image"], save_format="json"):
+    def segment(self, dir_input: Union[str, Path], dir_output: Union[str, Path], task="semantic", batch_size=1, num_workers=0, save_image_options = ["segmented_image", "blend_image"], pixel_ratio_save_format = ["json", "csv"]):
+        """
+        Perform segmentation on the input images and save the segmented images.
+
+        Args:
+            dir_input (Union[str, Path]): The directory containing the input images.
+            dir_output (Union[str, Path]): The output directory where the segmented images will be saved.
+            task (str): The segmentation task to perform, either "panoptic" or "semantic". Default is "semantic".
+            batch_size (int): The batch size to use for segmentation. Default is 1.
+            num_workers (int): The number of worker threads to use for segmentation. Default is 0.
+            save_image_options (List[str]): A list of options for saving the segmented images. Possible options are "segmented_image" and "blend_image". Default is ["segmented_image", "blend_image"].
+            pixel_ratio_save_format (List[str]): A list of output formats for the pixel ratio data. Possible options are "json" and "csv". Default is ["json", "csv"].
+
+        Returns:
+            None
+        """
         # save_image_options as a property of the class
         self.save_image_options = save_image_options
         
@@ -378,15 +569,126 @@ class Segmenter:
                 completed_future.result()
 
         # Save pixel_ratio_dict as a JSON or CSV file
-        if save_format == "json":
+        if "json" in pixel_ratio_save_format:
             with open(dir_output / "pixel_ratios.json", "w") as f:
                 json.dump(pixel_ratio_dict, f)
-        elif save_format == "csv":
+        if "csv" in pixel_ratio_save_format:
             self._save_pixel_ratios_as_csv(pixel_ratio_dict, dir_output)
+            
+    def calculate_pixel_ratio_post_transformation(self, dir_input, dir_output, pixel_ratio_save_format = ["json", "csv"]):
+        """
+        Calculates the pixel ratio of different classes present in the segmented images and saves the results in either JSON or CSV format.
+
+        Args:
+            dir_input: A string or Path object representing the input directory containing the segmented images.
+            dir_output: A string or Path object representing the output directory where the pixel ratio results will be saved.
+            pixel_ratio_save_format: A list containing the file formats in which the results will be saved. The allowed file formats are "json" and "csv". The default value is ["json", "csv"].
+
+        Returns:
+            None
+        """
+        def calculate_label_ratios(image, label_map):
+            """
+            Calculates the pixel ratio of different classes present in a single image.
+
+            Args:
+                image: A numpy array representing an image.
+                label_map: A dictionary containing the label names and their respective RGB colors.
+
+            Returns:
+            A dictionary containing the pixel ratio of different classes in the given image.
+            """
+            label_ratios = {}
+            total_pixels = image.shape[0] * image.shape[1]
+
+            for color, label in label_map.items():
+                color_pixels = np.count_nonzero(np.all(image == color, axis=-1))
+                label_ratios[label.name] = color_pixels / total_pixels
+
+            return label_ratios
+
+        def process_image_file(image_file, label_map):
+            """
+            Calculates the pixel ratio of different classes in a single segmented image file.
+
+            Args:
+                image_file: A Path object representing the segmented image file.
+                label_map: A dictionary containing the label names and their respective RGB colors.
+
+            Returns:
+                A tuple containing the image file key and the pixel ratio of different classes in the given image.
+            """
+            image_file_key = str(Path(image_file).stem).replace("_colored_segmented", "")
+            image = cv2.imread(str(image_file))
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            label_ratios = calculate_label_ratios(image, label_map)
+            return image_file_key, label_ratios
+
+        def results_to_dataframe(results):
+            """
+            Converts the results obtained from processing each image file into a Pandas DataFrame.
+
+            Args:
+                results: A list of tuples, where each tuple contains the image file key and the pixel ratio of different classes in the corresponding image.
+
+            Returns:
+                A Pandas DataFrame containing the pixel ratios of different classes in each image file.
+            """
+            pixel_ratio_dict = {}
+
+            for image_file_key, label_ratios in results:
+                pixel_ratio_dict[str(image_file_key)] = label_ratios
+
+            pixel_ratios_df = pd.DataFrame(pixel_ratio_dict).transpose()
+            pixel_ratios_df.fillna(0, inplace=True)
+            pixel_ratios_df.index.names = ["filename_key"]
+
+            return pixel_ratios_df
+        
+        def results_to_nested_dict(results):
+            """
+            Converts the results obtained from processing each image file into a nested dictionary.
+
+            Args:
+                results: A list of tuples, where each tuple contains the image file key and the pixel ratio of different classes in the corresponding image.
+
+            Returns:
+                A nested dictionary containing the pixel ratios of different classes in each image file.
+            """
+            data = {}
+
+            for image_file_key, label_ratios in results:
+                image_file_key = str(image_file_key)
+                data[image_file_key] = label_ratios
+
+            return data
+
+        # get files
+        if isinstance(dir_input, str):
+            dir_input = Path(dir_input)
+
+        # Set image file extensions
+        image_extensions = ['.jpg', '.png']
+
+        image_files = [file for file in dir_input.rglob('*') if file.suffix.lower() in image_extensions and '_colored_segmented' in file.stem]
+
+        with ThreadPoolExecutor() as executor:
+            results = list(executor.map(process_image_file, image_files, [self.label_map] * len(image_files)))
+        
+        if "json" in pixel_ratio_save_format:
+            json_output_file = Path(dir_output) / 'pixel_ratio.json'
+            nested_dict = results_to_nested_dict(results)
+            with open(json_output_file, 'w') as f:
+                json.dump(nested_dict, f, indent=2) 
+                
+        if "csv" in pixel_ratio_save_format:
+            csv_output_file = Path(dir_output) / 'pixel_ratio.csv'
+            df = results_to_dataframe(results)
+            df.to_csv(csv_output_file)
     
 if __name__ == "__main__":
     segmentation = Segmenter()
-    segmentation.segment("/Users/koichiito/Desktop/test2/panorama", "/Users/koichiito/Desktop/test2/panorama_segmented", batch_size=5, num_workers=5, save_image_options = ["segmented_image", "blend_image"], save_format="json")
+    # segmentation.segment("/Users/koichiito/Desktop/test2/panorama", "/Users/koichiito/Desktop/test2/panorama_segmented", batch_size=5, num_workers=5, save_image_options = ["segmented_image", "blend_image"], pixel_ratio_save_format=["json", "csv"])
+    segmentation.calculate_pixel_ratio_post_transformation("/Users/koichiito/Desktop/test2/panorama_segmented", "/Users/koichiito/Desktop/test2/panorama_segmented", pixel_ratio_save_format=["json", "csv"])
     # segmentation = Segmenter(model_name="facebook/mask2former-swin-large-mapillary-vistas-semantic", dataset="mapillary")
-    # segmentation.segment("/Users/koichiito/Desktop/test2/panorama", "/Users/koichiito/Desktop/test2/panorama_segmented", batch_size=5, num_workers=5, save_image_options = ["segmented_image", "blend_image"], save_format="csv")
-
+    # segmentation.segment("/Users/koichiito/Desktop/test2/panorama", "/Users/koichiito/Desktop/test2/panorama_segmented", batch_size=5, num_workers=5, save_image_options = ["segmented_image", "blend_image"], pixel_ratio_save_format="csv")
