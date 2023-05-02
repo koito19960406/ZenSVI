@@ -15,16 +15,13 @@ from streetscope.download.utils.get_pids import panoids
 from streetscope.download.utils.transform_image import ImageTransformer
 
 class StreetViewDownloader:
-    def __init__(self, dir_output, gsv_api_key = None, path_pid = None, optional_image_style = ["perspective","fisheye"], log_path = "", nthreads = 5):
+    def __init__(self, dir_output, gsv_api_key = None, path_pid = None, log_path = "", nthreads = 5):
         Path(dir_output).mkdir(parents=True, exist_ok=True)
         self._dir_output = dir_output
         if gsv_api_key == None:
             warnings.warn("Please provide your Google Street View API key to augment metadata.")
         self._gsv_api_key = gsv_api_key
-        if path_pid == None:
-            warnings.warn("Please run panoids() to get the pids first before downloading the images.")
         self._path_pid = path_pid
-        self._image_style = optional_image_style
         self._log_path = log_path
         self._nthreads = nthreads
         self._user_agent = self._get_ua()
@@ -50,13 +47,6 @@ class StreetViewDownloader:
     def path_pid(self,path_pid):
         self._path_pid = path_pid
     
-    @property
-    def image_style(self):
-        return self._image_style    
-    @image_style.setter
-    def image_style(self,image_style):
-        self._image_style = image_style
-        
     @property
     def log_path(self):
         return self._log_path    
@@ -199,48 +189,16 @@ class StreetViewDownloader:
             raise ValueError("Please set the gsv api key by calling the gsv_api_key method.")
         pid_df.to_csv(path_pid, index=False)
         self.path_pid = path_pid
-        print("The pids have been saved to {}".format(path_pid))
-        
-    def _transform_image(self, style, show_size):
-        def run(path_input, path_output, show_size):
-            img_raw = cv2.imread(path_input, cv2.IMREAD_COLOR)
-            img_transform = ImageTransformer(img_raw)
-            if style == "fisheye":
-                img_raw = img_transform.get_fisheye()
-                cv2.imwrite(path_output, img_raw)
-            
-            elif style == "perspective":
-                thetas = [0, 90, 180, 270]
-                FOV = 90
-                aspects_v = (2.25, 4)
-                aspects = (9, 16)
-
-                for theta in thetas:
-                    height = int(aspects_v[0] * show_size)
-                    width = int(aspects_v[1] * show_size)
-                    aspect_name = '%s--%s' % (aspects[0], aspects[1])
-                    img_raw = img_transform.get_perspective(FOV, theta, 0, height, width)
-                    path_output_raw = path_output.replace('.png', '_Direction_%s_FOV_%s_aspect_%s_raw.png' % (theta, FOV, aspect_name))
-                    cv2.imwrite(path_output_raw, img_raw)
-
-        def process_image(dir_input, dir_output, name, show_size):
-            path_input = os.path.join(dir_input, name)
-            path_output = os.path.join(dir_output, name.replace('jpg', 'png'))
-            return path_input, path_output, show_size
-
-        dir_input = os.path.join(self.dir_output, 'panorama')
-        dir_output = os.path.join(self.dir_output, style)
-        os.makedirs(dir_output, exist_ok=True)
-
-        index = 0
-        with ThreadPoolExecutor() as executor:
-            futures = [executor.submit(run, *process_image(dir_input, dir_output, name, show_size)) for name in os.listdir(dir_input)]
-            for future in as_completed(futures):
-                index += 1
-                print(f'Converting to {style}... Now: {index} / {len(futures)}')
-                future.result()
+        print("The panorama IDs have been saved to {}".format(path_pid))
     
-    def download_gsv(self, zoom = 2, h_tiles = 4, v_tiles = 2, cropped = False, full = True):
+    def download_gsv(self, zoom=2, h_tiles=4, v_tiles=2, cropped=False, full=True, 
+                    lat=None, lng=None, input_csv_file="", closest=False, disp=False, augment_metadata=False):
+        # If path_pid is None, call get_pids function first
+        if self._path_pid is None:
+            print("Getting pids...")
+            self.get_pids(os.path.join(self.dir_output, "pids.csv"), lat=lat, lng=lng,
+                        input_csv_file=input_csv_file, closest=closest, disp=disp, augment_metadata=augment_metadata)
+
         # Import tool
         tool = ImageTool()
         # Horizontal Google Street View tiles
@@ -278,16 +236,6 @@ class StreetViewDownloader:
                         self._log_write(task_pids)
                 task_pids = []
                 
-        # transform_image if optional_image_style has any length
-        if len(self.image_style) > 0:
-            # check if there's anything other than "perspective" and "fisheye"
-            if not all(style in ["perspective", "fisheye"] for style in self.image_style):
-                raise ValueError("Please input the correct image style. The correct image style should be 'perspective' or 'fisheye'.")
-            # now transform the images
-            for style in self.image_style:
-                self._transform_image(style, show_size = 100)
-
 if __name__ == "__main__":
     sv_downloader = StreetViewDownloader("/Users/koichiito/Desktop/test2", gsv_api_key="AIzaSyDjIBLaZ-nAWq0RIoOUQUOzCLYzMYAN2aQ")
-    sv_downloader.get_pids("/Users/koichiito/Desktop/test2/pids.csv", lat = 1.342425, lng = 103.721523, augment_metadata=True) 
-    sv_downloader.download_gsv()
+    sv_downloader.download_gsv(lat=1.342425, lng=103.721523, augment_metadata=True)

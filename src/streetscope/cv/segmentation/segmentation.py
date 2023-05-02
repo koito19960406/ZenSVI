@@ -183,23 +183,24 @@ def create_mapillary_vistas_label_colormap():
 
     return labels
 
-# Create a function to map the labels to a colormap
-def create_mvd_label_colormap(labels):
-    colormap = np.zeros((len(labels), 3), dtype=np.uint8)
-    for l in labels:
-        colormap[l.id] = l.color
+def get_resized_dimensions(image, max_size=2048):
+    height, width = image.shape[:2]
 
-    return colormap
+    # Determine the larger side
+    larger_side = max(height, width)
 
-# Create a function for visualizing the segmentation results
-def mvd_labels_to_color_image(labels, label_ids):
-    colormap = create_mvd_label_colormap(labels)
-    return colormap[label_ids]
+    # Check if the larger side exceeds the maximum size
+    if larger_side > max_size:
+        # Calculate the scaling factor
+        scaling_factor = max_size / larger_side
 
-# Example usage:
-# labels = create_mvd_labels()
-# colormap = create_mvd_label_colormap(labels)
-# color_image = mvd_labels_to_color_image(labels, label_ids)  # label_ids: a 2D numpy array with label IDs as its elements
+        # Calculate the new dimensions
+        new_width = int(width * scaling_factor)
+        new_height = int(height * scaling_factor)
+
+        return (new_height, new_width)
+
+    return (height, width)
 
 class ImageDataset(Dataset):
     def __init__(self, dir_input: Union[str, Path], rgb = True) -> None:
@@ -213,15 +214,16 @@ class ImageDataset(Dataset):
     def __getitem__(self, idx: int) -> Tuple[str, cv2.Mat]:
         image_file = self.image_files[idx]
         img = cv2.imread(str(image_file))
+        original_img_shape = get_resized_dimensions(img)
         if self.rgb:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = cv2.resize(img, (1024, 1024))
-        return str(image_file), img
+        # img = cv2.resize(img, (1024, 1024))
+        return str(image_file), img, original_img_shape
 
     def collate_fn(self, data: List[Tuple[str, cv2.Mat]]) -> Tuple[List[str], torch.Tensor]:
-        image_files, images = zip(*data)
+        image_files, images, original_img_shape = zip(*data)
         # images = torch.stack([torch.from_numpy(img) for img in images])
-        return list(image_files), list(images)
+        return list(image_files), list(images), list(original_img_shape)
 
 class Segmenter:
     def __init__(self, model_name="facebook/mask2former-swin-tiny-cityscapes-semantic", dataset="cityscapes"):
@@ -278,17 +280,17 @@ class Segmenter:
         pixel_ratios_df.to_csv(dir_output / "pixel_ratios.csv")
 
         
-    def _panoptic_segmentation(self, images):
+    def _panoptic_segmentation(self, images, original_img_shape):
         inputs = self.processor(images=images, task_inputs=["panoptic"], return_tensors="pt").to(self.model.device)
         outputs = self.model(**inputs)
-        return self.processor.post_process_panoptic_segmentation(outputs, target_sizes=[image.shape[::-1] for image in images])
+        return self.processor.post_process_panoptic_segmentation(outputs, target_sizes=original_img_shape)
 
-    def _semantic_segmentation(self, images):
+    def _semantic_segmentation(self, images, original_img_shape):
         inputs = self.processor(images=images, return_tensors="pt").to(self.model.device)
         with torch.no_grad():
             outputs = self.model(**inputs)
         # you can pass them to processor for postprocessing
-        segmentations = self.processor.post_process_semantic_segmentation(outputs, target_sizes=[image.shape[:2][::-1] for image in images])
+        segmentations = self.processor.post_process_semantic_segmentation(outputs, target_sizes=original_img_shape)
 
         # Calculate pixel ratios
         pixel_ratios = [self._calculate_pixel_ratios(segmentation.cpu().numpy()) for segmentation in segmentations]
@@ -315,7 +317,7 @@ class Segmenter:
     def _save_semantic_segmentation_image(self, image_file, img, dir_output, output):
         # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         colored_segmented_img = self._trainid_to_color(output.cpu().numpy())
-        
+        # img = cv2.resize(img, (colored_segmented_img.shape[1], colored_segmented_img.shape[0]))
         alpha = 0.5
         blend_img = cv2.addWeighted(img, alpha, colored_segmented_img, 1 - alpha, 0)
 
@@ -360,13 +362,13 @@ class Segmenter:
         elif task == "semantic":
             self._save_semantic_segmentation_image(image_file, img, dir_output, output)
 
-    def _process_images(self, task, image_files, images, dir_output, pixel_ratio_dict, save_image):
+    def _process_images(self, task, image_files, images, dir_output, pixel_ratio_dict, save_image, original_img_shape):
         outputs = None
         pixel_ratios = None
         if task == "panoptic":
-            outputs = self._panoptic_segmentation(images)
+            outputs = self._panoptic_segmentation(images, original_img_shape)
         elif task == "semantic":
-            outputs, pixel_ratios = self._semantic_segmentation(images)
+            outputs, pixel_ratios = self._semantic_segmentation(images, original_img_shape)
 
         if outputs is not None:
             for image_file, img, output, pixel_ratio in zip(image_files, images, outputs, pixel_ratios):
@@ -390,8 +392,8 @@ class Segmenter:
             futures = []
 
             for batch in dataloader:
-                image_files, images = batch
-                future = executor.submit(self._process_images, task, image_files, images, dir_output, pixel_ratio_dict, save_image)
+                image_files, images, original_img_shape = batch
+                future = executor.submit(self._process_images, task, image_files, images, dir_output, pixel_ratio_dict, save_image, original_img_shape)
                 futures.append(future)
 
             for completed_future in tqdm(as_completed(futures), total=len(futures), desc="Processing tasks"):
@@ -406,7 +408,7 @@ class Segmenter:
     
 if __name__ == "__main__":
     segmentation = Segmenter()
-    segmentation.segment("/Users/koichiito/Desktop/test/panorama", "/Users/koichiito/Desktop/test/panorama_segmented", batch_size=5, num_workers=5, save_image = False, save_format="json")
+    segmentation.segment("/Users/koichiito/Desktop/test2/fisheye", "/Users/koichiito/Desktop/test2/fisheye_segmented", batch_size=5, num_workers=5, save_image = True, save_format="json")
     # segmentation = Segmenter(model_name="facebook/mask2former-swin-large-mapillary-vistas-semantic", dataset="mapillary")
     # segmentation.segment("/Users/koichiito/Desktop/test2/panorama", "/Users/koichiito/Desktop/test2/panorama_segmented", batch_size=5, num_workers=5, save_image = True, save_format="csv")
 
