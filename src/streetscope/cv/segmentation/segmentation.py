@@ -323,38 +323,12 @@ class Segmenter:
 
         output_file = dir_output / Path(image_file).name
         # save images one by one
-        # save the original image as "XXX_original.jpg"
-        cv2.imwrite(str(output_file.with_name(output_file.stem + "_original" + output_file.suffix)), cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
-        # save colored segmented image as "XXX_colored_segmented.jpg"
-        cv2.imwrite(str(output_file.with_name(output_file.stem + "_colored_segmented" + output_file.suffix)), cv2.cvtColor(colored_segmented_img, cv2.COLOR_RGB2BGR))
-        cv2.imwrite(str(output_file), cv2.cvtColor(blend_img, cv2.COLOR_RGB2BGR))
-        
-    # def _segmentation(self, task="semantic_segmentation", batch_imgs=None, batch_image_files=None, dir_output=None):
-    #     if task == "semantic_segmentation":
-    #         # Perform semantic segmentation
-    #         batch_outputs = self._semantic_segmentation(batch_imgs)
-    #         # Save the results sequentially
-    #         for image_file, img, output in zip(batch_image_files, batch_imgs, batch_outputs):
-    #             self._save_semantic_segmentation_image(image_file, img, dir_output, output)
-        
-    #     elif task == "panoptic_segmentation":
-    #         # perform panoptic segmentation
-    #         batch_outputs = self._panoptic_segmentation(batch_imgs)
-    #         # Save the results sequentially
-    #         for image_file, img, output in zip(batch_image_files, batch_imgs, batch_outputs):
-    #             self._save_panoptic_segmentation_image(image_file, img, dir_output, output)
-        
-    # def segment_images(self, dir_input: Union[str, Path], dir_output: Union[str, Path], batch_size: int = 1, num_workers: int = 0) -> None:
-    #     dir_input = Path(dir_input)
-    #     dir_output = Path(dir_output)
-    #     dir_output.mkdir(parents=True, exist_ok=True)
-
-    #     image_dataset = ImageDataset(dir_input)
-    #     image_loader = DataLoader(image_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, collate_fn=image_dataset.collate_fn)
-
-    #     for batch_image_files, batch_imgs in tqdm(image_loader):
-    #         # batch_imgs = [img.numpy() for img in batch_imgs]
-    #         self._segmentation(batch_imgs=batch_imgs, batch_image_files=batch_image_files, dir_output=dir_output)
+        if "segmented_image" in self.save_image_options:
+            # save colored segmented image as "XXX_colored_segmented.jpg"
+            cv2.imwrite(str(output_file.with_name(output_file.stem + "_colored_segmented" + output_file.suffix)), cv2.cvtColor(colored_segmented_img, cv2.COLOR_RGB2BGR))
+        if "blend_image" in self.save_image_options:
+            # save blended image as "XXX_blend.jpg"
+            cv2.imwrite(str(output_file.with_name(output_file.stem + "_blend" + output_file.suffix)), cv2.cvtColor(blend_img, cv2.COLOR_RGB2BGR))
 
     def _save_segmentation_image(self, task, image_file, img, dir_output, output):
         if task == "panoptic":
@@ -362,7 +336,7 @@ class Segmenter:
         elif task == "semantic":
             self._save_semantic_segmentation_image(image_file, img, dir_output, output)
 
-    def _process_images(self, task, image_files, images, dir_output, pixel_ratio_dict, save_image, original_img_shape):
+    def _process_images(self, task, image_files, images, dir_output, pixel_ratio_dict, original_img_shape):
         outputs = None
         pixel_ratios = None
         if task == "panoptic":
@@ -372,13 +346,17 @@ class Segmenter:
 
         if outputs is not None:
             for image_file, img, output, pixel_ratio in zip(image_files, images, outputs, pixel_ratios):
-                if save_image:
+                if len(self.save_image_options) > 0:
                     self._save_segmentation_image(task, image_file, img, dir_output, output)
                 image_file_key = Path(image_file).stem
                 pixel_ratio_dict[image_file_key] = pixel_ratio
 
     # Modify the segment method inside the Segmenter class
-    def segment(self, dir_input: Union[str, Path], dir_output: Union[str, Path], task="semantic", batch_size=1, num_workers=0, save_image = True, save_format="json"):
+    def segment(self, dir_input: Union[str, Path], dir_output: Union[str, Path], task="semantic", batch_size=1, num_workers=0, save_image_options = ["segmented_image", "blend_image"], save_format="json"):
+        # save_image_options as a property of the class
+        self.save_image_options = save_image_options
+        
+        # make directory
         dir_input = Path(dir_input)
         dir_output = Path(dir_output)
         dir_output.mkdir(parents=True, exist_ok=True)
@@ -393,7 +371,7 @@ class Segmenter:
 
             for batch in dataloader:
                 image_files, images, original_img_shape = batch
-                future = executor.submit(self._process_images, task, image_files, images, dir_output, pixel_ratio_dict, save_image, original_img_shape)
+                future = executor.submit(self._process_images, task, image_files, images, dir_output, pixel_ratio_dict, original_img_shape)
                 futures.append(future)
 
             for completed_future in tqdm(as_completed(futures), total=len(futures), desc="Processing tasks"):
@@ -408,7 +386,7 @@ class Segmenter:
     
 if __name__ == "__main__":
     segmentation = Segmenter()
-    segmentation.segment("/Users/koichiito/Desktop/test2/fisheye", "/Users/koichiito/Desktop/test2/fisheye_segmented", batch_size=5, num_workers=5, save_image = True, save_format="json")
+    segmentation.segment("/Users/koichiito/Desktop/test2/panorama", "/Users/koichiito/Desktop/test2/panorama_segmented", batch_size=5, num_workers=5, save_image_options = ["segmented_image", "blend_image"], save_format="json")
     # segmentation = Segmenter(model_name="facebook/mask2former-swin-large-mapillary-vistas-semantic", dataset="mapillary")
-    # segmentation.segment("/Users/koichiito/Desktop/test2/panorama", "/Users/koichiito/Desktop/test2/panorama_segmented", batch_size=5, num_workers=5, save_image = True, save_format="csv")
+    # segmentation.segment("/Users/koichiito/Desktop/test2/panorama", "/Users/koichiito/Desktop/test2/panorama_segmented", batch_size=5, num_workers=5, save_image_options = ["segmented_image", "blend_image"], save_format="csv")
 
