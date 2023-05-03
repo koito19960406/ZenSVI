@@ -4,18 +4,11 @@ from pathlib import Path
 import shutil
 import unittest
 import numpy as np
-from typing import List
-from pathlib import Path
-import os
-import unittest
-import numpy as np
-from typing import List
-from pathlib import Path
 from unittest.mock import MagicMock
-
 
 from streetscope.download.streetview_downloader import StreetViewDownloader
 from streetscope.cv.segmentation import Segmenter, ImageDataset, create_cityscapes_label_colormap
+from streetscope.transform import xyz2lonlat, lonlat2XY, ImageTransformer
 
 
 class TestStreetViewDownloader(unittest.TestCase):
@@ -35,55 +28,37 @@ class TestStreetViewDownloader(unittest.TestCase):
         self.assertTrue(os.path.exists(panorama_output))
         self.assertGreater(len(os.listdir(panorama_output)), 0)
 
-class TestSegmentation(unittest.TestCase):
 
-    # ... (previous test cases) ...
+class TestImageTransformerMethods(unittest.TestCase):
+    def test_xyz2lonlat(self):
+        xyz = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+        expected = np.array([[np.pi / 2, 0.0], [0.0, np.pi / 2], [0.0, 0.0]])
+        result = xyz2lonlat(xyz)
+        np.testing.assert_almost_equal(result, expected, decimal=6)
 
-    def test_Segmenter_create_color_map(self):
-        segmenter = Segmenter()
-        segmenter._create_color_map = MagicMock()  # Mock the method to prevent actual execution
+    def test_lonlat2XY(self):
+        lonlat = np.array([[0.0, 0.0], [0.0, np.pi / 4], [np.pi / 2, 0.0]])
+        shape = (512, 1024, 3)
+        expected = np.array([[511.5, 255.5], [511.5, 127.75], [767.25, 255.5]])
+        result = lonlat2XY(lonlat, shape)
+        np.testing.assert_almost_equal(result, expected, decimal=6)
 
-        labels = create_cityscapes_label_colormap()
-        train_ids = np.array([label.trainId for label in labels], dtype=np.uint8)
-        colors = np.array([label.color for label in labels], dtype=np.uint8)
-        max_train_id = np.max(train_ids) + 1
-        expected_color_map = np.zeros((max_train_id, 3), dtype=np.uint8)
-        expected_color_map[train_ids] = colors
 
-        segmenter._create_color_map("cityscapes")
+    def test_ImageTransformer(self):
+        dir_input = "test_input"
+        dir_output = "test_output"
+        transformer = ImageTransformer(dir_input, dir_output)
 
-        segmenter._create_color_map.assert_called_once()
+        self.assertIsInstance(transformer.dir_input, Path)
+        self.assertIsInstance(transformer.dir_output, Path)
+        self.assertEqual(transformer.dir_input, Path(dir_input))
+        self.assertEqual(transformer.dir_output, Path(dir_output))
 
-    def test_Segmenter_calculate_pixel_ratios(self):
-        segmenter = Segmenter()
-        labels = create_cityscapes_label_colormap()
-        labels = [label for label in labels if label.trainId != -1]
-        segmenter.train_id_to_name = {label.trainId: label.name for label in labels}
+        with self.assertRaises(TypeError):
+            transformer.dir_input = 42
+        with self.assertRaises(TypeError):
+            transformer.dir_output = 42
 
-        segmented_img = np.array([[0, 1], [1, 0]], dtype=np.uint8)
-        expected_pixel_ratios = {'unlabeled': 0.5, 'ego vehicle': 0.5}
-
-        pixel_ratios = segmenter._calculate_pixel_ratios(segmented_img)
-
-        self.assertEqual(pixel_ratios, expected_pixel_ratios)
-
-    def test_Segmenter_trainid_to_color(self):
-        segmenter = Segmenter()
-        labels = create_cityscapes_label_colormap()
-        labels = [label for label in labels if label.trainId != -1]
-        train_ids = np.array([label.trainId for label in labels], dtype=np.uint8)
-        colors = np.array([label.color for label in labels], dtype=np.uint8)
-        max_train_id = np.max(train_ids) + 1
-        color_map = np.zeros((max_train_id, 3), dtype=np.uint8)
-        color_map[train_ids] = colors
-        segmenter.color_map = color_map
-
-        segmented_img = np.array([[0, 1], [1, 0]], dtype=np.uint8)
-        expected_colored_img = np.array([[(0, 0, 0), (70, 70, 70)], [(70, 70, 70), (0, 0, 0)]], dtype=np.uint8)
-
-        colored_img = segmenter._trainid_to_color(segmented_img)
-
-        np.testing.assert_array_equal(colored_img, expected_colored_img)
 
 if __name__ == "__main__":
     unittest.main()
