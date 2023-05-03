@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "streetscope"
-version = "0.1.0"
+version = "0.2.0"
 description = "This package handles downloading, cleaning, analyzing street view imagery"
 authors = ["koito19960406"]
 license = "MIT"

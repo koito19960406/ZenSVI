@@ -140,3 +140,6 @@ dmypy.json
 
 # MacOS
 .DS_Store
+
+# Cache folders in general
+cache/

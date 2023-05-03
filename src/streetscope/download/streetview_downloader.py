@@ -9,10 +9,12 @@ import requests
 import cv2
 import pkg_resources
 from pathlib import Path
+import geopandas as gpd
+from tqdm import tqdm
 
 from streetscope.download.utils.imtool import ImageTool
 from streetscope.download.utils.get_pids import panoids
-from streetscope.download.utils.transform_image import ImageTransformer
+from streetscope.download.utils.geoprocess import GeoProcessor
 
 class StreetViewDownloader:
     def __init__(self, dir_output, gsv_api_key = None, path_pid = None, log_path = "", nthreads = 5):
@@ -130,7 +132,7 @@ class StreetViewDownloader:
         
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(worker, i, row): i for i, row in df.iterrows()}
-            for future in as_completed(futures):
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Augmenting timestamp metatda", ncols=100):
                 row_index, year_month = future.result()
                 df.at[row_index, 'year'] = year_month['year']
                 df.at[row_index, 'month'] = year_month['month']
@@ -164,7 +166,7 @@ class StreetViewDownloader:
 
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in df.iterrows()}
-            for future in as_completed(futures):
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Getting pids", ncols=100):
                 (input_longitude, input_latitude), row_results = future.result()
                 for result in row_results:
                     result['input_longitude'] = input_longitude
@@ -174,15 +176,46 @@ class StreetViewDownloader:
         results_df = pd.DataFrame(results)
         return results_df
     
-    def get_pids(self, path_pid, lat = None, lng = None, input_csv_file = "", closest=False, disp=False, augment_metadata=False):
+    def _get_pids_from_shp(self, input_shp_file, closest=False, disp=False):
+        def get_street_view_info(longitude, latitude):
+            results = panoids(latitude, longitude, closest=closest, disp=disp)
+            return results
+
+        def worker(row):
+            input_longitude = row['longitude']
+            input_latitude = row['latitude']
+            return (input_longitude, input_latitude), get_street_view_info(input_longitude, input_latitude)
+
+        # read shapefile
+        gdf = gpd.read_file(input_shp_file)
+        gp = GeoProcessor(gdf)
+        df = gp.get_lat_lon()
+        results = []
+
+        with ThreadPoolExecutor() as executor:
+            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in df.iterrows()}
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Getting pids", ncols=100):
+                (input_longitude, input_latitude), row_results = future.result()
+                for result in row_results:
+                    result['input_longitude'] = input_longitude
+                    result['input_latitude'] = input_latitude
+                    results.append(result)
+
+        results_df = pd.DataFrame(results)
+        return results_df
+    
+    def get_pids(self, path_pid, lat = None, lng = None, input_csv_file = "", input_shp_file = "", closest=False, disp=False, augment_metadata=False):
         if lat != None and lng != None:
             pid = panoids(lat, lng, closest=closest, disp=disp)
         elif input_csv_file != "":
             pid = self._get_pids_from_csv(input_csv_file, closest=closest, disp=disp)
+        elif input_shp_file != "":
+            pid = self._get_pids_from_shp(input_shp_file, closest=closest, disp=disp)
         else:
-            raise ValueError("Please input the lat and lng or the csv file.")
+            raise ValueError("Please input the lat and lng, csv file, or shapefile.")
         # save the pids
         pid_df = pd.DataFrame(pid)
+        pid_df = pid_df.drop_duplicates(subset='panoid')
         if augment_metadata & (self.gsv_api_key != None):
             pid_df = self._augment_metadata(pid_df)
         elif augment_metadata & (self.gsv_api_key == None):
@@ -192,12 +225,12 @@ class StreetViewDownloader:
         print("The panorama IDs have been saved to {}".format(path_pid))
     
     def download_gsv(self, zoom=2, h_tiles=4, v_tiles=2, cropped=False, full=True, 
-                    lat=None, lng=None, input_csv_file="", closest=False, disp=False, augment_metadata=False):
+                    lat=None, lng=None, input_csv_file="", input_shp_file = "", closest=False, disp=False, augment_metadata=False):
         # If path_pid is None, call get_pids function first
         if self._path_pid is None:
             print("Getting pids...")
             self.get_pids(os.path.join(self.dir_output, "pids.csv"), lat=lat, lng=lng,
-                        input_csv_file=input_csv_file, closest=closest, disp=disp, augment_metadata=augment_metadata)
+                        input_csv_file=input_csv_file, input_shp_file = input_shp_file, closest=closest, disp=disp, augment_metadata=augment_metadata)
 
         # Import tool
         tool = ImageTool()
@@ -237,5 +270,5 @@ class StreetViewDownloader:
                 task_pids = []
                 
 if __name__ == "__main__":
-    sv_downloader = StreetViewDownloader("/Users/koichiito/Desktop/test2", gsv_api_key="AIzaSyDjIBLaZ-nAWq0RIoOUQUOzCLYzMYAN2aQ")
-    sv_downloader.download_gsv(lat=1.342425, lng=103.721523, augment_metadata=True)
+    sv_downloader = StreetViewDownloader("/Volumes/exfat_archi/streetscope_test/delft/images", gsv_api_key="AIzaSyDjIBLaZ-nAWq0RIoOUQUOzCLYzMYAN2aQ")
+    sv_downloader.download_gsv(input_shp_file = "/Volumes/exfat_archi/streetscope_test/delft/Delft/Delft.shp", augment_metadata=True)

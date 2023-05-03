@@ -688,7 +688,7 @@ class Segmenter:
     
 if __name__ == "__main__":
     segmentation = Segmenter()
-    # segmentation.segment("/Users/koichiito/Desktop/test2/panorama", "/Users/koichiito/Desktop/test2/panorama_segmented", batch_size=5, num_workers=5, save_image_options = ["segmented_image", "blend_image"], pixel_ratio_save_format=["json", "csv"])
-    segmentation.calculate_pixel_ratio_post_transformation("/Users/koichiito/Desktop/test2/panorama_segmented", "/Users/koichiito/Desktop/test2/panorama_segmented", pixel_ratio_save_format=["json", "csv"])
+    segmentation.segment("/Users/koichiito/Desktop/test2/panorama", "/Users/koichiito/Desktop/test2/panorama_segmented", batch_size=5, num_workers=5, save_image_options = ["segmented_image", "blend_image"], pixel_ratio_save_format=["json", "csv"])
+    # segmentation.calculate_pixel_ratio_post_transformation("/Users/koichiito/Desktop/test2/panorama_segmented", "/Users/koichiito/Desktop/test2/panorama_segmented", pixel_ratio_save_format=["json", "csv"])
     # segmentation = Segmenter(model_name="facebook/mask2former-swin-large-mapillary-vistas-semantic", dataset="mapillary")
     # segmentation.segment("/Users/koichiito/Desktop/test2/panorama", "/Users/koichiito/Desktop/test2/panorama_segmented", batch_size=5, num_workers=5, save_image_options = ["segmented_image", "blend_image"], pixel_ratio_save_format="csv")
