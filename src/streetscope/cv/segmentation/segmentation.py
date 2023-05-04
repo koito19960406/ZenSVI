@@ -16,13 +16,9 @@ import json
 from collections import defaultdict
 from tqdm.contrib.concurrent import thread_map
 
-def create_cityscapes_label_colormap():
-        """Creates a label colormap used in CITYSCAPES segmentation benchmark.
-        Returns:
-            A colormap for visualizing segmentation results.
-        """
-        # a label and all meta information
-        Label = namedtuple( 'Label' , [
+
+# a label and all meta information
+Label = namedtuple( 'Label' , [
 
             'name'        , # The identifier of this label, e.g. 'car', 'person', ... .
                             # We use them to uniquely name a class
@@ -57,7 +53,13 @@ def create_cityscapes_label_colormap():
 
             'color'       , # The color of this label
             ] )
-
+        
+def create_cityscapes_label_colormap():
+        """Creates a label colormap used in CITYSCAPES segmentation benchmark.
+        Returns:
+            A colormap for visualizing segmentation results.
+        """
+        
         labels = [
         #       name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
         Label(  'unlabeled'            ,  0 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
@@ -103,16 +105,6 @@ def create_mapillary_vistas_label_colormap():
     Returns:
         A list of labels for visualizing segmentation results.
     """
-    Label = namedtuple('Label', [
-        'name',
-        'id',
-        'trainId',
-        'category',
-        'categoryId',
-        'hasInstances',
-        'ignoreInEval',
-        'color',
-    ])
 
     labels = [
         #       name                id  trainId  category            catId  hasInstances  ignoreInEval  color
@@ -568,16 +560,13 @@ class Segmenter:
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
             futures = []
 
-            for batch in dataloader:
+            for batch in tqdm(dataloader, desc="Submitting tasks"):
                 image_files, images, original_img_shape = batch
                 future = executor.submit(self._process_images, task, image_files, images, dir_image_output, pixel_ratio_dict, original_img_shape)
                 futures.append(future)
 
-            with tqdm(total=len(futures), desc="Processing tasks") as progress_bar:
-                for completed_future in as_completed(futures):
-                    completed_future.result()
-                    progress_bar.update(1)
-
+            for completed_future in tqdm(as_completed(futures), total=len(futures), desc="Processing tasks"):
+                completed_future.result()
 
         # Save pixel_ratio_dict as a JSON or CSV file
         if "json" in pixel_ratio_save_format:
