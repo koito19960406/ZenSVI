@@ -1,0 +1,13 @@
+geopandas==0.12.2
+geopy==2.3.0
+numpy==1.24.3
+opencv_python==4.7.0.72
+osmnx==1.3.0
+pandas==2.0.1
+Pillow==9.5.0
+Requests==2.29.0
+setuptools==67.7.2
+Shapely==2.0.1
+torch>=2
+tqdm==4.65.0
+transformers==4.28.1
