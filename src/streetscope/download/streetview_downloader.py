@@ -132,7 +132,7 @@ class StreetViewDownloader:
         
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(worker, i, row): i for i, row in df.iterrows()}
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Augmenting timestamp metatda", ncols=100):
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Augmenting timestamp metadata", ncols=100):
                 row_index, year_month = future.result()
                 df.at[row_index, 'year'] = year_month['year']
                 df.at[row_index, 'month'] = year_month['month']
@@ -270,5 +270,6 @@ class StreetViewDownloader:
                 task_pids = []
                 
 if __name__ == "__main__":
-    sv_downloader = StreetViewDownloader("/Volumes/exfat_archi/streetscope_test/delft/images", gsv_api_key="AIzaSyDjIBLaZ-nAWq0RIoOUQUOzCLYzMYAN2aQ")
-    sv_downloader.download_gsv(input_shp_file = "/Volumes/exfat_archi/streetscope_test/delft/Delft/Delft.shp", augment_metadata=True)
+    sv_downloader = StreetViewDownloader("/Users/koichiito/Downloads/Delft", gsv_api_key="AIzaSyDjIBLaZ-nAWq0RIoOUQUOzCLYzMYAN2aQ")
+    # sv_downloader.download_gsv(input_shp_file = "/Users/koichiito/Downloads/Delft/Delft.shp", augment_metadata=True)
+    sv_downloader.download_gsv(lat = 52.004400, lng = 4.342597, augment_metadata=True)
