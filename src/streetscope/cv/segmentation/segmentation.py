@@ -528,13 +528,14 @@ class Segmenter:
                 pixel_ratio_dict[image_file_key] = pixel_ratio
 
     # Modify the segment method inside the Segmenter class
-    def segment(self, dir_input: Union[str, Path], dir_output: Union[str, Path], task="semantic", batch_size=1, num_workers=0, save_image_options = ["segmented_image", "blend_image"], pixel_ratio_save_format = ["json", "csv"]):
+    def segment(self, dir_input: Union[str, Path], dir_image_output: Union[str, Path, None] = None, dir_pixel_ratio_output: Union[str, Path, None] = None, task="semantic", batch_size=1, num_workers=1, save_image_options = ["segmented_image", "blend_image"], pixel_ratio_save_format = ["json", "csv"]):
         """
         Perform segmentation on the input images and save the segmented images.
 
         Args:
             dir_input (Union[str, Path]): The directory containing the input images.
-            dir_output (Union[str, Path]): The output directory where the segmented images will be saved.
+            dir_image_output (Union[str, Path , None]): The output directory where the segmented images will be saved. Default is None.
+            dir_pixel_ratio_output (Union[str, Path, None]): The output directory where the pixel ratio data will be saved. Default is None.
             task (str): The segmentation task to perform, either "panoptic" or "semantic". Default is "semantic".
             batch_size (int): The batch size to use for segmentation. Default is 1.
             num_workers (int): The number of worker threads to use for segmentation. Default is 0.
@@ -544,13 +545,17 @@ class Segmenter:
         Returns:
             None
         """
+        # make sure that at least one of dir_image_output and dir_pixel_ratio_output is not None
+        if dir_image_output is None and dir_pixel_ratio_output is None:
+            raise ValueError("At least one of dir_image_output and dir_pixel_ratio_output must not be None.")
+        
         # save_image_options as a property of the class
         self.save_image_options = save_image_options
         
         # make directory
         dir_input = Path(dir_input)
-        dir_output = Path(dir_output)
-        dir_output.mkdir(parents=True, exist_ok=True)
+        dir_image_output = Path(dir_image_output)
+        dir_image_output.mkdir(parents=True, exist_ok=True)
 
         dataset = ImageDataset(dir_input)
         dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=dataset.collate_fn, num_workers=num_workers)
@@ -562,7 +567,7 @@ class Segmenter:
 
             for batch in dataloader:
                 image_files, images, original_img_shape = batch
-                future = executor.submit(self._process_images, task, image_files, images, dir_output, pixel_ratio_dict, original_img_shape)
+                future = executor.submit(self._process_images, task, image_files, images, dir_image_output, pixel_ratio_dict, original_img_shape)
                 futures.append(future)
 
             for completed_future in tqdm(as_completed(futures), total=len(futures), desc="Processing tasks"):
@@ -570,12 +575,12 @@ class Segmenter:
 
         # Save pixel_ratio_dict as a JSON or CSV file
         if "json" in pixel_ratio_save_format:
-            with open(dir_output / "pixel_ratios.json", "w") as f:
+            with open(dir_pixel_ratio_output / "pixel_ratios.json", "w") as f:
                 json.dump(pixel_ratio_dict, f)
         if "csv" in pixel_ratio_save_format:
-            self._save_pixel_ratios_as_csv(pixel_ratio_dict, dir_output)
+            self._save_pixel_ratios_as_csv(pixel_ratio_dict, dir_pixel_ratio_output)
             
-    def calculate_pixel_ratio_post_transformation(self, dir_input, dir_output, pixel_ratio_save_format = ["json", "csv"]):
+    def calculate_pixel_ratio_post_process(self, dir_input, dir_output, pixel_ratio_save_format = ["json", "csv"]):
         """
         Calculates the pixel ratio of different classes present in the segmented images and saves the results in either JSON or CSV format.
 
@@ -688,7 +693,10 @@ class Segmenter:
     
 if __name__ == "__main__":
     segmentation = Segmenter()
-    segmentation.segment("/Users/koichiito/Desktop/test2/panorama", "/Users/koichiito/Desktop/test2/panorama_segmented", batch_size=5, num_workers=5, save_image_options = ["segmented_image", "blend_image"], pixel_ratio_save_format=["json", "csv"])
-    # segmentation.calculate_pixel_ratio_post_transformation("/Users/koichiito/Desktop/test2/panorama_segmented", "/Users/koichiito/Desktop/test2/panorama_segmented", pixel_ratio_save_format=["json", "csv"])
+    segmentation.segment("/Volumes/exfat_archi/streetscope_test/delft/images/panorama", 
+                        "/Volumes/exfat_archi/streetscope_test/delft/images/panorama_segmented", 
+                        dir_pixel_ratio_output = "/Volumes/exfat_archi/streetscope_test/delft/images/",
+                        batch_size=5, num_workers=5, save_image_options = ["segmented_image"], pixel_ratio_save_format=[])
+    # segmentation.calculate_pixel_ratio_post_process("/Users/koichiito/Desktop/test2/panorama_segmented", "/Users/koichiito/Desktop/test2/panorama_segmented", pixel_ratio_save_format=["json", "csv"])
     # segmentation = Segmenter(model_name="facebook/mask2former-swin-large-mapillary-vistas-semantic", dataset="mapillary")
     # segmentation.segment("/Users/koichiito/Desktop/test2/panorama", "/Users/koichiito/Desktop/test2/panorama_segmented", batch_size=5, num_workers=5, save_image_options = ["segmented_image", "blend_image"], pixel_ratio_save_format="csv")
