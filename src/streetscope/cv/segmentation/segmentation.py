@@ -14,6 +14,7 @@ import os
 from tqdm.auto import tqdm
 import json
 from collections import defaultdict
+from tqdm.contrib.concurrent import thread_map
 
 def create_cityscapes_label_colormap():
         """Creates a label colormap used in CITYSCAPES segmentation benchmark.
@@ -572,8 +573,11 @@ class Segmenter:
                 future = executor.submit(self._process_images, task, image_files, images, dir_image_output, pixel_ratio_dict, original_img_shape)
                 futures.append(future)
 
-            for completed_future in tqdm(as_completed(futures), total=len(futures), desc="Processing tasks"):
-                completed_future.result()
+            with tqdm(total=len(futures), desc="Processing tasks") as progress_bar:
+                for completed_future in as_completed(futures):
+                    completed_future.result()
+                    progress_bar.update(1)
+
 
         # Save pixel_ratio_dict as a JSON or CSV file
         if "json" in pixel_ratio_save_format:
@@ -582,7 +586,7 @@ class Segmenter:
         if "csv" in pixel_ratio_save_format:
             self._save_pixel_ratios_as_csv(pixel_ratio_dict, dir_pixel_ratio_output)
             
-    def calculate_pixel_ratio_post_process(self, dir_input, dir_output, pixel_ratio_save_format = ["json", "csv"]):
+    def calculate_pixel_ratio_post_process(self, dir_input, dir_output, pixel_ratio_save_format = ["json", "csv"], num_workers=1):
         """
         Calculates the pixel ratio of different classes present in the segmented images and saves the results in either JSON or CSV format.
 
@@ -679,9 +683,8 @@ class Segmenter:
 
         image_files = [file for file in dir_input.rglob('*') if file.suffix.lower() in image_extensions and '_colored_segmented' in file.stem]
 
-        with ThreadPoolExecutor() as executor:
-            results = list(executor.map(process_image_file, image_files, [self.label_map] * len(image_files)))
-        
+        results = thread_map(process_image_file, image_files, [self.label_map] * len(image_files), max_workers=num_workers)
+
         if "json" in pixel_ratio_save_format:
             json_output_file = Path(dir_output) / 'pixel_ratio.json'
             nested_dict = results_to_nested_dict(results)
@@ -695,10 +698,10 @@ class Segmenter:
     
 if __name__ == "__main__":
     segmentation = Segmenter()
-    segmentation.segment("/Users/koichiito/Downloads/Delft/panorama", 
-                        "/Users/koichiito/Downloads/Delft/panorama_segmented", 
-                        dir_pixel_ratio_output = "/Volumes/exfat_archi/streetscope_test/delft/images/",
-                        batch_size=1, num_workers=1, save_image_options = ["segmented_image"], pixel_ratio_save_format=[])
-    # segmentation.calculate_pixel_ratio_post_process("/Users/koichiito/Desktop/test2/panorama_segmented", "/Users/koichiito/Desktop/test2/panorama_segmented", pixel_ratio_save_format=["json", "csv"])
+    # segmentation.segment("/Users/koichiito/Downloads/Delft/panorama", 
+    #                     "/Users/koichiito/Downloads/Delft/panorama_segmented", 
+    #                     dir_pixel_ratio_output = "/Users/koichiito/Downloads/Delft",
+    #                     batch_size=1, num_workers=1, save_image_options = ["segmented_image"], pixel_ratio_save_format=[])
+    segmentation.calculate_pixel_ratio_post_process("/Users/koichiito/Downloads/Delft/panorama_segmented", "/Users/koichiito/Downloads/Delft", pixel_ratio_save_format=["json", "csv"])
     # segmentation = Segmenter(model_name="facebook/mask2former-swin-large-mapillary-vistas-semantic", dataset="mapillary")
     # segmentation.segment("/Users/koichiito/Desktop/test2/panorama", "/Users/koichiito/Desktop/test2/panorama_segmented", batch_size=5, num_workers=5, save_image_options = ["segmented_image", "blend_image"], pixel_ratio_save_format="csv")
