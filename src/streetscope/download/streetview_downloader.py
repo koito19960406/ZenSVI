@@ -17,24 +17,14 @@ from streetscope.download.utils.get_pids import panoids
 from streetscope.download.utils.geoprocess import GeoProcessor
 
 class StreetViewDownloader:
-    def __init__(self, dir_output, gsv_api_key = None, path_pid = None, log_path = "", nthreads = 5):
-        Path(dir_output).mkdir(parents=True, exist_ok=True)
-        self._dir_output = dir_output
+    def __init__(self, gsv_api_key = None, log_path = None, nthreads = 5):
         if gsv_api_key == None:
             warnings.warn("Please provide your Google Street View API key to augment metadata.")
         self._gsv_api_key = gsv_api_key
-        self._path_pid = path_pid
         self._log_path = log_path
         self._nthreads = nthreads
         self._user_agent = self._get_ua()
-        
-    @property
-    def dir_output(self):
-        return self._dir_output    
-    @dir_output.setter
-    def dir_output(self,dir_output):
-        self._dir_output = dir_output
-        
+
     @property
     def gsv_api_key(self):
         return self._gsv_api_key    
@@ -42,13 +32,6 @@ class StreetViewDownloader:
     def gsv_api_key(self,gsv_api_key):
         self._gsv_api_key = gsv_api_key
 
-    @property
-    def path_pid(self):
-        return self._path_pid    
-    @path_pid.setter
-    def path_pid(self,path_pid):
-        self._path_pid = path_pid
-    
     @property
     def log_path(self):
         return self._log_path    
@@ -76,8 +59,8 @@ class StreetViewDownloader:
                 UA.append(ua)
         return UA
 
-    def _read_pids(self):
-        pid_df = pd.read_csv(self.path_pid)
+    def _read_pids(self, path_pid):
+        pid_df = pd.read_csv(path_pid)
         # get unique pids as a list
         pids = pid_df.iloc[:,0].unique().tolist()
         return pids
@@ -221,15 +204,19 @@ class StreetViewDownloader:
         elif augment_metadata & (self.gsv_api_key == None):
             raise ValueError("Please set the gsv api key by calling the gsv_api_key method.")
         pid_df.to_csv(path_pid, index=False)
-        self.path_pid = path_pid
         print("The panorama IDs have been saved to {}".format(path_pid))
     
-    def download_gsv(self, zoom=2, h_tiles=4, v_tiles=2, cropped=False, full=True, 
+    def download_gsv(self, dir_output, path_pid = None, zoom=2, h_tiles=4, v_tiles=2, cropped=False, full=True, 
                     lat=None, lng=None, input_csv_file="", input_shp_file = "", closest=False, disp=False, augment_metadata=False):
+        # set dir_output as attribute and create the directory
+        self.dir_output = dir_output
+        Path(dir_output).mkdir(parents=True, exist_ok=True)
+        
         # If path_pid is None, call get_pids function first
-        if self._path_pid is None:
+        if path_pid is None:
             print("Getting pids...")
-            self.get_pids(os.path.join(self.dir_output, "pids.csv"), lat=lat, lng=lng,
+            path_pid = os.path.join(self.dir_output, "pids.csv")
+            self.get_pids(path_pid, lat=lat, lng=lng,
                         input_csv_file=input_csv_file, input_shp_file = input_shp_file, closest=closest, disp=disp, augment_metadata=augment_metadata)
 
         # Import tool
@@ -245,7 +232,7 @@ class StreetViewDownloader:
         panorama_output = os.path.join(self.dir_output, "panorama")
         os.makedirs(panorama_output, exist_ok=True)
         
-        panoids = self._read_pids()
+        panoids = self._read_pids(path_pid)
         panoids_rest = self._check_already(panoids)
 
         # random.shuffle(panoids_rest)
@@ -265,11 +252,11 @@ class StreetViewDownloader:
                     print(e)
                     time.sleep(random.randint(1, 5)*0.1)
                     errors += self.nthreads
-                    if self.log_path != "":
+                    if self.log_path != None:
                         self._log_write(task_pids)
                 task_pids = []
                 
 if __name__ == "__main__":
-    sv_downloader = StreetViewDownloader("/Users/koichiito/Downloads/Delft", gsv_api_key="AIzaSyDjIBLaZ-nAWq0RIoOUQUOzCLYzMYAN2aQ")
+    sv_downloader = StreetViewDownloader(gsv_api_key="AIzaSyDjIBLaZ-nAWq0RIoOUQUOzCLYzMYAN2aQ", log_path = "/Users/koichiito/Downloads/Delft/log.txt")
     # sv_downloader.download_gsv(input_shp_file = "/Users/koichiito/Downloads/Delft/Delft.shp", augment_metadata=True)
-    sv_downloader.download_gsv(lat = 52.004400, lng = 4.342597, augment_metadata=True)
+    sv_downloader.download_gsv("/Users/koichiito/Downloads/Delft", lat = 52.004400, lng = 4.342597, augment_metadata=True)
