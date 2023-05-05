@@ -551,6 +551,8 @@ class Segmenter:
         dir_input = Path(dir_input)
         dir_image_output = Path(dir_image_output)
         dir_image_output.mkdir(parents=True, exist_ok=True)
+        dir_pixel_ratio_output = Path(dir_pixel_ratio_output)
+        dir_pixel_ratio_output.mkdir(parents=True, exist_ok=True)
 
         dataset = ImageDataset(dir_input)
         dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=dataset.collate_fn, num_workers=num_workers)
