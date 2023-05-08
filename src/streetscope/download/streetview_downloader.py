@@ -11,9 +11,9 @@ import pkg_resources
 from pathlib import Path
 import geopandas as gpd
 from tqdm import tqdm
+from shapely.geometry import Point
 import warnings
 from shapely.errors import ShapelyDeprecationWarning
-
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
 from streetscope.download.utils.imtool import ImageTool
@@ -206,7 +206,7 @@ class StreetViewDownloader:
         results = []
 
         with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in tqdm(df.iterrows(), total = len(df), desc="Preparing to get pids")}
+            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in tqdm(df.iterrows(), total=len(df), desc="Preparing to get pids")}
             for future in tqdm(as_completed(futures), total=len(futures), desc="Getting pids"):
                 (input_longitude, input_latitude), row_results = future.result()
                 for result in row_results:
@@ -215,7 +215,22 @@ class StreetViewDownloader:
                     results.append(result)
 
         results_df = pd.DataFrame(results)
-        return results_df
+
+        # Check if lat and lon are within input polygons
+        polygons = gpd.GeoSeries([geom for geom in gdf['geometry'] if geom.type in ['Polygon', 'MultiPolygon']])
+
+        # Convert lat, lon to Points and create a GeoSeries
+        points = gpd.GeoSeries([Point(lon, lat) for lon, lat in zip(results_df['lon'], results_df['lat'])])
+
+        # Add progress bar for within_polygon calculation
+        tqdm.pandas(total=len(points), desc="Checking points within polygons")
+        within_polygon = points.progress_apply(lambda point: polygons.contains(point).any())
+
+        results_df['within_polygon'] = within_polygon
+
+        # Return only those points within polygons
+        results_within_polygons_df = results_df[results_df['within_polygon']]
+        return results_within_polygons_df
 
     
     def get_pids(self, path_pid, lat = None, lng = None, input_csv_file = "", input_shp_file = "", closest=False, disp=False, augment_metadata=False):
