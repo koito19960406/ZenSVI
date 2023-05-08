@@ -686,13 +686,3 @@ class Segmenter:
             csv_output_file = Path(dir_output) / 'pixel_ratio.csv'
             df = results_to_dataframe(results)
             df.to_csv(csv_output_file)
-    
-if __name__ == "__main__":
-    segmentation = Segmenter()
-    # segmentation.segment("/Users/koichiito/Downloads/Delft/panorama", 
-    #                     "/Users/koichiito/Downloads/Delft/panorama_segmented", 
-    #                     dir_pixel_ratio_output = "/Users/koichiito/Downloads/Delft",
-    #                     batch_size=1, num_workers=1, save_image_options = ["segmented_image"], pixel_ratio_save_format=[])
-    segmentation.calculate_pixel_ratio_post_process("/Users/koichiito/Downloads/Delft/panorama_segmented", "/Users/koichiito/Downloads/Delft", pixel_ratio_save_format=["json", "csv"])
-    # segmentation = Segmenter(model_name="facebook/mask2former-swin-large-mapillary-vistas-semantic", dataset="mapillary")
-    # segmentation.segment("/Users/koichiito/Desktop/test2/panorama", "/Users/koichiito/Desktop/test2/panorama_segmented", batch_size=5, num_workers=5, save_image_options = ["segmented_image", "blend_image"], pixel_ratio_save_format="csv")

@@ -11,19 +11,27 @@ import pkg_resources
 from pathlib import Path
 import geopandas as gpd
 from tqdm import tqdm
+import warnings
+from shapely.errors import ShapelyDeprecationWarning
+
+warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
 from streetscope.download.utils.imtool import ImageTool
 from streetscope.download.utils.get_pids import panoids
 from streetscope.download.utils.geoprocess import GeoProcessor
 
+
 class StreetViewDownloader:
-    def __init__(self, gsv_api_key = None, log_path = None, nthreads = 5):
+    def __init__(self, gsv_api_key = None, log_path = None, nthreads = 5, distance = 1, grid = False, grid_size = 20):
         if gsv_api_key == None:
             warnings.warn("Please provide your Google Street View API key to augment metadata.")
         self._gsv_api_key = gsv_api_key
         self._log_path = log_path
         self._nthreads = nthreads
+        self._distance = distance
         self._user_agent = self._get_ua()
+        self._grid = grid
+        self._grid_size = grid_size
 
     @property
     def gsv_api_key(self):
@@ -45,6 +53,27 @@ class StreetViewDownloader:
     @nthreads.setter
     def nthreads(self,nthreads):
         self._nthreads = nthreads
+    
+    @property
+    def distance(self):
+        return self._distance    
+    @distance.setter
+    def distance(self,distance):
+        self._distance = distance
+    
+    @property
+    def grid(self):
+        return self._grid    
+    @grid.setter
+    def grid(self,grid):
+        self._grid = grid
+        
+    @property
+    def grid_size(self):
+        return self._grid_size    
+    @grid_size.setter
+    def grid_size(self,grid_size):
+        self._grid_size = grid_size
     
     @property
     def user_agent(self):
@@ -114,8 +143,8 @@ class StreetViewDownloader:
             return index, year_month
         
         with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(worker, i, row): i for i, row in df.iterrows()}
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Augmenting timestamp metadata", ncols=100):
+            futures = {executor.submit(worker, i, row): i for i, row in tqdm(df.iterrows(), total = len(df), desc="Preparing to augment metadata")}
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Augmenting timestamp metadata"):
                 row_index, year_month = future.result()
                 df.at[row_index, 'year'] = year_month['year']
                 df.at[row_index, 'month'] = year_month['month']
@@ -148,8 +177,8 @@ class StreetViewDownloader:
         results = []
 
         with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in df.iterrows()}
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Getting pids", ncols=100):
+            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in tqdm(df.iterrows(), total = len(df), desc="Preparing to get pids")}
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Getting pids"):
                 (input_longitude, input_latitude), row_results = future.result()
                 for result in row_results:
                     result['input_longitude'] = input_longitude
@@ -159,7 +188,7 @@ class StreetViewDownloader:
         results_df = pd.DataFrame(results)
         return results_df
     
-    def _get_pids_from_shp(self, input_shp_file, closest=False, disp=False):
+    def _get_pids_from_shp(self, input_shp_file, closest=False, disp=False):  
         def get_street_view_info(longitude, latitude):
             results = panoids(latitude, longitude, closest=closest, disp=disp)
             return results
@@ -167,17 +196,18 @@ class StreetViewDownloader:
         def worker(row):
             input_longitude = row['longitude']
             input_latitude = row['latitude']
-            return (input_longitude, input_latitude), get_street_view_info(input_longitude, input_latitude)
+            results = get_street_view_info(input_longitude, input_latitude)
+            return (input_longitude, input_latitude), results
 
         # read shapefile
         gdf = gpd.read_file(input_shp_file)
-        gp = GeoProcessor(gdf)
+        gp = GeoProcessor(gdf, distance=self.distance, grid=self.grid, grid_size=self.grid_size)
         df = gp.get_lat_lon()
         results = []
 
         with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in df.iterrows()}
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Getting pids", ncols=100):
+            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in tqdm(df.iterrows(), total = len(df), desc="Preparing to get pids")}
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Getting pids"):
                 (input_longitude, input_latitude), row_results = future.result()
                 for result in row_results:
                     result['input_longitude'] = input_longitude
@@ -186,6 +216,7 @@ class StreetViewDownloader:
 
         results_df = pd.DataFrame(results)
         return results_df
+
     
     def get_pids(self, path_pid, lat = None, lng = None, input_csv_file = "", input_shp_file = "", closest=False, disp=False, augment_metadata=False):
         if lat != None and lng != None:
@@ -207,7 +238,7 @@ class StreetViewDownloader:
         print("The panorama IDs have been saved to {}".format(path_pid))
     
     def download_gsv(self, dir_output, path_pid = None, zoom=2, h_tiles=4, v_tiles=2, cropped=False, full=True, 
-                    lat=None, lng=None, input_csv_file="", input_shp_file = "", closest=False, disp=False, augment_metadata=False):
+                lat=None, lng=None, input_csv_file="", input_shp_file = "", closest=False, disp=False, augment_metadata=False):
         # set dir_output as attribute and create the directory
         self.dir_output = dir_output
         Path(dir_output).mkdir(parents=True, exist_ok=True)
@@ -219,8 +250,6 @@ class StreetViewDownloader:
             self.get_pids(path_pid, lat=lat, lng=lng,
                         input_csv_file=input_csv_file, input_shp_file = input_shp_file, closest=closest, disp=disp, augment_metadata=augment_metadata)
 
-        # Import tool
-        tool = ImageTool()
         # Horizontal Google Street View tiles
         # zoom 3: (8, 4); zoom 5: (26, 13) zoom 2: (4, 2) zoom 1: (2, 1);4:(8,16)
         # zoom = 2
@@ -235,28 +264,8 @@ class StreetViewDownloader:
         panoids = self._read_pids(path_pid)
         panoids_rest = self._check_already(panoids)
 
-        # random.shuffle(panoids_rest)
-        task_pids, errors, img_num = [], 0, 0
+        panoids = self._read_pids(path_pid)
+        panoids_rest = self._check_already(panoids)
 
-        for i in range(len(panoids_rest)):
-            if i%self.nthreads != 0 or i == 0:
-                task_pids.append(panoids_rest[i])
-            else:
-                UAs = random.sample(self.user_agent, self.nthreads)
-                try:
-                    tool.dwl_multiple(task_pids, task_pids, self.nthreads, zoom, v_tiles, h_tiles, panorama_output, UAs, cropped, full)
-                    img_num += self.nthreads
-                    print(datetime.datetime.now(), "Task:", i, "/ ", len(panoids_rest),"got:",img_num, "errors:", errors, self.dir_output)
-
-                except Exception as e:
-                    print(e)
-                    time.sleep(random.randint(1, 5)*0.1)
-                    errors += self.nthreads
-                    if self.log_path != None:
-                        self._log_write(task_pids)
-                task_pids = []
-                
-if __name__ == "__main__":
-    sv_downloader = StreetViewDownloader(gsv_api_key="AIzaSyDjIBLaZ-nAWq0RIoOUQUOzCLYzMYAN2aQ", log_path = "/Users/koichiito/Downloads/Delft/log.txt")
-    # sv_downloader.download_gsv(input_shp_file = "/Users/koichiito/Downloads/Delft/Delft.shp", augment_metadata=True)
-    sv_downloader.download_gsv("/Users/koichiito/Downloads/Delft", lat = 52.004400, lng = 4.342597, augment_metadata=True)
+        UAs = random.choices(self.user_agent, k = len(panoids_rest))
+        ImageTool.dwl_multiple(panoids_rest, zoom, v_tiles, h_tiles, panorama_output, UAs, cropped, full, log_path=self.log_path)

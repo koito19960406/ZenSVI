@@ -176,7 +176,3 @@ class ImageTransformer:
                     for name in self.dir_input.rglob('*') if name.suffix.lower() in image_extensions]
                 for future in tqdm(as_completed(futures), total=len(futures), desc=f"Converting to {current_style}"):
                     future.result()
-
-if __name__ == "__main__":
-    image_transformer = ImageTransformer(dir_input="/Users/koichiito/Desktop/test/panorama_segmented", dir_output="/Users/koichiito/Desktop/test")
-    image_transformer.transform_images(style_list=["perspective", "fisheye"], show_size=100)

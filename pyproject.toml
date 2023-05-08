@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "streetscope"
-version = "0.2.29"
+version = "0.3.8"
 description = "This package handles downloading, cleaning, analyzing street view imagery"
 authors = ["koito19960406"]
 license = "MIT"
@@ -15,7 +15,7 @@ numpy = "^1.21.2"
 opencv_python = "^4.5.3"
 osmnx = "^1.1.1"
 pandas = "^1.3.3"
-requests = "^2.26.0"
+requests = "^2.30.0"
 setuptools = "^58.0.4"
 Shapely = "^1.7.1"
 torch = "^2.0.0"

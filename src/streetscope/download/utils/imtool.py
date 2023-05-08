@@ -2,9 +2,9 @@ import os
 import sys
 import requests
 from PIL import Image
-from concurrent import futures
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
+from tqdm import tqdm
 
 class ImageTool():
 
@@ -131,53 +131,85 @@ class ImageTool():
         return identif
 
     @staticmethod
-    def dwl_multiple(panoids, identifiers, nthreads, zoom, v_tiles, h_tiles, out_path, uas, cropped=True, full=False):
+    def dwl_multiple(panoids, zoom, v_tiles, h_tiles, out_path, uas, cropped=True, full=False):
         """
-        Description of get_and_save_image
+
+        """
+
+        if not os.path.exists(out_path):
+            os.makedirs(out_path)
+
+        with ThreadPoolExecutor(max_workers=len(uas)) as executor:
+            jobs = []
+            for pano, ua in zip(panoids, uas):
+                kw = {
+                    "pano_id": pano,
+                    "identif": pano,
+                    "ua": ua,
+                    "zoom": zoom,
+                    "vertical_tiles": v_tiles,
+                    "horizontal_tiles": h_tiles,
+                    "out_path": out_path,
+                    "cropped": cropped,
+                    "full": full
+                }
+                jobs.append(executor.submit(ImageTool.get_and_save_image, **kw))
+
+            for job in tqdm(as_completed(jobs), total=len(jobs), desc="Downloading images"):
+                job.result()
+
+    @staticmethod
+    def dwl_multiple(panoids, zoom, v_tiles, h_tiles, out_path, uas, cropped=True, full=False, log_path=None):
+        """
+        Description of dwl_multiple
         
         Calls the get_and_save_image function using multiple threads.
         
         Args:
             panoids (undefined): GSV anorama id
-            identifiers (undefined): custom identifier
-            nthreads (undefined): number of threads
             zoom (undefined):    image resolution
             v_tiles (undefined): number of vertical tiles
             h_tiles (undefined): number of horizontal tiles
             out_path (undefined): output path
             cropped=False (undefined): set True if the image split horizontally in half is needed
             full=True (undefined): set to True if the full image is needed
-
+            log_path=None (undefined): path to a log file
         """
-        
+
         if not os.path.exists(out_path):
             os.makedirs(out_path)
-            
-        workers_range = nthreads
 
-        with ThreadPoolExecutor(max_workers = workers_range) as executor:
+        errors = 0
 
+        def log_error(panoid):
+            nonlocal log_path
+            if log_path is not None:
+                with open(log_path, 'a') as log_file:
+                    log_file.write(f"{panoid}\n")
+
+        with ThreadPoolExecutor(max_workers=len(uas)) as executor:
             jobs = []
-            results_done = []
-            for pano, identif, ua in zip(panoids, identifiers, uas):
-
+            for pano, ua in tqdm(zip(panoids, uas), total=len(panoids), desc="Preparing & downloading images"):
                 kw = {
-                    "pano_id" : pano, 
-                    "identif" : identif,
+                    "pano_id": pano,
+                    "identif": pano,
                     "ua": ua,
-                    "zoom" : zoom,
-                    "vertical_tiles" : v_tiles, 
-                    "horizontal_tiles" : h_tiles,
-                    "out_path" : out_path,
-                    "cropped" : cropped,
-                    "full" : full
+                    "zoom": zoom,
+                    "vertical_tiles": v_tiles,
+                    "horizontal_tiles": h_tiles,
+                    "out_path": out_path,
+                    "cropped": cropped,
+                    "full": full
                 }
-                
                 jobs.append(executor.submit(ImageTool.get_and_save_image, **kw))
 
+            for job in tqdm(as_completed(jobs), total=len(jobs), desc="Downloading images"):
+                try:
+                    job.result()
+                except Exception as e:
+                    print(e)
+                    errors += 1
+                    failed_panoid = panoids[jobs.index(job)]
+                    log_error(failed_panoid)
 
-            for job in futures.as_completed(jobs):
-                result_done = job.result()
-                results_done.append(result_done)
-
-
+        print("Total images downloaded:", len(jobs) - errors, "Errors:", errors)
