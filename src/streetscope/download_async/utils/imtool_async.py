@@ -1,13 +1,13 @@
 import os
-import sys
-import requests
+import aiohttp
 from PIL import Image
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
+from io import BytesIO
 from tqdm import tqdm
+import asyncio
+import io
 
 class ImageTool():
-
     @staticmethod
     def concat_horizontally(im1, im2):
         """
@@ -64,53 +64,37 @@ class ImageTool():
                 ImageTool.concat_horizontally(im1, im2).save(out_path + '_'.join(name1.split('_')[1:]))
             else:
                 ImageTool.concat_vertically(im1, im2).save(out_path + '_'.join(name1.split('_')[1:]))
-                
+
     @staticmethod
-    def get_and_save_image(pano_id, identif, zoom, vertical_tiles, horizontal_tiles, out_path, ua, cropped=False, full=True):
-        """
-        Description of get_and_save_image
-        
-        Downloads an image tile by tile and composes them together.
+    async def get_and_save_image(session, sem, pano_id, identif, zoom, vertical_tiles, horizontal_tiles, out_path, ua, cropped=False, full=True):
+        async def get_image(url):
+            async with sem, session.get(url, headers=ua) as response:
+                image_data = await response.read()
+                return Image.open(io.BytesIO(image_data))
 
-        Args:
-            pano_id (undefined): GSV anorama id
-            identif (undefined): custom identifier
-            size (undefined):    image resolution
-            vertical_tiles (undefined): number of vertical tiles
-            horizontal_tiles (undefined): number of horizontal tiles
-            out_path (undefined): output path
-            cropped=False (undefined): set True if the image split horizontally in half is needed
-            full=True (undefined): set to True if the full image is needed
-
-        """
 
         first_url_img = f'https://cbk0.google.com/cbk?output=tile&panoid={pano_id}&zoom={zoom}&x={0}&y={0}'
 
-        first = Image.open(requests.get(first_url_img, headers=ua, stream=True).raw)
-        # first_vert = False
+        first = await get_image(first_url_img)
 
         for y in range(1, vertical_tiles):
-            #new_img = Image.open(f'./images/test_x0_y{y}.png')
             url_new_img = f'https://cbk0.google.com/cbk?output=tile&panoid={pano_id}&zoom={zoom}&x={0}&y={y}'
-            new_img = Image.open(requests.get(url_new_img, headers=ua, stream=True).raw)
+            new_img = await get_image(url_new_img)
             first = ImageTool.concat_vertically(first, new_img)
+
         first_slice = first
 
         for x in range(1, horizontal_tiles):
-
             first_url_img = f'https://cbk0.google.com/cbk?output=tile&panoid={pano_id}&zoom={zoom}&x={x}&y={0}'
-            first = Image.open(requests.get(first_url_img, headers=ua, stream=True).raw)
+            first = await get_image(first_url_img)
             
             for y in range(1, vertical_tiles):
-                #new_img = Image.open(f'./images/test_x{x}_y{y}.png')
                 url_new_img = f'https://cbk0.google.com/cbk?output=tile&panoid={pano_id}&zoom={zoom}&x={x}&y={y}'
-                new_img = Image.open(requests.get(url_new_img, headers=ua, stream=True).raw)
+                new_img = await get_image(url_new_img)
                 first = ImageTool.concat_vertically(first, new_img)
 
-            new_slice = first
-            first_slice = ImageTool.concat_horizontally(first_slice, new_slice)
+            first_slice = ImageTool.concat_horizontally(first_slice, first)
 
-        # first_slice.thumbnail(size, Image.ANTIALIAS)
         name = f'{out_path}/{identif}'
         if full:
             image = np.array(first_slice)
@@ -124,19 +108,16 @@ class ImageTool():
                 pre_image = image
             pillow_image = Image.fromarray(pre_image)
             pillow_image.save(f'{name}.jpg')
-        # if cropped:
-        #     first_slice.crop((0, 0, size[1], size[1])).save(f'{name}_p1.jpg')
-        #     first_slice.crop((size[1], 0, size[0], size[1])).save(f'{name}_p2.jpg')
         
         return identif
 
     @staticmethod
-    def dwl_multiple(panoids, zoom, v_tiles, h_tiles, out_path, uas, cropped=True, full=False, log_path=None):
+    async def dwl_multiple(panoids, zoom, v_tiles, h_tiles, out_path, uas, cropped=True, full=False, log_path=None):
         """
         Description of dwl_multiple
-        
-        Calls the get_and_save_image function using multiple threads.
-        
+
+        Calls the get_and_save_image function using multiple tasks.
+
         Args:
             panoids (undefined): GSV anorama id
             zoom (undefined):    image resolution
@@ -150,22 +131,25 @@ class ImageTool():
 
         if not os.path.exists(out_path):
             os.makedirs(out_path)
-
-        errors = 0
-
+        
         def log_error(panoid):
             nonlocal log_path
             if log_path is not None:
                 with open(log_path, 'a') as log_file:
                     log_file.write(f"{panoid}\n")
 
-        with ThreadPoolExecutor(max_workers=len(uas)) as executor:
-            jobs = []
-            for pano, ua in tqdm(zip(panoids, uas), total=len(panoids), desc="Preparing & downloading images"):
+        errors = 0
+        sem = asyncio.Semaphore(100)  # Limit the number of simultaneous connections
+
+        async with aiohttp.ClientSession() as session:
+            tasks = []
+            for pano, ua in zip(panoids, uas):
                 kw = {
+                    "session": session,
+                    "sem": sem,
                     "pano_id": pano,
                     "identif": pano,
-                    "ua": ua,
+                    "ua": {"User-Agent": ua},
                     "zoom": zoom,
                     "vertical_tiles": v_tiles,
                     "horizontal_tiles": h_tiles,
@@ -173,15 +157,15 @@ class ImageTool():
                     "cropped": cropped,
                     "full": full
                 }
-                jobs.append(executor.submit(ImageTool.get_and_save_image, **kw))
+                tasks.append(asyncio.create_task(ImageTool.get_and_save_image(**kw)))
 
-            for job in tqdm(as_completed(jobs), total=len(jobs), desc="Downloading images"):
+            for task in tqdm(asyncio.as_completed(tasks), total=len(tasks), desc="Downloading images"):
                 try:
-                    job.result()
+                    await task
                 except Exception as e:
                     print(e)
                     errors += 1
-                    failed_panoid = panoids[jobs.index(job)]
+                    failed_panoid = panoids[tasks.index(task)]
                     log_error(failed_panoid)
 
-        print("Total images downloaded:", len(jobs) - errors, "Errors:", errors)
+        print("Total images downloaded:", len(tasks) - errors, "Errors:", errors)

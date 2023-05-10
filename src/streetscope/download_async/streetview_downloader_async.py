@@ -12,17 +12,19 @@ from pathlib import Path
 import geopandas as gpd
 from tqdm import tqdm
 from shapely.geometry import Point
+import aiohttp
 import asyncio
+from asyncio import Semaphore
 import warnings
 from shapely.errors import ShapelyDeprecationWarning
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
-from streetscope.download.utils.imtool import ImageTool
-from streetscope.download.utils.get_pids import panoids
-from streetscope.download.utils.geoprocess import GeoProcessor
-from streetscope.download.utils.helpers import standardize_column_names, create_buffer_gdf
+from streetscope.download_async.utils.imtool_async import ImageTool
+from streetscope.download_async.utils.get_pids_async import panoids
+from streetscope.download_async.utils.geoprocess import GeoProcessor
+from streetscope.download_async.utils.helpers import standardize_column_names, create_buffer_gdf
 
-class StreetViewDownloader:
+class StreetViewDownloaderAsync:
     def __init__(self, gsv_api_key = None, log_path = None, nthreads = 5, distance = 1, grid = False, grid_size = 20):
         if gsv_api_key == None:
             warnings.warn("Please provide your Google Street View API key to augment metadata.")
@@ -121,70 +123,61 @@ class StreetViewDownloader:
             for pid in pids:
                 fw.write(pid+'\n')
     
-    def _augment_metadata(self, df):
-        def get_year_month(pid):
+    async def _augment_metadata(self, df):
+        async def get_year_month(pid):
             url = "https://maps.googleapis.com/maps/api/streetview/metadata?pano={}&key={}".format(pid, self.gsv_api_key)
-            response = requests.get(url)
-            response = response.json()
-            if response['status'] == 'OK':
-                # get year and month from date
-                try:
-                    date = response['date']
-                    year = date.split("-")[0]
-                    month = date.split("-")[1]
-                except Exception:
-                    year = None
-                    month = None
-                return {"year": year, "month": month}
-            return {"year": None, "month": None}    
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    response = await response.json()
+                    if response['status'] == 'OK':
+                        try:
+                            date = response['date']
+                            year = date.split("-")[0]
+                            month = date.split("-")[1]
+                        except Exception:
+                            year = None
+                            month = None
+                        return {"year": year, "month": month}
+            return {"year": None, "month": None}
 
-        def worker(index, row):
+        async def worker(index, row):
             panoid = row['panoid']
-            year_month = get_year_month(panoid)
+            year_month = await get_year_month(panoid)
             return index, year_month
         
-        with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(worker, i, row): i for i, row in tqdm(df.iterrows(), total = len(df), desc="Preparing to augment metadata")}
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Augmenting timestamp metadata"):
-                row_index, year_month = future.result()
-                df.at[row_index, 'year'] = year_month['year']
-                df.at[row_index, 'month'] = year_month['month']
+        tasks = [worker(i, row) for i, row in df.iterrows()]
+        results = await asyncio.gather(*tasks)
+        for row_index, year_month in results:
+            df.at[row_index, 'year'] = year_month['year']
+            df.at[row_index, 'month'] = year_month['month']
         return df
-                    
-    def _get_pids_from_csv(self, input_df, closest=False, disp=False):
-        def get_street_view_info(longitude, latitude):
-            results = panoids(latitude, longitude, closest=closest, disp=disp)
+
+    async def _get_pids_from_csv(self, input_df, closest=False, disp=False):
+        async def get_street_view_info(longitude, latitude):
+            results = await panoids(latitude, longitude, closest=closest, disp=disp)
             return results
 
-        def worker(row):
+        async def worker(row):
             input_longitude = row['longitude']
             input_latitude = row['latitude']
-            return (input_longitude, input_latitude), get_street_view_info(input_longitude, input_latitude)
+            return (input_longitude, input_latitude), await get_street_view_info(input_longitude, input_latitude)
 
-        results = []
-
-        with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in tqdm(input_df.iterrows(), total = len(input_df), desc="Preparing to get pids")}
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Getting pids"):
-                (input_longitude, input_latitude), row_results = future.result()
-                for result in row_results:
-                    result['input_longitude'] = input_longitude
-                    result['input_latitude'] = input_latitude
-                    results.append(result)
-
+        tasks = [worker(row) for _, row in input_df.iterrows()]
+        results = await asyncio.gather(*tasks)
         results_df = pd.DataFrame(results)
         return results_df
 
-    
-    def _get_pids_from_gdf(self, gdf, closest=False, disp=False):  
-        def get_street_view_info(longitude, latitude):
-            results = panoids(latitude, longitude, closest=closest, disp=disp)
+    async def _get_pids_from_gdf(self, gdf, closest=False, disp=False):  
+        sem = Semaphore(100)  # Limit number of simultaneous connections
+        async def get_street_view_info(longitude, latitude):
+            async with sem:
+                results = await panoids(latitude, longitude, closest=closest, disp=disp)
             return results
 
-        def worker(row):
+        async def worker(row):
             input_longitude = row['longitude']
             input_latitude = row['latitude']
-            results = get_street_view_info(input_longitude, input_latitude)
+            results = await get_street_view_info(input_longitude, input_latitude)
             return (input_longitude, input_latitude), results
 
         # read shapefile
@@ -192,10 +185,10 @@ class StreetViewDownloader:
         df = gp.get_lat_lon()
         results = []
 
-        with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in tqdm(df.iterrows(), total=len(df), desc="Preparing to get pids")}
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Getting pids"):
-                (input_longitude, input_latitude), row_results = future.result()
+        async with aiohttp.ClientSession() as session:
+            tasks = [worker(row) for _, row in df.iterrows()]
+            for task in tqdm(asyncio.as_completed(tasks), total=len(tasks), desc="Getting pids"):
+                (input_longitude, input_latitude), row_results = await task
                 for result in row_results:
                     result['input_longitude'] = input_longitude
                     result['input_latitude'] = input_latitude
@@ -219,38 +212,35 @@ class StreetViewDownloader:
         results_within_polygons_df = results_df[results_df['within_polygon']]
         return results_within_polygons_df
 
-    
-    def get_pids(self, path_pid, lat = None, lon = None, input_csv_file = "", input_shp_file = "", buffer = 0, closest=False, disp=False, augment_metadata=False):
+    async def get_pids(self, path_pid, lat = None, lon = None, input_csv_file = "", input_shp_file = "", buffer = 0, closest=False, disp=False, augment_metadata=False):
         if lat != None and lon != None:
-            pid = panoids(lat, lon, closest=closest, disp=disp)
+            pid = await panoids(lat, lon, closest=closest, disp=disp)
         elif input_csv_file != "":
             df = pd.read_csv(input_csv_file)
             df = standardize_column_names(df)
             if buffer > 0:
                 gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.longitude, df.latitude), crs='EPSG:4326')
                 gdf = create_buffer_gdf(gdf, buffer)
-                pid = self._get_pids_from_gdf(gdf, closest=closest, disp=disp)
+                pid = await self._get_pids_from_gdf(gdf, closest=closest, disp=disp)
             else:
-                pid = self._get_pids_from_csv(df, closest=closest, disp=disp)
+                pid = await self._get_pids_from_csv(df, closest=closest, disp=disp)
         elif input_shp_file != "":
             gdf = gpd.read_file(input_shp_file)
             if buffer > 0:
                 gdf = create_buffer_gdf(gdf, buffer)
-            pid = self._get_pids_from_gdf(gdf, closest=closest, disp=disp)
+            pid = await self._get_pids_from_gdf(gdf, closest=closest, disp=disp)
         else:
             raise ValueError("Please input the lat and lon, csv file, or shapefile.")
         # save the pids
         pid_df = pd.DataFrame(pid)
         pid_df = pid_df.drop_duplicates(subset='panoid')
         if augment_metadata & (self.gsv_api_key != None):
-            pid_df = self._augment_metadata(pid_df)
-        elif augment_metadata & (self.gsv_api_key == None):
-            raise ValueError("Please set the gsv api key by calling the gsv_api_key method.")
-        pid_df.to_csv(path_pid, index=False)
-        print("The panorama IDs have been saved to {}".format(path_pid))
-    
-    def download_gsv(self, dir_output, path_pid = None, zoom=2, h_tiles=4, v_tiles=2, cropped=False, full=True, 
-                lat=None, lon=None, input_csv_file="", input_shp_file = "", buffer = 0, closest=False, disp=False, augment_metadata=False):
+            pid_df = await self._augment_metadata(pid_df)
+        pid_df.to_csv(path_pid, index = False)
+        return pid_df
+
+    async def download_gsv(self, dir_output, path_pid = None, zoom=2, h_tiles=4, v_tiles=2, cropped=False, full=True, 
+                        lat=None, lon=None, input_csv_file="", input_shp_file = "", buffer = 0, closest=False, disp=False, augment_metadata=False):
         # set dir_output as attribute and create the directory
         self.dir_output = dir_output
         Path(dir_output).mkdir(parents=True, exist_ok=True)
@@ -259,16 +249,9 @@ class StreetViewDownloader:
         if path_pid is None:
             print("Getting pids...")
             path_pid = os.path.join(self.dir_output, "pids.csv")
-            self.get_pids(path_pid, lat=lat, lon=lon,
-                        input_csv_file=input_csv_file, input_shp_file = input_shp_file, buffer = buffer, closest=closest, disp=disp, augment_metadata=augment_metadata)
+            await self.get_pids(path_pid, lat=lat, lon=lon,
+                                input_csv_file=input_csv_file, input_shp_file = input_shp_file, buffer = buffer, closest=closest, disp=disp, augment_metadata=augment_metadata)
 
-        # Horizontal Google Street View tiles
-        # zoom 3: (8, 4); zoom 5: (26, 13) zoom 2: (4, 2) zoom 1: (2, 1);4:(8,16)
-        # zoom = 2
-        # h_tiles = 4  # 26
-        # v_tiles = 2  # 13
-        # cropped = False
-        # full = True
         # create a folder within self.dir_output
         panorama_output = os.path.join(self.dir_output, "panorama")
         os.makedirs(panorama_output, exist_ok=True)
@@ -276,15 +259,14 @@ class StreetViewDownloader:
         panoids = self._read_pids(path_pid)
         panoids_rest = self._check_already(panoids)
 
-        panoids = self._read_pids(path_pid)
-        if len(panoids_rest) > 0:
-            panoids_rest = self._check_already(panoids)
-        else:
-            print("There is no panorama ID to download.")
-            return
+        UAs = random.choices(self.user_agent, k = len(panoids_rest))
+        await ImageTool.dwl_multiple(panoids_rest, zoom, v_tiles, h_tiles, panorama_output, UAs, cropped=cropped, full=full, log_path=self.log_path)
 
-        if len(panoids_rest) > 0:
-            UAs = random.choices(self.user_agent, k = len(panoids_rest))
-            ImageTool.dwl_multiple(panoids_rest, zoom, v_tiles, h_tiles, panorama_output, UAs, cropped, full, log_path=self.log_path)
-        else:
-            print("All images have been downloaded.")
+
+    def download_gsv_async(self, dir_output, path_pid = None, zoom=2, h_tiles=4, v_tiles=2, cropped=False, full=True, 
+                        lat=None, lon=None, input_csv_file="", input_shp_file = "", buffer = 0, closest=False, 
+                        disp=False, augment_metadata=False):
+
+        asyncio.run(self.download_gsv(dir_output, path_pid, zoom, h_tiles, v_tiles, cropped, full, lat, lon, 
+                                    input_csv_file, input_shp_file, buffer, closest, disp, augment_metadata))
+        
