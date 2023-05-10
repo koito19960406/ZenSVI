@@ -5,8 +5,11 @@ import shutil
 import unittest
 import numpy as np
 from unittest.mock import MagicMock
+import time
+import dotenv
 
 from streetscope.download.streetview_downloader import StreetViewDownloader
+from streetscope.download_async.streetview_downloader_async import StreetViewDownloaderAsync
 from streetscope.cv.segmentation import Segmenter, ImageDataset, create_cityscapes_label_colormap
 from streetscope.transform import xyz2lonlat, lonlat2XY, ImageTransformer
 
@@ -61,4 +64,31 @@ class TestImageTransformerMethods(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    # unittest.main()
+    dotenv.load_dotenv(dotenv.find_dotenv())
+    gsv_api_key = os.getenv('GSV_API_KEY')
+    # # Code block 1
+    # start_time = time.time()
+
+    # downloader = StreetViewDownloaderAsync(gsv_api_key = gsv_api_key,
+    #                                     grid = True, grid_size = 100)
+    # downloader.download_gsv_async("/Users/koichiito/Desktop/test_async", 
+    #                             input_shp_file = "/Users/koichiito/Downloads/Delft-subset/Delft-subset.shp",
+    #                             augment_metadata=True) 
+
+    # end_time = time.time()
+    # print(f"Block 1 execution time: {end_time - start_time} seconds")
+
+    # Code block 2
+    start_time = time.time()
+
+    downloader = StreetViewDownloader(gsv_api_key = gsv_api_key,
+                                    distance=1,
+                                    grid = False, grid_size = 100)
+    downloader.download_gsv("/Users/koichiito/Desktop/test_normal", 
+                            input_shp_file = "/Users/koichiito/Desktop/3-streetscope-demo/data/input/locations_point.shp",
+                            buffer = 1,
+                            augment_metadata=True) 
+
+    end_time = time.time()
+    print(f"Block 2 execution time: {end_time - start_time} seconds")

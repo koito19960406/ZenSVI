@@ -131,34 +131,6 @@ class ImageTool():
         return identif
 
     @staticmethod
-    def dwl_multiple(panoids, zoom, v_tiles, h_tiles, out_path, uas, cropped=True, full=False):
-        """
-
-        """
-
-        if not os.path.exists(out_path):
-            os.makedirs(out_path)
-
-        with ThreadPoolExecutor(max_workers=len(uas)) as executor:
-            jobs = []
-            for pano, ua in zip(panoids, uas):
-                kw = {
-                    "pano_id": pano,
-                    "identif": pano,
-                    "ua": ua,
-                    "zoom": zoom,
-                    "vertical_tiles": v_tiles,
-                    "horizontal_tiles": h_tiles,
-                    "out_path": out_path,
-                    "cropped": cropped,
-                    "full": full
-                }
-                jobs.append(executor.submit(ImageTool.get_and_save_image, **kw))
-
-            for job in tqdm(as_completed(jobs), total=len(jobs), desc="Downloading images"):
-                job.result()
-
-    @staticmethod
     def dwl_multiple(panoids, zoom, v_tiles, h_tiles, out_path, uas, cropped=True, full=False, log_path=None):
         """
         Description of dwl_multiple
