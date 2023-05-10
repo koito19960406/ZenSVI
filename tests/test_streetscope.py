@@ -86,7 +86,7 @@ if __name__ == "__main__":
                                     grid = False, grid_size = 100)
     downloader.download_gsv("/Users/koichiito/Desktop/test_normal", 
                             input_shp_file = "/Users/koichiito/Desktop/3-streetscope-demo/data/input/locations_point.shp",
-                            buffer = 1,
+                            buffer = 50,
                             augment_metadata=True) 
 
     end_time = time.time()

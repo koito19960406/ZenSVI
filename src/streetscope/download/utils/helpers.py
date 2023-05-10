@@ -13,6 +13,8 @@ def standardize_column_names(df):
     return df
 
 def create_buffer_gdf(gdf, buffer_distance):
+    if gdf.crs == None:
+        gdf = gdf.set_crs("EPSG:4326")
     # Project the GeoDataFrame to UTM
     gdf_projected = ox.projection.project_gdf(gdf)
     
