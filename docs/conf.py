@@ -6,7 +6,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = u"streetscope"
+project = u"zensvi"
 copyright = u"2023, koito19960406"
 author = u"koito19960406"
 

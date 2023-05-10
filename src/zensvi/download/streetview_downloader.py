@@ -16,10 +16,10 @@ import warnings
 from shapely.errors import ShapelyDeprecationWarning
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
-from streetscope.download.utils.imtool import ImageTool
-from streetscope.download.utils.get_pids import panoids
-from streetscope.download.utils.geoprocess import GeoProcessor
-from streetscope.download.utils.helpers import standardize_column_names, create_buffer_gdf
+from zensvi.download.utils.imtool import ImageTool
+from zensvi.download.utils.get_pids import panoids
+from zensvi.download.utils.geoprocess import GeoProcessor
+from zensvi.download.utils.helpers import standardize_column_names, create_buffer_gdf
 
 class StreetViewDownloader:
     def __init__(self, gsv_api_key = None, log_path = None, nthreads = 5, distance = 1, grid = False, grid_size = 20):
@@ -80,7 +80,7 @@ class StreetViewDownloader:
         return self._user_agent  
     
     def _get_ua(self):
-        user_agent_file = pkg_resources.resource_filename('streetscope.download.utils', 'UserAgent.csv')
+        user_agent_file = pkg_resources.resource_filename('zensvi.download.utils', 'UserAgent.csv')
         UA = []
         with open(user_agent_file, 'r') as f:
             for line in f:

@@ -1,11 +1,11 @@
-# streetscope
+# ZenSVI
 
 This package handles downloading, cleaning, analyzing street view imagery
 
 ## Installation
 
 ```bash
-$ pip install streetscope
+$ pip install zensvi
 ```
 
 ## Usage
@@ -18,8 +18,8 @@ Interested in contributing? Check out the contributing guidelines. Please note t
 
 ## License
 
-`streetscope` was created by koito19960406. It is licensed under the terms of the MIT license.
+`zensvi` was created by koito19960406. It is licensed under the terms of the MIT license.
 
 ## Credits
 
-`streetscope` was created with [`cookiecutter`](https://cookiecutter.readthedocs.io/en/latest/) and the `py-pkgs-cookiecutter` [template](https://github.com/py-pkgs/py-pkgs-cookiecutter).
+`zensvi` was created with [`cookiecutter`](https://cookiecutter.readthedocs.io/en/latest/) and the `py-pkgs-cookiecutter` [template](https://github.com/py-pkgs/py-pkgs-cookiecutter).

@@ -8,9 +8,9 @@ from unittest.mock import MagicMock
 import time
 import dotenv
 
-from streetscope.download.streetview_downloader import StreetViewDownloader
-from streetscope.cv.segmentation import Segmenter, ImageDataset, create_cityscapes_label_colormap
-from streetscope.transform import xyz2lonlat, lonlat2XY, ImageTransformer
+from zensvi.download.streetview_downloader import StreetViewDownloader
+from zensvi.cv.segmentation import Segmenter, ImageDataset, create_cityscapes_label_colormap
+from zensvi.transform import xyz2lonlat, lonlat2XY, ImageTransformer
 
 
 class TestStreetViewDownloader(unittest.TestCase):
@@ -85,7 +85,7 @@ if __name__ == "__main__":
                                     distance=1,
                                     grid = False, grid_size = 100)
     downloader.download_gsv("/Users/koichiito/Desktop/test_normal", 
-                            input_shp_file = "/Users/koichiito/Desktop/3-streetscope-demo/data/input/locations_point.shp",
+                            input_shp_file = "/Users/koichiito/Desktop/3-zensvi-demo/data/input/locations_point.shp",
                             buffer = 50,
                             augment_metadata=True) 
 

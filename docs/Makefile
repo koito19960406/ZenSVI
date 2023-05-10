@@ -3,7 +3,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = python -msphinx
-SPHINXPROJ    = streetscope
+SPHINXPROJ    = zensvi
 SOURCEDIR     = .
 BUILDDIR      = _build
 
