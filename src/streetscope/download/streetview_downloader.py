@@ -12,7 +12,6 @@ from pathlib import Path
 import geopandas as gpd
 from tqdm import tqdm
 from shapely.geometry import Point
-import asyncio
 import warnings
 from shapely.errors import ShapelyDeprecationWarning
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
