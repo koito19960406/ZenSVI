@@ -9,7 +9,6 @@ import time
 import dotenv
 
 from streetscope.download.streetview_downloader import StreetViewDownloader
-from streetscope.download_async.streetview_downloader_async import StreetViewDownloaderAsync
 from streetscope.cv.segmentation import Segmenter, ImageDataset, create_cityscapes_label_colormap
 from streetscope.transform import xyz2lonlat, lonlat2XY, ImageTransformer
 
@@ -87,7 +86,7 @@ if __name__ == "__main__":
                                     grid = False, grid_size = 100)
     downloader.download_gsv("/Users/koichiito/Desktop/test_normal", 
                             input_shp_file = "/Users/koichiito/Desktop/3-streetscope-demo/data/input/locations_point.shp",
-                            buffer = 1,
+                            buffer = 50,
                             augment_metadata=True) 
 
     end_time = time.time()

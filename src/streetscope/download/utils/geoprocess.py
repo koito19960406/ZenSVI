@@ -2,10 +2,9 @@ import geopandas as gpd
 import geopy.distance
 import osmnx as ox
 import pandas as pd
-from shapely.geometry import LineString, Point
+from shapely.geometry import Point
 from tqdm.auto import tqdm
 tqdm.pandas()
-import math
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 import numpy as np
 from pyproj import Transformer
@@ -47,10 +46,11 @@ class GeoProcessor:
         return gdf[['longitude', 'latitude']]
 
     def process_multipoint(self, gdf):
+        # Explode the multipoint into individual points
         gdf = gdf.explode('geometry').reset_index(drop=True)
-        gdf['longitude'] = gdf.geometry.x
-        gdf['latitude'] = gdf.geometry.y
-        return gdf[['longitude', 'latitude']]
+
+        # Call process_point on the exploded GeoDataFrame
+        return self.process_point(gdf)
 
     def process_linestring(self, gdf):
         # Project the LineStrings to UTM
@@ -66,19 +66,11 @@ class GeoProcessor:
         return gdf_utm[['longitude', 'latitude']]
 
     def process_multilinestring(self, gdf):
+        # Explode the multilinestring into individual linestrings
         gdf = gdf.explode('geometry').reset_index(drop=True)
 
-        # Project the MultiLineStrings to UTM
-        gdf_utm = ox.projection.project_gdf(gdf)
-        self.utm_crs = gdf_utm.crs
-
-        # Use osmnx.utils_geo.interpolate_points function to interpolate points along LineStrings
-        gdf_utm['sample_points'] = gdf_utm['geometry'].progress_apply(lambda geom: list(ox.utils_geo.interpolate_points(geom, dist=self.distance)), desc="Interpolating Points")
-        gdf_utm = gdf_utm.explode('sample_points').reset_index(drop=True)
-
-        # Convert the UTM points to latitude and longitude
-        gdf_utm['longitude'], gdf_utm['latitude'] = zip(*self.utm_to_lat_lon(gdf_utm['sample_points'].apply(lambda p: (p.x, p.y)).tolist(), self.utm_crs))
-        return gdf_utm[['longitude', 'latitude']]
+        # Call process_linestring on the exploded GeoDataFrame
+        return self.process_linestring(gdf)
 
     def get_street_points(self, polygon):
         graph = ox.graph_from_polygon(polygon, network_type='all')
@@ -132,12 +124,28 @@ class GeoProcessor:
 
     def process_polygon(self, gdf):
         with ProcessPoolExecutor() as executor:
-            if self.grid == False:
-                futures = [executor.submit(self.get_street_points, geom) for geom in tqdm(gdf.geometry, desc="Preparing Polygons")]
-            else:
-                futures = [executor.submit(self.create_point_grid, geom, self.grid_size) for geom in tqdm(gdf.geometry, desc="Preparing Polygons")]
+            # Store tuples of (Future, geom) in the futures list
+            futures = []
+            for geom in tqdm(gdf.geometry, desc="Preparing Polygons"):
+                if self.grid == False:
+                    future = executor.submit(self.get_street_points, geom)
+                else:
+                    future = executor.submit(self.create_point_grid, geom, self.grid_size)
+                futures.append((future, geom))
 
-            results = [future.result() for future in tqdm(as_completed(futures), total=len(gdf), desc="Processing Polygons")]
+            results = []
+            for future in tqdm(as_completed([f[0] for f in futures]), total=len(gdf), desc="Processing Polygons"):
+                # Retrieve the corresponding geom for each future
+                geom = next(geom for f, geom in futures if f == future)
+                try:
+                    result = future.result()
+                    results.append(result)
+                except ValueError:
+                    tqdm.write("Found no graph nodes within the polygon, switching to grid creation.")
+                    future = executor.submit(self.create_point_grid, geom, self.grid_size)
+                    result = future.result()
+                    results.append(result)
+
             gdf['street_points'] = [result[0] for result in results]
             self.utm_crs = results[0][1]
 
@@ -149,22 +157,8 @@ class GeoProcessor:
         return gdf[['longitude', 'latitude']]
 
     def process_multipolygon(self, gdf):
+        # Explode the multipolygon into individual polygons
         gdf = gdf.explode('geometry').reset_index(drop=True)
-        with ProcessPoolExecutor() as executor:
-            if self.grid == False:
-                futures = [executor.submit(self.get_street_points, geom) for geom in tqdm(gdf.geometry, desc="Preparing Polygons")]
-            else:
-                futures = [executor.submit(self.create_point_grid, geom, self.grid_size) for geom in tqdm(gdf.geometry, desc="Preparing Polygons")]
-            gdf['street_points'] = [future.result() for future in tqdm(as_completed(futures), total=len(gdf), desc="Processing Polygons")]
 
-        gdf = gdf.explode('street_points').reset_index(drop=True)
-        
-        # Project the UTM points back to the original CRS
-        gdf['geometry'] = gpd.GeoSeries(gdf['street_points'], crs=self.utm_crs)
-        gdf = gdf.to_crs("EPSG:4326")
-        
-        # Extract longitude and latitude
-        gdf['longitude'] = gdf.geometry.x
-        gdf['latitude'] = gdf.geometry.y
-        
-        return gdf[['longitude', 'latitude']]
+        # Call process_polygon on the exploded GeoDataFrame
+        return self.process_polygon(gdf)

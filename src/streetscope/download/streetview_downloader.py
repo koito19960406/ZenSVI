@@ -217,8 +217,9 @@ class StreetViewDownloader:
 
         # Return only those points within polygons
         results_within_polygons_df = results_df[results_df['within_polygon']]
+        # Drop the 'within_polygon' column
+        results_within_polygons_df = results_within_polygons_df.drop(columns='within_polygon')
         return results_within_polygons_df
-
     
     def get_pids(self, path_pid, lat = None, lon = None, input_csv_file = "", input_shp_file = "", buffer = 0, closest=False, disp=False, augment_metadata=False):
         if lat != None and lon != None:
