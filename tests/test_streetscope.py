@@ -9,7 +9,6 @@ import time
 import dotenv
 
 from streetscope.download.streetview_downloader import StreetViewDownloader
-from streetscope.download_async.streetview_downloader_async import StreetViewDownloaderAsync
 from streetscope.cv.segmentation import Segmenter, ImageDataset, create_cityscapes_label_colormap
 from streetscope.transform import xyz2lonlat, lonlat2XY, ImageTransformer
 
