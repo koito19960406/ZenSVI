@@ -8,6 +8,7 @@ tqdm.pandas()
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 import numpy as np
 from pyproj import Transformer
+import networkx
 
 class GeoProcessor:
     def __init__(self, gdf, distance=1, grid = False, grid_size = 20):
@@ -124,24 +125,25 @@ class GeoProcessor:
 
     def process_polygon(self, gdf):
         with ProcessPoolExecutor() as executor:
-            # Store tuples of (Future, geom) in the futures list
-            futures = []
+            # Use a dictionary to map futures to geoms
+            future_to_geom = {}
+
             for geom in tqdm(gdf.geometry, desc="Preparing Polygons"):
                 if self.grid == False:
                     future = executor.submit(self.get_street_points, geom)
                 else:
                     future = executor.submit(self.create_point_grid, geom, self.grid_size)
-                futures.append((future, geom))
+                future_to_geom[future] = geom
 
             results = []
-            for future in tqdm(as_completed([f[0] for f in futures]), total=len(gdf), desc="Processing Polygons"):
+            for future in tqdm(as_completed(future_to_geom.keys()), total=len(gdf), desc="Processing Polygons"):
                 # Retrieve the corresponding geom for each future
-                geom = next(geom for f, geom in futures if f == future)
+                geom = future_to_geom[future]
                 try:
                     result = future.result()
                     results.append(result)
-                except ValueError:
-                    tqdm.write("Found no graph nodes within the polygon, switching to grid creation.")
+                except (ValueError, networkx.exception.NetworkXPointlessConcept):
+                    tqdm.write("Found no graph nodes within the polygon or connectivity is undefined for the null graph, switching to grid creation.")
                     future = executor.submit(self.create_point_grid, geom, self.grid_size)
                     result = future.result()
                     results.append(result)
