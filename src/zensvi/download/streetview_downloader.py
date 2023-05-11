@@ -30,6 +30,7 @@ class StreetViewDownloader:
         self._nthreads = nthreads
         self._distance = distance
         self._user_agent = self._get_ua()
+        self._proxies = self._get_proxies()
         self._grid = grid
         self._grid_size = grid_size
 
@@ -87,6 +88,20 @@ class StreetViewDownloader:
                 ua = {"user_agent": line.strip()}
                 UA.append(ua)
         return UA
+    
+    @property
+    def proxies(self):
+        return self._proxies
+    
+    def _get_proxies(self):
+        proxy_file = pkg_resources.resource_filename('zensvi.download.utils', 'proxies.csv')
+        proxies = []
+        df = pd.read_csv(proxy_file)
+        for index, row in df.iterrows():
+            proxy = {"ip": row['ip'], "port": row['port'], "protocols": row['protocols']}
+            proxies.append(proxy)
+        return proxies
+        
 
     def _read_pids(self, path_pid):
         pid_df = pd.read_csv(path_pid)
@@ -143,14 +158,14 @@ class StreetViewDownloader:
             return index, year_month
         
         with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(worker, i, row): i for i, row in tqdm(df.iterrows(), total = len(df), desc="Preparing to augment metadata")}
+            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in tqdm(df.itertuples(), total=len(df), desc="Preparing to augment metadata")}
             for future in tqdm(as_completed(futures), total=len(futures), desc="Augmenting timestamp metadata"):
                 row_index, year_month = future.result()
                 df.at[row_index, 'year'] = year_month['year']
                 df.at[row_index, 'month'] = year_month['month']
         return df
                     
-    def _get_pids_from_csv(self, input_df, closest=False, disp=False):
+    def _get_pids_from_csv(self, df, closest=False, disp=False):
         def get_street_view_info(longitude, latitude):
             results = panoids(latitude, longitude, closest=closest, disp=disp)
             return results
@@ -163,7 +178,7 @@ class StreetViewDownloader:
         results = []
 
         with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in tqdm(input_df.iterrows(), total = len(input_df), desc="Preparing to get pids")}
+            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in tqdm(df.itertuples(), total=len(df), desc="Preparing to get pids")}
             for future in tqdm(as_completed(futures), total=len(futures), desc="Getting pids"):
                 (input_longitude, input_latitude), row_results = future.result()
                 for result in row_results:
@@ -192,7 +207,7 @@ class StreetViewDownloader:
         results = []
 
         with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in tqdm(df.iterrows(), total=len(df), desc="Preparing to get pids")}
+            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in tqdm(df.itertuples(), total=len(df), desc="Preparing to get pids")}
             for future in tqdm(as_completed(futures), total=len(futures), desc="Getting pids"):
                 (input_longitude, input_latitude), row_results = future.result()
                 for result in row_results:
