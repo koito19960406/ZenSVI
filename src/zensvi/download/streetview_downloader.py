@@ -152,70 +152,52 @@ class StreetViewDownloader:
                 return {"year": year, "month": month}
             return {"year": None, "month": None}    
 
-        def worker(index, row):
-            panoid = row['panoid']
+        def worker(row):
+            panoid = row.panoid
             year_month = get_year_month(panoid)
-            return index, year_month
+            return row.Index, year_month
         
         with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in tqdm(df.itertuples(), total=len(df), desc="Preparing to augment metadata")}
+            futures = {executor.submit(worker, row): row.Index for row in tqdm(df.itertuples(), total = len(df), desc="Preparing to augment metadata")}
             for future in tqdm(as_completed(futures), total=len(futures), desc="Augmenting timestamp metadata"):
                 row_index, year_month = future.result()
                 df.at[row_index, 'year'] = year_month['year']
                 df.at[row_index, 'month'] = year_month['month']
         return df
                     
-    def _get_pids_from_csv(self, df, closest=False, disp=False):
+    def _get_pids_from_csv(self, df, id_columns, closest=False, disp=False):
         def get_street_view_info(longitude, latitude):
             results = panoids(latitude, longitude, closest=closest, disp=disp)
             return results
 
         def worker(row):
-            input_longitude = row['longitude']
-            input_latitude = row['latitude']
-            return (input_longitude, input_latitude), get_street_view_info(input_longitude, input_latitude)
+            input_longitude = row.longitude
+            input_latitude = row.latitude
+            return {column: getattr(row, column) for column in id_columns}, (input_longitude, input_latitude), get_street_view_info(input_longitude, input_latitude)
 
         results = []
 
         with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in tqdm(df.itertuples(), total=len(df), desc="Preparing to get pids")}
+            futures = {executor.submit(worker, row): row for row in tqdm(df.itertuples(), total=len(df), desc="Preparing to get pids")}
             for future in tqdm(as_completed(futures), total=len(futures), desc="Getting pids"):
-                (input_longitude, input_latitude), row_results = future.result()
+                id_dict, (input_longitude, input_latitude), row_results = future.result()
                 for result in row_results:
                     result['input_longitude'] = input_longitude
                     result['input_latitude'] = input_latitude
+                    result.update(id_dict)
                     results.append(result)
 
         results_df = pd.DataFrame(results)
         return results_df
 
     
-    def _get_pids_from_gdf(self, gdf, closest=False, disp=False):  
-        def get_street_view_info(longitude, latitude):
-            results = panoids(latitude, longitude, closest=closest, disp=disp)
-            return results
-
-        def worker(row):
-            input_longitude = row['longitude']
-            input_latitude = row['latitude']
-            results = get_street_view_info(input_longitude, input_latitude)
-            return (input_longitude, input_latitude), results
-
+    def _get_pids_from_gdf(self, gdf, id_columns, closest=False, disp=False):  
         # read shapefile
-        gp = GeoProcessor(gdf, distance=self.distance, grid=self.grid, grid_size=self.grid_size)
+        gp = GeoProcessor(gdf, distance=self.distance, grid=self.grid, grid_size=self.grid_size, id_columns = id_columns)
         df = gp.get_lat_lon()
-        results = []
 
-        with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(worker, row): (row['longitude'], row['latitude']) for _, row in tqdm(df.itertuples(), total=len(df), desc="Preparing to get pids")}
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Getting pids"):
-                (input_longitude, input_latitude), row_results = future.result()
-                for result in row_results:
-                    result['input_longitude'] = input_longitude
-                    result['input_latitude'] = input_latitude
-                    results.append(result)
-
-        results_df = pd.DataFrame(results)
+        # Use _get_pids_from_csv to get pids from df
+        results_df = self._get_pids_from_csv(df, id_columns, closest=closest, disp=disp)
 
         # Check if lat and lon are within input polygons
         polygons = gpd.GeoSeries([geom for geom in gdf['geometry'] if geom.type in ['Polygon', 'MultiPolygon']])
@@ -223,9 +205,26 @@ class StreetViewDownloader:
         # Convert lat, lon to Points and create a GeoSeries
         points = gpd.GeoSeries([Point(lon, lat) for lon, lat in zip(results_df['lon'], results_df['lat'])])
 
+        # Create a GeoDataFrame with the points and an index column
+        points_gdf = gpd.GeoDataFrame(geometry=points, crs=gdf.crs)
+        points_gdf['index'] = range(len(points_gdf))
+
+        # Create a spatial index on the polygons GeoSeries
+        polygons_sindex = polygons.sindex
+
+        # Function to check whether a point is within any polygon
+        def is_within_polygon(point):
+            possible_matches_index = list(polygons_sindex.intersection(point.bounds))
+            possible_matches = polygons.iloc[possible_matches_index]
+            precise_matches = possible_matches.contains(point)
+            return precise_matches.any()
+
         # Add progress bar for within_polygon calculation
-        tqdm.pandas(total=len(points), desc="Checking points within polygons")
-        within_polygon = points.progress_apply(lambda point: polygons.contains(point).any())
+        with tqdm(total=len(points), desc="Checking points within polygons") as pbar:
+            within_polygon = []
+            for point in points_gdf['geometry']:
+                within_polygon.append(is_within_polygon(point))
+                pbar.update()
 
         results_df['within_polygon'] = within_polygon
 
@@ -234,8 +233,15 @@ class StreetViewDownloader:
         # Drop the 'within_polygon' column
         results_within_polygons_df = results_within_polygons_df.drop(columns='within_polygon')
         return results_within_polygons_df
-    
-    def get_pids(self, path_pid, lat = None, lon = None, input_csv_file = "", input_shp_file = "", buffer = 0, closest=False, disp=False, augment_metadata=False):
+
+    def get_pids(self, path_pid, lat = None, lon = None, input_csv_file = "", input_shp_file = "", id_columns=None, buffer = 0, closest=False, disp=False, augment_metadata=False):
+        if id_columns is not None:
+            if isinstance(id_columns, str):
+                id_columns = [id_columns.lower()]
+            elif isinstance(id_columns, list):
+                id_columns = [column.lower() for column in id_columns]
+        else:
+            id_columns = []
         if lat != None and lon != None:
             pid = panoids(lat, lon, closest=closest, disp=disp)
         elif input_csv_file != "":
@@ -244,14 +250,14 @@ class StreetViewDownloader:
             if buffer > 0:
                 gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.longitude, df.latitude), crs='EPSG:4326')
                 gdf = create_buffer_gdf(gdf, buffer)
-                pid = self._get_pids_from_gdf(gdf, closest=closest, disp=disp)
+                pid = self._get_pids_from_gdf(gdf, id_columns, closest=False, disp=False)
             else:
-                pid = self._get_pids_from_csv(df, closest=closest, disp=disp)
+                pid = self._get_pids_from_csv(df, id_columns, closest=False, disp=False)
         elif input_shp_file != "":
             gdf = gpd.read_file(input_shp_file)
             if buffer > 0:
                 gdf = create_buffer_gdf(gdf, buffer)
-            pid = self._get_pids_from_gdf(gdf, closest=closest, disp=disp)
+            pid = self._get_pids_from_gdf(gdf, id_columns, closest=False, disp=False)
         else:
             raise ValueError("Please input the lat and lon, csv file, or shapefile.")
         # save the pids
@@ -265,17 +271,18 @@ class StreetViewDownloader:
         print("The panorama IDs have been saved to {}".format(path_pid))
     
     def download_gsv(self, dir_output, path_pid = None, zoom=2, h_tiles=4, v_tiles=2, cropped=False, full=True, 
-                lat=None, lon=None, input_csv_file="", input_shp_file = "", buffer = 0, closest=False, disp=False, augment_metadata=False):
+                lat=None, lon=None, input_csv_file="", input_shp_file = "", id_columns=None, buffer = 0, closest=False, disp=False, augment_metadata=False):
         # set dir_output as attribute and create the directory
         self.dir_output = dir_output
         Path(dir_output).mkdir(parents=True, exist_ok=True)
         
-        # If path_pid is None, call get_pids function first
+        # call get_pids function first if path_pid is None
         if path_pid is None:
             print("Getting pids...")
             path_pid = os.path.join(self.dir_output, "pids.csv")
             self.get_pids(path_pid, lat=lat, lon=lon,
-                        input_csv_file=input_csv_file, input_shp_file = input_shp_file, buffer = buffer, closest=closest, disp=disp, augment_metadata=augment_metadata)
+                        input_csv_file=input_csv_file, input_shp_file = input_shp_file, id_columns=id_columns, buffer = buffer, closest=closest, disp=disp, augment_metadata=augment_metadata)
+
 
         # Horizontal Google Street View tiles
         # zoom 3: (8, 4); zoom 5: (26, 13) zoom 2: (4, 2) zoom 1: (2, 1);4:(8,16)

@@ -11,7 +11,7 @@ from pyproj import Transformer
 import networkx
 
 class GeoProcessor:
-    def __init__(self, gdf, distance=1, grid = False, grid_size = 20):
+    def __init__(self, gdf, distance=1, grid = False, grid_size = 20, id_columns=[]):
         self.gdf = gdf
         self.distance = distance
         self.processing_functions = {
@@ -25,6 +25,7 @@ class GeoProcessor:
         self.grid = grid
         self.grid_size = grid_size
         self.utm_crs = None
+        self.id_columns = id_columns
 
     def get_lat_lon(self):
         self.gdf['feature_type'] = self.gdf['geometry'].apply(lambda x: x.geom_type)
@@ -44,7 +45,7 @@ class GeoProcessor:
     def process_point(self, gdf):
         gdf['longitude'] = gdf.geometry.x
         gdf['latitude'] = gdf.geometry.y
-        return gdf[['longitude', 'latitude']]
+        return gdf[self.id_columns + ['longitude', 'latitude']]
 
     def process_multipoint(self, gdf):
         # Explode the multipoint into individual points
@@ -63,8 +64,8 @@ class GeoProcessor:
         gdf_utm = gdf_utm.explode('sample_points').reset_index(drop=True)
 
         # Convert the UTM points to latitude and longitude
-        gdf_utm['longitude'], gdf_utm['latitude'] = zip(*self.utm_to_lat_lon(gdf_utm['sample_points'].apply(lambda p: (p.x, p.y)).tolist(), self.utm_crs))
-        return gdf_utm[['longitude', 'latitude']]
+        gdf['longitude'], gdf['latitude'] = zip(*self.utm_to_lat_lon(gdf_utm['sample_points'].apply(lambda p: (p.x, p.y)).tolist(), self.utm_crs))
+        return gdf[self.id_columns + ['longitude', 'latitude']]
 
     def process_multilinestring(self, gdf):
         # Explode the multilinestring into individual linestrings
@@ -156,7 +157,7 @@ class GeoProcessor:
         # Convert the UTM points to latitude and longitude
         gdf['longitude'], gdf['latitude'] = zip(*self.utm_to_lat_lon(gdf['street_points'].tolist(), self.utm_crs))
 
-        return gdf[['longitude', 'latitude']]
+        return gdf[self.id_columns + ['longitude', 'latitude']]
 
     def process_multipolygon(self, gdf):
         # Explode the multipolygon into individual polygons
