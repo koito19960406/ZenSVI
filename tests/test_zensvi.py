@@ -82,10 +82,11 @@ if __name__ == "__main__":
     start_time = time.time()
 
     downloader = StreetViewDownloader(gsv_api_key = gsv_api_key,
-                                    distance=1,
+                                    distance=100,
                                     grid = False, grid_size = 100)
-    downloader.download_gsv("/Users/koichiito/Desktop/test_normal", 
-                            input_csv_file = "/Users/koichiito/Documents/NUS PhD/Academic Matter/2022 Fall/ISM1/bike_svi/data/external/Sydney/Walking_count_sites.csv",
+    downloader.download_gsv("tests/data/output/", 
+                            input_csv_file = "tests/data/input/Walking_count_sites 3.csv",
+                            id_columns = "Site_ID",
                             buffer = 50,
                             augment_metadata=True) 
 
