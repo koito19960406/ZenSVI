@@ -143,3 +143,6 @@ dmypy.json
 
 # Cache folders in general
 cache/
+
+# test data for local testing
+tests/data/*
