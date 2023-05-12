@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zensvi"
-version = "0.0.1"
+version = "0.0.2"
 description = "This package handles downloading, cleaning, analyzing street view imagery in one-stop and zen manner."
 authors = ["koito19960406"]
 license = "MIT"

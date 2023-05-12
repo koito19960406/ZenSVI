@@ -9,7 +9,6 @@ Pillow==9.5.0
 pyproj==3.5.0
 Requests==2.30.0
 setuptools==67.7.2
-setuptools==58.5.3
 Shapely==1.8.5.post1
 torch==2.0.0
 tqdm==4.65.0
