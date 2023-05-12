@@ -30,7 +30,6 @@ class StreetViewDownloader:
         self._nthreads = nthreads
         self._distance = distance
         self._user_agent = self._get_ua()
-        self._proxies = self._get_proxies()
         self._grid = grid
         self._grid_size = grid_size
 
@@ -89,20 +88,6 @@ class StreetViewDownloader:
                 UA.append(ua)
         return UA
     
-    @property
-    def proxies(self):
-        return self._proxies
-    
-    def _get_proxies(self):
-        proxy_file = pkg_resources.resource_filename('zensvi.download.utils', 'proxies.csv')
-        proxies = []
-        df = pd.read_csv(proxy_file)
-        for index, row in df.iterrows():
-            proxy = {"ip": row['ip'], "port": row['port'], "protocols": row['protocols']}
-            proxies.append(proxy)
-        return proxies
-        
-
     def _read_pids(self, path_pid):
         pid_df = pd.read_csv(path_pid)
         # get unique pids as a list
