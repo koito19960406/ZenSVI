@@ -137,6 +137,7 @@ class GeoProcessor:
                 future_to_geom[future] = geom
 
             results = []
+            failed_geoms = []
             for future in tqdm(as_completed(future_to_geom.keys()), total=len(gdf), desc="Processing Polygons"):
                 # Retrieve the corresponding geom for each future
                 geom = future_to_geom[future]
@@ -144,8 +145,19 @@ class GeoProcessor:
                     result = future.result()
                     results.append(result)
                 except (ValueError, networkx.exception.NetworkXPointlessConcept):
-                    tqdm.write("Found no graph nodes within the polygon or connectivity is undefined for the null graph, switching to grid creation.")
+                    tqdm.write("Found no graph nodes within the polygon or connectivity is undefined for the null graph. Store the polygon as a failed geom and retry later")
+                    failed_geoms.append(geom)
+                    
+            if len(failed_geoms) > 0:
+                print("Retrying failed geoms")
+                # resubmitting failed geoms
+                future_to_geom_retry = {}
+                for geom in tqdm(failed_geoms, desc="Preparing Failed Geoms"):
                     future = executor.submit(self.create_point_grid, geom, self.grid_size)
+                    future_to_geom_retry[future] = geom
+
+                for future in tqdm(as_completed(future_to_geom_retry.keys()), total=len(failed_geoms), desc="Processing Failed Geoms"):
+                    # No need to catch exceptions here because we're already in the retry block
                     result = future.result()
                     results.append(result)
 
@@ -158,6 +170,8 @@ class GeoProcessor:
         gdf['longitude'], gdf['latitude'] = zip(*self.utm_to_lat_lon(gdf['street_points'].tolist(), self.utm_crs))
 
         return gdf[self.id_columns + ['longitude', 'latitude']]
+
+
 
     def process_multipolygon(self, gdf):
         # Explode the multipolygon into individual polygons
