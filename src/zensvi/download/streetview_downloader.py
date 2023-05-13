@@ -281,14 +281,12 @@ class StreetViewDownloader:
         os.makedirs(panorama_output, exist_ok=True)
         
         panoids = self._read_pids(path_pid)
-        panoids_rest = self._check_already(panoids)
 
-        panoids = self._read_pids(path_pid)
-        if len(panoids_rest) > 0:
-            panoids_rest = self._check_already(panoids)
-        else:
+        if len(panoids) == 0:
             print("There is no panorama ID to download.")
             return
+        else:
+            panoids_rest = self._check_already(panoids)
 
         if len(panoids_rest) > 0:
             UAs = random.choices(self.user_agent, k = len(panoids_rest))
