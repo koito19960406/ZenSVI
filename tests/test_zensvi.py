@@ -8,7 +8,8 @@ from unittest.mock import MagicMock
 import time
 import dotenv
 
-from zensvi.download import StreetViewDownloader
+# from zensvi.download import StreetViewDownloader
+from zensvi.download_async import StreetViewDownloader
 from zensvi.cv.segmentation import Segmenter, ImageDataset, create_cityscapes_label_colormap
 from zensvi.transform import xyz2lonlat, lonlat2XY, ImageTransformer
 
@@ -85,7 +86,7 @@ if __name__ == "__main__":
                                     distance=1,
                                     grid = False, grid_size = 100)
     downloader.download_gsv("tests/data/output/", 
-                            input_csv_file = "tests/data/input/count_station.csv",
+                            input_csv_file = "tests/data/input/Walking_count_sites 3.csv",
                             # input_shp_file = "tests/data/input/locations_point.shp",
                             # id_columns = "Site_ID",
                             buffer = 100,
