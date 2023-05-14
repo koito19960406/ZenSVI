@@ -146,11 +146,10 @@ class GeoProcessor:
                         result = future.result()
                         results.append(result)
                     except (ValueError, networkx.exception.NetworkXPointlessConcept):
-                        tqdm.write("Found no graph nodes within the polygon or connectivity is undefined for the null graph. Store the polygon as a failed geom and retry later")
                         failed_geoms.append(geom)
 
         if len(failed_geoms) > 0:
-            print("Retrying failed geoms")
+            print("Retrying failed geoms by making grids")
             with ProcessPoolExecutor() as executor:
                 retry_futures = {}
                 for geom in tqdm(failed_geoms, desc="Preparing Failed Geoms"):
