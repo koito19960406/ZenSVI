@@ -765,21 +765,21 @@ tests = ["pytest (>=4.6)"]
 
 [[package]]
 name = "munch"
-version = "2.5.0"
+version = "3.0.0"
 description = "A dot-accessible dictionary (a la JavaScript objects)"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=3.6"
 files = [
-    {file = "munch-2.5.0-py2.py3-none-any.whl", hash = "sha256:6f44af89a2ce4ed04ff8de41f70b226b984db10a91dcc7b9ac2efc1c77022fdd"},
-    {file = "munch-2.5.0.tar.gz", hash = "sha256:2d735f6f24d4dba3417fa448cae40c6e896ec1fdab6cdb5e6510999758a4dbd2"},
+    {file = "munch-3.0.0-py2.py3-none-any.whl", hash = "sha256:0e4108418cfea898dcad01ff9569c30ff58f01d6f699331d04364f51623627c0"},
+    {file = "munch-3.0.0.tar.gz", hash = "sha256:5284603030c00906d9d64d8108728c004fbeb91fc1c1e4caca342bc48f2a6dfd"},
 ]
 
 [package.dependencies]
 six = "*"
 
 [package.extras]
-testing = ["astroid (>=1.5.3,<1.6.0)", "astroid (>=2.0)", "coverage", "pylint (>=1.7.2,<1.8.0)", "pylint (>=2.3.1,<2.4.0)", "pytest"]
+testing = ["astroid (>=2.0)", "coverage", "pylint (>=2.3.1,<2.4.0)", "pytest"]
 yaml = ["PyYAML (>=5.1.0)"]
 
 [[package]]
@@ -1726,4 +1726,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "33579f6217336d760300c4098a90dbf6763a7fb2ee2d05f938701ba4b0b77875"
+content-hash = "491543d6b3c384b4c514c15adad0d5522e5aa5c9d455bf706cfc12ef2725c8bd"
