@@ -82,12 +82,13 @@ if __name__ == "__main__":
     start_time = time.time()
 
     downloader = StreetViewDownloader(gsv_api_key = gsv_api_key,
-                                    distance=100,
+                                    distance=1,
                                     grid = False, grid_size = 100)
     downloader.download_gsv("tests/data/output/", 
-                            input_csv_file = "tests/data/input/Walking_count_sites 3.csv",
-                            id_columns = "Site_ID",
-                            buffer = 50,
+                            input_csv_file = "tests/data/input/count_station.csv",
+                            # input_shp_file = "tests/data/input/locations_point.shp",
+                            # id_columns = "Site_ID",
+                            buffer = 100,
                             augment_metadata=True) 
 
     end_time = time.time()

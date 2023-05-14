@@ -11,7 +11,7 @@ from pyproj import Transformer
 import networkx
 
 class GeoProcessor:
-    def __init__(self, gdf, distance=1, grid = False, grid_size = 20, id_columns=[]):
+    def __init__(self, gdf, distance=1, grid = False, grid_size = 1, id_columns=[]):
         self.gdf = gdf
         self.distance = distance
         self.processing_functions = {
