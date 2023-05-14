@@ -1,18 +1,25 @@
 import re
 from datetime import datetime
 import requests
+import random
 
 def _panoids_url(lat, lon):
     url = "https://maps.googleapis.com/maps/api/js/GeoPhotoService.SingleImageSearch?pb=!1m5!1sapiv3!5sUS!11m2!1m1!1b0!2m4!1m2!3d{0:}!4d{1:}!2d50!3m10!2m2!1sen!2sGB!9m1!1e2!11m4!1m3!1e2!2b1!3e2!4m10!1e1!1e2!1e3!1e4!1e8!1e6!5m1!1e2!6m1!1e2&callback=_xdc_._v2mub5"
     return url.format(lat, lon)
 
-def _panoids_data(lat, lon):
+def _panoids_data(lat, lon, proxies):
     url = _panoids_url(lat, lon)
-    resp = requests.get(url)
-    return resp.text
+    while True:
+        proxy = random.choice(proxies)
+        try:
+            resp = requests.get(url, proxies=proxy, timeout=5)
+            return resp.text
+        except Exception as e:
+            print(f"Proxy {proxy} is not working. Exception: {e}")
+            continue
 
-def panoids(lat, lon, closest=False, disp=False):
-    resp = _panoids_data(lat, lon)
+def panoids(lat, lon, proxies, closest=False, disp=False):
+    resp = _panoids_data(lat, lon, proxies)
 
     # Get all the panorama ids and coordinates
     pans = re.findall('\[[0-9]+,"(.+?)"\].+?\[\[null,null,(-?[0-9]+.[0-9]+),(-?[0-9]+.[0-9]+)', resp)

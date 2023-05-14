@@ -125,44 +125,44 @@ class GeoProcessor:
         return lat_lon_points
 
     def process_polygon(self, gdf):
-        with ProcessPoolExecutor() as executor:
-            # Use a dictionary to map futures to geoms
-            future_to_geom = {}
+        batch_size = 100  # Modify this to a suitable value
+        num_batches = (len(gdf) + batch_size - 1) // batch_size
+        failed_geoms = []
+        results = []
 
-            for geom in tqdm(gdf.geometry, desc="Preparing Polygons"):
-                if self.grid == False:
-                    future = executor.submit(self.get_street_points, geom)
-                else:
-                    future = executor.submit(self.create_point_grid, geom, self.grid_size)
-                future_to_geom[future] = geom
+        for i in tqdm(range(num_batches), desc=f"Processing polgyon by batch size {min(batch_size, len(gdf))}"):
+            with ProcessPoolExecutor() as executor:
+                batch_futures = {}
+                for geom in gdf.geometry.iloc[i*batch_size : (i+1)*batch_size]:
+                    if self.grid == False:
+                        future = executor.submit(self.get_street_points, geom)
+                    else:
+                        future = executor.submit(self.create_point_grid, geom, self.grid_size)
+                    batch_futures[future] = geom
+                
+                for future in tqdm(as_completed(batch_futures.keys()), total=len(batch_futures), desc=f"Processing polygon for batch #{i+1}"):
+                    geom = batch_futures[future]
+                    try:
+                        result = future.result()
+                        results.append(result)
+                    except (ValueError, networkx.exception.NetworkXPointlessConcept):
+                        tqdm.write("Found no graph nodes within the polygon or connectivity is undefined for the null graph. Store the polygon as a failed geom and retry later")
+                        failed_geoms.append(geom)
 
-            results = []
-            failed_geoms = []
-            for future in tqdm(as_completed(future_to_geom.keys()), total=len(gdf), desc="Processing Polygons"):
-                # Retrieve the corresponding geom for each future
-                geom = future_to_geom[future]
-                try:
-                    result = future.result()
-                    results.append(result)
-                except (ValueError, networkx.exception.NetworkXPointlessConcept):
-                    tqdm.write("Found no graph nodes within the polygon or connectivity is undefined for the null graph. Store the polygon as a failed geom and retry later")
-                    failed_geoms.append(geom)
-                    
-            if len(failed_geoms) > 0:
-                print("Retrying failed geoms")
-                # resubmitting failed geoms
-                future_to_geom_retry = {}
+        if len(failed_geoms) > 0:
+            print("Retrying failed geoms")
+            with ProcessPoolExecutor() as executor:
+                retry_futures = {}
                 for geom in tqdm(failed_geoms, desc="Preparing Failed Geoms"):
                     future = executor.submit(self.create_point_grid, geom, self.grid_size)
-                    future_to_geom_retry[future] = geom
-
-                for future in tqdm(as_completed(future_to_geom_retry.keys()), total=len(failed_geoms), desc="Processing Failed Geoms"):
-                    # No need to catch exceptions here because we're already in the retry block
+                    retry_futures[future] = geom
+                
+                for future in tqdm(as_completed(retry_futures.keys()), total=len(retry_futures), desc="Processing Failed Geoms"):
                     result = future.result()
                     results.append(result)
 
-            gdf['street_points'] = [result[0] for result in results]
-            self.utm_crs = results[0][1]
+        gdf['street_points'] = [result[0] for result in results]
+        self.utm_crs = results[0][1]
 
         gdf = gdf.explode('street_points').reset_index(drop=True)
 

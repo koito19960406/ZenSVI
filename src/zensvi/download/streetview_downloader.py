@@ -3,7 +3,7 @@ import random
 import time
 import datetime
 import pandas as pd
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
 import warnings
 import requests
 import cv2
@@ -15,6 +15,7 @@ from shapely.geometry import Point
 import warnings
 from shapely.errors import ShapelyDeprecationWarning
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
+import csv 
 
 from zensvi.download.utils.imtool import ImageTool
 from zensvi.download.utils.get_pids import panoids
@@ -22,7 +23,7 @@ from zensvi.download.utils.geoprocess import GeoProcessor
 from zensvi.download.utils.helpers import standardize_column_names, create_buffer_gdf
 
 class StreetViewDownloader:
-    def __init__(self, gsv_api_key = None, log_path = None, nthreads = 5, distance = 1, grid = False, grid_size = 1):
+    def __init__(self, gsv_api_key = None, log_path = None, nthreads = 0, distance = 1, grid = False, grid_size = 1):
         if gsv_api_key == None:
             warnings.warn("Please provide your Google Street View API key to augment metadata.")
         self._gsv_api_key = gsv_api_key
@@ -30,6 +31,7 @@ class StreetViewDownloader:
         self._nthreads = nthreads
         self._distance = distance
         self._user_agent = self._get_ua()
+        self._proxies = self._get_proxies()
         self._grid = grid
         self._grid_size = grid_size
 
@@ -88,6 +90,23 @@ class StreetViewDownloader:
                 UA.append(ua)
         return UA
     
+    @property
+    def proxies(self):
+        return self._proxies
+    
+    def _get_proxies(self):
+        proxies_file = pkg_resources.resource_filename('zensvi.download_async.utils', 'proxies.csv')
+        proxies = []
+        with open(proxies_file, 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                ip = row['ip']
+                port = row['port']
+                protocols = row['protocols']
+                proxy_dict = {protocols: f"{ip}:{port}"}
+                proxies.append(proxy_dict)
+        return proxies
+    
     def _read_pids(self, path_pid):
         pid_df = pd.read_csv(path_pid)
         # get unique pids as a list
@@ -104,26 +123,22 @@ class StreetViewDownloader:
                 all_panoids_f.append(pid)
         return all_panoids_f
 
-    def _get_nthreads_pid(self, panoids):
-        # Output path for the images
-        all_pid, panos = [], []
-        for i in range(len(panoids)):
-            if i % self.nthreads != 0 or i == 0:
-                panos.append(panoids[i])
-            else:
-                all_pid.append(panos)
-                panos = []
-        return all_pid
-
     def _log_write(self, pids):
         with open(self.log_path, 'a+') as fw:
             for pid in pids:
                 fw.write(pid+'\n')
     
     def _augment_metadata(self, df):
-        def get_year_month(pid):
+        def get_year_month(pid, proxies):
             url = "https://maps.googleapis.com/maps/api/streetview/metadata?pano={}&key={}".format(pid, self.gsv_api_key)
-            response = requests.get(url)
+            while True:
+                proxy = random.choice(proxies)
+                try:
+                    response = requests.get(url, proxies=proxy, timeout=5)
+                    break
+                except Exception as e:
+                    print(f"Proxy {proxy} is not working. Exception: {e}")
+                    continue
             response = response.json()
             if response['status'] == 'OK':
                 # get year and month from date
@@ -137,45 +152,72 @@ class StreetViewDownloader:
                 return {"year": year, "month": month}
             return {"year": None, "month": None}    
 
-        def worker(row):
+        def worker(row, proxies):
             panoid = row.panoid
-            year_month = get_year_month(panoid)
+            year_month = get_year_month(panoid, proxies)
             return row.Index, year_month
         
-        with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(worker, row): row.Index for row in tqdm(df.itertuples(), total = len(df), desc="Preparing to augment metadata")}
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Augmenting timestamp metadata"):
-                row_index, year_month = future.result()
-                df.at[row_index, 'year'] = year_month['year']
-                df.at[row_index, 'month'] = year_month['month']
+        batch_size = 1000  # Modify this to a suitable value
+        num_batches = (len(df) + batch_size - 1) // batch_size
+
+        for i in tqdm(range(num_batches), desc=f"Augmenting metadata by batch size {min(batch_size, len(df))}"):
+            with ThreadPoolExecutor() as executor:
+                batch_futures = {executor.submit(worker, row, self.proxies): row.Index for row in df.iloc[i*batch_size : (i+1)*batch_size].itertuples()}
+                for future in tqdm(as_completed(batch_futures), total=len(batch_futures), desc=f"Augmenting metadata for batch #{i+1}"):
+                    row_index, year_month = future.result()
+                    df.at[row_index, 'year'] = year_month['year']
+                    df.at[row_index, 'month'] = year_month['month']
         return df
                     
     def _get_pids_from_csv(self, df, id_columns, closest=False, disp=False):
-        def get_street_view_info(longitude, latitude):
-            results = panoids(latitude, longitude, closest=closest, disp=disp)
+        def get_street_view_info(longitude, latitude, proxies):
+            results = panoids(latitude, longitude, proxies, closest=closest, disp=disp)
             return results
 
         def worker(row):
             input_longitude = row.longitude
             input_latitude = row.latitude
-            return {column: getattr(row, column) for column in id_columns}, (input_longitude, input_latitude), get_street_view_info(input_longitude, input_latitude)
+            return {column: getattr(row, column) for column in id_columns}, (input_longitude, input_latitude), get_street_view_info(input_longitude, input_latitude, self.proxies)
 
         results = []
+        batch_size = 1000  # Modify this to a suitable value
+        num_batches = (len(df) + batch_size - 1) // batch_size
+        failed_rows = []
 
-        with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(worker, row): row for row in tqdm(df.itertuples(), total=len(df), desc="Preparing to get pids")}
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Getting pids"):
-                id_dict, (input_longitude, input_latitude), row_results = future.result()
-                for result in row_results:
-                    result['input_longitude'] = input_longitude
-                    result['input_latitude'] = input_latitude
-                    result.update(id_dict)
-                    results.append(result)
+        for i in tqdm(range(num_batches), desc=f"Getting pids by batch size {min(batch_size, len(df))}"):
+            with ThreadPoolExecutor() as executor:
+                batch_futures = {executor.submit(worker, row): row for row in df.iloc[i*batch_size : (i+1)*batch_size].itertuples()}
+                for future in tqdm(as_completed(batch_futures), total=len(batch_futures), desc=f"Getting pids for batch #{i+1}"):
+                    try:
+                        id_dict, (input_longitude, input_latitude), row_results = future.result()
+                        for result in row_results:
+                            result['input_longitude'] = input_longitude
+                            result['input_latitude'] = input_latitude
+                            result.update(id_dict)
+                            results.append(result)
+                    except Exception as e:
+                        print(f"Error: {e}")
+                        failed_rows.append(batch_futures[future])  # Store the failed row
+
+        # Retry failed rows
+        if failed_rows:
+            print("Retrying failed rows...")
+            with ThreadPoolExecutor() as executor:
+                retry_futures = {executor.submit(worker, row): row for row in failed_rows}
+                for future in tqdm(as_completed(retry_futures), total=len(retry_futures), desc="Retrying failed rows"):
+                    try:
+                        id_dict, (input_longitude, input_latitude), row_results = future.result()
+                        for result in row_results:
+                            result['input_longitude'] = input_longitude
+                            result['input_latitude'] = input_latitude
+                            result.update(id_dict)
+                            results.append(result)
+                    except Exception as e:
+                        print(f"Failed again: {e}")
 
         results_df = pd.DataFrame(results)
         return results_df
 
-    
     def _get_pids_from_gdf(self, gdf, id_columns, closest=False, disp=False):  
         # read shapefile
         gp = GeoProcessor(gdf, distance=self.distance, grid=self.grid, grid_size=self.grid_size, id_columns = id_columns)
@@ -218,6 +260,7 @@ class StreetViewDownloader:
         # Drop the 'within_polygon' column
         results_within_polygons_df = results_within_polygons_df.drop(columns='within_polygon')
         return results_within_polygons_df
+
 
     def get_pids(self, path_pid, lat = None, lon = None, input_csv_file = "", input_shp_file = "", id_columns=None, buffer = 0, closest=False, disp=False, augment_metadata=False):
         if id_columns is not None:
@@ -290,6 +333,6 @@ class StreetViewDownloader:
 
         if len(panoids_rest) > 0:
             UAs = random.choices(self.user_agent, k = len(panoids_rest))
-            ImageTool.dwl_multiple(panoids_rest, zoom, v_tiles, h_tiles, panorama_output, UAs, cropped, full, log_path=self.log_path)
+            ImageTool.dwl_multiple(panoids_rest, zoom, v_tiles, h_tiles, panorama_output, UAs, self.proxies, cropped, full, log_path=self.log_path)
         else:
             print("All images have been downloaded.")
