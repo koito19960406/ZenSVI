@@ -95,7 +95,7 @@ class StreetViewDownloader:
         return self._proxies
     
     def _get_proxies(self):
-        proxies_file = pkg_resources.resource_filename('zensvi.download_async.utils', 'proxies.csv')
+        proxies_file = pkg_resources.resource_filename('zensvi.download.utils', 'proxies.csv')
         proxies = []
         with open(proxies_file, 'r') as f:
             reader = csv.DictReader(f)
