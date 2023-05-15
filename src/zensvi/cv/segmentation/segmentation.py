@@ -15,7 +15,8 @@ from tqdm.auto import tqdm
 import json
 from collections import defaultdict
 from tqdm.contrib.concurrent import thread_map
-
+import glob
+import shutil
 
 # a label and all meta information
 Label = namedtuple( 'Label' , [
@@ -210,16 +211,15 @@ class ImageDataset(Dataset):
     Custom Dataset class for images.
     """
 
-    def __init__(self, dir_input: Union[str, Path], rgb: bool = True) -> None:
+    def __init__(self, image_files: List[Path], rgb: bool = True) -> None:
         """
         Initialize the ImageDataset.
 
         Args:
-            dir_input (Union[str, Path]): Input directory containing image files.
+            image_files (List[Path]): List of image files.
             rgb (bool, optional): Flag to convert images to RGB. Defaults to True.
         """
-        self.dir_input = Path(dir_input)
-        self.image_files = list(self.dir_input.glob("*.jpg"))
+        self.image_files = image_files
         self.rgb = rgb
 
     def __len__(self) -> int:
@@ -517,31 +517,15 @@ class Segmenter:
 
         if outputs is not None:
             for image_file, img, output, pixel_ratio in zip(image_files, images, outputs, pixel_ratios):
-                if len(self.save_image_options) > 0:
+                if (len(self.save_image_options) > 0) & (dir_output is not None):
                     self._save_segmentation_image(task, image_file, img, dir_output, output)
                 image_file_key = Path(image_file).stem
                 pixel_ratio_dict[image_file_key] = pixel_ratio
 
     # Modify the segment method inside the Segmenter class
-    def segment(self, dir_input: Union[str, Path], dir_image_output: Union[str, Path, None] = None, dir_pixel_ratio_output: Union[str, Path, None] = None, task="semantic", batch_size=1, num_workers=1, save_image_options = ["segmented_image", "blend_image"], pixel_ratio_save_format = ["json", "csv"]):
-        """
-        Perform segmentation on the input images and save the segmented images.
-
-        Args:
-            dir_input (Union[str, Path]): The directory containing the input images.
-            dir_image_output (Union[str, Path , None]): The output directory where the segmented images will be saved. Default is None.
-            dir_pixel_ratio_output (Union[str, Path, None]): The output directory where the pixel ratio data will be saved. Default is None.
-            task (str): The segmentation task to perform, either "panoptic" or "semantic". Default is "semantic".
-            batch_size (int): The batch size to use for segmentation. Default is 1.
-            num_workers (int): The number of worker threads to use for segmentation. Default is 0.
-            save_image_options (List[str]): A list of options for saving the segmented images. Possible options are "segmented_image" and "blend_image". Default is ["segmented_image", "blend_image"].
-            pixel_ratio_save_format (List[str]): A list of output formats for the pixel ratio data. Possible options are "json" and "csv". Default is ["json", "csv"].
-
-        Returns:
-            None
-        """
+    def segment(self, dir_input: Union[str, Path], dir_image_output: Union[str, Path, None] = None, dir_pixel_ratio_output: Union[str, Path, None] = None, task="semantic", batch_size=1, save_image_options = ["segmented_image", "blend_image"], pixel_ratio_save_format = ["json", "csv"]):
         # make sure that at least one of dir_image_output and dir_pixel_ratio_output is not None
-        if dir_image_output is None and dir_pixel_ratio_output is None:
+        if (dir_image_output is None) & (dir_pixel_ratio_output is None):
             raise ValueError("At least one of dir_image_output and dir_pixel_ratio_output must not be None.")
         
         # save_image_options as a property of the class
@@ -549,26 +533,65 @@ class Segmenter:
         
         # make directory
         dir_input = Path(dir_input)
-        dir_image_output = Path(dir_image_output)
-        dir_image_output.mkdir(parents=True, exist_ok=True)
-        dir_pixel_ratio_output = Path(dir_pixel_ratio_output)
-        dir_pixel_ratio_output.mkdir(parents=True, exist_ok=True)
+        dir_cache_pixel_ratio = None
+        if dir_image_output is not None:
+            dir_image_output = Path(dir_image_output)
+            dir_image_output.mkdir(parents=True, exist_ok=True)
+        if dir_pixel_ratio_output is not None:
+            dir_pixel_ratio_output = Path(dir_pixel_ratio_output)
+            dir_pixel_ratio_output.mkdir(parents=True, exist_ok=True)
+            # Create a new directory called "pixel_ratio_checkpoints"
+            dir_cache_pixel_ratio = dir_pixel_ratio_output / 'pixel_ratio_checkpoints'
+            dir_cache_pixel_ratio.mkdir(parents=True, exist_ok=True)
 
-        dataset = ImageDataset(dir_input)
-        dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=dataset.collate_fn, num_workers=num_workers)
+            # Load all the checkpoint json files
+            checkpoints = glob.glob(str(dir_cache_pixel_ratio / '*.json'))
+            checkpoint_start_index = len(checkpoints)
 
+            completed_image_files = set()  # completed_image_files will store the keys in the pixel_ratio_dict
+            if checkpoint_start_index > 0:
+                for checkpoint in checkpoints:
+                    with open(checkpoint, 'r') as f:
+                        checkpoint_dict = json.load(f)
+                        completed_image_files.update(checkpoint_dict.keys())
+
+        # Get the list of all image files and filter the ones that are not completed yet
+        image_files = [str(f) for f in Path(dir_input).glob("*.jpg") if str(f) not in completed_image_files]
+
+        outer_batch_size = 1000  # Number of inner batches in one outer batch
+        num_outer_batches = (len(image_files) + outer_batch_size * batch_size - 1) // (outer_batch_size * batch_size)
+
+        for i in tqdm(range(num_outer_batches), desc=f"Processing outer batches of size {min(outer_batch_size * batch_size, len(image_files))}"):
+            # Get the image files for the current outer batch
+            outer_batch_image_files = image_files[i * outer_batch_size * batch_size : (i+1) * outer_batch_size * batch_size]
+
+            dataset = ImageDataset(outer_batch_image_files)
+            dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=dataset.collate_fn)
+
+            pixel_ratio_dict = defaultdict(dict)  # reset pixel_ratio_dict for each outer batch
+
+            with ThreadPoolExecutor() as executor:
+                futures = []
+
+                for batch in dataloader:
+                    image_files, images, original_img_shape = batch
+                    future = executor.submit(self._process_images, task, image_files, images, dir_image_output, pixel_ratio_dict, original_img_shape)
+                    futures.append(future)
+
+                for completed_future in tqdm(as_completed(futures), total=len(futures), desc=f"Processing outer batch #{i+1}"):
+                    completed_future.result()
+
+                # Save checkpoint for each outer batch
+                with open(f'{dir_cache_pixel_ratio}/checkpoint_batch_{checkpoint_start_index+i+1}.json', 'w') as f:
+                    json.dump(pixel_ratio_dict, f)
+
+        # Merge all checkpoints into a single pixel_ratio_dict
         pixel_ratio_dict = defaultdict(dict)
-
-        with ThreadPoolExecutor(max_workers=num_workers) as executor:
-            futures = []
-
-            for batch in tqdm(dataloader, desc="Submitting tasks"):
-                image_files, images, original_img_shape = batch
-                future = executor.submit(self._process_images, task, image_files, images, dir_image_output, pixel_ratio_dict, original_img_shape)
-                futures.append(future)
-
-            for completed_future in tqdm(as_completed(futures), total=len(futures), desc="Processing tasks"):
-                completed_future.result()
+        for checkpoint in glob.glob(str(dir_cache_pixel_ratio / '*.json')):
+            with open(checkpoint, 'r') as f:
+                checkpoint_dict = json.load(f)
+                for key, value in checkpoint_dict.items():
+                    pixel_ratio_dict[key] = value
 
         # Save pixel_ratio_dict as a JSON or CSV file
         if "json" in pixel_ratio_save_format:
@@ -577,7 +600,12 @@ class Segmenter:
         if "csv" in pixel_ratio_save_format:
             self._save_pixel_ratios_as_csv(pixel_ratio_dict, dir_pixel_ratio_output)
             
-    def calculate_pixel_ratio_post_process(self, dir_input, dir_output, pixel_ratio_save_format = ["json", "csv"], num_workers=1):
+        # Delete the "pixel_ratio_checkpoints" directory
+        if dir_pixel_ratio_output is not None:
+            shutil.rmtree(dir_cache_pixel_ratio)
+
+            
+    def calculate_pixel_ratio_post_process(self, dir_input, dir_output, pixel_ratio_save_format = ["json", "csv"]):
         """
         Calculates the pixel ratio of different classes present in the segmented images and saves the results in either JSON or CSV format.
 
@@ -674,7 +702,7 @@ class Segmenter:
 
         image_files = [file for file in dir_input.rglob('*') if file.suffix.lower() in image_extensions and '_colored_segmented' in file.stem]
 
-        results = thread_map(process_image_file, image_files, [self.label_map] * len(image_files), max_workers=num_workers)
+        results = thread_map(process_image_file, image_files, [self.label_map] * len(image_files))
 
         if "json" in pixel_ratio_save_format:
             json_output_file = Path(dir_output) / 'pixel_ratio.json'

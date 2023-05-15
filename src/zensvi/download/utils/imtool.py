@@ -134,12 +134,13 @@ class ImageTool():
             else:
                 pre_image = image
             pillow_image = Image.fromarray(pre_image)
-            pillow_image.save(f'{name}.jpg')
-        # if cropped:
-        #     first_slice.crop((0, 0, size[1], size[1])).save(f'{name}_p1.jpg')
-        #     first_slice.crop((size[1], 0, size[0], size[1])).save(f'{name}_p2.jpg')
-        
-        return identif
+            # Validate image before saving
+            if pillow_image.size[0] > 0 and pillow_image.size[1] > 0:
+                pillow_image.save(f'{name}.jpg')
+            else:
+                raise ValueError(f"Invalid image for pano_id {pano_id}")
+
+            return identif
 
     @staticmethod
     def dwl_multiple(panoids, zoom, v_tiles, h_tiles, out_path, uas, proxies, cropped=True, full=False, log_path=None):

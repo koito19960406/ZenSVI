@@ -15,7 +15,9 @@ from shapely.geometry import Point
 import warnings
 from shapely.errors import ShapelyDeprecationWarning
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
-import csv 
+import csv
+import glob
+import shutil
 
 from zensvi.download.utils.imtool import ImageTool
 from zensvi.download.utils.get_pids import panoids
@@ -114,14 +116,14 @@ class StreetViewDownloader:
         return pids
 
     def _check_already(self, all_panoids):
-        name_r, all_panoids_f = set(), []
-        for name in os.listdir(self.dir_output):
-            name_r.add(name.split(".")[0])
+        # Get the list of already downloaded images
+        name_r = set(name.split(".")[0] for name in os.listdir(self.panorama_output))
 
-        for pid in all_panoids:
-            if pid not in name_r:
-                all_panoids_f.append(pid)
-        return all_panoids_f
+        # Filter the list of all panoids to only include those not already downloaded
+        all_panoids[:] = [pid for pid in all_panoids if pid not in name_r]
+
+        return all_panoids
+
 
     def _log_write(self, pids):
         with open(self.log_path, 'a+') as fw:
@@ -129,6 +131,26 @@ class StreetViewDownloader:
                 fw.write(pid+'\n')
     
     def _augment_metadata(self, df):
+        if self.cache_pids_augmented.exists():
+            df = pd.read_csv(self.cache_pids_augmented)
+            print("The augmented panorama IDs have been read from the cache")
+            return df
+        
+        # Create a new directory called "augmented_metadata_checkpoints"
+        dir_cache_augmented_metadata = self.dir_cache / 'augmented_pids'
+        dir_cache_augmented_metadata.mkdir(parents=True, exist_ok=True)
+
+        # Load all the checkpoint csv files
+        checkpoints = glob.glob(str(dir_cache_augmented_metadata / '*.csv'))
+        checkpoint_start_index = len(checkpoints)
+
+        if checkpoint_start_index > 0:
+            completed_rows = pd.concat([pd.read_csv(checkpoint) for checkpoint in checkpoints], ignore_index=True)
+            completed_indices = completed_rows.index.unique()
+
+            # Filter df to get remaining indices to augment metadata for
+            df = df.loc[~df.index.isin(completed_indices)]
+
         def get_year_month(pid, proxies):
             url = "https://maps.googleapis.com/maps/api/streetview/metadata?pano={}&key={}".format(pid, self.gsv_api_key)
             while True:
@@ -139,6 +161,7 @@ class StreetViewDownloader:
                 except Exception as e:
                     print(f"Proxy {proxy} is not working. Exception: {e}")
                     continue
+
             response = response.json()
             if response['status'] == 'OK':
                 # get year and month from date
@@ -156,20 +179,56 @@ class StreetViewDownloader:
             panoid = row.panoid
             year_month = get_year_month(panoid, proxies)
             return row.Index, year_month
-        
+
         batch_size = 1000  # Modify this to a suitable value
         num_batches = (len(df) + batch_size - 1) // batch_size
 
         for i in tqdm(range(num_batches), desc=f"Augmenting metadata by batch size {min(batch_size, len(df))}"):
+            batch_df = df.iloc[i*batch_size : (i+1)*batch_size].copy()  # Copy the batch data to a new dataframe
             with ThreadPoolExecutor() as executor:
-                batch_futures = {executor.submit(worker, row, self.proxies): row.Index for row in df.iloc[i*batch_size : (i+1)*batch_size].itertuples()}
+                batch_futures = {executor.submit(worker, row, self.proxies): row.Index for row in batch_df.itertuples()}
                 for future in tqdm(as_completed(batch_futures), total=len(batch_futures), desc=f"Augmenting metadata for batch #{i+1}"):
                     row_index, year_month = future.result()
-                    df.at[row_index, 'year'] = year_month['year']
-                    df.at[row_index, 'month'] = year_month['month']
+                    batch_df.at[row_index, 'year'] = year_month['year']
+                    batch_df.at[row_index, 'month'] = year_month['month']
+
+            # Save checkpoint for each batch
+            batch_df.to_csv(f'{dir_cache_augmented_metadata}/checkpoint_batch_{checkpoint_start_index+i+1}.csv', index=False)
+        
+        # Merge all checkpoints into a single dataframe
+        df = pd.concat([pd.read_csv(checkpoint) for checkpoint in glob.glob(str(dir_cache_augmented_metadata / '*.csv'))], ignore_index=True)
+
+        # save the augmented metadata
+        df.to_csv(self.cache_pids_augmented, index=False)
+        # delete cache_lat_lon
+        self.cache_lat_lon.unlink() 
+        # delete cache_pids_raw
+        self.cache_pids_raw.unlink()
+        # delete the cache directory
+        if dir_cache_augmented_metadata.exists():
+            shutil.rmtree(dir_cache_augmented_metadata)
         return df
-                    
-    def _get_pids_from_csv(self, df, id_columns, closest=False, disp=False):
+
+    def _get_pids_from_csv(self, df, id_columns=None, closest=False, disp=False):
+        # 1. Create a new directory called "pids" to store each batch pids
+        dir_cache_pids = self.dir_cache / 'raw_pids'
+        dir_cache_pids.mkdir(parents=True, exist_ok=True)
+
+        # 2. Load all the checkpoint csv files
+        checkpoints = glob.glob(str(dir_cache_pids / '*.csv'))
+        checkpoint_start_index = len(checkpoints)
+        if checkpoint_start_index > 0:
+            completed_rows = pd.concat([pd.read_csv(checkpoint) for checkpoint in checkpoints], ignore_index=True)
+
+            if id_columns is None:
+                # Use 'longitude' and 'latitude' columns to filter rows if id_columns is None
+                id_columns = ['longitude', 'latitude']
+
+            completed_ids = completed_rows[id_columns].drop_duplicates()
+
+            # Filter df to get remaining lat lon to get pids for
+            df = df[~df[id_columns].isin(completed_ids).all(axis=1)]
+
         def get_street_view_info(longitude, latitude, proxies):
             results = panoids(latitude, longitude, proxies, closest=closest, disp=disp)
             return results
@@ -199,6 +258,13 @@ class StreetViewDownloader:
                         print(f"Error: {e}")
                         failed_rows.append(batch_futures[future])  # Store the failed row
 
+                # Save checkpoint for each batch
+                pd.DataFrame(results).to_csv(f'{dir_cache_pids}/checkpoint_batch_{checkpoint_start_index+i+1}.csv', index=False)
+                results = []  # Clear the results list for the next batch
+
+        # Merge all checkpoints into a single dataframe
+        results_df = pd.concat([pd.read_csv(checkpoint) for checkpoint in glob.glob(str(dir_cache_pids / '*.csv'))], ignore_index=True)
+
         # Retry failed rows
         if failed_rows:
             print("Retrying failed rows...")
@@ -215,16 +281,38 @@ class StreetViewDownloader:
                     except Exception as e:
                         print(f"Failed again: {e}")
 
-        results_df = pd.DataFrame(results)
+            # Save the results of retried rows as another checkpoint
+            pd.DataFrame(results).to_csv(f'{dir_cache_pids}/checkpoint_retry.csv', index=False)
+
+            # Merge the retry checkpoint into the final dataframe
+            retry_df = pd.read_csv(f'{dir_cache_pids}/checkpoint_retry.csv')
+            results_df = pd.concat([results_df, retry_df], ignore_index=True)
+
+        # now save results_df as a new cache
+        results_df.to_csv(self.cache_pids_raw, index=False)
+        
+        # delete the cache directory
+        if dir_cache_pids.exists():
+            shutil.rmtree(dir_cache_pids)
         return results_df
 
-    def _get_pids_from_gdf(self, gdf, id_columns, closest=False, disp=False):  
-        # read shapefile
-        gp = GeoProcessor(gdf, distance=self.distance, grid=self.grid, grid_size=self.grid_size, id_columns = id_columns)
-        df = gp.get_lat_lon()
 
-        # Use _get_pids_from_csv to get pids from df
-        results_df = self._get_pids_from_csv(df, id_columns, closest=closest, disp=disp)
+    def _get_pids_from_gdf(self, gdf, id_columns, closest=False, disp=False):  
+        if self.cache_lat_lon.exists():
+            df = pd.read_csv(self.cache_lat_lon)
+            print("The lat and lon have been read from the cache")
+        else:
+            # read shapefile
+            gp = GeoProcessor(gdf, distance=self.distance, grid=self.grid, grid_size=self.grid_size, id_columns = id_columns)
+            df = gp.get_lat_lon()
+            # save df to cache
+            df.to_csv(self.cache_lat_lon, index=False)
+
+        if self.cache_pids_raw.exists():
+            results_df = pd.read_csv(self.cache_pids_raw)
+        else:
+            # Use _get_pids_from_csv to get pids from df
+            results_df = self._get_pids_from_csv(df, id_columns, closest=closest, disp=disp)
 
         # Check if lat and lon are within input polygons
         polygons = gpd.GeoSeries([geom for geom in gdf['geometry'] if geom.type in ['Polygon', 'MultiPolygon']])
@@ -280,7 +368,11 @@ class StreetViewDownloader:
                 gdf = create_buffer_gdf(gdf, buffer)
                 pid = self._get_pids_from_gdf(gdf, id_columns, closest=False, disp=False)
             else:
-                pid = self._get_pids_from_csv(df, id_columns, closest=False, disp=False)
+                if self.cache_pids_raw.exists():
+                    pid = pd.read_csv(self.cache_pids_raw)
+                    print("The raw panorama IDs have been read from the cache")
+                else:
+                    pid = self._get_pids_from_csv(df, id_columns, closest=False, disp=False)
         elif input_shp_file != "":
             gdf = gpd.read_file(input_shp_file)
             if buffer > 0:
@@ -296,22 +388,40 @@ class StreetViewDownloader:
         elif augment_metadata & (self.gsv_api_key == None):
             raise ValueError("Please set the gsv api key by calling the gsv_api_key method.")
         pid_df.to_csv(path_pid, index=False)
-        print("The panorama IDs have been saved to {}".format(path_pid))
-    
-    def download_gsv(self, dir_output, path_pid = None, zoom=2, h_tiles=4, v_tiles=2, cropped=False, full=True, 
-                lat=None, lon=None, input_csv_file="", input_shp_file = "", id_columns=None, buffer = 0, closest=False, disp=False, augment_metadata=False):
+        print("The panorama IDs have been saved to {}".format(path_pid)) 
+
+    def _set_dirs(self, dir_output):
         # set dir_output as attribute and create the directory
-        self.dir_output = dir_output
-        Path(dir_output).mkdir(parents=True, exist_ok=True)
+        self.dir_output = Path(dir_output)
+        self.dir_output.mkdir(parents=True, exist_ok=True)
+        # set dir_cache as attribute and create the directory
+        self.dir_cache = self.dir_output / "cache_zensvi"
+        self.dir_cache.mkdir(parents=True, exist_ok=True)
+        # set other cache directories
+        self.cache_lat_lon = self.dir_cache / "lat_lon.csv"
+        self.cache_pids_raw = self.dir_cache / "pids_raw.csv"
+        self.cache_pids_augmented = self.dir_cache / "pids_augemented.csv"
+        
+    def download_gsv(self, dir_output, path_pid = None, zoom=2, h_tiles=4, v_tiles=2, cropped=False, full=True, 
+                lat=None, lon=None, input_csv_file="", input_shp_file = "", id_columns=None, buffer = 0, closest=False, 
+                disp=False, augment_metadata=False, update_pids = False):
+        # set necessary directories
+        self._set_dirs(dir_output)
         
         # call get_pids function first if path_pid is None
-        if path_pid is None:
+        if (path_pid is None) & (self.cache_pids_augmented.exists() == False):
             print("Getting pids...")
-            path_pid = os.path.join(self.dir_output, "pids.csv")
-            self.get_pids(path_pid, lat=lat, lon=lon,
-                        input_csv_file=input_csv_file, input_shp_file = input_shp_file, id_columns=id_columns, buffer = buffer, closest=closest, disp=disp, augment_metadata=augment_metadata)
-
-
+            path_pid = self.dir_output / "pids.csv"
+            if path_pid.exists() & (update_pids == False):
+                print("update_pids is set to False. So the following csv file will be used: {}".format(path_pid))
+            else:
+                self.get_pids(path_pid, lat=lat, lon=lon,
+                            input_csv_file=input_csv_file, input_shp_file = input_shp_file, id_columns=id_columns, buffer = buffer, closest=closest, disp=disp, augment_metadata=augment_metadata)
+        elif self.cache_pids_augmented.exists():
+            # copy the cache pids_augmented to path_pid
+            path_pid = self.dir_output / "pids.csv"
+            shutil.copy2(self.cache_pids_augmented, path_pid)
+            print("The augmented panorama IDs have been saved to {}".format(path_pid))
         # Horizontal Google Street View tiles
         # zoom 3: (8, 4); zoom 5: (26, 13) zoom 2: (4, 2) zoom 1: (2, 1);4:(8,16)
         # zoom = 2
@@ -320,19 +430,24 @@ class StreetViewDownloader:
         # cropped = False
         # full = True
         # create a folder within self.dir_output
-        panorama_output = os.path.join(self.dir_output, "panorama")
-        os.makedirs(panorama_output, exist_ok=True)
+        self.panorama_output = self.dir_output / "panorama"
+        self.panorama_output.mkdir(parents=True, exist_ok=True)
         
         panoids = self._read_pids(path_pid)
-
+        
         if len(panoids) == 0:
-            print("There is no panorama ID to download.")
+            print("There is no panorama ID to download")
             return
         else:
             panoids_rest = self._check_already(panoids)
 
         if len(panoids_rest) > 0:
             UAs = random.choices(self.user_agent, k = len(panoids_rest))
-            ImageTool.dwl_multiple(panoids_rest, zoom, v_tiles, h_tiles, panorama_output, UAs, self.proxies, cropped, full, log_path=self.log_path)
+            ImageTool.dwl_multiple(panoids_rest, zoom, v_tiles, h_tiles, self.panorama_output, UAs, self.proxies, cropped, full, log_path=self.log_path)
         else:
-            print("All images have been downloaded.")
+            print("All images have been downloaded")
+        
+        # delete the cache directory
+        if self.dir_cache.exists():
+            shutil.rmtree(self.dir_cache)
+            print("The cache directory has been deleted")

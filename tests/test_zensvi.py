@@ -85,11 +85,15 @@ if __name__ == "__main__":
                                     distance=20,
                                     grid = False, grid_size = 20)
     downloader.download_gsv("tests/data/output/", 
-                            input_csv_file = "tests/data/input/count_station.csv",
-                            # input_shp_file = "tests/data/input/locations_point.shp",
+                            # input_csv_file = "tests/data/input/count_station.csv",
+                            input_shp_file = "tests/data/input/locations_point.shp",
                             # id_columns = "Site_ID",
                             buffer = 100,
                             augment_metadata=True) 
-
+    segmenter = Segmenter()
+    segmenter.segment("tests/data/output/panorama", 
+                    # dir_image_output = "tests/data/output/segmentation", 
+                    dir_pixel_ratio_output = "tests/data/output/",
+                    batch_size=1)
     end_time = time.time()
     print(f"Block 2 execution time: {end_time - start_time} seconds")
