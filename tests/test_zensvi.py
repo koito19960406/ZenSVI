@@ -81,18 +81,18 @@ if __name__ == "__main__":
     # Code block 2
     start_time = time.time()
 
-    downloader = StreetViewDownloader(gsv_api_key = gsv_api_key,
-                                    distance=20,
-                                    grid = False, grid_size = 20)
-    downloader.download_gsv("tests/data/output/", 
-                            # input_csv_file = "tests/data/input/count_station.csv",
-                            input_shp_file = "tests/data/input/locations_point.shp",
-                            # id_columns = "count_point_id",
-                            buffer = 100,
-                            augment_metadata=True) 
+    # downloader = StreetViewDownloader(gsv_api_key = gsv_api_key,
+    #                                 distance=20,
+    #                                 grid = False, grid_size = 20)
+    # downloader.download_gsv("tests/data/output/", 
+    #                         # input_csv_file = "tests/data/input/count_station.csv",
+    #                         input_shp_file = "tests/data/input/locations_point.shp",
+    #                         # id_columns = "count_point_id",
+    #                         buffer = 100,
+    #                         augment_metadata=True) 
     segmenter = Segmenter()
-    segmenter.segment("tests/data/output/panorama", 
-                    # dir_image_output = "tests/data/output/segmentation", 
+    segmenter.segment(dir_input = "tests/data/output/panorama", 
+                    dir_image_output = "tests/data/output/segmentation", 
                     dir_pixel_ratio_output = "tests/data/output/",
                     batch_size=1)
     end_time = time.time()

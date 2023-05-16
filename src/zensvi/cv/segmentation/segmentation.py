@@ -556,7 +556,11 @@ class Segmenter:
                         completed_image_files.update(checkpoint_dict.keys())
 
         # Get the list of all image files and filter the ones that are not completed yet
-        image_files = [str(f) for f in Path(dir_input).glob("*.jpg") if str(f) not in completed_image_files]
+        # List of possible image file extensions
+        image_extensions = [".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".dib", ".pbm", ".pgm", ".ppm", ".sr", ".ras", ".exr", ".jp2"]
+
+        # Get the list of all image files in the directory that are not completed yet
+        image_files = [str(f) for f in Path(dir_input).iterdir() if f.suffix in image_extensions and str(f) not in completed_image_files]
 
         outer_batch_size = 1000  # Number of inner batches in one outer batch
         num_outer_batches = (len(image_files) + outer_batch_size * batch_size - 1) // (outer_batch_size * batch_size)
