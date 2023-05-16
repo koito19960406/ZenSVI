@@ -9,7 +9,7 @@ import time
 import dotenv
 
 from zensvi.download import StreetViewDownloader
-from zensvi.cv.segmentation import Segmenter, ImageDataset, create_cityscapes_label_colormap
+from zensvi.cv import Segmenter, ImageDataset, create_cityscapes_label_colormap
 from zensvi.transform import xyz2lonlat, lonlat2XY, ImageTransformer
 
 
