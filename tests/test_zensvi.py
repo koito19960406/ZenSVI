@@ -87,7 +87,7 @@ if __name__ == "__main__":
     downloader.download_gsv("tests/data/output/", 
                             # input_csv_file = "tests/data/input/count_station.csv",
                             input_shp_file = "tests/data/input/locations_point.shp",
-                            # id_columns = "Site_ID",
+                            # id_columns = "count_point_id",
                             buffer = 100,
                             augment_metadata=True) 
     segmenter = Segmenter()

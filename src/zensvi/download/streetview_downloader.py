@@ -18,6 +18,7 @@ warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 import csv
 import glob
 import shutil
+import numpy as np
 
 from zensvi.download.utils.imtool import ImageTool
 from zensvi.download.utils.get_pids import panoids
@@ -218,16 +219,23 @@ class StreetViewDownloader:
         checkpoints = glob.glob(str(dir_cache_pids / '*.csv'))
         checkpoint_start_index = len(checkpoints)
         if checkpoint_start_index > 0:
-            completed_rows = pd.concat([pd.read_csv(checkpoint) for checkpoint in checkpoints], ignore_index=True)
+            dataframes = []
+            for checkpoint in checkpoints:
+                try:
+                    df_checkpoint = pd.read_csv(checkpoint)
+                    dataframes.append(df_checkpoint)
+                except pd.errors.EmptyDataError:
+                    print(f"Warning: {checkpoint} is empty and has been skipped.")
+                    continue
+            completed_rows = pd.concat(dataframes, ignore_index=True)
 
-            if id_columns is None:
-                # Use 'longitude' and 'latitude' columns to filter rows if id_columns is None
-                id_columns = ['longitude', 'latitude']
+            completed_ids = completed_rows['lat_lon_id'].drop_duplicates()
 
-            completed_ids = completed_rows[id_columns].drop_duplicates()
+            # Merge on the ID column, keeping track of where each row originates
+            merged = df.merge(completed_ids, on='lat_lon_id', how='outer', indicator=True)
 
-            # Filter df to get remaining lat lon to get pids for
-            df = df[~df[id_columns].isin(completed_ids).all(axis=1)]
+            # Filter out rows that come from the 'completed_ids' DataFrame
+            df = merged[merged['_merge'] == 'left_only'].drop(columns='_merge')
 
         def get_street_view_info(longitude, latitude, proxies):
             results = panoids(latitude, longitude, proxies, closest=closest, disp=disp)
@@ -236,22 +244,30 @@ class StreetViewDownloader:
         def worker(row):
             input_longitude = row.longitude
             input_latitude = row.latitude
-            return {column: getattr(row, column) for column in id_columns}, (input_longitude, input_latitude), get_street_view_info(input_longitude, input_latitude, self.proxies)
+            lat_lon_id = row.lat_lon_id
+            id_dict = {column: getattr(row, column) for column in id_columns} if id_columns else {}
+            return lat_lon_id, (input_longitude, input_latitude), get_street_view_info(input_longitude, input_latitude, self.proxies), id_dict
 
         results = []
         batch_size = 1000  # Modify this to a suitable value
         num_batches = (len(df) + batch_size - 1) // batch_size
         failed_rows = []
-
+        
+        # if there's no rows to process, return completed_ids
+        if len(df) == 0:
+            return completed_ids
+        
+        # if not, process the rows
         for i in tqdm(range(num_batches), desc=f"Getting pids by batch size {min(batch_size, len(df))}"):
             with ThreadPoolExecutor() as executor:
                 batch_futures = {executor.submit(worker, row): row for row in df.iloc[i*batch_size : (i+1)*batch_size].itertuples()}
                 for future in tqdm(as_completed(batch_futures), total=len(batch_futures), desc=f"Getting pids for batch #{i+1}"):
                     try:
-                        id_dict, (input_longitude, input_latitude), row_results = future.result()
+                        lat_lon_id, (input_longitude, input_latitude), row_results, id_dict = future.result()
                         for result in row_results:
                             result['input_longitude'] = input_longitude
                             result['input_latitude'] = input_latitude
+                            result['lat_lon_id'] = lat_lon_id
                             result.update(id_dict)
                             results.append(result)
                     except Exception as e:
@@ -259,7 +275,8 @@ class StreetViewDownloader:
                         failed_rows.append(batch_futures[future])  # Store the failed row
 
                 # Save checkpoint for each batch
-                pd.DataFrame(results).to_csv(f'{dir_cache_pids}/checkpoint_batch_{checkpoint_start_index+i+1}.csv', index=False)
+                if len(results) > 0:
+                    pd.DataFrame(results).to_csv(f'{dir_cache_pids}/checkpoint_batch_{checkpoint_start_index+i+1}.csv', index=False)
                 results = []  # Clear the results list for the next batch
 
         # Merge all checkpoints into a single dataframe
@@ -272,25 +289,27 @@ class StreetViewDownloader:
                 retry_futures = {executor.submit(worker, row): row for row in failed_rows}
                 for future in tqdm(as_completed(retry_futures), total=len(retry_futures), desc="Retrying failed rows"):
                     try:
-                        id_dict, (input_longitude, input_latitude), row_results = future.result()
+                        lat_lon_id, (input_longitude, input_latitude), row_results, id_dict = future.result()
                         for result in row_results:
                             result['input_longitude'] = input_longitude
                             result['input_latitude'] = input_latitude
+                            result['lat_lon_id'] = lat_lon_id
                             result.update(id_dict)
                             results.append(result)
                     except Exception as e:
                         print(f"Failed again: {e}")
 
             # Save the results of retried rows as another checkpoint
-            pd.DataFrame(results).to_csv(f'{dir_cache_pids}/checkpoint_retry.csv', index=False)
+            if len(results) > 0:
+                pd.DataFrame(results).to_csv(f'{dir_cache_pids}/checkpoint_retry.csv', index=False)
+                # Merge the retry checkpoint into the final dataframe
+                retry_df = pd.read_csv(f'{dir_cache_pids}/checkpoint_retry.csv')
+                results_df = pd.concat([results_df, retry_df], ignore_index=True)
 
-            # Merge the retry checkpoint into the final dataframe
-            retry_df = pd.read_csv(f'{dir_cache_pids}/checkpoint_retry.csv')
-            results_df = pd.concat([results_df, retry_df], ignore_index=True)
-
-        # now save results_df as a new cache
+        # now save results_df as a new cache afte dropping lat_lon_id
+        results_df = results_df.drop(columns='lat_lon_id')
         results_df.to_csv(self.cache_pids_raw, index=False)
-        
+
         # delete the cache directory
         if dir_cache_pids.exists():
             shutil.rmtree(dir_cache_pids)
@@ -305,6 +324,7 @@ class StreetViewDownloader:
             # read shapefile
             gp = GeoProcessor(gdf, distance=self.distance, grid=self.grid, grid_size=self.grid_size, id_columns = id_columns)
             df = gp.get_lat_lon()
+            df['lat_lon_id'] = np.arange(1, len(df) + 1)
             # save df to cache
             df.to_csv(self.cache_lat_lon, index=False)
 
