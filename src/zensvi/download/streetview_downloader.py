@@ -330,6 +330,7 @@ class StreetViewDownloader:
             df.to_csv(self.cache_lat_lon, index=False)
 
         if self.cache_pids_raw.exists():
+            print("The raw panorama IDs have been read from the cache")
             results_df = pd.read_csv(self.cache_pids_raw)
         else:
             # Use _get_pids_from_csv to get pids from df
