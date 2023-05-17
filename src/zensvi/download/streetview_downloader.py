@@ -306,8 +306,9 @@ class StreetViewDownloader:
                 retry_df = pd.read_csv(f'{dir_cache_pids}/checkpoint_retry.csv')
                 results_df = pd.concat([results_df, retry_df], ignore_index=True)
 
-        # now save results_df as a new cache afte dropping lat_lon_id
+        # now save results_df as a new cache after dropping lat_lon_id and drop duplicates in panoid
         results_df = results_df.drop(columns='lat_lon_id')
+        results_df = results_df.drop_duplicates(subset='panoid')
         results_df.to_csv(self.cache_pids_raw, index=False)
 
         # delete the cache directory
@@ -400,9 +401,9 @@ class StreetViewDownloader:
             pid = self._get_pids_from_gdf(gdf, id_columns, closest=False, disp=False)
         else:
             raise ValueError("Please input the lat and lon, csv file, or shapefile.")
-        # save the pids
+        # convert pid to dataframe
         pid_df = pd.DataFrame(pid)
-        pid_df = pid_df.drop_duplicates(subset='panoid')
+        
         if augment_metadata & (self.gsv_api_key != None):
             pid_df = self._augment_metadata(pid_df)
         elif augment_metadata & (self.gsv_api_key == None):
