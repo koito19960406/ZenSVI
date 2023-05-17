@@ -100,7 +100,8 @@ class StreetViewDownloader:
     def _get_proxies(self):
         proxies_file = pkg_resources.resource_filename('zensvi.download.utils', 'proxies.csv')
         proxies = []
-        with open(proxies_file, 'r') as f:
+        # open with "utf-8" encoding to avoid UnicodeDecodeError
+        with open(proxies_file, 'r', encoding = "utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 ip = row['ip']
