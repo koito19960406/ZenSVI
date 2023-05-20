@@ -84,9 +84,9 @@ if __name__ == "__main__":
     downloader = StreetViewDownloader(gsv_api_key = gsv_api_key,
                                     distance=20,
                                     grid = False, grid_size = 20)
-    downloader.download_gsv("tests/data/output/", 
+    downloader.download_gsv("/Volumes/ExFAT2/bike_svi/data/raw/cities/London", 
                             # input_csv_file = "tests/data/input/count_station.csv",
-                            input_shp_file = "tests/data/input/locations_point.shp",
+                            input_shp_file = "/Volumes/ExFAT2/bike_svi/data/raw/cities/London/count_station.csv",
                             # id_columns = "count_point_id",
                             buffer = 100,
                             augment_metadata=True) 
