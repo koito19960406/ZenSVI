@@ -118,14 +118,13 @@ class StreetViewDownloader:
         return pids
 
     def _check_already(self, all_panoids):
-        # Get the list of already downloaded images
-        name_r = set(name.split(".")[0] for name in os.listdir(self.panorama_output))
+        # Get the set of already downloaded images
+        name_r = set(name.split(".")[0] for name in tqdm(os.listdir(self.panorama_output), desc="Checking already downloaded images"))
 
         # Filter the list of all panoids to only include those not already downloaded
-        all_panoids[:] = [pid for pid in all_panoids if pid not in name_r]
+        all_panoids = list(set(all_panoids) - name_r)
 
         return all_panoids
-
 
     def _log_write(self, pids):
         with open(self.log_path, 'a+') as fw:
