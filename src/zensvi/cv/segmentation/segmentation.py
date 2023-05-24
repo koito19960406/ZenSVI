@@ -560,16 +560,16 @@ class Segmenter:
         image_extensions = [".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".dib", ".pbm", ".pgm", ".ppm", ".sr", ".ras", ".exr", ".jp2"]
 
         # Get the list of all image files in the directory that are not completed yet
-        image_files = [str(f) for f in Path(dir_input).iterdir() if f.suffix in image_extensions and str(f) not in completed_image_files]
+        image_file_list = [str(f) for f in Path(dir_input).iterdir() if f.suffix in image_extensions and str(f) not in completed_image_files]
 
         outer_batch_size = 1000  # Number of inner batches in one outer batch
-        num_outer_batches = (len(image_files) + outer_batch_size * batch_size - 1) // (outer_batch_size * batch_size)
+        num_outer_batches = (len(image_file_list) + outer_batch_size * batch_size - 1) // (outer_batch_size * batch_size)
 
-        for i in tqdm(range(num_outer_batches), desc=f"Processing outer batches of size {min(outer_batch_size * batch_size, len(image_files))}"):
+        for i in tqdm(range(num_outer_batches), desc=f"Processing outer batches of size {min(outer_batch_size * batch_size, len(image_file_list))}"):
             # Get the image files for the current outer batch
-            outer_batch_image_files = image_files[i * outer_batch_size * batch_size : (i+1) * outer_batch_size * batch_size]
+            outer_batch_image_file_list = image_file_list[i * outer_batch_size * batch_size : (i+1) * outer_batch_size * batch_size]
 
-            dataset = ImageDataset(outer_batch_image_files)
+            dataset = ImageDataset(outer_batch_image_file_list)
             dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=dataset.collate_fn)
 
             pixel_ratio_dict = defaultdict(dict)  # reset pixel_ratio_dict for each outer batch
