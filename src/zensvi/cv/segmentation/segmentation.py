@@ -523,7 +523,14 @@ class Segmenter:
                 pixel_ratio_dict[image_file_key] = pixel_ratio
 
     # Modify the segment method inside the Segmenter class
-    def segment(self, dir_input: Union[str, Path], dir_image_output: Union[str, Path, None] = None, dir_pixel_ratio_output: Union[str, Path, None] = None, task="semantic", batch_size=1, save_image_options = ["segmented_image", "blend_image"], pixel_ratio_save_format = ["json", "csv"]):
+    def segment(self, dir_input: Union[str, Path], 
+                dir_image_output: Union[str, Path, None] = None, 
+                dir_pixel_ratio_output: Union[str, Path, None] = None, 
+                task="semantic", 
+                batch_size=1, 
+                save_image_options = ["segmented_image", "blend_image"], 
+                pixel_ratio_save_format = ["json", "csv"],
+                max_workers: Union[int, None] = None):
         # make sure that at least one of dir_image_output and dir_pixel_ratio_output is not None
         if (dir_image_output is None) & (dir_pixel_ratio_output is None):
             raise ValueError("At least one of dir_image_output and dir_pixel_ratio_output must not be None.")
@@ -574,7 +581,7 @@ class Segmenter:
 
             pixel_ratio_dict = defaultdict(dict)  # reset pixel_ratio_dict for each outer batch
 
-            with ThreadPoolExecutor() as executor:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = []
 
                 for batch in dataloader:
