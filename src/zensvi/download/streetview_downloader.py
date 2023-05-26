@@ -19,6 +19,7 @@ import csv
 import glob
 import shutil
 import numpy as np
+import osmnx as ox
 
 from zensvi.download.utils.imtool import ImageTool
 from zensvi.download.utils.get_pids import panoids
@@ -38,6 +39,7 @@ class StreetViewDownloader:
         self._grid = grid
         self._grid_size = grid_size
 
+
     @property
     def gsv_api_key(self):
         return self._gsv_api_key    
@@ -45,12 +47,14 @@ class StreetViewDownloader:
     def gsv_api_key(self,gsv_api_key):
         self._gsv_api_key = gsv_api_key
 
+
     @property
     def log_path(self):
         return self._log_path    
     @log_path.setter
     def log_path(self,log_path):
         self._log_path = log_path
+        
         
     @property
     def nthreads(self):
@@ -66,12 +70,14 @@ class StreetViewDownloader:
     def distance(self,distance):
         self._distance = distance
     
+    
     @property
     def grid(self):
         return self._grid    
     @grid.setter
     def grid(self,grid):
         self._grid = grid
+        
         
     @property
     def grid_size(self):
@@ -80,9 +86,11 @@ class StreetViewDownloader:
     def grid_size(self,grid_size):
         self._grid_size = grid_size
     
+    
     @property
     def user_agent(self):
         return self._user_agent  
+    
     
     def _get_ua(self):
         user_agent_file = pkg_resources.resource_filename('zensvi.download.utils', 'UserAgent.csv')
@@ -93,9 +101,11 @@ class StreetViewDownloader:
                 UA.append(ua)
         return UA
     
+    
     @property
     def proxies(self):
         return self._proxies
+    
     
     def _get_proxies(self):
         proxies_file = pkg_resources.resource_filename('zensvi.download.utils', 'proxies.csv')
@@ -111,11 +121,13 @@ class StreetViewDownloader:
                 proxies.append(proxy_dict)
         return proxies
     
+    
     def _read_pids(self, path_pid):
         pid_df = pd.read_csv(path_pid)
         # get unique pids as a list
         pids = pid_df.iloc[:,0].unique().tolist()
         return pids
+
 
     def _check_already(self, all_panoids):
         # Get the set of already downloaded images
@@ -123,13 +135,14 @@ class StreetViewDownloader:
 
         # Filter the list of all panoids to only include those not already downloaded
         all_panoids = list(set(all_panoids) - name_r)
-
         return all_panoids
+
 
     def _log_write(self, pids):
         with open(self.log_path, 'a+') as fw:
             for pid in pids:
                 fw.write(pid+'\n')
+    
     
     def _augment_metadata(self, df):
         if self.cache_pids_augmented.exists():
@@ -209,6 +222,7 @@ class StreetViewDownloader:
         if dir_cache_augmented_metadata.exists():
             shutil.rmtree(dir_cache_augmented_metadata)
         return df
+
 
     def _get_pids_from_csv(self, df, id_columns=None, closest=False, disp=False):
         # 1. Create a new directory called "pids" to store each batch pids
@@ -372,7 +386,57 @@ class StreetViewDownloader:
         return results_within_polygons_df
 
 
-    def get_pids(self, path_pid, lat = None, lon = None, input_csv_file = "", input_shp_file = "", id_columns=None, buffer = 0, closest=False, disp=False, augment_metadata=False):
+    def _get_raw_pid(self, **kwargs):
+        defaults = {
+            'lat': None, 'lon': None, 'input_csv_file': "", 'input_shp_file': "",
+            'input_place_name': "", 'id_columns': None, 'buffer': 0, 
+            'closest': False, 'disp': False
+        }
+        
+        defaults.update(kwargs)
+
+        if self.cache_pids_raw.exists():
+            pid = pd.read_csv(self.cache_pids_raw)
+            print("The raw panorama IDs have been read from the cache")
+            return pid
+
+        if defaults['lat'] is not None and defaults['lon'] is not None:
+            pid = panoids(defaults['lat'], defaults['lon'], closest=defaults['closest'], disp=defaults['disp'])
+        elif defaults['input_csv_file'] != "":
+            df = pd.read_csv(defaults['input_csv_file'])
+            df = standardize_column_names(df)
+            if defaults['buffer'] > 0:
+                gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.longitude, df.latitude), crs='EPSG:4326')
+                gdf = create_buffer_gdf(gdf, defaults['buffer'])
+                pid = self._get_pids_from_gdf(gdf, defaults['id_columns'], closest=False, disp=False)
+            else:
+                pid = self._get_pids_from_csv(df, defaults['id_columns'], closest=False, disp=False)
+        elif defaults['input_shp_file'] != "":
+            gdf = gpd.read_file(defaults['input_shp_file'])
+            if defaults['buffer'] > 0:
+                gdf = create_buffer_gdf(gdf, defaults['buffer'])
+            pid = self._get_pids_from_gdf(gdf, defaults['id_columns'], closest=False, disp=False)
+        elif defaults['input_place_name'] != "":
+            print("Geocoding the input place name")
+            gdf = ox.geocoder.geocode_to_gdf(defaults['input_place_name'])
+            if defaults['buffer'] > 0:
+                gdf = create_buffer_gdf(gdf, defaults['buffer'])
+            pid = self._get_pids_from_gdf(gdf, defaults['id_columns'], closest=False, disp=False) 
+        else:
+            raise ValueError("Please input the lat and lon, csv file, or shapefile.")
+
+        return pid
+
+
+    def get_pids(self, path_pid, **kwargs):
+        defaults = {
+            'lat': None, 'lon': None, 'input_csv_file': "", 'input_shp_file': "",
+            'input_place_name': "", 'id_columns': None, 'buffer': 0, 
+            'closest': False, 'disp': False, 'augment_metadata': False
+        }
+        
+        defaults.update(kwargs)
+        id_columns = defaults['id_columns']
         if id_columns is not None:
             if isinstance(id_columns, str):
                 id_columns = [id_columns.lower()]
@@ -380,37 +444,22 @@ class StreetViewDownloader:
                 id_columns = [column.lower() for column in id_columns]
         else:
             id_columns = []
-        if lat != None and lon != None:
-            pid = panoids(lat, lon, closest=closest, disp=disp)
-        elif input_csv_file != "":
-            df = pd.read_csv(input_csv_file)
-            df = standardize_column_names(df)
-            if buffer > 0:
-                gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.longitude, df.latitude), crs='EPSG:4326')
-                gdf = create_buffer_gdf(gdf, buffer)
-                pid = self._get_pids_from_gdf(gdf, id_columns, closest=False, disp=False)
-            else:
-                if self.cache_pids_raw.exists():
-                    pid = pd.read_csv(self.cache_pids_raw)
-                    print("The raw panorama IDs have been read from the cache")
-                else:
-                    pid = self._get_pids_from_csv(df, id_columns, closest=False, disp=False)
-        elif input_shp_file != "":
-            gdf = gpd.read_file(input_shp_file)
-            if buffer > 0:
-                gdf = create_buffer_gdf(gdf, buffer)
-            pid = self._get_pids_from_gdf(gdf, id_columns, closest=False, disp=False)
-        else:
-            raise ValueError("Please input the lat and lon, csv file, or shapefile.")
+        # update id_columns
+        defaults['id_columns'] = id_columns
+        
+        # get raw pid
+        pid = self._get_raw_pid(**defaults)
+
         # convert pid to dataframe
         pid_df = pd.DataFrame(pid)
         
-        if augment_metadata & (self.gsv_api_key != None):
+        if defaults["augment_metadata"] & (self.gsv_api_key != None):
             pid_df = self._augment_metadata(pid_df)
-        elif augment_metadata & (self.gsv_api_key == None):
+        elif defaults["augment_metadata"] & (self.gsv_api_key == None):
             raise ValueError("Please set the gsv api key by calling the gsv_api_key method.")
         pid_df.to_csv(path_pid, index=False)
         print("The panorama IDs have been saved to {}".format(path_pid)) 
+
 
     def _set_dirs(self, dir_output):
         # set dir_output as attribute and create the directory
@@ -424,8 +473,9 @@ class StreetViewDownloader:
         self.cache_pids_raw = self.dir_cache / "pids_raw.csv"
         self.cache_pids_augmented = self.dir_cache / "pids_augemented.csv"
         
+        
     def download_gsv(self, dir_output, path_pid = None, zoom=2, h_tiles=4, v_tiles=2, cropped=False, full=True, 
-                lat=None, lon=None, input_csv_file="", input_shp_file = "", id_columns=None, buffer = 0, closest=False, 
+                lat=None, lon=None, input_csv_file="", input_shp_file = "", input_place_name = "", id_columns=None, buffer = 0, closest=False, 
                 disp=False, augment_metadata=False, update_pids = False):
         # set necessary directories
         self._set_dirs(dir_output)
@@ -438,7 +488,8 @@ class StreetViewDownloader:
                 print("update_pids is set to False. So the following csv file will be used: {}".format(path_pid))
             else:
                 self.get_pids(path_pid, lat=lat, lon=lon,
-                            input_csv_file=input_csv_file, input_shp_file = input_shp_file, id_columns=id_columns, buffer = buffer, closest=closest, disp=disp, augment_metadata=augment_metadata)
+                            input_csv_file=input_csv_file, input_shp_file = input_shp_file, input_place_name = input_place_name, 
+                            id_columns=id_columns, buffer = buffer, closest=closest, disp=disp, augment_metadata=augment_metadata)
         elif self.cache_pids_augmented.exists():
             # copy the cache pids_augmented to path_pid
             path_pid = self.dir_output / "pids.csv"
