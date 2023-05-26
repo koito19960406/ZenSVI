@@ -130,7 +130,7 @@ class GeoProcessor:
         failed_geoms = []
         results = []
 
-        for i in tqdm(range(num_batches), desc=f"Processing polgyon by batch size {min(batch_size, len(gdf))}"):
+        for i in tqdm(range(num_batches), desc=f"Processing polygon by batch size {min(batch_size, len(gdf))}"):
             with ProcessPoolExecutor() as executor:
                 batch_futures = {}
                 for geom in gdf.geometry.iloc[i*batch_size : (i+1)*batch_size]:
