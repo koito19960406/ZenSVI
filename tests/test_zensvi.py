@@ -83,24 +83,23 @@ if __name__ == "__main__":
     # Code block 2
     start_time = time.time()
 
-    downloader = GSVDownloader(gsv_api_key = gsv_api_key,
-                                    distance=20,
-                                    grid = False, grid_size = 20)
-    downloader.download_svi("tests/data/output", 
-                            lat=52.078663, lon=4.313877,    
-                            # input_csv_file = "tests/data/input/count_station.csv",
-                            # input_shp_file = "/Volumes/ExFAT2/bike_svi/data/raw/cities/London/count_station.csv",
-                            # input_place_name="Bronkhorst, Netherlands",
-                            # id_columns = "count_point_id",
-                            # buffer = 100,
-                            augment_metadata=True) 
+    # downloader = GSVDownloader(gsv_api_key = gsv_api_key,
+    #                                 distance=20,
+    #                                 grid = False, grid_size = 20)
+    # downloader.download_svi("tests/data/output", 
+    #                         # lat=52.078663, lon=4.313877,    
+    #                         # input_csv_file = "tests/data/input/count_station.csv",
+    #                         # input_shp_file = "/Volumes/ExFAT2/bike_svi/data/raw/cities/London/count_station.csv",
+    #                         # input_place_name="Bronkhorst, Netherlands",
+    #                         # id_columns = "count_point_id",
+    #                         # buffer = 100,
+    #                         augment_metadata=True) 
     downloader = MLYDownloader(mly_api_key=mly_api_key)
     downloader.download_svi(dir_output = "tests/data/output", 
-                            lat=1.276095, lon=103.792547,
-                            input_csv_file="tests/data/input/Walking_count_sites 3.csv",
-                            # input_shp_file="tests/data/input/locations_polygon.shp"
-                            radius=50,
-                            organization_id=int(org_id)
+                            # lat=1.276095, lon=103.792547,
+                            # input_csv_file="tests/data/input/Walking_count_sites 3.csv",
+                            input_shp_file="tests/data/input/locations_polygon.shp",
+                            radius=50
                             )
     # segmenter = Segmenter()
 

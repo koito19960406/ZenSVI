@@ -346,6 +346,11 @@ class GSVDownloader(BaseDownloader):
             df = pd.read_csv(self.cache_lat_lon)
             print("The lat and lon have been read from the cache")
         else:
+            if gdf.crs is None:
+                gdf = gdf.set_crs('EPSG:4326')
+            elif gdf.crs != 'EPSG:4326':
+                # convert to EPSG:4326
+                gdf = gdf.to_crs('EPSG:4326')
             # read shapefile
             gp = GeoProcessor(gdf, distance=self.distance, grid=self.grid, grid_size=self.grid_size, id_columns = id_columns)
             df = gp.get_lat_lon()
@@ -699,6 +704,11 @@ class MLYDownloader(BaseDownloader):
             df = pd.read_csv(self.cache_lat_lon)
             print("The lat and lon have been read from the cache")
         else:
+            if gdf.crs is None:
+                gdf = gdf.set_crs('EPSG:4326')
+            elif gdf.crs != 'EPSG:4326':
+                # convert to EPSG:4326
+                gdf = gdf.to_crs('EPSG:4326')
             # read shapefile
             gp = GeoProcessor(gdf, distance=self.distance, grid=self.grid, grid_size=self.grid_size, id_columns = id_columns)
             df = gp.get_lat_lon()
