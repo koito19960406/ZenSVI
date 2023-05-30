@@ -513,7 +513,7 @@ class GSVDownloader(BaseDownloader):
         # cropped = False
         # full = True
         # create a folder within self.dir_output
-        self.panorama_output = self.dir_output / "panorama"
+        self.panorama_output = self.dir_output / "gsv_panorama"
         self.panorama_output.mkdir(parents=True, exist_ok=True)
         
         panoids = self._read_pids(path_pid)
