@@ -368,6 +368,10 @@ class GSVDownloader(BaseDownloader):
         # Check if lat and lon are within input polygons
         polygons = gpd.GeoSeries([geom for geom in gdf['geometry'] if geom.type in ['Polygon', 'MultiPolygon']])
 
+        # the rest is only for polygons, so return results_df if there's no polygons
+        if len(polygons) == 0:
+            return results_df
+
         # Convert lat, lon to Points and create a GeoSeries
         points = gpd.GeoSeries([Point(lon, lat) for lon, lat in zip(results_df['lon'], results_df['lat'])])
 
@@ -729,6 +733,10 @@ class MLYDownloader(BaseDownloader):
         # Check if lat and lon are within input polygons
         polygons = gpd.GeoSeries([geom for geom in gdf['geometry'] if geom.type in ['Polygon', 'MultiPolygon']])
 
+        # the rest is only for polygons, so return results_df if there's no polygons
+        if len(polygons) == 0:
+            return results_df
+        
         # Convert lat, lon to Points and create a GeoSeries
         points = gpd.GeoSeries([Point(lon, lat) for lon, lat in zip(results_df['lon'], results_df['lat'])])
 
