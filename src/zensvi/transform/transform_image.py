@@ -145,8 +145,9 @@ class ImageTransformer:
         def run(path_input, path_output, show_size, style):
             img_raw = cv2.imread(str(path_input), cv2.IMREAD_COLOR)
             if style == "fisheye":
-                img_new = self.get_fisheye(img_raw)
-                cv2.imwrite(str(path_output), img_new)
+                if not path_output.exists():
+                    img_new = self.get_fisheye(img_raw)
+                    cv2.imwrite(str(path_output), img_new)
 
             elif style == "perspective":
                 thetas = [0, 90, 180, 270]
@@ -155,12 +156,13 @@ class ImageTransformer:
                 aspects = (9, 16)
 
                 for theta in thetas:
-                    height = int(aspects_v[0] * show_size)
-                    width = int(aspects_v[1] * show_size)
-                    aspect_name = '%s--%s' % (aspects[0], aspects[1])
-                    img_new = self.get_perspective(img_raw, FOV, theta, 0, height, width)
                     path_output_raw = path_output.with_name(f'{path_output.stem}_Direction_{theta}_FOV_{FOV}_aspect_{aspect_name}_raw.png')
-                    cv2.imwrite(str(path_output_raw), img_new)
+                    if not path_output_raw.exists(): 
+                        height = int(aspects_v[0] * show_size)
+                        width = int(aspects_v[1] * show_size)
+                        aspect_name = '%s--%s' % (aspects[0], aspects[1])
+                        img_new = self.get_perspective(img_raw, FOV, theta, 0, height, width)
+                        cv2.imwrite(str(path_output_raw), img_new)
 
         def process_image(dir_input, dir_output, name, show_size, style):
             path_input = dir_input / name.name
