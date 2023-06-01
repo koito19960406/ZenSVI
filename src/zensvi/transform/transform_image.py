@@ -136,12 +136,18 @@ class ImageTransformer:
 
         return new_img
 
-    def transform_images(self, style_list=["perspective", "fisheye"], show_size=100):
+    def transform_images(self, style_list=["perspective", "fisheye"], FOV = 90, aspects = (9, 16), show_size=100):
+        # FOV validation
+        if 360 % FOV != 0:
+            raise ValueError("FOV must be a divisor of 360.")
+
         # check if there's anything other than "perspective" and "fisheye"
         if not all(style in ["perspective", "fisheye"] for style in style_list):
             raise ValueError("Please input the correct image style. The correct image style should be 'perspective' or 'fisheye'.")
+
         # set image file extensions
         image_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff', '.tif', '.webp', '.ico', '.jfif', '.heic', '.heif']
+
         def run(path_input, path_output, show_size, style):
             img_raw = cv2.imread(str(path_input), cv2.IMREAD_COLOR)
             if style == "fisheye":
@@ -150,10 +156,9 @@ class ImageTransformer:
                     cv2.imwrite(str(path_output), img_new)
 
             elif style == "perspective":
-                thetas = [0, 90, 180, 270]
-                FOV = 90
-                aspects_v = (2.25, 4)
-                aspects = (9, 16)
+                num_images = 360 // FOV  # Calculate the number of images
+                thetas = [FOV * i for i in range(num_images)]  # Calculate thetas based on FOV
+                aspects_v = (aspects[0], aspects[1] / num_images)  # Set aspects_v based on the number of images
 
                 for theta in thetas:
                     height = int(aspects_v[0] * show_size)
