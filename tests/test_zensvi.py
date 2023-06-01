@@ -94,17 +94,17 @@ if __name__ == "__main__":
     #                         # id_columns = "count_point_id",
     #                         # buffer = 100,
     #                         augment_metadata=True) 
-    downloader = MLYDownloader(mly_api_key=mly_api_key)
-    downloader.download_svi(dir_output = "tests/data/output", 
-                            # lat=1.276095, lon=103.792547,
-                            # input_csv_file="tests/data/input/Walking_count_sites 3.csv",
-                            input_shp_file="tests/data/input/locations_polygon.shp",
-                            radius=50
-                            )
-    # segmenter = Segmenter()
+    # downloader = MLYDownloader(mly_api_key=mly_api_key)
+    # downloader.download_svi(dir_output = "tests/data/output", 
+    #                         # lat=1.276095, lon=103.792547,
+    #                         # input_csv_file="tests/data/input/Walking_count_sites 3.csv",
+    #                         input_shp_file="tests/data/input/locations_polygon.shp",
+    #                         radius=50
+    #                         )
 
-    #                 dir_image_output = "tests/data/output/segmentation", 
-    #                 dir_pixel_ratio_output = "tests/data/output/",
-    #                 batch_size=1)
+    transformer = ImageTransformer(dir_input = "tests/data/output/gsv_panorama",
+                                    dir_output = "tests/data/output/transformed")
+    transformer.transform_images(FOV=90, aspects=(1,4))
+    
     end_time = time.time()
     print(f"Block 2 execution time: {end_time - start_time} seconds")

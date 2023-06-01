@@ -101,6 +101,94 @@ class ImageTransformer:
         XY = lonlat2XY(lonlat, shape=img.shape).astype(np.float32)
         persp = cv2.remap(img, XY[..., 0], XY[..., 1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP)
         return persp
+    
+    def equidistant_fisheye(self, img):
+        rows, cols, c = img.shape
+        R = cols / (2 * math.pi)
+        D = int(2 * R)
+        cx, cy = R, R
+
+        x, y = np.meshgrid(np.arange(D), np.arange(D))
+        r = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+        theta = np.arctan2(y - cy, x - cx)
+
+        xp = np.floor((theta + np.pi) * cols / (2 * np.pi)).astype(int)
+        yp = np.floor(r * rows / R).astype(int)
+        
+        mask = r < R
+
+        new_img = np.zeros((D, D, c), dtype=np.uint8)
+        new_img.fill(255)
+        new_img[y[mask], x[mask]] = img[yp[mask], xp[mask]]
+
+        return new_img
+    
+    def orthographic_fisheye(self, img):
+        rows, cols, c = img.shape
+        R = cols / (2 * math.pi)
+        D = int(2 * R)
+        cx, cy = R, R
+
+        x, y = np.meshgrid(np.arange(D), np.arange(D))
+        r = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+        theta = np.arctan2(y - cy, x - cx)
+
+        xp = np.floor((theta + np.pi) * cols / (2 * np.pi)).astype(int)
+        yp = np.floor((2 / np.pi) * np.arcsin(r / R) * rows).astype(int)
+        
+        mask = r < R
+
+        new_img = np.zeros((D, D, c), dtype=np.uint8)
+        new_img.fill(255)
+        new_img[y[mask], x[mask]] = img[yp[mask], xp[mask]]
+
+        return new_img
+
+    def stereographic_fisheye(self, img):
+        rows, cols, c = img.shape
+        R = cols / (2 * math.pi)
+        D = int(2 * R)
+        cx, cy = R, R
+
+        x, y = np.meshgrid(np.arange(D), np.arange(D))
+        r = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+        theta = np.arctan2(y - cy, x - cx)
+
+        xp = np.floor((theta + np.pi) * cols / (2 * np.pi)).astype(int)
+        yp = np.floor(2 * np.tan(r / (2 * R)) * rows).astype(int)
+        
+        # Clip the values of yp and xp to be within the valid range
+        yp = np.clip(yp, 0, rows-1)
+        xp = np.clip(xp, 0, cols-1)
+        
+        mask = r < R
+
+        new_img = np.zeros((D, D, c), dtype=np.uint8)
+        new_img.fill(255)
+        new_img[y[mask], x[mask]] = img[yp[mask], xp[mask]]
+
+        return new_img
+
+    def equisolid_fisheye(self, img):
+        rows, cols, c = img.shape
+        R = cols / (2 * math.pi)
+        D = int(2 * R)
+        cx, cy = R, R
+
+        x, y = np.meshgrid(np.arange(D), np.arange(D))
+        r = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+        theta = np.arctan2(y - cy, x - cx)
+
+        xp = np.floor((theta + np.pi) * cols / (2 * np.pi)).astype(int)
+        yp = np.floor(2 * np.sin(r / (2 * R)) * rows).astype(int)
+        
+        mask = r < R
+
+        new_img = np.zeros((D, D, c), dtype=np.uint8)
+        new_img.fill(255)
+        new_img[y[mask], x[mask]] = img[yp[mask], xp[mask]]
+
+        return new_img
 
     def get_fisheye(self, img):
         rows, cols, c = img.shape
@@ -136,13 +224,14 @@ class ImageTransformer:
 
         return new_img
 
-    def transform_images(self, style_list=["perspective", "fisheye"], FOV = 90, aspects = (9, 16), show_size=100):
+    def transform_images(self, style_list=["perspective", "equidistant_fisheye", "orthographic_fisheye", "stereographic_fisheye", "equisolid_fisheye"], 
+                        FOV = 90, aspects = (9, 16), show_size=100):
         # FOV validation
         if 360 % FOV != 0:
             raise ValueError("FOV must be a divisor of 360.")
 
         # check if there's anything other than "perspective" and "fisheye"
-        if not all(style in ["perspective", "fisheye"] for style in style_list):
+        if not all(style in ["perspective", "equidistant_fisheye", "orthographic_fisheye", "stereographic_fisheye", "equisolid_fisheye"] for style in style_list):
             raise ValueError("Please input the correct image style. The correct image style should be 'perspective' or 'fisheye'.")
 
         # set image file extensions
@@ -150,9 +239,24 @@ class ImageTransformer:
 
         def run(path_input, path_output, show_size, style):
             img_raw = cv2.imread(str(path_input), cv2.IMREAD_COLOR)
-            if style == "fisheye":
+            if style == "equidistant_fisheye":
                 if not path_output.exists():
-                    img_new = self.get_fisheye(img_raw)
+                    img_new = self.equidistant_fisheye(img_raw)
+                    cv2.imwrite(str(path_output), img_new)
+            
+            elif style == "orthographic_fisheye":
+                if not path_output.exists():
+                    img_new = self.orthographic_fisheye(img_raw)
+                    cv2.imwrite(str(path_output), img_new)
+                
+            elif style == "stereographic_fisheye":
+                if not path_output.exists():
+                    img_new = self.stereographic_fisheye(img_raw)
+                    cv2.imwrite(str(path_output), img_new)
+            
+            elif style == "equisolid_fisheye":
+                if not path_output.exists():
+                    img_new = self.equisolid_fisheye(img_raw)
                     cv2.imwrite(str(path_output), img_new)
 
             elif style == "perspective":
