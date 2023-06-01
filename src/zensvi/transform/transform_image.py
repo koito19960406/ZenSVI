@@ -156,11 +156,11 @@ class ImageTransformer:
                 aspects = (9, 16)
 
                 for theta in thetas:
+                    height = int(aspects_v[0] * show_size)
+                    width = int(aspects_v[1] * show_size)
+                    aspect_name = '%s--%s' % (aspects[0], aspects[1])
                     path_output_raw = path_output.with_name(f'{path_output.stem}_Direction_{theta}_FOV_{FOV}_aspect_{aspect_name}_raw.png')
                     if not path_output_raw.exists(): 
-                        height = int(aspects_v[0] * show_size)
-                        width = int(aspects_v[1] * show_size)
-                        aspect_name = '%s--%s' % (aspects[0], aspects[1])
                         img_new = self.get_perspective(img_raw, FOV, theta, 0, height, width)
                         cv2.imwrite(str(path_output_raw), img_new)
 
