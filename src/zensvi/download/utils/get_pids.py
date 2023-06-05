@@ -18,7 +18,7 @@ def _panoids_data(lat, lon, proxies):
             print(f"Proxy {proxy} is not working. Exception: {e}")
             continue
 
-def panoids(lat, lon, proxies, closest=False, disp=False):
+def panoids(lat, lon, proxies):
     resp = _panoids_data(lat, lon, proxies)
 
     # Get all the panorama ids and coordinates
@@ -45,11 +45,4 @@ def panoids(lat, lon, proxies, closest=False, disp=False):
         for i, (year, month) in enumerate(dates):
             pans[-1-i].update({'year': year, "month": month})
 
-    if disp:
-        for pan in pans:
-            print(pan)
-
-    if closest and len(dates) > 0:
-        return [pans[i] for i in range(len(dates))]
-    else:
-        return pans
+    return pans
