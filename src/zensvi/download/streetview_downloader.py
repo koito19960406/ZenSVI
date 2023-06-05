@@ -232,7 +232,7 @@ class GSVDownloader(BaseDownloader):
             shutil.rmtree(dir_cache_augmented_metadata)
         return df
 
-    def _get_pids_from_df(self, df, id_columns=None, closest=False, disp=False):
+    def _get_pids_from_df(self, df, id_columns=None):
         # 1. Create a new directory called "pids" to store each batch pids
         dir_cache_pids = self.dir_cache / 'raw_pids'
         dir_cache_pids.mkdir(parents=True, exist_ok=True)
@@ -260,7 +260,7 @@ class GSVDownloader(BaseDownloader):
             df = merged[merged['_merge'] == 'left_only'].drop(columns='_merge')
 
         def get_street_view_info(longitude, latitude, proxies):
-            results = panoids(latitude, longitude, proxies, closest=closest, disp=disp)
+            results = panoids(latitude, longitude, proxies, )
             return results
 
         def worker(row):
@@ -341,7 +341,7 @@ class GSVDownloader(BaseDownloader):
             shutil.rmtree(dir_cache_pids)
         return results_df
 
-    def _get_pids_from_gdf(self, gdf, id_columns, closest=False, disp=False):  
+    def _get_pids_from_gdf(self, gdf, **kwargs):  
         if self.cache_lat_lon.exists():
             df = pd.read_csv(self.cache_lat_lon)
             print("The lat and lon have been read from the cache")
@@ -352,7 +352,7 @@ class GSVDownloader(BaseDownloader):
                 # convert to EPSG:4326
                 gdf = gdf.to_crs('EPSG:4326')
             # read shapefile
-            gp = GeoProcessor(gdf, distance=self.distance, grid=self.grid, grid_size=self.grid_size, id_columns = id_columns)
+            gp = GeoProcessor(gdf, distance=self.distance, grid=self.grid, grid_size=self.grid_size, **kwargs)
             df = gp.get_lat_lon()
             df['lat_lon_id'] = np.arange(1, len(df) + 1)
             # save df to cache
@@ -363,7 +363,7 @@ class GSVDownloader(BaseDownloader):
             results_df = pd.read_csv(self.cache_pids_raw)
         else:
             # Use _get_pids_from_df to get pids from df
-            results_df = self._get_pids_from_df(df, id_columns, closest=closest, disp=disp)
+            results_df = self._get_pids_from_df(df, kwargs["id_columns"])
 
         # Check if lat and lon are within input polygons
         polygons = gpd.GeoSeries([geom for geom in gdf['geometry'] if geom.type in ['Polygon', 'MultiPolygon']])
@@ -405,62 +405,47 @@ class GSVDownloader(BaseDownloader):
         return results_within_polygons_df
 
     def _get_raw_pids(self, **kwargs):
-        defaults = {
-            'lat': None, 'lon': None, 'input_csv_file': "", 'input_shp_file': "",
-            'input_place_name': "", 'id_columns': None, 'buffer': 0, 
-            'closest': False, 'disp': False
-        }
-        
-        defaults.update(kwargs)
-
         if self.cache_pids_raw.exists():
             pid = pd.read_csv(self.cache_pids_raw)
             print("The raw panorama IDs have been read from the cache")
             return pid
 
-        if defaults['lat'] is not None and defaults['lon'] is not None:
-            pid = panoids(defaults['lat'], defaults['lon'], self.proxies, closest=defaults['closest'], disp=defaults['disp'])
+        if kwargs['lat'] is not None and kwargs['lon'] is not None:
+            pid = panoids(kwargs['lat'], kwargs['lon'], self.proxies)
             pid = pd.DataFrame(pid)
             # add input_lat and input_lon
-            pid['input_latitude'] = defaults['lat']
-            pid['input_longitude'] = defaults['lon']
-        elif defaults['input_csv_file'] != "":
-            df = pd.read_csv(defaults['input_csv_file'])
+            pid['input_latitude'] = kwargs['lat']
+            pid['input_longitude'] = kwargs['lon']
+        elif kwargs['input_csv_file'] != "":
+            df = pd.read_csv(kwargs['input_csv_file'])
             df = standardize_column_names(df)
-            if defaults['buffer'] > 0:
+            if kwargs['buffer'] > 0:
                 gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.longitude, df.latitude), crs='EPSG:4326')
-                gdf = create_buffer_gdf(gdf, defaults['buffer'])
-                pid = self._get_pids_from_gdf(gdf, defaults['id_columns'], closest=False, disp=False)
+                gdf = create_buffer_gdf(gdf, kwargs['buffer'])
+                pid = self._get_pids_from_gdf(gdf, **kwargs)
             else:
-                pid = self._get_pids_from_df(df, defaults['id_columns'], closest=False, disp=False)
-        elif defaults['input_shp_file'] != "":
-            gdf = gpd.read_file(defaults['input_shp_file'])
-            if defaults['buffer'] > 0:
-                gdf = create_buffer_gdf(gdf, defaults['buffer'])
-            pid = self._get_pids_from_gdf(gdf, defaults['id_columns'], closest=False, disp=False)
-        elif defaults['input_place_name'] != "":
+                pid = self._get_pids_from_df(df, kwargs['id_columns'])
+        elif kwargs['input_shp_file'] != "":
+            gdf = gpd.read_file(kwargs['input_shp_file'])
+            if kwargs['buffer'] > 0:
+                gdf = create_buffer_gdf(gdf, kwargs['buffer'])
+            pid = self._get_pids_from_gdf(gdf, **kwargs)
+        elif kwargs['input_place_name'] != "":
             print("Geocoding the input place name")
-            gdf = ox.geocoder.geocode_to_gdf(defaults['input_place_name'])
+            gdf = ox.geocoder.geocode_to_gdf(kwargs['input_place_name'])
             # raise error if the input_place_name is not found
             if len(gdf) == 0:
                 raise ValueError("The input_place_name is not found. Please try another place name.")
-            if defaults['buffer'] > 0:
-                gdf = create_buffer_gdf(gdf, defaults['buffer'])
-            pid = self._get_pids_from_gdf(gdf, defaults['id_columns'], closest=False, disp=False) 
+            if kwargs['buffer'] > 0:
+                gdf = create_buffer_gdf(gdf, kwargs['buffer'])
+            pid = self._get_pids_from_gdf(gdf, **kwargs) 
         else:
             raise ValueError("Please input the lat and lon, csv file, or shapefile.")
 
         return pid
 
     def get_pids(self, path_pid, **kwargs):
-        defaults = {
-            'lat': None, 'lon': None, 'input_csv_file': "", 'input_shp_file': "",
-            'input_place_name': "", 'id_columns': None, 'buffer': 0, 
-            'closest': False, 'disp': False, 'augment_metadata': False
-        }
-        
-        defaults.update(kwargs)
-        id_columns = defaults['id_columns']
+        id_columns = kwargs['id_columns']
         if id_columns is not None:
             if isinstance(id_columns, str):
                 id_columns = [id_columns.lower()]
@@ -469,14 +454,14 @@ class GSVDownloader(BaseDownloader):
         else:
             id_columns = []
         # update id_columns
-        defaults['id_columns'] = id_columns
+        kwargs['id_columns'] = id_columns
         
         # get raw pid
-        pid = self._get_raw_pids(**defaults)
+        pid = self._get_raw_pids(**kwargs)
         
-        if defaults["augment_metadata"] & (self.gsv_api_key != None):
+        if kwargs["augment_metadata"] & (self.gsv_api_key != None):
             pid = self._augment_metadata(pid)
-        elif defaults["augment_metadata"] & (self.gsv_api_key == None):
+        elif kwargs["augment_metadata"] & (self.gsv_api_key == None):
             raise ValueError("Please set the gsv api key by calling the gsv_api_key method.")
         pid.to_csv(path_pid, index=False)
         print("The panorama IDs have been saved to {}".format(path_pid)) 
@@ -494,24 +479,24 @@ class GSVDownloader(BaseDownloader):
         self.cache_pids_augmented = self.dir_cache / "pids_augemented.csv"
         
     def download_svi(self, dir_output, path_pid = None, zoom=2, h_tiles=4, v_tiles=2, cropped=False, full=True, 
-                    lat=None, lon=None, input_csv_file="", input_shp_file = "", input_place_name = "", id_columns=None, buffer = 0, closest=False, 
-                    disp=False, augment_metadata=False, update_pids = False):
+                    lat=None, lon=None, input_csv_file="", input_shp_file = "", input_place_name = "", id_columns=None, buffer = 0, 
+                    augment_metadata=False, update_pids = False, **kwargs):
         # set necessary directories
         self._set_dirs(dir_output)
         
         # call get_pids function first if path_pid is None
         if (path_pid is None) & (self.cache_pids_augmented.exists() == False):
             print("Getting pids...")
-            path_pid = self.dir_output / "pids.csv"
+            path_pid = self.dir_output / "gsv_pids.csv"
             if path_pid.exists() & (update_pids == False):
                 print("update_pids is set to False. So the following csv file will be used: {}".format(path_pid))
             else:
                 self.get_pids(path_pid, lat=lat, lon=lon,
                             input_csv_file=input_csv_file, input_shp_file = input_shp_file, input_place_name = input_place_name, 
-                            id_columns=id_columns, buffer = buffer, closest=closest, disp=disp, augment_metadata=augment_metadata)
+                            id_columns=id_columns, buffer = buffer, augment_metadata=augment_metadata, **kwargs)
         elif self.cache_pids_augmented.exists():
             # copy the cache pids_augmented to path_pid
-            path_pid = self.dir_output / "pids.csv"
+            path_pid = self.dir_output / "gsv_pids.csv"
             shutil.copy2(self.cache_pids_augmented, path_pid)
             print("The augmented panorama IDs have been saved to {}".format(path_pid))
         # Horizontal Google Street View tiles
@@ -703,7 +688,7 @@ class MLYDownloader(BaseDownloader):
             shutil.rmtree(dir_cache_pids)
         return results_df
 
-    def _get_pids_from_gdf(self, gdf, id_columns, **kwargs):
+    def _get_pids_from_gdf(self, gdf, mly_kwargs, **kwargs):
         if self.cache_lat_lon.exists():
             df = pd.read_csv(self.cache_lat_lon)
             print("The lat and lon have been read from the cache")
@@ -714,7 +699,7 @@ class MLYDownloader(BaseDownloader):
                 # convert to EPSG:4326
                 gdf = gdf.to_crs('EPSG:4326')
             # read shapefile
-            gp = GeoProcessor(gdf, distance=self.distance, grid=self.grid, grid_size=self.grid_size, id_columns = id_columns)
+            gp = GeoProcessor(gdf, distance=self.distance, grid=self.grid, grid_size=self.grid_size, **kwargs)
             df = gp.get_lat_lon()
             df['lat_lon_id'] = np.arange(1, len(df) + 1)
             # save df to cache
@@ -725,7 +710,7 @@ class MLYDownloader(BaseDownloader):
             results_df = pd.read_csv(self.cache_pids_raw)
         else:
             # Use _get_pids_from_df to get pids from df
-            results_df = self._get_pids_from_df(df, id_columns, **kwargs)
+            results_df = self._get_pids_from_df(df, kwargs["id_columns"], **mly_kwargs)
             
         if not isinstance(results_df, pd.DataFrame):
             return
@@ -770,8 +755,8 @@ class MLYDownloader(BaseDownloader):
         return results_within_polygons_df
         
     def _get_raw_pids(self, **kwargs):
-        allowed_keys = {'fields', 'zoom', 'radius', 'image_type', 'min_captured_at', 'max_captured_at', 'organization_id'} 
-        mly_kwargs = {k: v for k, v in kwargs.items() if k in allowed_keys}
+        mly_allowed_keys = {'fields', 'zoom', 'radius', 'image_type', 'min_captured_at', 'max_captured_at', 'organization_id'} 
+        mly_kwargs = {k: v for k, v in kwargs.items() if k in mly_allowed_keys}
         if self.cache_pids_raw.exists():
             pid = pd.read_csv(self.cache_pids_raw)
             print("The raw panorama IDs have been read from the cache")
@@ -795,14 +780,14 @@ class MLYDownloader(BaseDownloader):
             if kwargs['buffer'] > 0:
                 gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.longitude, df.latitude), crs='EPSG:4326')
                 gdf = create_buffer_gdf(gdf, kwargs['buffer'])
-                pid = self._get_pids_from_gdf(gdf, kwargs['id_columns'], **mly_kwargs)
+                pid = self._get_pids_from_gdf(gdf, mly_kwargs, **kwargs)
             else:
-                pid = self._get_pids_from_df(df, kwargs['id_columns'], **mly_kwargs)
+                pid = self._get_pids_from_df(df, kwargs['id_columns'], mly_kwargs)
         elif kwargs['input_shp_file'] != "":
             gdf = gpd.read_file(kwargs['input_shp_file'])
             if kwargs['buffer'] > 0:
                 gdf = create_buffer_gdf(gdf, kwargs['buffer'])
-            pid = self._get_pids_from_gdf(gdf, kwargs['id_columns'], **mly_kwargs)
+            pid = self._get_pids_from_gdf(gdf, mly_kwargs, **kwargs)
         elif kwargs['input_place_name'] != "":
             print("Geocoding the input place name")
             gdf = ox.geocoder.geocode_to_gdf(kwargs['input_place_name'])
@@ -811,7 +796,7 @@ class MLYDownloader(BaseDownloader):
                 raise ValueError("The input_place_name is not found. Please try another place name.")
             if kwargs['buffer'] > 0:
                 gdf = create_buffer_gdf(gdf, kwargs['buffer'])
-            pid = self._get_pids_from_gdf(gdf, kwargs['id_columns'], **mly_kwargs) 
+            pid = self._get_pids_from_gdf(gdf, mly_kwargs, **kwargs) 
         else:
             raise ValueError("Please input the lat and lon, csv file, or shapefile.")
 
@@ -966,7 +951,7 @@ class MLYDownloader(BaseDownloader):
         # call get_pids function first if path_pid is None
         if path_pid is None:
             print("Getting pids...")
-            path_pid = self.dir_output / "pids.csv"
+            path_pid = self.dir_output / "mly_pids.csv"
             if path_pid.exists() & (update_pids == False):
                 print("update_pids is set to False. So the following csv file will be used: {}".format(path_pid))
             else:
