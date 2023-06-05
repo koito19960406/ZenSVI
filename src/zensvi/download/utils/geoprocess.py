@@ -11,7 +11,7 @@ from pyproj import Transformer
 import networkx
 
 class GeoProcessor:
-    def __init__(self, gdf, distance=1, grid = False, grid_size = 1, id_columns=[]):
+    def __init__(self, gdf, distance=1, grid = False, grid_size = 1, id_columns=[], **kwargs):
         self.gdf = gdf
         self.distance = distance
         self.processing_functions = {
@@ -26,6 +26,15 @@ class GeoProcessor:
         self.grid_size = grid_size
         self.utm_crs = None
         self.id_columns = id_columns
+        if "network_type" in kwargs:
+            self.network_type = kwargs["network_type"]
+        else:
+            self.network_type = "all"
+            
+        if "custom_filter" in kwargs:
+            self.custom_filter = kwargs["custom_filter"]
+        else:
+            self.custom_filter = None
 
     def get_lat_lon(self):
         self.gdf['feature_type'] = self.gdf['geometry'].apply(lambda x: x.geom_type)
@@ -75,7 +84,7 @@ class GeoProcessor:
         return self.process_linestring(gdf)
 
     def get_street_points(self, polygon):
-        graph = ox.graph_from_polygon(polygon, network_type='all')
+        graph = ox.graph_from_polygon(polygon, network_type=self.network_type, custom_filter=self.custom_filter)
         _, edges = ox.graph_to_gdfs(graph)
         # Project the street network to UTM
         edges_utm = ox.projection.project_gdf(edges)
