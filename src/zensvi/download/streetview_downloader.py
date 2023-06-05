@@ -23,6 +23,7 @@ import osmnx as ox
 from abc import ABC, abstractmethod
 import mapillary.interface as mly
 from shapely import wkt
+from PIL import Image
 
 from zensvi.download.utils.imtool import ImageTool
 from zensvi.download.utils.get_pids import panoids
@@ -902,7 +903,7 @@ class MLYDownloader(BaseDownloader):
             shutil.rmtree(dir_cache_urls)
 
     
-    def _download_images_mly(self):
+    def _download_images_mly(self, cropped):
         checkpoints = glob.glob(str(self.panorama_output / '*.png'))
 
         # Read already downloaded images and convert to ids
@@ -913,7 +914,7 @@ class MLYDownloader(BaseDownloader):
         # Filter out the ids that have already been processed
         urls_df = urls_df[~urls_df['id'].isin(downloaded_ids)]  # Use isin for efficient operation
 
-        def worker(row, output_dir):
+        def worker(row, output_dir, cropped):
             url, panoid = row.url, row.id
             user_agent = random.choice(self.user_agents)
             proxy = random.choice(self.proxies)
@@ -921,22 +922,30 @@ class MLYDownloader(BaseDownloader):
             image_name = f'{panoid}.png'  # Use id for file name
             image_path = output_dir / image_name
             try:
-                response = requests.get(url, headers = user_agent, proxies=proxy, timeout=10)
+                response = requests.get(url, headers=user_agent, proxies=proxy, timeout=10)
                 if response.status_code == 200:
                     with open(image_path, 'wb') as f:
                         f.write(response.content)
+                    
+                    if cropped:
+                        img = Image.open(image_path)
+                        w, h = img.size
+                        img_cropped = img.crop((0, 0, w, h // 2))
+                        img_cropped.save(image_path)
+
                 else:
                     self._log_write(panoid)
             except Exception as e:
                 self._log_write(panoid)
-                print(f"Error: {e}")
+                print(f"Error: {e}" )
+
 
         batch_size = 1000
         num_batches = (len(urls_df) + batch_size - 1) // batch_size
 
         for i in tqdm(range(num_batches), desc=f"Downloading images by batch size {min(batch_size, len(urls_df))}"):
             with ThreadPoolExecutor() as executor:
-                batch_futures = {executor.submit(worker, row, self.panorama_output): row.id for row in urls_df.iloc[i*batch_size : (i+1)*batch_size].itertuples()}
+                batch_futures = {executor.submit(worker, row, self.panorama_output, cropped): row.id for row in urls_df.iloc[i*batch_size : (i+1)*batch_size].itertuples()}
                 for future in tqdm(as_completed(batch_futures), total=len(batch_futures), desc=f"Downloading images for batch #{i+1}"):
                     try:
                         future.result()
@@ -944,7 +953,7 @@ class MLYDownloader(BaseDownloader):
                         print(f"Error: {e}")
                 
     def download_svi(self, dir_output, path_pid = None, lat=None, lon=None, input_csv_file="", input_shp_file = "", input_place_name =
-                    "", id_columns=None, buffer = 0, update_pids = False, resolution = 1024, **kwargs):
+                    "", id_columns=None, buffer = 0, update_pids = False, resolution = 1024, cropped = False, **kwargs):
         # set necessary directories
         self._set_dirs(dir_output)
         
@@ -975,7 +984,7 @@ class MLYDownloader(BaseDownloader):
         if path_pid.exists():
             self._get_urls_mly(path_pid, resolution=resolution) 
             # download images
-            self._download_images_mly()
+            self._download_images_mly(cropped)
         else: 
             print("There is no panorama ID to download within the given input parameters")
         
