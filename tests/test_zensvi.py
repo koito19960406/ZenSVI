@@ -97,12 +97,13 @@ if __name__ == "__main__":
     #                         augment_metadata=True) 
     downloader = MLYDownloader(mly_api_key=mly_api_key)
     downloader.download_svi(dir_output = "tests/data/output", 
-                            # lat=1.276095, lon=103.792547,
+                            lat=1.276095, lon=103.792547,
                             # input_csv_file="tests/data/input/Walking_count_sites 3.csv",
                             # input_shp_file="tests/data/input/locations_polygon.shp",
-                            input_place_name="Bronkhorst, Netherlands",
-                            network_type = "all_private",
-                            radius=50
+                            # input_place_name="Bronkhorst, Netherlands",
+                            # network_type = "all_private",
+                            radius=50,
+                            cropped=True
                             )
     # segmenter = Segmenter()
     # segmenter.segment(dir_input = "tests/data/output/gsv_panorama",
