@@ -41,32 +41,35 @@ class ImageTool():
         dst.paste(im1, (0, 0))
         dst.paste(im2, (0, im1.height))
         return dst
-    
+                
     @staticmethod
-    def compose_folder(in_path, out_path, how='horizontally'):
+    def fetch_image_with_proxy(pano_id, zoom, x, y, ua, proxies):
         """
-        Description of compose_folder
-        concatenates all the images in a folder; the second part of each 
-        image must follow the first once sorted by filename.
+        Fetches an image using a proxy.
 
         Args:
-            in_path (undefined): input folder path
-            out_path (undefined): output folder path
-            how='horizontally' (undefined): concatenation direction
+            pano_id (str): GSV panorama id
+            zoom (int): Zoom level for the image
+            x (int): The x coordinate of the tile
+            y (int): The y coordinate of the tile
+            ua (str): User agent string
+            proxies (list): A list of available proxies
 
+        Returns:
+            Image: The fetched image
         """
-        images = sorted(os.listdir(in_path))
-            
-        for name1, name2 in zip(images[0::2], images[1::2]):
-            
-            im1 = Image.open(in_path + name1)
-            im2 = Image.open(in_path + name2)
-            
-            if how == 'horizontally':
-                ImageTool.concat_horizontally(im1, im2).save(out_path + '_'.join(name1.split('_')[1:]))
-            else:
-                ImageTool.concat_vertically(im1, im2).save(out_path + '_'.join(name1.split('_')[1:]))
-                
+        while True:
+            # Choose a random proxy for each request
+            proxy = random.choice(proxies)
+            url_img = f'https://cbk0.google.com/cbk?output=tile&panoid={pano_id}&zoom={zoom}&x={x}&y={y}'
+            try:
+                image = Image.open(requests.get(url_img, headers=ua, proxies=proxy, stream=True).raw)
+                return image
+            except ProxyError as e:
+                print(f"Proxy {proxy} is not working. Exception: {e}")
+                continue
+
+
     @staticmethod
     def get_and_save_image(pano_id, identif, zoom, vertical_tiles, horizontal_tiles, out_path, ua, proxies, cropped=False, full=True):
         """
@@ -85,65 +88,38 @@ class ImageTool():
             full=True (undefined): set to True if the full image is needed
 
         """
-        while True:
-            # Choose a random proxy for each request
-            proxy = random.choice(proxies)
-            first_url_img = f'https://cbk0.google.com/cbk?output=tile&panoid={pano_id}&zoom={zoom}&x={0}&y={0}'
-            try:
-                first = Image.open(requests.get(first_url_img, headers=ua, proxies=proxy, stream=True).raw)
-                break
-            except ProxyError as e:
-                print(f"Proxy {proxy} is not working. Exception: {e}")
-                continue
-            finally:
-                break
+        for x in range(horizontal_tiles):
+            for y in range(vertical_tiles):
+                new_img = ImageTool.fetch_image_with_proxy(pano_id, zoom, x, y, ua, proxies)
+                if not full:
+                    new_img.save(f'{out_path}/{identif}_x{x}_y{y}.jpg')
+                if y == 0:
+                    first_slice = new_img
+                else:
+                    first_slice = ImageTool.concat_vertically(first_slice, new_img)
 
-        # first_vert = False
-
-        for y in range(1, vertical_tiles):
-            #new_img = Image.open(f'./images/test_x0_y{y}.png')
-            url_new_img = f'https://cbk0.google.com/cbk?output=tile&panoid={pano_id}&zoom={zoom}&x={0}&y={y}'
-            new_img = Image.open(requests.get(url_new_img, headers=ua, proxies=proxy, stream=True).raw)
-            first = ImageTool.concat_vertically(first, new_img)
-        first_slice = first
-
-        for x in range(1, horizontal_tiles):
-
-            first_url_img = f'https://cbk0.google.com/cbk?output=tile&panoid={pano_id}&zoom={zoom}&x={x}&y={0}'
-            first = Image.open(requests.get(first_url_img, headers=ua, proxies=proxy, stream=True).raw)
-            
-            for y in range(1, vertical_tiles):
-                #new_img = Image.open(f'./images/test_x{x}_y{y}.png')
-                url_new_img = f'https://cbk0.google.com/cbk?output=tile&panoid={pano_id}&zoom={zoom}&x={x}&y={y}'
-                new_img = Image.open(requests.get(url_new_img, headers=ua, proxies=proxy, stream=True).raw)
-                first = ImageTool.concat_vertically(first, new_img)
-
-            new_slice = first
-            first_slice = ImageTool.concat_horizontally(first_slice, new_slice)
-
-        # first_slice.thumbnail(size, Image.ANTIALIAS)
-        name = f'{out_path}/{identif}'
-        if full:
-            image = np.array(first_slice)
-            sun_i = sum(image[-5, :, 1])
-            h, w, c = image.shape
-            h_c = int(h * 0.812)
-            w_c = int(w * 0.812)
-            if sun_i == 0:
-                pre_image = image[0:h_c, 0:w_c]
+            if x == 0:
+                final_image = first_slice
             else:
-                pre_image = image
-            pillow_image = Image.fromarray(pre_image)
+                final_image = ImageTool.concat_horizontally(final_image, first_slice)
+
+        if full:
+            name = f'{out_path}/{identif}'
+            if cropped:
+                h_cropped = final_image.shape[0] // 2
+                final_image = final_image[0:h_cropped, :]
+
             # Validate image before saving
-            if pillow_image.size[0] > 0 and pillow_image.size[1] > 0:
-                pillow_image.save(f'{name}.jpg')
+            if final_image.size[0] > 0 and final_image.size[1] > 0:
+                final_image.save(f'{name}.jpg')
             else:
                 raise ValueError(f"Invalid image for pano_id {pano_id}")
 
-            return identif
+        return identif
+
 
     @staticmethod
-    def dwl_multiple(panoids, zoom, v_tiles, h_tiles, out_path, uas, proxies, cropped=True, full=False, log_path=None):
+    def dwl_multiple(panoids, zoom, v_tiles, h_tiles, out_path, uas, proxies, cropped, full, log_path=None):
         """
         Description of dwl_multiple
         
