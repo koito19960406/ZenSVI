@@ -106,7 +106,7 @@ if __name__ == "__main__":
     #                         radius=50,
     #                         cropped=True
     #                         )
-    segmenter = Segmenter(dataset = "cityscapes", task="semantic")
+    segmenter = Segmenter(dataset = "cityscapes", task="panoptic")
     segmenter.segment(dir_input = "tests/data/output/gsv_panorama",
                     dir_image_output = "tests/data/output/segmented",
                     dir_segmentation_summary_output = "tests/data/output/pixel",
