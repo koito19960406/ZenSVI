@@ -410,7 +410,7 @@ class Segmenter:
             pixel_ratios_df = pd.DataFrame(input_dict).transpose().fillna(0)
             pixel_ratios_df.index.names = ["filename_key"]
 
-        pixel_ratios_df.to_csv(dir_output / Path(value_name + ".csv"), index=False)
+        pixel_ratios_df.to_csv(dir_output / Path(value_name + ".csv"))
 
 
     def _panoptic_segmentation(self, images, original_img_shape):

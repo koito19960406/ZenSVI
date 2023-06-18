@@ -110,7 +110,7 @@ if __name__ == "__main__":
     segmenter.segment(dir_input = "tests/data/output/gsv_panorama",
                     dir_image_output = "tests/data/output/segmented",
                     dir_segmentation_summary_output = "tests/data/output/pixel",
-                    csv_format = "long", max_workers=4)
+                    csv_format = "wide", max_workers=4)
     
     # transformer = ImageTransformer(dir_input = "tests/data/output/gsv_panorama",
     #                                 dir_output = "tests/data/output/transformed")
