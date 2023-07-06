@@ -332,9 +332,10 @@ class GSVDownloader(BaseDownloader):
                 retry_df = pd.read_csv(f'{dir_cache_pids}/checkpoint_retry.csv')
                 results_df = pd.concat([results_df, retry_df], ignore_index=True)
 
-        # now save results_df as a new cache after dropping lat_lon_id and drop duplicates in panoid
+        # now save results_df as a new cache after dropping lat_lon_id
         results_df = results_df.drop(columns='lat_lon_id')
-        results_df = results_df.drop_duplicates(subset='panoid')
+        # drop duplicates in panoid and id_columns
+        results_df = results_df.drop_duplicates(subset=['panoid'] + id_columns)
         results_df.to_csv(self.cache_pids_raw, index=False)
 
         # delete the cache directory
@@ -681,7 +682,7 @@ class MLYDownloader(BaseDownloader):
 
         # now save results_df as a new cache after dropping lat_lon_id and drop duplicates in panoid
         results_df = results_df.drop(columns='lat_lon_id')
-        results_df = results_df.drop_duplicates(subset='id')
+        results_df = results_df.drop_duplicates(subset=['id'] + id_columns)
         results_df.to_csv(self.cache_pids_raw, index=False)
 
         # delete the cache directory
