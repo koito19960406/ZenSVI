@@ -21,7 +21,7 @@ from typing import Union
 
 # Local imports
 # # Models
-from mapillary.models.geojson import Coordinates, GeoJSON
+from zensvi.download.mapillary.models.geojson import Coordinates, GeoJSON
 
 
 def feature_to_geojson(json_data: dict) -> dict:
