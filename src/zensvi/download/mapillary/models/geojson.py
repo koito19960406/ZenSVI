@@ -20,7 +20,7 @@ import json
 # Local
 
 # # Exceptions
-from mapillary.models.exceptions import InvalidOptionError
+from zensvi.download.mapillary.models.exceptions import InvalidOptionError
 
 
 class Properties:

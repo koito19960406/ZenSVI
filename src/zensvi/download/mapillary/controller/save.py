@@ -20,9 +20,9 @@ import csv
 from shapely.geometry import shape
 
 # Local Imports
-from mapillary.utils.format import flatten_geojson
-from mapillary.utils.time import date_to_unix_timestamp
-from mapillary.utils.verify import check_file_name_validity
+from zensvi.download.mapillary.utils.format import flatten_geojson
+from zensvi.download.mapillary.utils.time import date_to_unix_timestamp
+from zensvi.download.mapillary.utils.verify import check_file_name_validity
 
 
 def save_as_csv_controller(data: str, path: str, file_name: str) -> None:

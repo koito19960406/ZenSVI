@@ -17,7 +17,7 @@ import haversine
 from geojson import Point, Feature
 
 # Local imports
-from mapillary.utils.time import date_to_unix_timestamp
+from zensvi.download.mapillary.utils.time import date_to_unix_timestamp
 from shapely.geometry import shape
 
 # Package imports

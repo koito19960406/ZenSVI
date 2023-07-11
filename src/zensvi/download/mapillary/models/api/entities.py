@@ -21,16 +21,16 @@ import ast
 # Local imports
 
 # # Utilities
-from mapillary.utils.format import detection_features_to_geojson
+from zensvi.download.mapillary.utils.format import detection_features_to_geojson
 
 # # Models
-from mapillary.models.client import Client
+from zensvi.download.mapillary.models.client import Client
 
 # # Exception Handling
-from mapillary.models.exceptions import InvalidImageKeyError
+from zensvi.download.mapillary.models.exceptions import InvalidImageKeyError
 
 # # Config
-from mapillary.config.api.entities import Entities
+from zensvi.download.mapillary.config.api.entities import Entities
 
 # Library imports
 from requests import HTTPError

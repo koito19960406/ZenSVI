@@ -17,8 +17,8 @@ For more information, please check out https://www.mapillary.com/developer/api-d
 from functools import wraps
 
 # Local imports
-from mapillary.models.client import Client
-from mapillary.models.exceptions import AuthError
+from zensvi.download.mapillary.models.client import Client
+from zensvi.download.mapillary.models.exceptions import AuthError
 
 
 def set_token(token: str) -> dict:

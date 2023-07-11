@@ -20,13 +20,13 @@ import typing
 # Local imports
 
 # # Adapter Imports
-from mapillary.models.api.entities import EntityAdapter
+from zensvi.download.mapillary.models.api.entities import EntityAdapter
 
 # # Models
-from mapillary.models.geojson import GeoJSON
+from zensvi.download.mapillary.models.geojson import GeoJSON
 
 # # Rules
-from mapillary.utils.verify import valid_id
+from zensvi.download.mapillary.utils.verify import valid_id
 
 
 def get_image_detections_controller(

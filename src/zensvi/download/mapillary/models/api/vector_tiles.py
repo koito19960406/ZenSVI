@@ -21,16 +21,16 @@ import mercantile
 
 # Local imports
 # # Config
-from mapillary.config.api.vector_tiles import VectorTiles
+from zensvi.download.mapillary.config.api.vector_tiles import VectorTiles
 
 # # Client import
-from mapillary.models.client import Client
+from zensvi.download.mapillary.models.client import Client
 
 # # Exception handling
-from mapillary.models.exceptions import InvalidOptionError
+from zensvi.download.mapillary.models.exceptions import InvalidOptionError
 
 # # Models
-from mapillary.models.geojson import GeoJSON
+from zensvi.download.mapillary.models.geojson import GeoJSON
 
 
 class VectorTilesAdapter(object):

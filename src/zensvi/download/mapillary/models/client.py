@@ -35,7 +35,7 @@ from math import floor
 import requests
 
 # Exception imports
-from mapillary.models.exceptions import InvalidTokenError
+from zensvi.download.mapillary.models.exceptions import InvalidTokenError
 
 # Basic logger setup
 logger = logging.getLogger("mapillary.utils.client")

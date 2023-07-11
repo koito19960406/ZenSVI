@@ -83,34 +83,34 @@ if __name__ == "__main__":
     # Code block 2
     start_time = time.time()
 
-    downloader = GSVDownloader(gsv_api_key = gsv_api_key,
-                                    distance=20,
-                                    grid = False, grid_size = 20)
-    downloader.download_svi("tests/data/output",
-                            # haji lane
-                            lat=1.3015, lon=103.8591,
-                            # input_csv_file = "tests/data/input/count_station.csv",
-                            # input_shp_file = "/Volumes/ExFAT2/bike_svi/data/raw/cities/London/count_station.csv",
-                            # input_place_name="Bronkhorst, Netherlands",
-                            # id_columns = "count_point_id",
-                            # buffer = 100,
-                            # network_type = "walk",
-                            augment_metadata=True) 
-    # downloader = MLYDownloader(mly_api_key=mly_api_key)
-    # downloader.download_svi(dir_output = "tests/data/output", 
-    #                         lat=1.276095, lon=103.792547,
-    #                         # input_csv_file="tests/data/input/Walking_count_sites 3.csv",
-    #                         # input_shp_file="tests/data/input/locations_polygon.shp",
+    # downloader = GSVDownloader(gsv_api_key = gsv_api_key,
+    #                                 distance=20,
+    #                                 grid = False, grid_size = 20)
+    # downloader.download_svi("tests/data/output",
+    #                         # haji lane
+    #                         lat=1.3015, lon=103.8591,
+    #                         # input_csv_file = "tests/data/input/count_station.csv",
+    #                         # input_shp_file = "/Volumes/ExFAT2/bike_svi/data/raw/cities/London/count_station.csv",
     #                         # input_place_name="Bronkhorst, Netherlands",
-    #                         # network_type = "all_private",
-    #                         radius=50,
-    #                         cropped=True
-    #                         )
+    #                         # id_columns = "count_point_id",
+    #                         # buffer = 100,
+    #                         # network_type = "walk",
+    #                         augment_metadata=True) 
+    downloader = MLYDownloader(mly_api_key=mly_api_key)
+    downloader.download_svi(dir_output = "tests/data/output", 
+                            lat=1.276095, lon=103.792547,
+                            # input_csv_file="tests/data/input/Walking_count_sites 3.csv",
+                            # input_shp_file="tests/data/input/locations_polygon.shp",
+                            # input_place_name="Bronkhorst, Netherlands",
+                            # network_type = "all_private",
+                            radius=50,
+                            cropped=True
+                            )
     segmenter = Segmenter(dataset = "cityscapes", task="panoptic")
-    segmenter.segment(dir_input = "tests/data/output/gsv_panorama",
-                    dir_image_output = "tests/data/output/segmented",
-                    dir_segmentation_summary_output = "tests/data/output/pixel",
-                    csv_format = "wide", max_workers=4)
+    # segmenter.segment(dir_input = "tests/data/output/gsv_panorama",
+    #                 dir_image_output = "tests/data/output/segmented",
+    #                 dir_segmentation_summary_output = "tests/data/output/pixel",
+    #                 csv_format = "wide", max_workers=4)
     
     # transformer = ImageTransformer(dir_input = "tests/data/output/gsv_panorama",
     #                                 dir_output = "tests/data/output/transformed")

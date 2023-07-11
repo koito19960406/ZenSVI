@@ -15,21 +15,21 @@ For more information, please check out https://www.mapillary.com/developer/api-d
 """
 
 # Configs
-from mapillary.config.api.vector_tiles import VectorTiles
+from zensvi.download.mapillary.config.api.vector_tiles import VectorTiles
 
 # Client
-from mapillary.models.client import Client
+from zensvi.download.mapillary.models.client import Client
 
 # Utils
-from mapillary.utils.verify import valid_id, points_traffic_signs_check
-from mapillary.utils.filter import pipeline
-from mapillary.utils.format import (
+from zensvi.download.mapillary.utils.verify import valid_id, points_traffic_signs_check
+from zensvi.download.mapillary.utils.filter import pipeline
+from zensvi.download.mapillary.utils.format import (
     merged_features_list_to_geojson,
     feature_to_geojson,
 )
 
 # Adapters
-from mapillary.models.api.entities import EntityAdapter
+from zensvi.download.mapillary.models.api.entities import EntityAdapter
 
 # Package imports
 import mercantile

@@ -1,6 +1,5 @@
 geopandas==0.13.0
 geopy==2.3.0
-mapillary==1.0.11
 networkx==3.1
 numpy==1.21.0
 opencv_python==4.7.0.72

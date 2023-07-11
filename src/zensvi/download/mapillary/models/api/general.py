@@ -21,13 +21,13 @@ from vt2geojson.tools import vt_bytes_to_geojson
 # Local imports
 
 # # Models
-from mapillary.models.client import Client
+from zensvi.download.mapillary.models.client import Client
 
 # # Exception Handling
-from mapillary.models.exceptions import InvalidOptionError, LiteralEnforcementException
+from zensvi.download.mapillary.models.exceptions import InvalidOptionError, LiteralEnforcementException
 
 # # Config
-from mapillary.config.api.general import General
+from zensvi.download.mapillary.config.api.general import General
 
 # Library imports
 from requests import HTTPError

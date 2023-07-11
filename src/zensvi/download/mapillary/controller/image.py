@@ -23,32 +23,32 @@ from geojson import Polygon
 from typing import Union
 
 # # Configs
-from mapillary.config.api.entities import Entities
-from mapillary.config.api.vector_tiles import VectorTiles
-from mapillary.models.api.entities import EntityAdapter
-from mapillary.models.api.general import GeneralAdapter
+from zensvi.download.mapillary.config.api.entities import Entities
+from zensvi.download.mapillary.config.api.vector_tiles import VectorTiles
+from zensvi.download.mapillary.models.api.entities import EntityAdapter
+from zensvi.download.mapillary.models.api.general import GeneralAdapter
 
 # # Adapters
-from mapillary.models.api.vector_tiles import VectorTilesAdapter
+from zensvi.download.mapillary.models.api.vector_tiles import VectorTilesAdapter
 
 # # Client
-from mapillary.models.client import Client
+from zensvi.download.mapillary.models.client import Client
 
 # # Exception Handling
-from mapillary.models.exceptions import InvalidImageKeyError
+from zensvi.download.mapillary.models.exceptions import InvalidImageKeyError
 
 # # Class Representation
-from mapillary.models.geojson import GeoJSON, Coordinates
+from zensvi.download.mapillary.models.geojson import GeoJSON, Coordinates
 
 # # Utilities
-from mapillary.utils.filter import pipeline
-from mapillary.utils.format import (
+from zensvi.download.mapillary.utils.filter import pipeline
+from zensvi.download.mapillary.utils.format import (
     feature_to_geojson,
     merged_features_list_to_geojson,
     geojson_to_polygon,
     coord_or_list_to_dict,
 )
-from mapillary.utils.verify import (
+from zensvi.download.mapillary.utils.verify import (
     image_check,
     image_bbox_check,
     sequence_bbox_check,

@@ -16,13 +16,13 @@ For more information, please check out https://www.mapillary.com/developer/api-d
 """
 
 # Local Imports
-from mapillary.models.exceptions import (
+from zensvi.download.mapillary.models.exceptions import (
     InvalidBBoxError,
     InvalidKwargError,
     InvalidOptionError,
 )
-from mapillary.config.api.entities import Entities
-from mapillary.models.client import Client
+from zensvi.download.mapillary.config.api.entities import Entities
+from zensvi.download.mapillary.models.client import Client
 
 # Package Imports
 import requests

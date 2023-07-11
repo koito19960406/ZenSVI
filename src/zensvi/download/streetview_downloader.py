@@ -32,7 +32,7 @@ from zensvi.download.utils.helpers import standardize_column_names, create_buffe
 
 # set logging level to warning
 import logging
-logging.getLogger('mapillary.utils.client').setLevel(logging.WARNING)
+logging.getLogger('zensvi.download.mapillary.utils.client').setLevel(logging.WARNING)
 
 class BaseDownloader(ABC):
     @abstractmethod
