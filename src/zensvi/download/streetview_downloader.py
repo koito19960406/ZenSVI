@@ -21,10 +21,10 @@ import shutil
 import numpy as np
 import osmnx as ox
 from abc import ABC, abstractmethod
-import mapillary.interface as mly
 from shapely import wkt
 from PIL import Image
 
+import zensvi.download.mapillary.interface as mly
 from zensvi.download.utils.imtool import ImageTool
 from zensvi.download.utils.get_pids import panoids
 from zensvi.download.utils.geoprocess import GeoProcessor
