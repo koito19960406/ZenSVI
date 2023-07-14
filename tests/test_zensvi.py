@@ -103,7 +103,7 @@ if __name__ == "__main__":
                             # input_shp_file="tests/data/input/locations_polygon.shp",
                             # input_place_name="Bronkhorst, Netherlands",
                             # network_type = "all_private",
-                            radius=500,
+                            radius=100,
                             cropped=True
                             )
     # segmenter = Segmenter(dataset = "cityscapes", task="panoptic")
