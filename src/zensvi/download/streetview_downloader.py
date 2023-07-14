@@ -906,7 +906,7 @@ class MLYDownloader(BaseDownloader):
         if dir_cache_urls.exists():
             shutil.rmtree(dir_cache_urls)
 
-    
+
     def _download_images_mly(self, cropped, batch_size):
         checkpoints = glob.glob(str(self.panorama_output / '**/*.png'), recursive=True)
 
@@ -945,7 +945,12 @@ class MLYDownloader(BaseDownloader):
 
         num_batches = (len(urls_df) + batch_size - 1) // batch_size
 
-        for i in tqdm(range(num_batches), desc=f"Downloading images by batch size {min(batch_size, len(urls_df))}"):
+        # Calculate current highest batch number
+        existing_batches = glob.glob(str(self.panorama_output / "batch_*"))
+        existing_batch_numbers = [int(Path(batch).name.split('_')[-1]) for batch in existing_batches]
+        start_batch_number = max(existing_batch_numbers, default=0)
+
+        for i in tqdm(range(start_batch_number, start_batch_number + num_batches), desc=f"Downloading images by batch size {min(batch_size, len(urls_df))}"):
             # Create a new sub-folder for each batch
             batch_out_path = self.panorama_output / f"batch_{i+1}"
             batch_out_path.mkdir(exist_ok=True)

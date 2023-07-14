@@ -7,6 +7,7 @@ import numpy as np
 from tqdm import tqdm
 import random
 from requests.exceptions import ProxyError
+import glob
 
 class ImageTool():
 
@@ -147,9 +148,14 @@ class ImageTool():
                 with open(log_path, 'a') as log_file:
                     log_file.write(f"{panoid}\n")
 
+        # Calculate current highest batch number
+        existing_batches = glob.glob(os.path.join(out_path, "batch_*"))
+        existing_batch_numbers = [int(os.path.basename(batch).split('_')[-1]) for batch in existing_batches]
+        start_batch_number = max(existing_batch_numbers, default=0)
+
         num_batches = (len(panoids) + batch_size - 1) // batch_size
 
-        for i in tqdm(range(num_batches), desc= f"Downloading images by batch size {min(batch_size, len(panoids))}"):
+        for i in tqdm(range(start_batch_number, start_batch_number + num_batches), desc=f"Downloading images by batch size {min(batch_size, len(panoids))}"):
             # Create a new sub-folder for each batch
             batch_out_path = os.path.join(out_path, f"batch_{i+1}")
             os.makedirs(batch_out_path, exist_ok=True)
@@ -182,4 +188,4 @@ class ImageTool():
                         failed_panoid = batch_panoids[jobs.index(job)]
                         log_error(failed_panoid)
 
-        print("Total images downloaded:", len(panoids) - errors, "Errors:", errors)
+        print("Total images downloaded:", len(panoids) - errors, "Errors:", errors)  
