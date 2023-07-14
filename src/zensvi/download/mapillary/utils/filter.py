@@ -340,9 +340,13 @@ def haversine_dist(data: dict, radius: float, coords: list, unit: str = "m") -> 
     # Go through the features
     for feature in data:
 
-        # If the calculated haversince distance is less than the radius ...
+        # Reverse the order of the coords to (lon, lat) before feeding into the haversine function
+        reversed_coords = coords[::-1]
+        reversed_feature_coords = feature["geometry"]["coordinates"][::-1]
+
+        # If the calculated haversine distance is less than the radius ...
         if (
-            haversine.haversine(coords, feature["geometry"]["coordinates"], unit=unit)
+            haversine.haversine(reversed_coords, reversed_feature_coords, unit=unit)
             < radius
         ):
             # ... append to the output
@@ -350,6 +354,7 @@ def haversine_dist(data: dict, radius: float, coords: list, unit: str = "m") -> 
 
     # Return the output
     return output
+
 
 
 def image_type(data: list, image_type: str) -> list:

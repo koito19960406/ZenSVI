@@ -32,7 +32,7 @@ from zensvi.download.utils.helpers import standardize_column_names, create_buffe
 
 # set logging level to warning
 import logging
-logging.getLogger('zensvi.download.mapillary.utils.client').setLevel(logging.WARNING)
+logging.getLogger('mapillary.utils.client').setLevel(logging.WARNING)
 
 class BaseDownloader(ABC):
     @abstractmethod
@@ -112,11 +112,14 @@ class BaseDownloader(ABC):
                 
     def _check_already(self, all_panoids):
         # Get the set of already downloaded images
-        name_r = set(name.split(".")[0] for name in tqdm(os.listdir(self.panorama_output), desc="Checking already downloaded images"))
+        name_r = set()
+        for dirpath, dirnames, filenames in os.walk(self.panorama_output):
+            for name in filenames:
+                name_r.add(name.split(".")[0])
 
         # Filter the list of all panoids to only include those not already downloaded
         all_panoids = list(set(all_panoids) - name_r)
-        return all_panoids 
+        return all_panoids
     
     def _read_pids(self, path_pid):
         pid_df = pd.read_csv(path_pid)
@@ -482,7 +485,7 @@ class GSVDownloader(BaseDownloader):
         
     def download_svi(self, dir_output, path_pid = None, zoom=2, h_tiles=4, v_tiles=2, cropped=False, full=True, 
                     lat=None, lon=None, input_csv_file="", input_shp_file = "", input_place_name = "", id_columns=None, buffer = 0, 
-                    augment_metadata=False, update_pids = False, **kwargs):
+                    augment_metadata=False, batch_size = 1000, update_pids = False, **kwargs):
         # set necessary directories
         self._set_dirs(dir_output)
         
@@ -522,7 +525,7 @@ class GSVDownloader(BaseDownloader):
 
         if len(panoids_rest) > 0:
             UAs = random.choices(self.user_agents, k = len(panoids_rest))
-            ImageTool.dwl_multiple(panoids_rest, zoom, v_tiles, h_tiles, self.panorama_output, UAs, self.proxies, cropped, full, log_path=self.log_path)
+            ImageTool.dwl_multiple(panoids_rest, zoom, v_tiles, h_tiles, self.panorama_output, UAs, self.proxies, cropped, full, batch_size = batch_size, log_path=self.log_path)
         else:
             print("All images have been downloaded")
         
@@ -591,7 +594,7 @@ class MLYDownloader(BaseDownloader):
             df = merged[merged['_merge'] == 'left_only'].drop(columns='_merge')
 
         def get_street_view_info(latitude, longitude, **kwargs):
-            results = mly.get_image_close_to(latitude, longitude, **kwargs).to_dict()["features"]
+            results = mly.get_image_close_to(latitude = latitude, longitude = longitude, **kwargs).to_dict()["features"]
             return results
 
         def worker(row, **kwargs):
@@ -765,7 +768,7 @@ class MLYDownloader(BaseDownloader):
             return pid
 
         if kwargs['lat'] is not None and kwargs['lon'] is not None:
-            pid = mly.get_image_close_to(kwargs['lat'], kwargs['lon'], **mly_kwargs)
+            pid = mly.get_image_close_to(latitude = kwargs['lat'], longitude = kwargs['lon'], **mly_kwargs)
             # Convert to DataFrame
             pid = gpd.GeoDataFrame.from_features(pid.to_dict()['features'])
             pid['lon'] = pid['geometry'].apply(lambda geom: geom.x)
@@ -904,8 +907,8 @@ class MLYDownloader(BaseDownloader):
             shutil.rmtree(dir_cache_urls)
 
     
-    def _download_images_mly(self, cropped):
-        checkpoints = glob.glob(str(self.panorama_output / '*.png'))
+    def _download_images_mly(self, cropped, batch_size):
+        checkpoints = glob.glob(str(self.panorama_output / '**/*.png'), recursive=True)
 
         # Read already downloaded images and convert to ids
         downloaded_ids = set([Path(file_path).stem for file_path in checkpoints])  # Use set for faster operations
@@ -940,21 +943,24 @@ class MLYDownloader(BaseDownloader):
                 self._log_write(panoid)
                 print(f"Error: {e}" )
 
-
-        batch_size = 1000
         num_batches = (len(urls_df) + batch_size - 1) // batch_size
 
         for i in tqdm(range(num_batches), desc=f"Downloading images by batch size {min(batch_size, len(urls_df))}"):
+            # Create a new sub-folder for each batch
+            batch_out_path = self.panorama_output / f"batch_{i+1}"
+            batch_out_path.mkdir(exist_ok=True)
+            
             with ThreadPoolExecutor() as executor:
-                batch_futures = {executor.submit(worker, row, self.panorama_output, cropped): row.id for row in urls_df.iloc[i*batch_size : (i+1)*batch_size].itertuples()}
+                batch_futures = {executor.submit(worker, row, batch_out_path, cropped): row.id for row in urls_df.iloc[i*batch_size : (i+1)*batch_size].itertuples()}
                 for future in tqdm(as_completed(batch_futures), total=len(batch_futures), desc=f"Downloading images for batch #{i+1}"):
                     try:
                         future.result()
                     except Exception as e:
                         print(f"Error: {e}")
+
                 
     def download_svi(self, dir_output, path_pid = None, lat=None, lon=None, input_csv_file="", input_shp_file = "", input_place_name =
-                    "", id_columns=None, buffer = 0, update_pids = False, resolution = 1024, cropped = False, **kwargs):
+                    "", id_columns=None, buffer = 0, update_pids = False, resolution = 1024, cropped = False, batch_size = 1000, **kwargs):
         # set necessary directories
         self._set_dirs(dir_output)
         
@@ -985,7 +991,7 @@ class MLYDownloader(BaseDownloader):
         if path_pid.exists():
             self._get_urls_mly(path_pid, resolution=resolution) 
             # download images
-            self._download_images_mly(cropped)
+            self._download_images_mly(cropped, batch_size)
         else: 
             print("There is no panorama ID to download within the given input parameters")
         

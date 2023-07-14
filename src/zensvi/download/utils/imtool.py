@@ -119,7 +119,7 @@ class ImageTool():
 
 
     @staticmethod
-    def dwl_multiple(panoids, zoom, v_tiles, h_tiles, out_path, uas, proxies, cropped, full, log_path=None):
+    def dwl_multiple(panoids, zoom, v_tiles, h_tiles, out_path, uas, proxies, cropped, full, batch_size = 1000, log_path=None):
         """
         Description of dwl_multiple
         
@@ -147,10 +147,13 @@ class ImageTool():
                 with open(log_path, 'a') as log_file:
                     log_file.write(f"{panoid}\n")
 
-        batch_size = 100  # Modify this to a suitable value
         num_batches = (len(panoids) + batch_size - 1) // batch_size
 
         for i in tqdm(range(num_batches), desc= f"Downloading images by batch size {min(batch_size, len(panoids))}"):
+            # Create a new sub-folder for each batch
+            batch_out_path = os.path.join(out_path, f"batch_{i+1}")
+            os.makedirs(batch_out_path, exist_ok=True)
+
             with ThreadPoolExecutor(max_workers=min(len(uas), batch_size)) as executor:
                 jobs = []
                 batch_panoids = panoids[i*batch_size : (i+1)*batch_size]
@@ -164,7 +167,7 @@ class ImageTool():
                         "zoom": zoom,
                         "vertical_tiles": v_tiles,
                         "horizontal_tiles": h_tiles,
-                        "out_path": out_path,
+                        "out_path": batch_out_path,  # Pass the new sub-folder path
                         "cropped": cropped,
                         "full": full
                     }
