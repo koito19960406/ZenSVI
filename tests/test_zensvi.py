@@ -88,12 +88,12 @@ if __name__ == "__main__":
     #                                 grid = False, grid_size = 20)
     # downloader.download_svi("tests/data/output",
     #                         # haji lane
-    #                         lat=1.3015, lon=103.8591,
-    #                         # input_csv_file = "tests/data/input/count_station.csv",
+    #                         # lat=1.3015, lon=103.8591,
+    #                         input_csv_file = "tests/data/input/count_station_clean.csv",
     #                         # input_shp_file = "/Volumes/ExFAT2/bike_svi/data/raw/cities/London/count_station.csv",
     #                         # input_place_name="Bronkhorst, Netherlands",
     #                         # id_columns = "count_point_id",
-    #                         # buffer = 100,
+    #                         # buffer = 500,
     #                         # network_type = "walk",
     #                         augment_metadata=True) 
     downloader = MLYDownloader(mly_api_key=mly_api_key)
@@ -103,7 +103,7 @@ if __name__ == "__main__":
                             # input_shp_file="tests/data/input/locations_polygon.shp",
                             # input_place_name="Bronkhorst, Netherlands",
                             # network_type = "all_private",
-                            radius=50,
+                            radius=500,
                             cropped=True
                             )
     # segmenter = Segmenter(dataset = "cityscapes", task="panoptic")
