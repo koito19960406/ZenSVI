@@ -225,19 +225,15 @@ class ImageTransformer:
         return new_img
 
     def transform_images(self, style_list=["perspective", "equidistant_fisheye", "orthographic_fisheye", "stereographic_fisheye", "equisolid_fisheye"], 
-                        FOV = 90, aspects = (9, 16), show_size=100):
-        # FOV validation
-        if 360 % FOV != 0:
-            raise ValueError("FOV must be a divisor of 360.")
-
+                    FOV = 90, theta = 90, aspects = (9, 16), show_size=100):
         # check if there's anything other than "perspective" and "fisheye"
         if not all(style in ["perspective", "equidistant_fisheye", "orthographic_fisheye", "stereographic_fisheye", "equisolid_fisheye"] for style in style_list):
-            raise ValueError("Please input the correct image style. The correct image style should be 'perspective' or 'fisheye'.")
+            raise ValueError("Please input the correct image style. The correct image style should be 'perspective', 'equidistant_fisheye', 'orthographic_fisheye', 'stereographic_fisheye', or 'equisolid_fisheye'")
 
         # set image file extensions
         image_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff', '.tif', '.webp', '.ico', '.jfif', '.heic', '.heif']
 
-        def run(path_input, path_output, show_size, style):
+        def run(path_input, path_output, show_size, style, theta, aspects, FOV):
             img_raw = cv2.imread(str(path_input), cv2.IMREAD_COLOR)
             if style == "equidistant_fisheye":
                 if not path_output.exists():
@@ -260,8 +256,8 @@ class ImageTransformer:
                     cv2.imwrite(str(path_output), img_new)
 
             elif style == "perspective":
-                num_images = 360 // FOV  # Calculate the number of images
-                thetas = [FOV * i for i in range(num_images)]  # Calculate thetas based on FOV
+                num_images = 360 // theta  # Calculate the number of images based on theta
+                thetas = [theta * i for i in range(num_images)]  # Calculate thetas based on step size
                 aspects_v = (aspects[0], aspects[1] / num_images)  # Set aspects_v based on the number of images
 
                 for theta in thetas:
@@ -273,17 +269,17 @@ class ImageTransformer:
                         img_new = self.get_perspective(img_raw, FOV, theta, 0, height, width)
                         cv2.imwrite(str(path_output_raw), img_new)
 
-        def process_image(dir_input, dir_output, name, show_size, style):
+        def process_image(dir_input, dir_output, name, show_size, style, theta, aspects, FOV):
             path_input = dir_input / name.name
             path_output = dir_output / (name.stem + ".png")
-            return path_input, path_output, show_size, style
+            return path_input, path_output, show_size, style, theta, aspects, FOV
 
         for current_style in style_list:
             dir_output = Path(self.dir_output) / current_style
             dir_output.mkdir(parents=True, exist_ok=True)
 
             with ThreadPoolExecutor() as executor:
-                futures = [executor.submit(run, *process_image(self.dir_input, dir_output, name, show_size, current_style)) \
+                futures = [executor.submit(run, *process_image(self.dir_input, dir_output, name, show_size, current_style, theta, aspects, FOV)) \
                     for name in self.dir_input.rglob('*') if name.suffix.lower() in image_extensions]
                 for future in tqdm(as_completed(futures), total=len(futures), desc=f"Converting to {current_style}"):
                     future.result()
