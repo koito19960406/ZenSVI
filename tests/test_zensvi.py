@@ -83,19 +83,19 @@ if __name__ == "__main__":
     # Code block 2
     start_time = time.time()
 
-    # downloader = GSVDownloader(gsv_api_key = gsv_api_key,
-    #                                 distance=20,
-    #                                 grid = False, grid_size = 20)
-    # downloader.download_svi("tests/data/output",
-    #                         # haji lane
-    #                         lat=1.3015, lon=103.8591,
-    #                         # input_csv_file = "tests/data/input/count_station_clean.csv",
-    #                         # input_shp_file = "/Volumes/ExFAT2/bike_svi/data/raw/cities/London/count_station.csv",
-    #                         # input_place_name="Bronkhorst, Netherlands",
-    #                         # id_columns = "count_point_id",
-    #                         # buffer = 500,
-    #                         # network_type = "walk",
-    #                         augment_metadata=True) 
+    downloader = GSVDownloader(gsv_api_key = gsv_api_key,
+                                    distance=20,
+                                    grid = False, grid_size = 20)
+    downloader.download_svi("tests/data/output",
+                            # haji lane
+                            # lat=51.46360700000000321, lon= 0.10033917000000001,
+                            input_csv_file = "tests/data/input/count_station_clean.csv",
+                            # input_shp_file = "/Volumes/ExFAT2/bike_svi/data/raw/cities/London/count_station.csv",
+                            # input_place_name="Bronkhorst, Netherlands",
+                            id_columns = ["count_point_id"],
+                            buffer = 100,
+                            # network_type = "walk",
+                            augment_metadata=True) 
     # downloader = MLYDownloader(mly_api_key=mly_api_key)
     # downloader.download_svi(dir_output = "tests/data/output", 
     #                         lat=1.276095, lon=103.792547,
@@ -112,9 +112,9 @@ if __name__ == "__main__":
     #                 dir_segmentation_summary_output = "tests/data/output/pixel",
     #                 csv_format = "wide", max_workers=4)
     
-    transformer = ImageTransformer(dir_input = "tests/data/output/gsv_panorama/batch_1",
-                                    dir_output = "tests/data/output/transformed")
-    transformer.transform_images(FOV=90, theta = 120, aspects=(5,20))
+    # transformer = ImageTransformer(dir_input = "tests/data/output/gsv_panorama/batch_1",
+    #                                 dir_output = "tests/data/output/transformed")
+    # transformer.transform_images(FOV=90, theta = 120, aspects=(5,20))
     
     end_time = time.time()
     print(f"Block 2 execution time: {end_time - start_time} seconds")
