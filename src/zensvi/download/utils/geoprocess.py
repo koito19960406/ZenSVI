@@ -130,8 +130,7 @@ class GeoProcessor:
     
     def utm_to_lat_lon(self, utm_points, utm_crs):
         transformer = Transformer.from_crs(utm_crs, "EPSG:4326", always_xy=True)
-        lat_lon_points = [transformer.transform(x, y) for x, y in tqdm(utm_points, desc="Converting UTM to Lat/Lon")]
-        return lat_lon_points
+        return [transformer.transform(*point) for point in utm_points]
 
     def process_polygon(self, gdf):
         batch_size = 100  # Modify this to a suitable value
@@ -170,15 +169,21 @@ class GeoProcessor:
                     results.append(result)
 
         gdf['street_points'] = [result[0] for result in results]
-        self.utm_crs = results[0][1]
+        gdf['utm_crs'] = [result[1] for result in results]  # Store the CRS for each point
 
-        gdf = gdf.explode('street_points').reset_index(drop=True)
+        gdf_exploded = gdf.explode('street_points').reset_index(drop=True)
+        gdf_exploded["utm_crs"] = gdf_exploded["utm_crs"].astype(str)
 
-        # Convert the UTM points to latitude and longitude
-        gdf['longitude'], gdf['latitude'] = zip(*self.utm_to_lat_lon(gdf['street_points'].tolist(), self.utm_crs))
+        with ThreadPoolExecutor() as executor:
+            futures = {executor.submit(self.utm_to_lat_lon, group['street_points'], crs): crs for crs, group in gdf_exploded.groupby('utm_crs')}
+            lat_lon_points = []
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Converting UTM to Lat/Lon"):
+                lat_lon_points.extend(future.result())
 
-        return gdf[self.id_columns + ['longitude', 'latitude']]
+        # Assign the longitude and latitude to the existing DataFrame columns
+        gdf_exploded[['longitude', 'latitude']] = pd.DataFrame(lat_lon_points, index=gdf_exploded.index)
 
+        return gdf_exploded[self.id_columns + ['longitude', 'latitude']]
 
 
     def process_multipolygon(self, gdf):
