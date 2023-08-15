@@ -614,9 +614,15 @@ class Segmenter:
         
         # make directory
         dir_input = Path(dir_input)
+
+        # initialize completed_image_files
+        completed_image_files = set()
         if dir_image_output is not None:
             dir_image_output = Path(dir_image_output)
             dir_image_output.mkdir(parents=True, exist_ok=True)
+            # get a list of .png files and _blend.png files in the output directory and get the file names as a set
+            completed_image_files.update([str(Path(f).stem).replace("_blend", "") for f in dir_image_output.glob('*.png')])
+                        
         if dir_segmentation_summary_output is not None:
             dir_segmentation_summary_output = Path(dir_segmentation_summary_output)
             dir_segmentation_summary_output.mkdir(parents=True, exist_ok=True)
@@ -628,12 +634,17 @@ class Segmenter:
             checkpoints = glob.glob(str(dir_cache_segmentation_summary / '*.json'))
             checkpoint_start_index = len(checkpoints)
 
-            completed_image_files = set()  # completed_image_files will store the keys in the pixel_ratio_dict
             if checkpoint_start_index > 0:
                 for checkpoint in checkpoints:
                     with open(checkpoint, 'r') as f:
                         checkpoint_dict = json.load(f)
                         completed_image_files.update(checkpoint_dict.keys())
+            
+            # also check pixel_ratios.json in dir_cache_segmentation_summary
+            if (dir_cache_segmentation_summary / 'pixel_ratios.json').exists():
+                with open(dir_cache_segmentation_summary / 'pixel_ratios.json', 'r') as f:
+                    pixel_ratio_dict = json.load(f)
+                    completed_image_files.update(pixel_ratio_dict.keys())
 
         # Get the list of all image files and filter the ones that are not completed yet
         # List of possible image file extensions
@@ -669,46 +680,60 @@ class Segmenter:
                 for completed_future in tqdm(as_completed(futures), total=len(futures), desc=f"Processing outer batch #{i+1}"):
                     completed_future.result()
 
-                # Save checkpoint for each outer batch
-                with open(f'{dir_cache_segmentation_summary}/checkpoint_batch_{checkpoint_start_index+i+1}_pixel_ratio.json', 'w') as f:
-                    json.dump(pixel_ratio_dict, f)
-                    
-                if self.task == "panoptic":
-                    with open(f'{dir_cache_segmentation_summary}/checkpoint_batch_{checkpoint_start_index+i+1}_panoptic.json', 'w') as f:
-                        json.dump(panoptic_dict, f)
-
-        # Merge all checkpoints into a single pixel_ratio_dict
-        pixel_ratio_dict = defaultdict(dict)
-        for checkpoint in glob.glob(str(dir_cache_segmentation_summary / '*_pixel_ratio.json')):
-            with open(checkpoint, 'r') as f:
-                checkpoint_dict = json.load(f)
-                for key, value in checkpoint_dict.items():
-                    pixel_ratio_dict[key] = value
-        
-        # Merge all checkpoints into a single panoptic_dict
-        if self.task == "panoptic":
-            panoptic_dict = defaultdict(dict)
-            for checkpoint in glob.glob(str(dir_cache_segmentation_summary / '*_panoptic.json')):
+                if dir_segmentation_summary_output is not None:
+                    # Save checkpoint for each outer batch
+                    with open(f'{dir_cache_segmentation_summary}/checkpoint_batch_{checkpoint_start_index+i+1}_pixel_ratio.json', 'w') as f:
+                        json.dump(pixel_ratio_dict, f)
+                        
+                    if self.task == "panoptic":
+                        with open(f'{dir_cache_segmentation_summary}/checkpoint_batch_{checkpoint_start_index+i+1}_panoptic.json', 'w') as f:
+                            json.dump(panoptic_dict, f)
+        if dir_segmentation_summary_output is not None:
+            # Merge all checkpoints into a single pixel_ratio_dict
+            pixel_ratio_dict = defaultdict(dict)
+            for checkpoint in glob.glob(str(dir_cache_segmentation_summary / '*_pixel_ratio.json')):
                 with open(checkpoint, 'r') as f:
                     checkpoint_dict = json.load(f)
                     for key, value in checkpoint_dict.items():
-                        panoptic_dict[key] = value
-
-        # Save pixel_ratio_dict as a JSON or CSV file
-        if "json" in pixel_ratio_save_format:
-            with open(dir_segmentation_summary_output / "pixel_ratios.json", "w") as f:
-                json.dump(pixel_ratio_dict, f)
-            if self.task == "panoptic":
-                with open(dir_segmentation_summary_output / "label_counts.json", "w") as f:
-                    json.dump(panoptic_dict, f)
-        if "csv" in pixel_ratio_save_format:
-            self._save_as_csv(pixel_ratio_dict, dir_segmentation_summary_output, "pixel_ratios", csv_format)
-            if self.task == "panoptic":
-                self._save_as_csv(panoptic_dict, dir_segmentation_summary_output, "label_counts", csv_format)
-                
+                        pixel_ratio_dict[key] = value
             
-        # Delete the "pixel_ratio_checkpoints" directory
-        if dir_segmentation_summary_output is not None:
+            # Merge all checkpoints into a single panoptic_dict
+            if self.task == "panoptic":
+                panoptic_dict = defaultdict(dict)
+                for checkpoint in glob.glob(str(dir_cache_segmentation_summary / '*_panoptic.json')):
+                    with open(checkpoint, 'r') as f:
+                        checkpoint_dict = json.load(f)
+                        for key, value in checkpoint_dict.items():
+                            panoptic_dict[key] = value
+                            
+            # Merge existing pixel_ratios.json with the new pixel_ratio_dict
+            if (dir_segmentation_summary_output / 'pixel_ratios.json').exists():
+                with open(dir_segmentation_summary_output / 'pixel_ratios.json', 'r') as f:
+                    existing_pixel_ratio_dict = json.load(f)
+                    for key, value in existing_pixel_ratio_dict.items():
+                        pixel_ratio_dict[key] = value
+                        
+            # Merge existing label_counts.json with the new panoptic_dict
+            if self.task == "panoptic":
+                if (dir_segmentation_summary_output / 'label_counts.json').exists():
+                    with open(dir_segmentation_summary_output / 'label_counts.json', 'r') as f:
+                        existing_panoptic_dict = json.load(f)
+                        for key, value in existing_panoptic_dict.items():
+                            panoptic_dict[key] = value
+
+            # Save pixel_ratio_dict as a JSON or CSV file
+            if "json" in pixel_ratio_save_format:
+                with open(dir_segmentation_summary_output / "pixel_ratios.json", "w") as f:
+                    json.dump(pixel_ratio_dict, f)
+                if self.task == "panoptic":
+                    with open(dir_segmentation_summary_output / "label_counts.json", "w") as f:
+                        json.dump(panoptic_dict, f)
+            if "csv" in pixel_ratio_save_format:
+                self._save_as_csv(pixel_ratio_dict, dir_segmentation_summary_output, "pixel_ratios", csv_format)
+                if self.task == "panoptic":
+                    self._save_as_csv(panoptic_dict, dir_segmentation_summary_output, "label_counts", csv_format)
+                    
+            # Delete the "pixel_ratio_checkpoints" directory
             shutil.rmtree(dir_cache_segmentation_summary)
 
             
