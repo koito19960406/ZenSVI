@@ -87,6 +87,7 @@ if __name__ == "__main__":
                                     distance=20,
                                     grid = False, grid_size = 20)
     downloader.download_svi("tests/data/output",
+<<<<<<< HEAD
                             # orchard road
                             lat = 1.3041, lon = 103.8318,
                             # input_csv_file = "tests/data/input/count_station_clean.csv",
@@ -96,6 +97,17 @@ if __name__ == "__main__":
                             buffer = 500,
                             # network_type = "walk",
                             augment_metadata=False) 
+=======
+                            # haji lane
+                            # lat=51.46360700000000321, lon= 0.10033917000000001,
+                            input_csv_file = "tests/data/input/count_station_clean.csv",
+                            # input_shp_file = "/Volumes/ExFAT2/bike_svi/data/raw/cities/London/count_station.csv",
+                            # input_place_name="Bronkhorst, Netherlands",
+                            id_columns = ["count_point_id"],
+                            buffer = 100,
+                            # network_type = "walk",
+                            augment_metadata=True) 
+>>>>>>> 6f73e8cf4ba640ab40444b045fa922e4b0f5eff6
     # downloader = MLYDownloader(mly_api_key=mly_api_key)
     # downloader.download_svi(dir_output = "tests/data/output", 
     #                         lat=1.276095, lon=103.792547,
