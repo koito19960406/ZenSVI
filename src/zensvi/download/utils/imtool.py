@@ -155,15 +155,15 @@ class ImageTool():
 
         num_batches = (len(panoids) + batch_size - 1) // batch_size
 
-        for i in tqdm(range(start_batch_number, start_batch_number + num_batches), desc=f"Downloading images by batch size {min(batch_size, len(panoids))}"):
+        for counter, i in tqdm(enumerate(range(start_batch_number, start_batch_number + num_batches)), desc=f"Downloading images by batch size {min(batch_size, len(panoids))}"):
             # Create a new sub-folder for each batch
             batch_out_path = os.path.join(out_path, f"batch_{i+1}")
             os.makedirs(batch_out_path, exist_ok=True)
 
             with ThreadPoolExecutor(max_workers=min(len(uas), batch_size)) as executor:
                 jobs = []
-                batch_panoids = panoids[i*batch_size : (i+1)*batch_size]
-                batch_uas = uas[i*batch_size : (i+1)*batch_size]
+                batch_panoids = panoids[counter*batch_size : (counter+1)*batch_size]
+                batch_uas = uas[counter*batch_size : (counter+1)*batch_size]
                 for pano, ua in zip(batch_panoids, batch_uas):
                     kw = {
                         "pano_id": pano,
