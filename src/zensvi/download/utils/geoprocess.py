@@ -73,8 +73,8 @@ class GeoProcessor:
         gdf_utm = gdf_utm.explode('sample_points').reset_index(drop=True)
 
         # Convert the UTM points to latitude and longitude
-        gdf['longitude'], gdf['latitude'] = zip(*self.utm_to_lat_lon(gdf_utm['sample_points'].apply(lambda p: (p.x, p.y)).tolist(), self.utm_crs))
-        return gdf[self.id_columns + ['longitude', 'latitude']]
+        gdf_utm['longitude'], gdf_utm['latitude'] = zip(*self.utm_to_lat_lon(gdf_utm['sample_points'], self.utm_crs))
+        return gdf_utm[self.id_columns + ['longitude', 'latitude']]
 
     def process_multilinestring(self, gdf):
         # Explode the multilinestring into individual linestrings
