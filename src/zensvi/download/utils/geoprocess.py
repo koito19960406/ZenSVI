@@ -69,7 +69,7 @@ class GeoProcessor:
         self.utm_crs = gdf_utm.crs
 
         # Use osmnx.utils_geo.interpolate_points function to interpolate points along LineStrings
-        gdf_utm['sample_points'] = gdf_utm['geometry'].progress_apply(lambda geom: list(ox.utils_geo.interpolate_points(geom, dist=self.distance)), desc="Interpolating Points")
+        gdf_utm['sample_points'] = gdf_utm['geometry'].progress_apply(lambda geom: list(ox.utils_geo.interpolate_points(geom, dist=self.distance)))
         gdf_utm = gdf_utm.explode('sample_points').reset_index(drop=True)
 
         # Convert the UTM points to latitude and longitude
