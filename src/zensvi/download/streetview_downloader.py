@@ -23,6 +23,7 @@ import osmnx as ox
 from abc import ABC, abstractmethod
 from shapely import wkt
 from PIL import Image
+from typing import List, Tuple, Union
 
 import zensvi.download.mapillary.interface as mly
 from zensvi.download.utils.imtool import ImageTool
@@ -142,17 +143,43 @@ class BaseDownloader(ABC):
 
 
 class GSVDownloader(BaseDownloader):
-    def __init__(self, gsv_api_key = None, log_path = None, distance = 1, grid = False, grid_size = 1):
+    def __init__(self, gsv_api_key: str = None, log_path: str = None, distance: int = 1, grid: bool = False, grid_size: int = 1):
+        """
+        Google Street View Downloader class.
+
+        Args:
+            gsv_api_key (str, optional): Google Street View API key. Defaults to None.
+            log_path (str, optional): Path to the log file. Defaults to None.
+            distance (int, optional): Distance parameter for the GeoProcessor. Defaults to 1.
+            grid (bool, optional): Grid parameter for the GeoProcessor. Defaults to False.
+            grid_size (int, optional): Grid size parameter for the GeoProcessor. Defaults to 1.
+
+        Raises:
+            Warning: If gsv_api_key is not provided.
+        """
         super().__init__(log_path, distance, grid, grid_size)
         if gsv_api_key == None:
             warnings.warn("Please provide your Google Street View API key to augment metadata.")
         self._gsv_api_key = gsv_api_key
 
     @property
-    def gsv_api_key(self):
+    def gsv_api_key(self) -> str:
+        """
+        Property to get the Google Street View API key.
+
+        Returns:
+            str: Google Street View API key.
+        """
         return self._gsv_api_key    
+    
     @gsv_api_key.setter
-    def gsv_api_key(self,gsv_api_key):
+    def gsv_api_key(self, gsv_api_key: str):
+        """
+        Setter to set the Google Street View API key.
+
+        Args:
+            gsv_api_key (str): Google Street View API key.
+        """
         self._gsv_api_key = gsv_api_key
 
     def _augment_metadata(self, df):
@@ -449,7 +476,7 @@ class GSVDownloader(BaseDownloader):
 
         return pid
 
-    def get_pids(self, path_pid, **kwargs):
+    def _get_pids(self, path_pid, **kwargs):
         id_columns = kwargs['id_columns']
         if id_columns is not None:
             if isinstance(id_columns, str):
@@ -483,20 +510,48 @@ class GSVDownloader(BaseDownloader):
         self.cache_pids_raw = self.dir_cache / "pids_raw.csv"
         self.cache_pids_augmented = self.dir_cache / "pids_augemented.csv"
         
-    def download_svi(self, dir_output, path_pid = None, zoom=2, h_tiles=4, v_tiles=2, cropped=False, full=True, 
-                    lat=None, lon=None, input_csv_file="", input_shp_file = "", input_place_name = "", id_columns=None, buffer = 0, 
-                    augment_metadata=False, batch_size = 1000, update_pids = False, **kwargs):
+    def download_svi(self, dir_output: str, path_pid: str = None, zoom: int = 2, h_tiles: int = 4, v_tiles: int = 2, 
+                      cropped: bool = False, full: bool = True, lat: float = None, lon: float = None, 
+                      input_csv_file: str = "", input_shp_file: str = "", input_place_name: str = "", 
+                      id_columns: Union[str, List[str]] = None, buffer: int = 0, augment_metadata: bool = False, 
+                      batch_size: int = 1000, update_pids: bool = False, **kwargs) -> None:
+        """
+        Downloads street view images.
+
+        Args:
+            dir_output (str): The output directory.
+            path_pid (str, optional): The path to the panorama ID file. Defaults to None.
+            zoom (int, optional): The zoom level for the images. Defaults to 2.
+            h_tiles (int, optional): The number of horizontal tiles. Defaults to 4.
+            v_tiles (int, optional): The number of vertical tiles. Defaults to 2.
+            cropped (bool, optional): Whether to crop the images. Defaults to False.
+            full (bool, optional): Whether to download full images. Defaults to True.
+            lat (float, optional): The latitude for the images. Defaults to None.
+            lon (float, optional): The longitude for the images. Defaults to None.
+            input_csv_file (str, optional): The input CSV file. Defaults to "".
+            input_shp_file (str, optional): The input shapefile. Defaults to "".
+            input_place_name (str, optional): The input place name. Defaults to "".
+            id_columns (Union[str, List[str]], optional): The ID columns. Defaults to None.
+            buffer (int, optional): The buffer size. Defaults to 0.
+            augment_metadata (bool, optional): Whether to augment the metadata. Defaults to False.
+            batch_size (int, optional): The batch size for downloading. Defaults to 1000.
+            update_pids (bool, optional): Whether to update the panorama IDs. Defaults to False.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            None
+        """
         # set necessary directories
         self._set_dirs(dir_output)
         
-        # call get_pids function first if path_pid is None
+        # call _get_pids function first if path_pid is None
         if (path_pid is None) & (self.cache_pids_augmented.exists() == False):
             print("Getting pids...")
             path_pid = self.dir_output / "gsv_pids.csv"
             if path_pid.exists() & (update_pids == False):
                 print("update_pids is set to False. So the following csv file will be used: {}".format(path_pid))
             else:
-                self.get_pids(path_pid, lat=lat, lon=lon,
+                self._get_pids(path_pid, lat=lat, lon=lon,
                             input_csv_file=input_csv_file, input_shp_file = input_shp_file, input_place_name = input_place_name, 
                             id_columns=id_columns, buffer = buffer, augment_metadata=augment_metadata, **kwargs)
         elif self.cache_pids_augmented.exists():
@@ -536,9 +591,10 @@ class GSVDownloader(BaseDownloader):
 
 
 class MLYDownloader(BaseDownloader):
-    def __init__(self, mly_api_key, log_path = None, distance = 1, grid = False, grid_size = 1):
+    def __init__(self, mly_api_key, log_path = None, distance = 1, grid = False, grid_size = 1, max_workers = None):
         super().__init__(log_path, distance, grid, grid_size) 
         self._mly_api_key = mly_api_key
+        self._max_workers = max_workers
         mly.set_access_token(self.mly_api_key)
         
     @property
@@ -547,6 +603,13 @@ class MLYDownloader(BaseDownloader):
     @mly_api_key.setter
     def mly_api_key(self,mly_api_key):
         self._mly_api_key = mly_api_key
+    
+    @property
+    def max_workers(self):
+        return self._max_workers
+    @max_workers.setter
+    def max_workers(self,max_workers):
+        self._max_workers = max_workers
     
     def _read_pids(self, path_pid):
         pid_df = pd.read_csv(path_pid)
@@ -618,7 +681,7 @@ class MLYDownloader(BaseDownloader):
         
         # if not, process the rows
         for i in tqdm(range(num_batches), desc=f"Getting pids by batch size {min(batch_size, len(df))}"):
-            with ThreadPoolExecutor() as executor:
+            with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
                 batch_futures = {executor.submit(worker, row, **kwargs): row for row in df.iloc[i*batch_size : (i+1)*batch_size].itertuples()}
                 for future in tqdm(as_completed(batch_futures), total=len(batch_futures), desc=f"Getting pids for batch #{i+1}"):
                     try:
@@ -807,7 +870,7 @@ class MLYDownloader(BaseDownloader):
 
         return pid
     
-    def get_pids(self, path_pid, **kwargs):
+    def _get_pids(self, path_pid, **kwargs):
         id_columns = kwargs['id_columns']
         if id_columns is not None:
             if isinstance(id_columns, str):
@@ -821,9 +884,6 @@ class MLYDownloader(BaseDownloader):
         
         # get raw pid
         pid = self._get_raw_pids(**kwargs)
-        # filter organization_id if it exists: this is a temporary solution until the official API fixes its bug
-        if "organization_id" in kwargs.keys():
-            pid = pid[pid["organization_id"] == kwargs["organization_id"]]
         
         if pid is None:
             print("There is no panorama ID to download")
@@ -969,14 +1029,14 @@ class MLYDownloader(BaseDownloader):
         # set necessary directories
         self._set_dirs(dir_output)
         
-        # call get_pids function first if path_pid is None
+        # call _get_pids function first if path_pid is None
         if path_pid is None:
             print("Getting pids...")
             path_pid = self.dir_output / "mly_pids.csv"
             if path_pid.exists() & (update_pids == False):
                 print("update_pids is set to False. So the following csv file will be used: {}".format(path_pid))
             else:
-                self.get_pids(path_pid, lat=lat, lon=lon,
+                self._get_pids(path_pid, lat=lat, lon=lon,
                             input_csv_file=input_csv_file, input_shp_file = input_shp_file, input_place_name = input_place_name, 
                             id_columns=id_columns, buffer = buffer, **kwargs)
         else:
@@ -984,7 +1044,7 @@ class MLYDownloader(BaseDownloader):
             if path_pid.exists():
                 print("The following csv file will be used: {}".format(path_pid))
             else:
-                self.get_pids(path_pid, lat=lat, lon=lon,
+                self._get_pids(path_pid, lat=lat, lon=lon,
                             input_csv_file=input_csv_file, input_shp_file = input_shp_file, input_place_name = input_place_name, 
                             id_columns=id_columns, buffer = buffer, **kwargs)
     
