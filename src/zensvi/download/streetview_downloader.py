@@ -946,13 +946,15 @@ class MLYDownloader(BaseDownloader):
         for i in tqdm(range(num_batches), desc=f"Getting urls by batch size {min(batch_size, len(panoids))}"):
             with ThreadPoolExecutor() as executor:
                 batch_futures = {executor.submit(worker, panoid, resolution): panoid for panoid in panoids[i*batch_size : (i+1)*batch_size]}
+                
                 for future in tqdm(as_completed(batch_futures), total=len(batch_futures), desc=f"Getting urls for batch #{i+1}"):
+                    current_panoid = batch_futures[future]
                     try:
                         panoid, url = future.result()
                         results[panoid] = url
                     except Exception as e:
                         print(f"Error: {e}")
-                        self._log_write(panoid)
+                        self._log_write(current_panoid)
                         continue
 
             if len(results) > 0:
