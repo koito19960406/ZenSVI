@@ -614,7 +614,7 @@ class MLYDownloader(BaseDownloader):
     def _read_pids(self, path_pid):
         pid_df = pd.read_csv(path_pid)
         # get unique pids (ie "id" columns) as a list
-        pids = pid_df["id"].unique().tolist()
+        pids = pid_df["id"].astype(int).unique().tolist()
         return pids
 
     def _set_dirs(self, dir_output):
