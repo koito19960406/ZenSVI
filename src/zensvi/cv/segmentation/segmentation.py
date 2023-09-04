@@ -218,6 +218,8 @@ class ImageDataset(Dataset):
             image_files (List[Path]): List of image files.
             rgb (bool, optional): Flag to convert images to RGB. Defaults to True.
         """
+        # remove any non-image files and file names starting with "."
+        image_files = [image_file for image_file in image_files if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"] and not image_file.name.startswith(".")]
         self.image_files = image_files
         self.rgb = rgb
 
@@ -385,6 +387,7 @@ class Segmenter:
             if device not in ["cpu", "cuda", "mps"]:
                 raise ValueError(f"Unknown device: {device}")
             else:
+                print(f"Using {device}")
                 return torch.device(device)
         if torch.cuda.is_available():
             print("Using GPU")
@@ -662,7 +665,7 @@ class Segmenter:
         image_extensions = [".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".dib", ".pbm", ".pgm", ".ppm", ".sr", ".ras", ".exr", ".jp2"]
 
         # Get the list of all image files in the directory that are not completed yet
-        image_file_list = [str(f) for f in Path(dir_input).iterdir() if f.suffix in image_extensions and f.stem not in completed_image_files]
+        image_file_list = [f for f in Path(dir_input).iterdir() if f.suffix in image_extensions and f.stem not in completed_image_files]
 
         outer_batch_size = 1000  # Number of inner batches in one outer batch
         num_outer_batches = (len(image_file_list) + outer_batch_size * batch_size - 1) // (outer_batch_size * batch_size)
