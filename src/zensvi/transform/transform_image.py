@@ -258,11 +258,10 @@ class ImageTransformer:
             elif style == "perspective":
                 num_images = 360 // theta  # Calculate the number of images based on theta
                 thetas = [theta * i for i in range(num_images)]  # Calculate thetas based on step size
-                aspects_v = (aspects[0], aspects[1] / num_images)  # Set aspects_v based on the number of images
 
                 for theta in thetas:
-                    height = int(aspects_v[0] * show_size)
-                    width = int(aspects_v[1] * show_size)
+                    height = int(aspects[0] * show_size)
+                    width = int(aspects[1] * show_size)
                     aspect_name = '%s--%s' % (aspects[0], aspects[1])
                     path_output_raw = path_output.with_name(f'{path_output.stem}_Direction_{theta}_FOV_{FOV}_aspect_{aspect_name}_raw.png')
                     if not path_output_raw.exists(): 
