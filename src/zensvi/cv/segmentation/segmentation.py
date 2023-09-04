@@ -261,7 +261,7 @@ class ImageDataset(Dataset):
         return list(image_files), list(images), list(original_img_shape)
 
 class Segmenter:
-    def __init__(self, dataset="cityscapes", task = "semantic"):
+    def __init__(self, dataset="cityscapes", task = "semantic", device = None):
         """
         Initialize the Segmenter with a model and dataset.
 
@@ -269,7 +269,7 @@ class Segmenter:
             model_name (str): The name of the pre-trained model.
             dataset (str): The name of the dataset.
         """
-        self.device = self._get_device()
+        self.device = self._get_device(device)
         self.dataset = dataset
         self.task = task
         self.model_name = self._get_model_name(self.dataset, self.task)
@@ -368,13 +368,18 @@ class Segmenter:
             labels = create_mapillary_vistas_label_colormap()
         return {label.trainId: label.name for label in labels}
     
-    def _get_device(self) -> torch.device:
+    def _get_device(self, device) -> torch.device:
         """
         Get the appropriate device for running the model.
 
         Returns:
             torch.device: The device to use for running the model.
         """
+        if device is not None:
+            if device not in ["cpu", "cuda", "mps"]:
+                raise ValueError(f"Unknown device: {device}")
+            else:
+                return torch.device(device)
         if torch.cuda.is_available():
             print("Using GPU")
             return torch.device("cuda")
