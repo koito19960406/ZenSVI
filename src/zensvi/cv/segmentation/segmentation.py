@@ -242,9 +242,15 @@ class ImageDataset(Dataset):
         """
         image_file = self.image_files[idx]
         img = cv2.imread(str(image_file))
+        
+        if img is None:
+            raise ValueError(f"Unable to read image at {image_file}")
+        
         original_img_shape = get_resized_dimensions(img)
+        
         if self.rgb:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            
         return str(image_file), img, original_img_shape
 
     def collate_fn(self, data: List[Tuple[str, cv2.Mat, Tuple[int, int]]]) -> Tuple[List[str], List[cv2.Mat], List[Tuple[int, int]]]:
