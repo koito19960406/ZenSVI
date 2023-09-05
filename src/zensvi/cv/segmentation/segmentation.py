@@ -387,7 +387,7 @@ class Segmenter:
             if device not in ["cpu", "cuda", "mps"]:
                 raise ValueError(f"Unknown device: {device}")
             else:
-                print(f"Using {device}")
+                print(f"Using {device.upper()}")
                 return torch.device(device)
         if torch.cuda.is_available():
             print("Using GPU")
@@ -748,7 +748,7 @@ class Segmenter:
                     self._save_as_csv(panoptic_dict, dir_segmentation_summary_output, "label_counts", csv_format)
                     
             # Delete the "pixel_ratio_checkpoints" directory
-            shutil.rmtree(dir_cache_segmentation_summary)
+            shutil.rmtree(dir_cache_segmentation_summary, ignore_errors=True)
 
             
     def calculate_pixel_ratio_post_process(self, dir_input, dir_output, pixel_ratio_save_format = ["json", "csv"]):
