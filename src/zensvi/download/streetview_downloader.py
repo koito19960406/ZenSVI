@@ -122,11 +122,17 @@ class BaseDownloader(ABC):
         all_panoids = list(set(all_panoids) - name_r)
         return all_panoids
     
-    def _read_pids(self, path_pid):
+    def _read_pids(self, path_pid, start_date, end_date):
         pid_df = pd.read_csv(path_pid)
+        # filter pids by date
+        pid_df = self._filter_pids_date(pid_df, start_date, end_date)
         # get unique pids as a list
         pids = pid_df.iloc[:,0].unique().tolist()
         return pids
+
+    @abstractmethod
+    def _filter_pids_date(self, pid_df, start_date, end_date):
+        pass
 
     @abstractmethod
     def download_svi(self, 
@@ -138,7 +144,9 @@ class BaseDownloader(ABC):
                     input_place_name = "", 
                     id_columns=None, 
                     buffer = 0,
-                    update_pids = False):
+                    update_pids = False,
+                    start_date = None,
+                    end_date = None):
         pass
 
 
@@ -510,11 +518,35 @@ class GSVDownloader(BaseDownloader):
         self.cache_pids_raw = self.dir_cache / "pids_raw.csv"
         self.cache_pids_augmented = self.dir_cache / "pids_augemented.csv"
         
+    def _filter_pids_date(self, pid_df, start_date, end_date):
+        # create a temporary column date from year and month
+        pid_df['date'] = pid_df['year'].astype(str) + "-" + pid_df['month'].astype(str)
+        # convert to datetime
+        pid_df['date'] = pd.to_datetime(pid_df['date'], format="%Y-%m")
+        # check if start_date and end_date are in the correct format with regex. If not, raise error
+        if start_date is not None:
+            try:
+                start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d")
+            except ValueError:
+                raise ValueError("Incorrect start_date format, should be YYYY-MM-DD")
+        if end_date is not None:
+            try:
+                end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d")
+            except ValueError:
+                raise ValueError("Incorrect end_date format, should be YYYY-MM-DD")
+        # if start_date is not None, filter out the rows with date < start_date
+        pid_df = pid_df[pid_df['date'] >= start_date] if start_date is not None else pid_df
+        # if end_date is not None, filter out the rows with date > end_date
+        pid_df = pid_df[pid_df['date'] <= end_date] if end_date is not None else pid_df
+        # drop the temporary column date
+        pid_df = pid_df.drop(columns='date')
+        return pid_df
+    
     def download_svi(self, dir_output: str, path_pid: str = None, zoom: int = 2, h_tiles: int = 4, v_tiles: int = 2, 
                       cropped: bool = False, full: bool = True, lat: float = None, lon: float = None, 
                       input_csv_file: str = "", input_shp_file: str = "", input_place_name: str = "", 
                       id_columns: Union[str, List[str]] = None, buffer: int = 0, augment_metadata: bool = False, 
-                      batch_size: int = 1000, update_pids: bool = False, **kwargs) -> None:
+                      batch_size: int = 1000, update_pids: bool = False, start_date = None, end_date = None, **kwargs) -> None:
         """
         Downloads street view images.
 
@@ -536,6 +568,8 @@ class GSVDownloader(BaseDownloader):
             augment_metadata (bool, optional): Whether to augment the metadata. Defaults to False.
             batch_size (int, optional): The batch size for downloading. Defaults to 1000.
             update_pids (bool, optional): Whether to update the panorama IDs. Defaults to False.
+            start_date (str, optional): The start date for the panorama IDs. Format is isoformat (YYYY-MM-DD). Defaults to None.
+            end_date (str, optional): The end date for the panorama IDs. Format is isoformat (YYYY-MM-DD). Defaults to None.
             **kwargs: Additional keyword arguments.
 
         Returns:
@@ -570,7 +604,7 @@ class GSVDownloader(BaseDownloader):
         self.panorama_output = self.dir_output / "gsv_panorama"
         self.panorama_output.mkdir(parents=True, exist_ok=True)
         
-        panoids = self._read_pids(path_pid)
+        panoids = self._read_pids(path_pid, start_date, end_date)
         
         if len(panoids) == 0:
             print("There is no panorama ID to download")
@@ -870,6 +904,28 @@ class MLYDownloader(BaseDownloader):
 
         return pid
     
+    def _filter_pids_date(self, pid_df, start_date, end_date):
+        # create a temporary column date from captured_at (milliseconds from Unix epoch)
+        pid_df['date'] = pd.to_datetime(pid_df['captured_at'], unit='ms')
+        # check if start_date and end_date are in the correct format with regex. If not, raise error
+        if start_date is not None:
+            try:
+                start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d")
+            except ValueError:
+                raise ValueError("Incorrect start_date format, should be YYYY-MM-DD")
+        if end_date is not None:
+            try:
+                end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d")
+            except ValueError:
+                raise ValueError("Incorrect end_date format, should be YYYY-MM-DD")
+        # if start_date is not None, filter out the rows with date < start_date
+        pid_df = pid_df[pid_df['date'] >= start_date] if start_date is not None else pid_df
+        # if end_date is not None, filter out the rows with date > end_date
+        pid_df = pid_df[pid_df['date'] <= end_date] if end_date is not None else pid_df
+        # drop the temporary column date
+        pid_df = pid_df.drop(columns='date')
+        return pid_df
+
     def _get_pids(self, path_pid, **kwargs):
         id_columns = kwargs['id_columns']
         if id_columns is not None:
@@ -898,7 +954,7 @@ class MLYDownloader(BaseDownloader):
         # pid = pid.drop(columns='geometry')
         # move the "id" column to the first column
         pid = pid[["id"] + [col for col in pid.columns if col != "id"]]
-        
+
         pid.to_csv(path_pid, index=False)
         print("The panorama IDs have been saved to {}".format(path_pid)) 
     
@@ -969,13 +1025,20 @@ class MLYDownloader(BaseDownloader):
             shutil.rmtree(dir_cache_urls)
 
 
-    def _download_images_mly(self, cropped, batch_size):
+    def _download_images_mly(self, path_pid, cropped, batch_size, start_date, end_date):
         checkpoints = glob.glob(str(self.panorama_output / '**/*.png'), recursive=True)
 
         # Read already downloaded images and convert to ids
         downloaded_ids = set([Path(file_path).stem for file_path in checkpoints])  # Use set for faster operations
 
+        pid_df = pd.read_csv(path_pid)
+        pid_df["id"] = pid_df["id"].astype(int)
         urls_df = pd.read_csv(self.pids_url)
+        urls_df["id"] = urls_df["id"].astype(int)
+        # merge pid_df and urls_df
+        urls_df = urls_df.merge(pid_df, on='id', how='left')
+        # filter out the rows by date
+        urls_df = self._filter_pids_date(urls_df, start_date, end_date)
 
         # Filter out the ids that have already been processed
         urls_df = urls_df[~urls_df['id'].isin(downloaded_ids)]  # Use isin for efficient operation
@@ -1027,7 +1090,8 @@ class MLYDownloader(BaseDownloader):
 
                 
     def download_svi(self, dir_output, path_pid = None, lat=None, lon=None, input_csv_file="", input_shp_file = "", input_place_name =
-                    "", id_columns=None, buffer = 0, update_pids = False, resolution = 1024, cropped = False, batch_size = 1000, **kwargs):
+                    "", id_columns=None, buffer = 0, update_pids = False, resolution = 1024, cropped = False, batch_size = 1000,
+                    start_date = None, end_date = None, **kwargs):
         # set necessary directories
         self._set_dirs(dir_output)
         
@@ -1040,7 +1104,7 @@ class MLYDownloader(BaseDownloader):
             else:
                 self._get_pids(path_pid, lat=lat, lon=lon,
                             input_csv_file=input_csv_file, input_shp_file = input_shp_file, input_place_name = input_place_name, 
-                            id_columns=id_columns, buffer = buffer, **kwargs)
+                            id_columns=id_columns, buffer = buffer, start_date = start_date, end_date = end_date, **kwargs)
         else:
             # check if the path_pid exists
             if path_pid.exists():
@@ -1058,7 +1122,7 @@ class MLYDownloader(BaseDownloader):
         if path_pid.exists():
             self._get_urls_mly(path_pid, resolution=resolution) 
             # download images
-            self._download_images_mly(cropped, batch_size)
+            self._download_images_mly(path_pid, cropped, batch_size, start_date, end_date)
         else: 
             print("There is no panorama ID to download within the given input parameters")
         
