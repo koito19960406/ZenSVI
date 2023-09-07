@@ -650,7 +650,7 @@ class MLYDownloader(BaseDownloader):
         # drop NA values in id columns
         pid_df = pid_df.dropna(subset=['id'])
         # get unique pids (ie "id" columns) as a list
-        pids = pid_df["id"].astype(int).unique().tolist()
+        pids = pid_df["id"].astype('int64').unique().tolist()
         return pids
 
     def _set_dirs(self, dir_output):
@@ -1037,9 +1037,9 @@ class MLYDownloader(BaseDownloader):
         downloaded_ids = set([Path(file_path).stem for file_path in checkpoints])  # Use set for faster operations
 
         pid_df = pd.read_csv(path_pid).dropna(subset=['id'])
-        pid_df["id"] = pid_df["id"].astype(int)
+        pid_df["id"] = pid_df["id"].astype('int64')
         urls_df = pd.read_csv(self.pids_url)
-        urls_df["id"] = urls_df["id"].astype(int)
+        urls_df["id"] = urls_df["id"].astype('int64')
         # merge pid_df and urls_df
         urls_df = urls_df.merge(pid_df, on='id', how='left')
         # filter out the rows by date
