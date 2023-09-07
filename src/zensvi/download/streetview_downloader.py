@@ -1036,7 +1036,7 @@ class MLYDownloader(BaseDownloader):
         # Read already downloaded images and convert to ids
         downloaded_ids = set([Path(file_path).stem for file_path in checkpoints])  # Use set for faster operations
 
-        pid_df = pd.read_csv(path_pid)
+        pid_df = pd.read_csv(path_pid).dropna(subset=['id'])
         pid_df["id"] = pid_df["id"].astype(int)
         urls_df = pd.read_csv(self.pids_url)
         urls_df["id"] = urls_df["id"].astype(int)
