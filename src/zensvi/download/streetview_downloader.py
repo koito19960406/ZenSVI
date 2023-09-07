@@ -520,7 +520,7 @@ class GSVDownloader(BaseDownloader):
         
     def _filter_pids_date(self, pid_df, start_date, end_date):
         # create a temporary column date from year and month
-        pid_df['date'] = pid_df['year'].astype(str) + "-" + pid_df['month'].astype(str)
+        pid_df['date'] = pid_df['year'].astype(int).astype(str) + "-" + pid_df['month'].astype(int).astype(str)
         # convert to datetime
         pid_df['date'] = pd.to_datetime(pid_df['date'], format="%Y-%m")
         # check if start_date and end_date are in the correct format with regex. If not, raise error
