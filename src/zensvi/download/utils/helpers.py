@@ -15,13 +15,14 @@ def standardize_column_names(df):
 def create_buffer_gdf(gdf, buffer_distance):
     if gdf.crs == None:
         gdf = gdf.set_crs("EPSG:4326")
-    # Project the GeoDataFrame to UTM
-    gdf_projected = ox.projection.project_gdf(gdf)
+    
+    if gdf.crs.is_projected == False:
+        gdf = ox.projection.project_gdf(gdf)
     
     # Buffer the points by buffer_distance
-    gdf_projected['geometry'] = gdf_projected.buffer(buffer_distance)
+    gdf['geometry'] = gdf.buffer(buffer_distance)
     
     # Project the GeoDataFrame back to EPSG:4326
-    gdf = gdf_projected.to_crs('EPSG:4326')
+    gdf = gdf.to_crs('EPSG:4326')
     
     return gdf
