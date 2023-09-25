@@ -225,7 +225,7 @@ class ImageTransformer:
         return new_img
 
     def transform_images(self, style_list=["perspective", "equidistant_fisheye", "orthographic_fisheye", "stereographic_fisheye", "equisolid_fisheye"], 
-                    FOV = 90, theta = 90, aspects = (9, 16), show_size=100):
+                    FOV = 90, theta = 90, phi = 0, aspects = (9, 16), show_size=100):
         # check if there's anything other than "perspective" and "fisheye"
         if not all(style in ["perspective", "equidistant_fisheye", "orthographic_fisheye", "stereographic_fisheye", "equisolid_fisheye"] for style in style_list):
             raise ValueError("Please input the correct image style. The correct image style should be 'perspective', 'equidistant_fisheye', 'orthographic_fisheye', 'stereographic_fisheye', or 'equisolid_fisheye'")
@@ -265,7 +265,7 @@ class ImageTransformer:
                     aspect_name = '%s--%s' % (aspects[0], aspects[1])
                     path_output_raw = path_output.with_name(f'{path_output.stem}_Direction_{theta}_FOV_{FOV}_aspect_{aspect_name}_raw.png')
                     if not path_output_raw.exists(): 
-                        img_new = self.get_perspective(img_raw, FOV, theta, 0, height, width)
+                        img_new = self.get_perspective(img_raw, FOV, theta, phi, height, width)
                         cv2.imwrite(str(path_output_raw), img_new)
 
         def process_image(dir_input, dir_output, name, show_size, style, theta, aspects, FOV):
