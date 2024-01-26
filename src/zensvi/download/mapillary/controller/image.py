@@ -41,6 +41,7 @@ from zensvi.download.mapillary.models.exceptions import InvalidImageKeyError
 from zensvi.download.mapillary.models.geojson import GeoJSON, Coordinates
 
 # # Utilities
+from zensvi.download.mapillary.utils.convert import extract_coordinates_from_polygons
 from zensvi.download.mapillary.utils.filter import pipeline
 from zensvi.download.mapillary.utils.format import (
     feature_to_geojson,
@@ -579,20 +580,9 @@ def geojson_features_controller(
     # Filter checking
     image_bbox_check(filters)
 
-    # Extracting polygon from geojson, converting to dict
-    polygon = geojson_to_polygon(geojson).to_dict()
-
-    # Generating a coordinates list to extract from polygon
-    coordinates_list = []
-
-    # Going through each feature
-    for feature in polygon["features"]:
-
-        # Going through the coordinate's nested list
-        for coordinates in feature["geometry"]["coordinates"][0]:
-            # Appending a tuple of coordinates
-            coordinates_list.append((coordinates[0], coordinates[1]))
-
+    # Converting the geojson to a list of coordinates
+    coordinates_list = extract_coordinates_from_polygons(geojson)
+    
     # Sending coordinates_list a input to form a Polygon
     polygon = Polygon(coordinates_list)
 

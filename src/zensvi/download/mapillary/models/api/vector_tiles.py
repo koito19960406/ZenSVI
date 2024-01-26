@@ -18,6 +18,8 @@ For more information, please check out https://www.mapillary.com/developer/api-d
 # Package imports
 from vt2geojson.tools import vt_bytes_to_geojson
 import mercantile
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from tqdm import tqdm
 
 # Local imports
 # # Config
@@ -250,35 +252,25 @@ class VectorTilesAdapter(object):
 
         print(
             f'[Vector Tiles API] Fetching {len(tiles)} {"tiles" if len(tiles) > 1 else "tile"}'
-            "for images ..."
+            " for images ..."
         )
 
-        for tile in tiles:
-
+        # Helper function to process each tile
+        def process_tile(tile):
             if is_computed:
-                result = (
-                    self.__preprocess_computed_layer(
-                        # The layer to retrieve from
-                        layer=layer,
-                        # Turn coordinates into a tile
-                        tile=tile,
-                        # The zoom level
-                        zoom=zoom,
-                    )
-                )["features"]
+                result = self.__preprocess_computed_layer(layer=layer, tile=tile, zoom=zoom)["features"]
             else:
-                result = (
-                    self.__preprocess_layer(
-                        # The layer to retrieve from
-                        layer=layer,
-                        # Turn coordinates into a tile
-                        tile=tile,
-                        # The zoom level
-                        zoom=zoom,
-                    )
-                )["features"]
+                result = self.__preprocess_layer(layer=layer, tile=tile, zoom=zoom)["features"]
+            return result
 
-            geojson.append_features(result)
+        # Using ThreadPoolExecutor to parallelize the loop
+        with ThreadPoolExecutor() as executor:
+            # Creating a future for each tile processing
+            future_to_tile = {executor.submit(process_tile, tile): tile for tile in tiles}
+            # Using tqdm to show the progress bar
+            for future in tqdm(as_completed(future_to_tile), total=len(tiles)):
+                result = future.result()
+                geojson.append_features(result)
 
         return geojson
 
@@ -325,7 +317,7 @@ class VectorTilesAdapter(object):
 
         print(
             f'[Vector Tiles API] Fetching {len(tiles)} {"tiles" if len(tiles) > 1 else "tile"}'
-            "for map features ..."
+            " for map features ..."
         )
 
         for tile in tiles:

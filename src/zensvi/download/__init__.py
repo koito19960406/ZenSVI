@@ -1,1 +1,2 @@
-from .streetview_downloader import GSVDownloader, MLYDownloader
+from .gsv import GSVDownloader
+from .mly import MLYDownloader
