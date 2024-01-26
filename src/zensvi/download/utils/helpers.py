@@ -26,3 +26,13 @@ def create_buffer_gdf(gdf, buffer_distance):
     gdf = gdf.to_crs('EPSG:4326')
     
     return gdf
+
+def check_and_buffer(gdf, buffer):
+    # check geometry type
+    geom_type = gdf.geom_type.unique()[0]
+    # raise an error if the geometry is a Point/MultiPoint or a LineString/MultiLineString & buffer = 0
+    if (geom_type == "Point" or geom_type == "MultiPoint" or geom_type == "LineString" or geom_type == "MultiLineString") and buffer == 0:
+        raise ValueError("Buffer cannot be 0 if the geometry is either a Point/MultiPoint or a LineString/MultiLineString")
+    else:
+        gdf = create_buffer_gdf(gdf, buffer)
+        return gdf

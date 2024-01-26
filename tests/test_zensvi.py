@@ -12,25 +12,6 @@ from zensvi.download import GSVDownloader, MLYDownloader
 from zensvi.cv import Segmenter, ImageDataset, create_cityscapes_label_colormap
 from zensvi.transform import xyz2lonlat, lonlat2XY, ImageTransformer
 
-
-class TestStreetViewDownloader(unittest.TestCase):
-
-    def setUp(self):
-        self.temp_dir = "temp_test_dir"
-        Path(self.temp_dir).mkdir(parents=True, exist_ok=True)
-        self.gsv_api_key = "YOUR_GSV_API_KEY"
-        self.sv_downloader = GSVDownloader(self.temp_dir, gsv_api_key=self.gsv_api_key)
-
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-
-    def test_download_gsv(self):
-        self.sv_downloader.download_gsv(lat=1.342425, lng=103.721523, augment_metadata=True)
-        panorama_output = os.path.join(self.temp_dir, "panorama")
-        self.assertTrue(os.path.exists(panorama_output))
-        self.assertGreater(len(os.listdir(panorama_output)), 0)
-
-
 class TestImageTransformerMethods(unittest.TestCase):
     def test_xyz2lonlat(self):
         xyz = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
@@ -87,46 +68,40 @@ if __name__ == "__main__":
                                     distance=20,
                                     grid = False, grid_size = 20)
     downloader.download_svi("tests/data/output",
-<<<<<<< HEAD
-                            # orchard road
-                            lat = 1.3041, lon = 103.8318,
+                            # orchard road in singapore
+                            lat = 1.286926, lon = 103.77931,
                             # input_csv_file = "tests/data/input/count_station_clean.csv",
-                            # input_shp_file = "/Volumes/ExFAT2/bike_svi/data/raw/cities/London/count_station.csv",
+                            # input_shp_file = "tests/data/input/c1_4326.shp",
                             # input_place_name="Bronkhorst, Netherlands",
                             # id_columns = "count_point_id",
-                            buffer = 500,
+                            # buffer = 50,
                             # network_type = "walk",
-                            augment_metadata=False) 
-=======
-                            # haji lane
-                            # lat=51.46360700000000321, lon= 0.10033917000000001,
-                            input_csv_file = "tests/data/input/count_station_clean.csv",
-                            # input_shp_file = "/Volumes/ExFAT2/bike_svi/data/raw/cities/London/count_station.csv",
-                            # input_place_name="Bronkhorst, Netherlands",
-                            id_columns = ["count_point_id"],
-                            buffer = 100,
-                            # network_type = "walk",
-                            augment_metadata=True) 
->>>>>>> 6f73e8cf4ba640ab40444b045fa922e4b0f5eff6
-    # downloader = MLYDownloader(mly_api_key=mly_api_key)
+                            augment_metadata=False#,
+                            # start_date="2021-01-01",
+                            # end_date="2021-01-01"
+                            ) 
+    # downloader = MLYDownloader(mly_api_key=mly_api_key, max_workers = 4)
     # downloader.download_svi(dir_output = "tests/data/output", 
-    #                         lat=1.276095, lon=103.792547,
+    #                         lat = 1.286926, lon = 103.77931#,
     #                         # input_csv_file="tests/data/input/Walking_count_sites 3.csv",
-    #                         # input_shp_file="tests/data/input/locations_polygon.shp",
+    #                         # input_shp_file="tests/data/input/pasir_panjang_rd_filtered.geojson",
+    #                         # organization_id = [5498631900212193],
     #                         # input_place_name="Bronkhorst, Netherlands",
     #                         # network_type = "all_private",
-    #                         radius=100,
-    #                         cropped=True
+    #                         # radius=100
+    #                         # cropped=True,
+    #                         # start_date="2023-01-01",
+    #                         # end_date="2023-01-08"
     #                         )
     segmenter = Segmenter(dataset = "cityscapes", task="semantic")
     segmenter.segment(dir_input = "tests/data/output/gsv_panorama/batch_1",
                     dir_image_output = "tests/data/output/segmented", 
                     dir_segmentation_summary_output= "tests/data/output",
-                    max_workers=4)
+                    max_workers=1)
     
-    # transformer = ImageTransformer(dir_input = "tests/data/output/gsv_panorama/batch_1",
-    #                                 dir_output = "tests/data/output/transformed")
-    # transformer.transform_images(FOV=90, theta = 120, aspects=(5,20))
+    transformer = ImageTransformer(dir_input = "tests/data/output/gsv_panorama/batch_1",
+                                    dir_output = "tests/data/output/transformed")
+    transformer.transform_images(style_list=["perspective", "equidistant_fisheye"])
     
     end_time = time.time()
     print(f"Block 2 execution time: {end_time - start_time} seconds")
