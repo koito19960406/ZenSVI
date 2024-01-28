@@ -11,6 +11,7 @@ from tqdm import tqdm
 from shapely.geometry import Point
 import warnings
 from shapely.errors import ShapelyDeprecationWarning
+import math
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
 import glob
@@ -431,11 +432,12 @@ class GSVDownloader(BaseDownloader):
         pid_df = pid_df.drop(columns='date')
         return pid_df
     
-    def download_svi(self, dir_output: str, path_pid: str = None, zoom: int = 2, h_tiles: int = 4, v_tiles: int = 2, 
+    def download_svi(self, dir_output: str, path_pid: str = None, zoom: int = 2, 
                       cropped: bool = False, full: bool = True, lat: float = None, lon: float = None, 
                       input_csv_file: str = "", input_shp_file: str = "", input_place_name: str = "", 
                       id_columns: Union[str, List[str]] = None, buffer: int = 0, augment_metadata: bool = False, 
-                      batch_size: int = 1000, update_pids: bool = False, start_date = None, end_date = None, **kwargs) -> None:
+                      batch_size: int = 1000, update_pids: bool = False, start_date: str = None, end_date: str = None, 
+                      metadata_only: bool = False, **kwargs) -> None:
         """
         Downloads street view images.
 
@@ -443,8 +445,6 @@ class GSVDownloader(BaseDownloader):
             dir_output (str): The output directory.
             path_pid (str, optional): The path to the panorama ID file. Defaults to None.
             zoom (int, optional): The zoom level for the images. Defaults to 2.
-            h_tiles (int, optional): The number of horizontal tiles. Defaults to 4.
-            v_tiles (int, optional): The number of vertical tiles. Defaults to 2.
             cropped (bool, optional): Whether to crop the images. Defaults to False.
             full (bool, optional): Whether to download full images. Defaults to True.
             lat (float, optional): The latitude for the images. Defaults to None.
@@ -503,6 +503,11 @@ class GSVDownloader(BaseDownloader):
 
         if len(panoids_rest) > 0:
             UAs = random.choices(self.user_agents, k = len(panoids_rest))
+            # check zoom level is 0<=zoom<=6
+            if zoom < 0 or zoom > 6:
+                raise ValueError("zoom level should be between 0 and 6")
+            h_tiles = 2 ** zoom
+            v_tiles = math.ceil(h_tiles / 2)
             ImageTool.dwl_multiple(panoids_rest, zoom, v_tiles, h_tiles, self.panorama_output, UAs, self.proxies, cropped, full, batch_size = batch_size, log_path=self.log_path)
         else:
             print("All images have been downloaded")
