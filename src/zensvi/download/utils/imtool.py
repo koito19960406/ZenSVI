@@ -70,6 +70,49 @@ class ImageTool():
                 print(f"Proxy {proxy} is not working. Exception: {e}")
                 continue
 
+    @staticmethod
+    def is_bottom_black(image, row_count=3, intensity_threshold=10):
+        """
+        Check if the bottom 'row_count' rows of the image are near black, with a given intensity threshold.
+        This method uses linear computation instead of nested loops for faster execution.
+
+        Args:
+            image (PIL.Image): The image to check.
+            row_count (int): Number of rows to check.
+            intensity_threshold (int): The maximum intensity for a pixel to be considered black.
+
+        Returns:
+            bool: True if the bottom rows are near black, False otherwise.
+        """
+        # Convert the bottom rows to a numpy array for fast processing
+        bottom_rows = np.array(image)[-row_count:, :]
+        # Check if all pixels in the bottom rows are less than or equal to the intensity threshold
+        return np.all(bottom_rows <= intensity_threshold)
+
+    @staticmethod
+    def process_image(image, zoom):
+        """
+        Crop and resize the image based on zoom level if the bottom is black.
+
+        Args:
+            image (PIL.Image): The image to process.
+            zoom (int): The zoom level.
+
+        Returns:
+            PIL.Image: The processed image.
+        """
+        if ImageTool.is_bottom_black(image):
+            # Compute the crop and resize dimensions based on zoom level
+            crop_height, crop_width = 208 * (2 ** zoom), 416 * (2 ** zoom)
+            resize_height, resize_width = 256 * (2 ** zoom), 512 * (2 ** zoom)
+
+            # Crop the image
+            image = image.crop((0, 0, crop_width, crop_height))
+
+            # Resize the image
+            image = image.resize((resize_width, resize_height), Image.ANTIALIAS)
+
+        return image            
 
     @staticmethod
     def get_and_save_image(pano_id, identif, zoom, vertical_tiles, horizontal_tiles, out_path, ua, proxies, cropped=False, full=True):
@@ -106,12 +149,13 @@ class ImageTool():
 
         if full:
             name = f'{out_path}/{identif}'
-            if cropped:
-                h_cropped = final_image.shape[0] // 2
-                final_image = final_image[0:h_cropped, :]
+            if cropped or zoom == 0:
+                h_cropped = final_image.size[1] // 2
+                final_image = final_image.crop((0, 0, final_image.size[0], h_cropped))
 
             # Validate image before saving
             if final_image.size[0] > 0 and final_image.size[1] > 0:
+                final_image = ImageTool.process_image(final_image, zoom)
                 final_image.save(f'{name}.jpg')
             else:
                 raise ValueError(f"Invalid image for pano_id {pano_id}")
