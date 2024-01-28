@@ -459,6 +459,7 @@ class GSVDownloader(BaseDownloader):
             update_pids (bool, optional): Whether to update the panorama IDs. Defaults to False.
             start_date (str, optional): The start date for the panorama IDs. Format is isoformat (YYYY-MM-DD). Defaults to None.
             end_date (str, optional): The end date for the panorama IDs. Format is isoformat (YYYY-MM-DD). Defaults to None.
+            metadata_only (bool, optional): Whether to download metadata only. Defaults to False.
             **kwargs: Additional keyword arguments.
 
         Returns:
@@ -489,6 +490,10 @@ class GSVDownloader(BaseDownloader):
         # v_tiles = 2  # 13
         # cropped = False
         # full = True
+        # stop if metadata_only is True
+        if metadata_only:
+            print("The metadata has been downloaded")
+            return
         # create a folder within self.dir_output
         self.panorama_output = self.dir_output / "gsv_panorama"
         self.panorama_output.mkdir(parents=True, exist_ok=True)
