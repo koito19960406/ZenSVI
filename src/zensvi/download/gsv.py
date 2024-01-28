@@ -435,7 +435,8 @@ class GSVDownloader(BaseDownloader):
                       cropped: bool = False, full: bool = True, lat: float = None, lon: float = None, 
                       input_csv_file: str = "", input_shp_file: str = "", input_place_name: str = "", 
                       id_columns: Union[str, List[str]] = None, buffer: int = 0, augment_metadata: bool = False, 
-                      batch_size: int = 1000, update_pids: bool = False, start_date = None, end_date = None, **kwargs) -> None:
+                      batch_size: int = 1000, update_pids: bool = False, start_date: str = None, end_date: str = None, 
+                      metadata_only: bool = True, **kwargs) -> None:
         """
         Downloads street view images.
 
@@ -459,6 +460,7 @@ class GSVDownloader(BaseDownloader):
             update_pids (bool, optional): Whether to update the panorama IDs. Defaults to False.
             start_date (str, optional): The start date for the panorama IDs. Format is isoformat (YYYY-MM-DD). Defaults to None.
             end_date (str, optional): The end date for the panorama IDs. Format is isoformat (YYYY-MM-DD). Defaults to None.
+            metadata_only (bool, optional): Whether to download metadata only. Defaults to False.
             **kwargs: Additional keyword arguments.
 
         Returns:
@@ -489,6 +491,10 @@ class GSVDownloader(BaseDownloader):
         # v_tiles = 2  # 13
         # cropped = False
         # full = True
+        # stop if metadata_only is True
+        if metadata_only:
+            print("The metadata has been downloaded")
+            return
         # create a folder within self.dir_output
         self.panorama_output = self.dir_output / "gsv_panorama"
         self.panorama_output.mkdir(parents=True, exist_ok=True)

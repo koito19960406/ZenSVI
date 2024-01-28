@@ -14,8 +14,18 @@ class TestStreetViewDownloader(unittest.TestCase):
         pass
 
     def test_download_gsv(self):
+        # Skip test if the output file already exists
+        if os.path.exists(os.path.join(self.output_dir, "gsv_panorama")):
+            self.skipTest("Result exists")
         self.sv_downloader.download_svi(self.output_dir,lat=1.342425, lon=103.721523, augment_metadata=True)
         self.assertTrue(os.path.exists(os.path.join(self.output_dir, "gsv_panorama")))
+    
+    def test_download_gsv_metadata_only(self):
+        # Skip test if the output file already exists
+        if os.path.exists(os.path.join(self.output_dir, "gsv_pids.csv")):
+            self.skipTest("Result exists")
+        self.sv_downloader.download_svi(self.output_dir,lat=1.342425, lon=103.721523, augment_metadata=True, metadata_only=True)
+        self.assertTrue(os.path.exists(os.path.join(self.output_dir, "gsv_pids.csv")))
     
 if __name__ == '__main__':
     unittest.main()

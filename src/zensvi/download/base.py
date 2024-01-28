@@ -115,5 +115,6 @@ class BaseDownloader(ABC):
                     buffer = 0,
                     update_pids = False,
                     start_date = None,
-                    end_date = None):
+                    end_date = None,
+                    metadata_only = False):
         pass

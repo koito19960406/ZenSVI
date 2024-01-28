@@ -315,7 +315,7 @@ class MLYDownloader(BaseDownloader):
                 
     def download_svi(self, dir_output, path_pid = None, lat=None, lon=None, input_csv_file="", input_shp_file = "", input_place_name =
                     "", buffer = 0, update_pids = False, resolution = 1024, cropped = False, batch_size = 1000,
-                    start_date = None, end_date = None, **kwargs):
+                    start_date = None, end_date = None, metadata_only = False, **kwargs):
         # set necessary directories
         self._set_dirs(dir_output)
         
@@ -337,6 +337,10 @@ class MLYDownloader(BaseDownloader):
                 self._get_pids(path_pid, lat=lat, lon=lon,
                             input_csv_file=input_csv_file, input_shp_file = input_shp_file, input_place_name = input_place_name, 
                             buffer = buffer, **kwargs)
+        # stop if metadata_only is True
+        if metadata_only:
+            print("The metadata has been downloaded")
+            return
     
         # create a folder within self.dir_output
         self.panorama_output = self.dir_output / "mly_svi"
