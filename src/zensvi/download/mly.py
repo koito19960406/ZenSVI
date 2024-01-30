@@ -81,7 +81,7 @@ class MLYDownloader(BaseDownloader):
         geojson = json.loads(gdf.to_json())
         
         # use get pids with mly.interface.images_in_geojson
-        result_json = mly.images_in_geojson(geojson, **mly_kwargs).to_dict()["features"]
+        result_json = mly.images_in_geojson(geojson, dir_cache = self.dir_cache, **mly_kwargs).to_dict()["features"]
 
         # convert to geodataframe
         result_gdf = gpd.GeoDataFrame.from_features(result_json)

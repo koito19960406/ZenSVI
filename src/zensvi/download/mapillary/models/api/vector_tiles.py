@@ -20,6 +20,10 @@ from vt2geojson.tools import vt_bytes_to_geojson
 import mercantile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
+import json
+import os
+import shutil
+import glob
 
 # Local imports
 # # Config
@@ -210,6 +214,7 @@ class VectorTilesAdapter(object):
         layer: str = "image",
         zoom: int = 14,
         is_computed: bool = False,
+        dir_cache: str = None,  # Add dir_cache parameter
     ) -> GeoJSON:
         """
         Fetches multiple vector tiles based on a list of multiple coordinates in a listed format
@@ -250,11 +255,6 @@ class VectorTilesAdapter(object):
             )
         )
 
-        print(
-            f'[Vector Tiles API] Fetching {len(tiles)} {"tiles" if len(tiles) > 1 else "tile"}'
-            " for images ..."
-        )
-
         # Helper function to process each tile
         def process_tile(tile):
             if is_computed:
@@ -263,14 +263,53 @@ class VectorTilesAdapter(object):
                 result = self.__preprocess_layer(layer=layer, tile=tile, zoom=zoom)["features"]
             return result
 
-        # Using ThreadPoolExecutor to parallelize the loop
+        # Create a directory for checkpoints
+        if dir_cache:
+            dir_cache_tiles = os.path.join(dir_cache, 'tiles_results')
+            os.makedirs(dir_cache_tiles, exist_ok=True)
+
+            # Initialize an empty GeoJSON object
+            geojson = GeoJSON({"type": "FeatureCollection", "features": []})
+
+            # Load existing results
+            existing_files = glob.glob(f'{dir_cache_tiles}/*.geojson')
+            processed_tiles = set()
+            for file_path in existing_files:
+                filename = os.path.basename(file_path)
+                x, y, z = map(int, filename.replace('.geojson', '').split('_'))
+                processed_tiles.add((x, y, z))
+
+        # Filter out tiles that have already been processed
+        tiles = [tile for tile in tiles if (tile.x, tile.y, tile.z) not in processed_tiles]
+
+        print(
+            f'[Vector Tiles API] Fetching {len(tiles)} {"tiles" if len(tiles) > 1 else "tile"}'
+            " for images ..."
+        )
+        
+        # Process each tile individually
         with ThreadPoolExecutor() as executor:
-            # Creating a future for each tile processing
             future_to_tile = {executor.submit(process_tile, tile): tile for tile in tiles}
-            # Using tqdm to show the progress bar
             for future in tqdm(as_completed(future_to_tile), total=len(tiles)):
-                result = future.result()
-                geojson.append_features(result)
+                try:
+                    tile = future_to_tile[future]
+                    result = future.result()
+                    # Save result for each tile
+                    result_path = f'{dir_cache_tiles}/{tile.x}_{tile.y}_{tile.z}.geojson'
+                    with open(result_path, 'w') as file:
+                        json.dump({"type": "FeatureCollection", "features": result}, file)
+                except Exception as e:
+                    print(f"Error processing tile {tile.x}_{tile.y}_{tile.z}: {e}")
+
+        # Reconstruct the final GeoJSON from saved files
+        for file_path in glob.glob(f'{dir_cache_tiles}/*.geojson'):
+            with open(file_path, 'r') as file:
+                tile_data = json.load(file)
+                geojson.append_features(tile_data["features"])
+
+        # Cleanup: Delete the tiles results directory if dir_cache is set
+        if dir_cache and os.path.exists(dir_cache_tiles):
+            shutil.rmtree(dir_cache_tiles)
 
         return geojson
 

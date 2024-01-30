@@ -39,11 +39,11 @@ class TestMapillary(unittest.TestCase):
         
     def test_downloader_metadata_only(self):
         # Skip test if the output file already exists
-        if os.path.exists(os.path.join(self.mly_svi_output, "pids_urls.csv")) & os.path.exists(os.path.join(self.mly_svi_output, "mly_pids.csv")):
+        if os.path.exists(os.path.join(self.mly_svi_output, "mly_pids.csv")):
             self.skipTest("Result exists")
         # download metadata only
         mly_downloader = MLYDownloader(self.mly_api_key)
-        mly_downloader.download_svi(self.mly_svi_output, lat=1.342425, lon=103.721523, buffer = 50, metadata_only=True)
+        mly_downloader.download_svi(self.mly_svi_output, input_shp_file=self.mly_input, metadata_only=True)
         
 if __name__ == '__main__':
     unittest.main()

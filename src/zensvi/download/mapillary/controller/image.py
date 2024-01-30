@@ -523,7 +523,7 @@ def get_image_from_key_controller(key: int, fields: list) -> str:
 
 
 def geojson_features_controller(
-    geojson: dict, is_image: bool = True, filters: dict = None
+    geojson: dict, is_image: bool = True, filters: dict = None, dir_cache: str = None,
 ) -> GeoJSON:
     """
     For extracting images that lie within a GeoJSON and merges the results of the found
@@ -601,6 +601,7 @@ def geojson_features_controller(
                 layer=filters["layer"] if "layer" in filters else "image",
                 # Specifying zoom level, defaults to zoom if zoom not specified
                 zoom=filters["zoom"] if "zoom" in filters else 14,
+                dir_cache=dir_cache,
             )
             .to_dict()
         )

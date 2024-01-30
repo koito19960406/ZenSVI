@@ -36,14 +36,9 @@ class TestStreetViewDownloader(unittest.TestCase):
             # Create the folder if it doesn't exist
             if not os.path.exists(folder_path):
                 os.makedirs(folder_path)
-                
-            # h_tiles should be 2 ** zoom
-            # v_tiles should be math.ceiling(h_tiles / 2)
-            h_tiles = 2 ** zoom
-            v_tiles = math.ceil(h_tiles / 2)
 
             # Assuming download_svi method can accept a directory path as the output
-            self.sv_downloader.download_svi(folder_path, lat=1.342425, lon=103.721523, augment_metadata=True, zoom=zoom, h_tiles=h_tiles, v_tiles=v_tiles)
+            self.sv_downloader.download_svi(folder_path, lat=1.342425, lon=103.721523, augment_metadata=True, zoom=zoom)
 
             # Check if any file was downloaded in the folder
             if os.listdir(folder_path):
@@ -59,13 +54,6 @@ class TestStreetViewDownloader(unittest.TestCase):
         for folder in downloaded_zoom_folders:
             print(folder)
 
-    def test_download_gsv_metadata_only(self):
-        # Skip test if the output file already exists
-        if os.path.exists(os.path.join(self.output_dir, "gsv_pids.csv")):
-            self.skipTest("Result exists")
-        self.sv_downloader.download_svi(self.output_dir,lat=1.342425, lon=103.721523, augment_metadata=True, metadata_only=True)
-        self.assertTrue(os.path.exists(os.path.join(self.output_dir, "gsv_pids.csv")))
-    
     def test_download_gsv_metadata_only(self):
         # Skip test if the output file already exists
         if os.path.exists(os.path.join(self.output_dir, "gsv_pids.csv")):
