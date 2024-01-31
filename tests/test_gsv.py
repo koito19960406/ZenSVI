@@ -9,7 +9,7 @@ class TestStreetViewDownloader(unittest.TestCase):
     def setUp(self):
         self.output_dir = "tests/data/output"
         self.gsv_api_key = os.getenv('GSV_API_KEY')
-        self.sv_downloader = GSVDownloader(gsv_api_key=self.gsv_api_key)
+        self.sv_downloader = GSVDownloader(gsv_api_key=self.gsv_api_key, log_path="tests/data/output/gsv_svi/log.log")
 
     def tearDown(self):
         pass

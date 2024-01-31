@@ -214,7 +214,7 @@ class VectorTilesAdapter(object):
         layer: str = "image",
         zoom: int = 14,
         is_computed: bool = False,
-        dir_cache: str = None,  # Add dir_cache parameter
+        **kwargs, 
     ) -> GeoJSON:
         """
         Fetches multiple vector tiles based on a list of multiple coordinates in a listed format
@@ -263,52 +263,74 @@ class VectorTilesAdapter(object):
                 result = self.__preprocess_layer(layer=layer, tile=tile, zoom=zoom)["features"]
             return result
 
-        # Create a directory for checkpoints
-        if dir_cache:
-            dir_cache_tiles = os.path.join(dir_cache, 'tiles_results')
+        # Create a directory for checkpoints and load existing results
+        dir_cache_tiles = None
+        processed_tiles = set()
+        
+        # Function to process each file
+        def process_file(file_path):
+            try:
+                with open(file_path, 'r') as file:
+                    tile_data = json.load(file)
+                if tile_data["features"]:
+                    return tile_data["features"], file_path
+            except Exception as e:
+                print(f"Error loading file {file_path}: {e}")
+            return None, file_path
+
+        if kwargs["dir_cache"]:
+            dir_cache_tiles = os.path.join(kwargs["dir_cache"], 'tiles_results')
             os.makedirs(dir_cache_tiles, exist_ok=True)
 
-            # Initialize an empty GeoJSON object
-            geojson = GeoJSON({"type": "FeatureCollection", "features": []})
-
-            # Load existing results
             existing_files = glob.glob(f'{dir_cache_tiles}/*.geojson')
-            processed_tiles = set()
-            for file_path in existing_files:
-                filename = os.path.basename(file_path)
-                x, y, z = map(int, filename.replace('.geojson', '').split('_'))
-                processed_tiles.add((x, y, z))
 
-        # Filter out tiles that have already been processed
-        tiles = [tile for tile in tiles if (tile.x, tile.y, tile.z) not in processed_tiles]
+            # Use ThreadPoolExecutor to process files in parallel
+            with ThreadPoolExecutor(max_workers=kwargs["max_workers"]) as executor:
+                future_to_file = {executor.submit(process_file, file_path): file_path for file_path in existing_files}
+                for future in tqdm(as_completed(future_to_file), total=len(existing_files), desc="Loading cache files"):
+                    result, file_path = future.result()
+                    if result:
+                        geojson.append_features(result)
+                    filename = os.path.basename(file_path)
+                    x, y, z = map(int, filename.replace('.geojson', '').split('_'))
+                    processed_tiles.add((x, y, z))
+
+            # Filter out tiles that have already been processed
+            tiles = [tile for tile in tiles if (tile.x, tile.y, tile.z) not in processed_tiles]
 
         print(
             f'[Vector Tiles API] Fetching {len(tiles)} {"tiles" if len(tiles) > 1 else "tile"}'
             " for images ..."
         )
-        
-        # Process each tile individually
-        with ThreadPoolExecutor() as executor:
+        # Define the maximum number of retries for processing a tile
+        max_retries = 3
+        # Process each tile individually: set max_workers to 10 times the number of CPU cores
+        with ThreadPoolExecutor(max_workers=kwargs["max_workers"]) as executor:
             future_to_tile = {executor.submit(process_tile, tile): tile for tile in tiles}
-            for future in tqdm(as_completed(future_to_tile), total=len(tiles)):
-                try:
-                    tile = future_to_tile[future]
-                    result = future.result()
-                    # Save result for each tile
-                    result_path = f'{dir_cache_tiles}/{tile.x}_{tile.y}_{tile.z}.geojson'
-                    with open(result_path, 'w') as file:
-                        json.dump({"type": "FeatureCollection", "features": result}, file)
-                except Exception as e:
-                    print(f"Error processing tile {tile.x}_{tile.y}_{tile.z}: {e}")
-
-        # Reconstruct the final GeoJSON from saved files
-        for file_path in glob.glob(f'{dir_cache_tiles}/*.geojson'):
-            with open(file_path, 'r') as file:
-                tile_data = json.load(file)
-                geojson.append_features(tile_data["features"])
+            for future in tqdm(as_completed(future_to_tile), total=len(tiles), desc="Processing tiles"):
+                retries = 0
+                while retries <= max_retries:
+                    try:
+                        tile = future_to_tile[future]
+                        result = future.result()
+                        # append if len(result) > 0
+                        if result:
+                            geojson.append_features(result)
+                        if kwargs["dir_cache"]:
+                            # Save result for each tile
+                            result_path = f'{dir_cache_tiles}/{tile.x}_{tile.y}_{tile.z}.geojson'
+                            with open(result_path, 'w') as file:
+                                json.dump({"type": "FeatureCollection", "features": result}, file)
+                        break  # Break the loop if processing is successful
+                    except Exception as e:
+                        print(f"Error processing tile {tile.x}_{tile.y}_{tile.z} on attempt {retries + 1}: {e}")
+                        retries += 1
+                        if retries > max_retries:
+                            print(f"Failed to process tile {tile.x}_{tile.y}_{tile.z} after {max_retries} attempts.")
+                            kwargs["logger"].log_failed_tiles(f"{tile.x}_{tile.y}_{tile.z}")
 
         # Cleanup: Delete the tiles results directory if dir_cache is set
-        if dir_cache and os.path.exists(dir_cache_tiles):
+        if kwargs["dir_cache"] and os.path.exists(dir_cache_tiles):
             shutil.rmtree(dir_cache_tiles)
 
         return geojson

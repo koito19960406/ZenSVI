@@ -164,7 +164,7 @@ class ImageTool():
 
 
     @staticmethod
-    def dwl_multiple(panoids, zoom, v_tiles, h_tiles, out_path, uas, proxies, cropped, full, batch_size = 1000, log_path=None):
+    def dwl_multiple(panoids, zoom, v_tiles, h_tiles, out_path, uas, proxies, cropped, full, batch_size = 1000, logger = None):
         """
         Description of dwl_multiple
         
@@ -185,12 +185,6 @@ class ImageTool():
             os.makedirs(out_path)
 
         errors = 0
-
-        def log_error(panoid):
-            nonlocal log_path
-            if log_path is not None:
-                with open(log_path, 'a') as log_file:
-                    log_file.write(f"{panoid}\n")
 
         # Calculate current highest batch number
         existing_batches = glob.glob(os.path.join(out_path, "batch_*"))
@@ -230,6 +224,7 @@ class ImageTool():
                         print(e)
                         errors += 1
                         failed_panoid = batch_panoids[jobs.index(job)]
-                        log_error(failed_panoid)
+                        logger.log_failed_pids(failed_panoid)
 
         print("Total images downloaded:", len(panoids) - errors, "Errors:", errors)  
+        logger.log_info(f"Total images downloaded: {len(panoids) - errors}, Errors: {errors}")

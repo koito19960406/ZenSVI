@@ -26,6 +26,7 @@ from zensvi.download.utils.imtool import ImageTool
 from zensvi.download.utils.get_pids import panoids
 from zensvi.download.utils.geoprocess import GeoProcessor
 from zensvi.download.utils.helpers import standardize_column_names, create_buffer_gdf
+from zensvi.utils.log import Logger
 
 class GSVDownloader(BaseDownloader):
     def __init__(self, gsv_api_key: str = None, log_path: str = None, distance: int = 1, grid: bool = False, grid_size: int = 1):
@@ -46,6 +47,8 @@ class GSVDownloader(BaseDownloader):
         if gsv_api_key == None:
             warnings.warn("Please provide your Google Street View API key to augment metadata.")
         self._gsv_api_key = gsv_api_key
+        # initialize the logger
+        self.logger = Logger(log_path)
 
     @property
     def gsv_api_key(self) -> str:
@@ -465,6 +468,8 @@ class GSVDownloader(BaseDownloader):
         Returns:
             None
         """
+        # record the arguments
+        self.logger.log_args("GSVDownloader download_svi", dir_output, path_pid, zoom, cropped, full, lat, lon, input_csv_file, input_shp_file, input_place_name, id_columns, buffer, augment_metadata, batch_size, update_pids, start_date, end_date, metadata_only, **kwargs)
         # set necessary directories
         self._set_dirs(dir_output)
         
@@ -513,7 +518,7 @@ class GSVDownloader(BaseDownloader):
                 raise ValueError("zoom level should be between 0 and 6")
             h_tiles = 2 ** zoom
             v_tiles = math.ceil(h_tiles / 2)
-            ImageTool.dwl_multiple(panoids_rest, zoom, v_tiles, h_tiles, self.panorama_output, UAs, self.proxies, cropped, full, batch_size = batch_size, log_path=self.log_path)
+            ImageTool.dwl_multiple(panoids_rest, zoom, v_tiles, h_tiles, self.panorama_output, UAs, self.proxies, cropped, full, batch_size = batch_size, logger = self.logger)
         else:
             print("All images have been downloaded")
         
