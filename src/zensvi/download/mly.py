@@ -11,6 +11,7 @@ from shapely.geometry import Point
 import warnings
 from shapely.errors import ShapelyDeprecationWarning
 import json
+import os
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
 import glob
@@ -22,18 +23,21 @@ from PIL import Image
 from zensvi.download.base import BaseDownloader
 import zensvi.download.mapillary.interface as mly
 from zensvi.download.utils.geoprocess import GeoProcessor
-from zensvi.download.utils.helpers import standardize_column_names, create_buffer_gdf, check_and_buffer
+from zensvi.download.utils.helpers import standardize_column_names, check_and_buffer
+from zensvi.utils.log import Logger
 
 # set logging level to warning
 import logging
 logging.getLogger('mapillary.utils.client').setLevel(logging.WARNING)
 
 class MLYDownloader(BaseDownloader):
-    def __init__(self, mly_api_key, log_path = None, distance = 1, grid = False, grid_size = 1, max_workers = None):
-        super().__init__(log_path, distance, grid, grid_size) 
+    def __init__(self, mly_api_key, log_path = None, max_workers = None):
+        super().__init__(log_path) 
         self._mly_api_key = mly_api_key
         self._max_workers = max_workers
         mly.set_access_token(self.mly_api_key)
+        # initialize the logger
+        self.logger = Logger(log_path)
         
     @property
     def mly_api_key(self):
@@ -47,7 +51,10 @@ class MLYDownloader(BaseDownloader):
         return self._max_workers
     @max_workers.setter
     def max_workers(self,max_workers):
-        self._max_workers = max_workers
+        if max_workers is None:
+            self._max_workers = min(32, os.cpu_count() + 4)
+        else:
+            self._max_workers = max_workers
     
     def _read_pids(self, path_pid):
         pid_df = pd.read_csv(path_pid)
@@ -81,7 +88,10 @@ class MLYDownloader(BaseDownloader):
         geojson = json.loads(gdf.to_json())
         
         # use get pids with mly.interface.images_in_geojson
-        result_json = mly.images_in_geojson(geojson, dir_cache = self.dir_cache, **mly_kwargs).to_dict()["features"]
+        if kwargs["use_cache"]:
+            result_json = mly.images_in_geojson(geojson, dir_cache = self.dir_cache, max_workers=self.max_workers, logger=self.logger, **mly_kwargs).to_dict()["features"]
+        else:
+            result_json = mly.images_in_geojson(geojson, max_workers=self.max_workers, logger=self.logger, **mly_kwargs).to_dict()["features"]
 
         # convert to geodataframe
         result_gdf = gpd.GeoDataFrame.from_features(result_json)
@@ -315,7 +325,9 @@ class MLYDownloader(BaseDownloader):
                 
     def download_svi(self, dir_output, path_pid = None, lat=None, lon=None, input_csv_file="", input_shp_file = "", input_place_name =
                     "", buffer = 0, update_pids = False, resolution = 1024, cropped = False, batch_size = 1000,
-                    start_date = None, end_date = None, metadata_only = False, **kwargs):
+                    start_date = None, end_date = None, metadata_only = False, use_cache = True, **kwargs):
+        # record the arguments
+        self.logger.log_args("MLYDownloader download_svi", dir_output, path_pid, lat, lon, input_csv_file, input_shp_file, input_place_name, buffer, update_pids, resolution, cropped, batch_size, start_date, end_date, metadata_only, use_cache, **kwargs)
         # set necessary directories
         self._set_dirs(dir_output)
         
@@ -328,7 +340,7 @@ class MLYDownloader(BaseDownloader):
             else:
                 self._get_pids(path_pid, lat=lat, lon=lon,
                             input_csv_file=input_csv_file, input_shp_file = input_shp_file, input_place_name = input_place_name, 
-                            buffer = buffer, start_date = start_date, end_date = end_date, **kwargs)
+                            buffer = buffer, start_date = start_date, end_date = end_date, use_cache = use_cache, **kwargs)
         else:
             # check if the path_pid exists
             if path_pid.exists():

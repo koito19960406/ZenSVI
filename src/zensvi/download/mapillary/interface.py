@@ -606,7 +606,7 @@ def traffic_signs_in_bbox(
 
 
 @auth()
-def images_in_geojson(geojson: dict, dir_cache: str = None, **filters: dict):
+def images_in_geojson(geojson: dict, dir_cache: str = None, max_workers: int = 1, logger = None, **filters: dict):
     """
     Extracts all images within a shape
 
@@ -650,7 +650,7 @@ def images_in_geojson(geojson: dict, dir_cache: str = None, **filters: dict):
     """
 
     return image.geojson_features_controller(
-        geojson=geojson, is_image=True, filters=filters, dir_cache = dir_cache
+        geojson=geojson, is_image=True, filters=filters, dir_cache = dir_cache, max_workers=max_workers, logger=logger
     )
 
 
