@@ -244,7 +244,7 @@ class MLYDownloader(BaseDownloader):
                         results[panoid] = url
                     except Exception as e:
                         print(f"Error: {e}")
-                        self._log_write(current_panoid)
+                        self.logger.log_failed_pids(current_panoid)
                         continue
 
             if len(results) > 0:
@@ -297,9 +297,9 @@ class MLYDownloader(BaseDownloader):
                         img_cropped.save(image_path)
 
                 else:
-                    self._log_write(panoid)
+                    self.logger.log_failed_pids(panoid)
             except Exception as e:
-                self._log_write(panoid)
+                self.logger.log_failed_pids(panoid)
                 print(f"Error: {e}" )
 
         num_batches = (len(urls_df) + batch_size - 1) // batch_size
