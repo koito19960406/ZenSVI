@@ -273,10 +273,12 @@ class VectorTilesAdapter(object):
                 with open(file_path, 'r') as file:
                     tile_data = json.load(file)
                 if tile_data["features"]:
-                    return tile_data["features"], file_path
+                    return tile_data["features"], file_path, False # last argument is whether there was an error
+                else:
+                    return None, file_path, False
             except Exception as e:
                 print(f"Error loading file {file_path}: {e}")
-            return None, file_path
+            return None, file_path, True
 
         if kwargs["dir_cache"]:
             dir_cache_tiles = os.path.join(kwargs["dir_cache"], 'tiles_results')
@@ -288,12 +290,13 @@ class VectorTilesAdapter(object):
             with ThreadPoolExecutor(max_workers=kwargs["max_workers"]) as executor:
                 future_to_file = {executor.submit(process_file, file_path): file_path for file_path in existing_files}
                 for future in tqdm(as_completed(future_to_file), total=len(existing_files), desc="Loading cache files"):
-                    result, file_path = future.result()
+                    result, file_path, error = future.result()
                     if result:
                         geojson.append_features(result)
-                    filename = os.path.basename(file_path)
-                    x, y, z = map(int, filename.replace('.geojson', '').split('_'))
-                    processed_tiles.add((x, y, z))
+                    if not error:
+                        filename = os.path.basename(file_path)
+                        x, y, z = map(int, filename.replace('.geojson', '').split('_'))
+                        processed_tiles.add((x, y, z))
 
             # Filter out tiles that have already been processed
             tiles = [tile for tile in tiles if (tile.x, tile.y, tile.z) not in processed_tiles]

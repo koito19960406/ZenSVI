@@ -302,6 +302,17 @@ class Feature:
             f"'properties': {self.properties}"
             f"}}"
         )
+        
+    def __hash__(self):
+        # Create a unique hash based on an immutable representation of the feature
+        return hash((self.type, (self.geometry.coordinates.latitude, self.geometry.coordinates.longitude), self.properties.captured_at))
+
+    def __eq__(self, other):
+        # Define equality based on type, coordinates, and other properties
+        return (self.type == other.type and
+                (self.geometry.coordinates.latitude, self.geometry.coordinates.longitude) == (other.geometry.coordinates.latitude, other.geometry.coordinates.longitude) and
+                self.properties.captured_at == other.properties.captured_at)
+
 
 
 class GeoJSON:
@@ -399,6 +410,9 @@ class GeoJSON:
             if (geojson["features"] != []) or (geojson["features"] is not None)
             else []
         )
+        
+        # Convert existing features to a set for faster lookup
+        self.features_set = set(self.features)
 
     def append_features(self, features: list) -> None:
         """
@@ -428,12 +442,10 @@ class GeoJSON:
 
         # Converting to a feature object
         feature = Feature(feature=feature_inputs)
-
-        # If the feature does not already exist in self.features
-        if feature not in self.features:
-
-            # Append it
+        
+        if feature not in self.features_set:
             self.features.append(feature)
+            self.features_set.add(feature)
 
     def encode(self) -> str:
         """
