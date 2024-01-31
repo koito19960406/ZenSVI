@@ -332,10 +332,6 @@ class VectorTilesAdapter(object):
                             print(f"Failed to process tile {tile.x}_{tile.y}_{tile.z} after {max_retries} attempts.")
                             kwargs["logger"].log_failed_tiles(f"{tile.x}_{tile.y}_{tile.z}")
 
-        # Cleanup: Delete the tiles results directory if dir_cache is set
-        if kwargs["dir_cache"] and os.path.exists(dir_cache_tiles):
-            shutil.rmtree(dir_cache_tiles)
-
         return geojson
 
     def fetch_map_features(

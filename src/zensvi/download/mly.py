@@ -191,6 +191,13 @@ class MLYDownloader(BaseDownloader):
 
         pid.to_csv(path_pid, index=False)
         print("The panorama IDs have been saved to {}".format(path_pid)) 
+
+        # if use_cache, delete self.dir_cache / "tiles_results" directory
+        if kwargs["use_cache"]:
+            dir_cache_tiles = self.dir_cache / "tiles_results"
+            if dir_cache_tiles.exists():
+                shutil.rmtree(dir_cache_tiles)
+                print("The cache directory for tiles has been deleted")
     
     def _get_urls_mly(self, path_pid, resolution=1024):
         # check if seld.cache_pids_urls exists
