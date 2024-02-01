@@ -224,7 +224,9 @@ class ImageTool():
                         print(e)
                         errors += 1
                         failed_panoid = batch_panoids[jobs.index(job)]
-                        logger.log_failed_pids(failed_panoid)
+                        if logger:
+                            logger.log_failed_pids(failed_panoid)
 
         print("Total images downloaded:", len(panoids) - errors, "Errors:", errors)  
-        logger.log_info(f"Total images downloaded: {len(panoids) - errors}, Errors: {errors}")
+        if logger:
+            logger.log_info(f"Total images downloaded: {len(panoids) - errors}, Errors: {errors}")

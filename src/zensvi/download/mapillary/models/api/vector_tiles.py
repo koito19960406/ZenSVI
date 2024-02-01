@@ -301,6 +301,10 @@ class VectorTilesAdapter(object):
             # Filter out tiles that have already been processed
             tiles = [tile for tile in tiles if (tile.x, tile.y, tile.z) not in processed_tiles]
 
+        if len(tiles) == 0:
+            print("All tiles have already been processed.")
+            return geojson
+        
         print(
             f'[Vector Tiles API] Fetching {len(tiles)} {"tiles" if len(tiles) > 1 else "tile"}'
             " for images ..."
@@ -330,7 +334,8 @@ class VectorTilesAdapter(object):
                         retries += 1
                         if retries > max_retries:
                             print(f"Failed to process tile {tile.x}_{tile.y}_{tile.z} after {max_retries} attempts.")
-                            kwargs["logger"].log_failed_tiles(f"{tile.x}_{tile.y}_{tile.z}")
+                            if kwargs["logger"]:
+                                kwargs["logger"].log_failed_tiles(f"{tile.x}_{tile.y}_{tile.z}")
 
         return geojson
 
