@@ -48,7 +48,10 @@ class GSVDownloader(BaseDownloader):
             warnings.warn("Please provide your Google Street View API key to augment metadata.")
         self._gsv_api_key = gsv_api_key
         # initialize the logger
-        self.logger = Logger(log_path)
+        if self.log_path is not None:
+            self.logger = Logger(log_path)
+        else:
+            self.logger = None
 
     @property
     def gsv_api_key(self) -> str:
@@ -468,8 +471,9 @@ class GSVDownloader(BaseDownloader):
         Returns:
             None
         """
-        # record the arguments
-        self.logger.log_args("GSVDownloader download_svi", dir_output, path_pid, zoom, cropped, full, lat, lon, input_csv_file, input_shp_file, input_place_name, id_columns, buffer, augment_metadata, batch_size, update_pids, start_date, end_date, metadata_only, **kwargs)
+        if self.logger is not None:
+            # record the arguments
+            self.logger.log_args("GSVDownloader download_svi", dir_output, path_pid, zoom, cropped, full, lat, lon, input_csv_file, input_shp_file, input_place_name, id_columns, buffer, augment_metadata, batch_size, update_pids, start_date, end_date, metadata_only, **kwargs)
         # set necessary directories
         self._set_dirs(dir_output)
         

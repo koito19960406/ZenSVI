@@ -21,6 +21,7 @@ import mercantile
 import shapely
 from geojson import Polygon
 from typing import Union
+from shapely.geometry.multipolygon import MultiPolygon
 
 # # Configs
 from zensvi.download.mapillary.config.api.entities import Entities
@@ -583,12 +584,12 @@ def geojson_features_controller(
     # Converting the geojson to a list of coordinates
     coordinates_list = extract_coordinates_from_polygons(geojson)
     
-    # Sending coordinates_list a input to form a Polygon
+    # Sending coordinates_list a input to form a list of Polygon
+    polygon_list = [shapely.geometry.shape(Polygon([coordinates])) for coordinates in coordinates_list]
+
+    # get bbox from polygon
     polygon = Polygon(coordinates_list)
-
-    # Getting the boundary parameters from polygon
-    boundary = shapely.geometry.shape(polygon)
-
+    
     if is_image:
         # Get a GeoJSON with features from tiles originating from coordinates
         # at specified zoom level
@@ -634,44 +635,45 @@ def geojson_features_controller(
                     data=layers,
                     # Specifying components for the filter
                     components=[
-                        {"filter": "in_shape", "boundary": boundary},
+                        {"filter": "in_shape", "in_shape": polygon_list},
                         # Filter using kwargs.min_captured_at
                         {
                             "filter": "min_captured_at",
-                            "min_timestamp": filters["min_captured_at"],
+                            "min_captured_at": filters["min_captured_at"],
                         }
                         if "min_captured_at" in filters
                         else {},
                         # Filter using filters.max_captured_at
                         {
                             "filter": "max_captured_at",
-                            "min_timestamp": filters["max_captured_at"],
+                            "max_captured_at": filters["max_captured_at"],
                         }
                         if "max_captured_at" in filters
                         else {},
                         # Filter using filters.image_type
-                        {"filter": "image_type", "tile": filters["image_type"]}
+                        {"filter": "image_type", "image_type": filters["image_type"]}
                         if "image_type" in filters
                         else {},
                         # Filter using filters.organization_id
                         {
                             "filter": "organization_id",
-                            "organization_ids": filters["org_id"],
+                            "organization_id": filters["org_id"],
                         }
                         if "organization_id" in filters
                         else {},
                         # Filter using filters.sequence_id
-                        {"filter": "sequence_id", "ids": filters.get("sequence_id")}
+                        {"filter": "sequence_id", "sequence_id": filters.get("sequence_id")}
                         if "sequence_id" in filters
                         else {},
                         # Filter using filters.compass_angle
                         {
                             "filter": "compass_angle",
-                            "angles": filters.get("compass_angle"),
+                            "compass_angle": filters.get("compass_angle"),
                         }
                         if "compass_angle" in filters
                         else {},
                     ],
+                    **kwargs,
                 )
             )
         )

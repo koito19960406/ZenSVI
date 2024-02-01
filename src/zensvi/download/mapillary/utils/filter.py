@@ -15,6 +15,8 @@ import logging
 
 import haversine
 from geojson import Point, Feature
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from tqdm import tqdm
 
 # Local imports
 from zensvi.download.mapillary.utils.time import date_to_unix_timestamp
@@ -582,3 +584,67 @@ def in_shape(data: list, boundary) -> list:
 
     # Return output
     return output
+
+def pipeline(data: dict, components: list, **kwargs) -> list:
+    __data = data.copy()["features"]
+
+    # Initialize filter criteria with default values
+    filter_criteria = {
+        "max_captured_at": float('inf'),
+        "min_captured_at": float('-inf'),
+        "image_type": None,
+        "organization_id": set(),
+        "sequence_id": set(),
+        "compass_angle": (0.0, 360.0),
+        "in_shape": None
+    }
+
+    # Update filter_criteria based on provided components
+    for component in components:
+        if component:
+            filter_name = component["filter"]
+            filter_value = component.get(filter_name)
+            if filter_name in ["organization_id", "sequence_id"]:
+                filter_criteria[filter_name].update(filter_value)
+            else:
+                filter_criteria[filter_name] = filter_value
+
+    # Function to apply combined filters to a feature
+    def apply_filters(feature):
+        props = feature["properties"]
+        if not (filter_criteria["min_captured_at"] <= props["captured_at"] <= filter_criteria["max_captured_at"]):
+            return None
+        if filter_criteria["image_type"] is not None and props["is_pano"] != filter_criteria["image_type"]:
+            return None
+        if filter_criteria["organization_id"] and props.get("organization_id") not in filter_criteria["organization_id"]:
+            return None
+        if filter_criteria["sequence_id"] and props.get("sequence_id") not in filter_criteria["sequence_id"]:
+            return None
+        if not (filter_criteria["compass_angle"][0] <= props.get("compass_angle", 0) <= filter_criteria["compass_angle"][1]):
+            return None
+        
+        # in_shape filter
+        if filter_criteria["in_shape"]:
+            polygon_list = filter_criteria["in_shape"]
+            point = shape(feature["geometry"])
+            # loop through each polygon in the list
+            for polygon in polygon_list:
+                if polygon.contains(point):
+                    return feature
+            return None
+        
+        return feature
+
+    # Apply filters in parallel and display a tqdm progress bar
+    with ThreadPoolExecutor(max_workers=kwargs["max_workers"]) as executor:
+        # Submit all tasks
+        futures = [executor.submit(apply_filters, feature) for feature in __data]
+
+        # Collect results as they are completed
+        filtered_data = []
+        for future in tqdm(as_completed(futures), total=len(__data), desc="Filtering data"):
+            result = future.result()
+            if result:
+                filtered_data.append(result)
+
+    return filtered_data

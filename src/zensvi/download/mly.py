@@ -37,7 +37,10 @@ class MLYDownloader(BaseDownloader):
         self._max_workers = max_workers
         mly.set_access_token(self.mly_api_key)
         # initialize the logger
-        self.logger = Logger(log_path)
+        if log_path is not None:
+            self.logger = Logger(log_path)
+        else:
+            self.logger = None
         
     @property
     def mly_api_key(self):
@@ -251,7 +254,8 @@ class MLYDownloader(BaseDownloader):
                         results[panoid] = url
                     except Exception as e:
                         print(f"Error: {e}")
-                        self.logger.log_failed_pids(current_panoid)
+                        if self.logger is not None:
+                            self.logger.log_failed_pids(current_panoid)
                         continue
 
             if len(results) > 0:
@@ -304,9 +308,11 @@ class MLYDownloader(BaseDownloader):
                         img_cropped.save(image_path)
 
                 else:
-                    self.logger.log_failed_pids(panoid)
+                    if self.logger is not None:
+                        self.logger.log_failed_pids(panoid)
             except Exception as e:
-                self.logger.log_failed_pids(panoid)
+                if self.logger is not None:
+                    self.logger.log_failed_pids(panoid)
                 print(f"Error: {e}" )
 
         num_batches = (len(urls_df) + batch_size - 1) // batch_size
@@ -333,8 +339,9 @@ class MLYDownloader(BaseDownloader):
     def download_svi(self, dir_output, path_pid = None, lat=None, lon=None, input_csv_file="", input_shp_file = "", input_place_name =
                     "", buffer = 0, update_pids = False, resolution = 1024, cropped = False, batch_size = 1000,
                     start_date = None, end_date = None, metadata_only = False, use_cache = True, **kwargs):
-        # record the arguments
-        self.logger.log_args("MLYDownloader download_svi", dir_output, path_pid, lat, lon, input_csv_file, input_shp_file, input_place_name, buffer, update_pids, resolution, cropped, batch_size, start_date, end_date, metadata_only, use_cache, **kwargs)
+        if self.logger is not None:
+            # record the arguments
+            self.logger.log_args("MLYDownloader download_svi", dir_output, path_pid, lat, lon, input_csv_file, input_shp_file, input_place_name, buffer, update_pids, resolution, cropped, batch_size, start_date, end_date, metadata_only, use_cache, **kwargs)
         # set necessary directories
         self._set_dirs(dir_output)
         
