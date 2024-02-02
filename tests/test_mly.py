@@ -51,18 +51,18 @@ class TestMapillary(unittest.TestCase):
     
     # test multipolygon
     def test_downloader_multipolygon(self):
-        # Skip test if the output file already exists
-        if os.path.exists(os.path.join(self.mly_svi_output_multipolygon, "mly_svi")):
-            self.skipTest("Result exists")
+        # # Skip test if the output file already exists
+        # if os.path.exists(os.path.join(self.mly_svi_output_multipolygon, "mly_svi")):
+        #     self.skipTest("Result exists")
         # download images
         mly_downloader = MLYDownloader(self.mly_api_key, max_workers=200)
         mly_downloader.download_svi(self.mly_svi_output_multipolygon, input_shp_file=self.mly_input_multipolygon)
     
     # test polygon
     def test_downloader_polygon(self):
-        # Skip test if the output file already exists
-        if os.path.exists(os.path.join(self.mly_svi_output_polygon, "mly_svi")):
-            self.skipTest("Result exists")
+        # # Skip test if the output file already exists
+        # if os.path.exists(os.path.join(self.mly_svi_output_polygon, "mly_svi")):
+        #     self.skipTest("Result exists")
         # download images
         mly_downloader = MLYDownloader(self.mly_api_key, max_workers=200)
         mly_downloader.download_svi(self.mly_svi_output_polygon, input_shp_file=self.mly_input_polygon)
