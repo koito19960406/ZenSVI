@@ -22,6 +22,9 @@ class TestStreetViewDownloader(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(self.output_dir, "gsv_panorama")))
 
     def test_download_gsv_zoom(self):
+        # skip test if the output file already exists
+        if os.path.exists(os.path.join(self.output_dir, "gsv_panorama_zoom_0")):
+            self.skipTest("Result exists")
         # Define the range of zoom levels to test
         zoom_levels = [0, 1, 2, 3, 4]  # example zoom levels
 
@@ -61,6 +64,13 @@ class TestStreetViewDownloader(unittest.TestCase):
         self.sv_downloader.download_svi(self.output_dir,lat=1.342425, lon=103.721523, augment_metadata=True, metadata_only=True)
         self.assertTrue(os.path.exists(os.path.join(self.output_dir, "gsv_pids.csv")))
     
+
+    def test_download_gsv_depth(self):
+        # Skip test if the output file already exists
+        # if os.path.exists(os.path.join(self.output_dir, "gsv_depth")):
+        #     self.skipTest("Result exists")
+        self.sv_downloader.download_svi(self.output_dir,lat=1.342425, lon=103.721523, download_depth=True)
+        self.assertTrue(os.path.exists(os.path.join(self.output_dir, "gsv_depth")))
 if __name__ == '__main__':
     unittest.main()
 

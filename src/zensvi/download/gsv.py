@@ -12,6 +12,8 @@ from shapely.geometry import Point
 import warnings
 from shapely.errors import ShapelyDeprecationWarning
 import math
+from streetlevel import streetview
+from PIL import Image
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
 import glob
@@ -21,7 +23,6 @@ import osmnx as ox
 from typing import List, Union
 
 from zensvi.download.base import BaseDownloader
-import zensvi.download.mapillary.interface as mly
 from zensvi.download.utils.imtool import ImageTool
 from zensvi.download.utils.get_pids import panoids
 from zensvi.download.utils.geoprocess import GeoProcessor
@@ -438,12 +439,52 @@ class GSVDownloader(BaseDownloader):
         pid_df = pid_df.drop(columns='date')
         return pid_df
     
+    # function to download depth images (ndarray) save to the output directory as .npy files
+    def _download_depth(self, path_pid: str, dir_output: str, **kwargs) -> None:
+        # read the panorama IDs
+        panoids = pd.read_csv(path_pid)['panoid'].tolist()
+        # create a folder within dir_output
+        panorama_output = Path(dir_output) / "gsv_depth"
+        panorama_output.mkdir(parents=True, exist_ok=True)
+        # define a function to download depth images
+        def download_depth_image(pid):
+            pano = streetview.find_panorama_by_id(pid, download_depth = True)
+            data = pano.depth.data.copy()
+            # pano.depth.data is 256 x 512 ndarray
+            # adjust the dimension of the depth image based on the zoom level
+            # convert to pillow image
+            img = Image.fromarray(data)
+            img = img.convert('L')  # Convert to grayscale
+            # zoom 0: 512 x 256, zoom 1: 1024 x 512, zoom 2: 2048 x 1024, zoom 3: 4096 x 2048, zoom 4: 8192 x 4096, zoom 5: 16384 x 8192 
+            if kwargs['zoom'] == 1:
+                img = img.resize((1024, 512))
+            elif kwargs['zoom'] == 2:
+                img = img.resize((2048, 1024))
+            elif kwargs['zoom'] == 3:
+                img = img.resize((4096, 2048))
+            elif kwargs['zoom'] == 4:
+                img = img.resize((8192, 4096))
+            elif kwargs['zoom'] == 5:
+                img = img.resize((16384, 8192))
+            img.save(panorama_output / f"{pid}.png")
+        
+        # use ThreadPoolExecutor and as_completed to download the depth images
+        with ThreadPoolExecutor() as executor:
+            futures = {executor.submit(download_depth_image, pid): pid for pid in panoids}
+            for future in tqdm(as_completed(futures), desc="Downloading depth images"):
+                pid = futures[future]
+                try:
+                    future.result()
+                except Exception as e:
+                    self.logger.log_error(f"Error downloading depth image for panorama ID {pid}: {e}")
+                    continue
+    
     def download_svi(self, dir_output: str, path_pid: str = None, zoom: int = 2, 
                       cropped: bool = False, full: bool = True, lat: float = None, lon: float = None, 
                       input_csv_file: str = "", input_shp_file: str = "", input_place_name: str = "", 
                       id_columns: Union[str, List[str]] = None, buffer: int = 0, augment_metadata: bool = False, 
                       batch_size: int = 1000, update_pids: bool = False, start_date: str = None, end_date: str = None, 
-                      metadata_only: bool = False, **kwargs) -> None:
+                      metadata_only: bool = False, download_depth = False, **kwargs) -> None:
         """
         Downloads street view images.
 
@@ -517,14 +558,17 @@ class GSVDownloader(BaseDownloader):
 
         if len(panoids_rest) > 0:
             UAs = random.choices(self.user_agents, k = len(panoids_rest))
-            # check zoom level is 0<=zoom<=6
-            if zoom < 0 or zoom > 6:
+            # check zoom level is 0<=zoom<=5
+            if zoom < 0 or zoom > 5:
                 raise ValueError("zoom level should be between 0 and 6")
             h_tiles = 2 ** zoom
             v_tiles = math.ceil(h_tiles / 2)
             ImageTool.dwl_multiple(panoids_rest, zoom, v_tiles, h_tiles, self.panorama_output, UAs, self.proxies, cropped, full, batch_size = batch_size, logger = self.logger)
         else:
             print("All images have been downloaded")
+        
+        if download_depth:
+            self._download_depth(path_pid, dir_output, zoom = zoom)
         
         # delete the cache directory
         if self.dir_cache.exists():

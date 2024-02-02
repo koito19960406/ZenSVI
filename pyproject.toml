@@ -56,6 +56,7 @@ haversine = "^2.3.1"
 python-dotenv = "^0.19.0"
 turfpy = "^0.0.7"
 geojson = "^2.5.0"
+streetlevel
 
 [tool.poetry.dev-dependencies]
 
