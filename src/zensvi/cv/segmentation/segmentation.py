@@ -623,6 +623,20 @@ class Segmenter:
         if (dir_image_output is None) & (dir_segmentation_summary_output is None):
             raise ValueError("At least one of dir_image_output and dir_segmentation_summary_output must not be None.")
         
+        # skip if there's pixel_ratio.json and/or pixel_ratios.csv in dir_segmentation_summary_output, depending on pixel_ratio_save_format
+        if dir_segmentation_summary_output is not None:
+            if "json" in pixel_ratio_save_format and "csv" in pixel_ratio_save_format:
+                if (Path(dir_segmentation_summary_output) / 'pixel_ratios.json').exists() and (Path(dir_segmentation_summary_output) / 'pixel_ratios.csv').exists():
+                    print("Segmentation summary already exists. Skipping segmentation.")
+                    return
+            elif "json" in pixel_ratio_save_format:
+                if (Path(dir_segmentation_summary_output) / 'pixel_ratios.json').exists():
+                    print("Segmentation summary already exists. Skipping segmentation.")
+                    return
+            elif "csv" in pixel_ratio_save_format:
+                if (Path(dir_segmentation_summary_output) / 'pixel_ratios.csv').exists():
+                    print("Segmentation summary already exists. Skipping segmentation.")
+                    return
         # save_image_options as a property of the class
         self.save_image_options = save_image_options
         
@@ -667,6 +681,11 @@ class Segmenter:
         # Get the list of all image files in the directory that are not completed yet
         image_file_list = [f for f in Path(dir_input).iterdir() if f.suffix in image_extensions and f.stem not in completed_image_files]
 
+        # skip if there are no image files to process
+        if len(image_file_list) == 0:
+            print("No image files to process. Skipping segmentation.")
+            return
+        
         outer_batch_size = 1000  # Number of inner batches in one outer batch
         num_outer_batches = (len(image_file_list) + outer_batch_size * batch_size - 1) // (outer_batch_size * batch_size)
 
