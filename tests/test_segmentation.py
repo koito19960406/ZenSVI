@@ -36,6 +36,13 @@ class TestSegmentation(unittest.TestCase):
         image_output = "tests/data/output/segmentation/cityscapes_semantic"
         summary_output = "tests/data/output/segmentation/cityscapes_semantic_summary"
         segmenter.segment(image_input, dir_image_output = image_output, dir_segmentation_summary_output = summary_output, max_workers = 4)
+
+    def test_large_image(self):
+        segmenter = Segmenter(dataset="mapillary", task="panoptic")
+        image_input = "tests/data/input/large_images"
+        image_output = "tests/data/output/segmentation/large_image"
+        summary_output = "tests/data/output/segmentation/large_image_summary"
+        segmenter.segment(image_input, dir_image_output = image_output, dir_segmentation_summary_output = summary_output, max_workers = 1)
         
 if __name__ == "__main__":
     unittest.main()
