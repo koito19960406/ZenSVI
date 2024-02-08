@@ -176,84 +176,51 @@ def create_mapillary_vistas_label_colormap():
     ]
     return labels
 
-def get_resized_dimensions(image: cv2.Mat, max_size: int = 2048) -> Tuple[int, int]:
+def get_resized_dimensions(width: int, height: int, max_size: int = 2048) -> Tuple[int, int]:
     """
-    Get the resized dimensions of an image based on a maximum size.
-
-    Args:
-        image (cv2.Mat): Input image in OpenCV format.
-        max_size (int, optional): Maximum size for the larger side of the image. Defaults to 2048.
-
-    Returns:
-        Tuple[int, int]: Tuple containing new height and width.
+    Calculate the new dimensions of an image to maintain aspect ratio.
+    Returns original dimensions if both are less than max_size.
     """
-    height, width = image.shape[:2]
-
-    # Determine the larger side
-    larger_side = max(height, width)
-
-    # Check if the larger side exceeds the maximum size
-    if larger_side > max_size:
-        # Calculate the scaling factor
-        scaling_factor = max_size / larger_side
-
-        # Calculate the new dimensions
+    if max(width, height) > max_size:
+        scaling_factor = max_size / max(width, height)
         new_width = int(width * scaling_factor)
         new_height = int(height * scaling_factor)
-
-        return (new_height, new_width)
-
-    return (height, width)
+        return new_width, new_height
+    else:
+        # Return original dimensions if resizing is not necessary
+        return width, height
 
 class ImageDataset(Dataset):
-    """
-    Custom Dataset class for images.
-    """
-
-    def __init__(self, image_files: List[Path], rgb: bool = True) -> None:
+    def __init__(self, image_files: List[Path], max_size: int = 2048, rgb: bool = True) -> None:
         """
-        Initialize the ImageDataset.
-
-        Args:
-            image_files (List[Path]): List of image files.
-            rgb (bool, optional): Flag to convert images to RGB. Defaults to True.
+        Initialize the dataset with the path to images, the maximum size for resizing, and color mode.
         """
-        # remove any non-image files and file names starting with "."
-        image_files = [image_file for image_file in image_files if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"] and not image_file.name.startswith(".")]
-        self.image_files = image_files
+        self.image_files = [image_file for image_file in image_files if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"] and not image_file.name.startswith(".")]
+        self.max_size = max_size
         self.rgb = rgb
 
     def __len__(self) -> int:
-        """
-        Get the length of the dataset.
-
-        Returns:
-            int: Number of image files in the dataset.
-        """
         return len(self.image_files)
 
     def __getitem__(self, idx: int) -> Tuple[str, cv2.Mat, Tuple[int, int]]:
-        """
-        Get an item from the dataset.
-
-        Args:
-            idx (int): Index of the image.
-
-        Returns:
-            Tuple[str, cv2.Mat, Tuple[int, int]]: Tuple containing image file path, image data, and original image dimensions.
-        """
         image_file = self.image_files[idx]
         img = cv2.imread(str(image_file))
         
         if img is None:
             raise ValueError(f"Unable to read image at {image_file}")
         
-        original_img_shape = get_resized_dimensions(img)
+        original_height, original_width = img.shape[:2]
+        new_width, new_height = get_resized_dimensions(original_width, original_height, self.max_size)
+        
+        # Resize image if necessary
+        if (original_width, original_height) != (new_width, new_height):
+            img = cv2.resize(img, (new_width, new_height))
         
         if self.rgb:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            
-        return str(image_file), img, original_img_shape
+        
+        return str(image_file), img, (new_height, new_width)
+
 
     def collate_fn(self, data: List[Tuple[str, cv2.Mat, Tuple[int, int]]]) -> Tuple[List[str], List[cv2.Mat], List[Tuple[int, int]]]:
         """
