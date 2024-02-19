@@ -622,7 +622,7 @@ class Segmenter:
             dir_image_output = Path(dir_image_output)
             dir_image_output.mkdir(parents=True, exist_ok=True)
             # get a list of .png files and _blend.png files in the output directory and get the file names as a set
-            completed_image_files.update([str(Path(f).stem).replace("_blend", "") for f in dir_image_output.glob('*.png')])
+            completed_image_files.update([str(Path(f).stem).replace("_blend", "").replace("_colored_segmented", "") for f in dir_image_output.glob('*.png')])
                         
         if dir_segmentation_summary_output is not None:
             dir_segmentation_summary_output = Path(dir_segmentation_summary_output)
@@ -648,11 +648,17 @@ class Segmenter:
                     completed_image_files.update(pixel_ratio_dict.keys())
 
         # Get the list of all image files and filter the ones that are not completed yet
-        # List of possible image file extensions
-        image_extensions = [".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".dib", ".pbm", ".pgm", ".ppm", ".sr", ".ras", ".exr", ".jp2"]
-
-        # Get the list of all image files in the directory that are not completed yet
-        image_file_list = [f for f in Path(dir_input).iterdir() if f.suffix in image_extensions and f.stem not in completed_image_files]
+        # Handle both single file and directory inputs
+        if dir_input.is_file():
+            # Process as a single file
+            image_file_list = [dir_input]
+        elif dir_input.is_dir():
+            # Process all suitable files in the directory
+            image_extensions = [".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".dib", ".pbm", ".pgm", ".ppm", ".sr", ".ras", ".exr", ".jp2"]
+            # Get the list of all image files in the directory that are not completed yet
+            image_file_list = [f for f in Path(dir_input).iterdir() if f.suffix in image_extensions and f.stem not in completed_image_files]
+        else:
+            raise ValueError("dir_input must be either a file or a directory.")
 
         # skip if there are no image files to process
         if len(image_file_list) == 0:
@@ -830,6 +836,10 @@ class Segmenter:
                 data[image_file_key] = label_ratios
 
             return data
+        
+        # create dir_output
+        dir_output = Path(dir_output)
+        dir_output.mkdir(parents=True, exist_ok=True)
 
         # get files
         if isinstance(dir_input, str):
@@ -837,8 +847,13 @@ class Segmenter:
 
         # Set image file extensions
         image_extensions = ['.jpg', '.png']
-
-        image_files = [file for file in dir_input.rglob('*') if file.suffix.lower() in image_extensions and '_colored_segmented' in file.stem]
+        
+        if dir_input.is_file():
+            image_files = [dir_input]
+        elif dir_input.is_dir():
+            image_files = [file for file in dir_input.rglob('*') if file.suffix.lower() in image_extensions and '_colored_segmented' in file.stem]
+        else:
+            raise ValueError("dir_input must be either a file or a directory.")
 
         results = thread_map(process_image_file, image_files, [self.label_map] * len(image_files))
 
