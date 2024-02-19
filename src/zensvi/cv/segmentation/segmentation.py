@@ -17,6 +17,7 @@ from collections import defaultdict
 from tqdm.contrib.concurrent import thread_map
 import glob
 import shutil
+from math import ceil
 
 # a label and all meta information
 Label = namedtuple( 'Label' , [
@@ -453,6 +454,10 @@ class Segmenter:
         alpha = 0.5
         blend_img = cv2.addWeighted(img, alpha, colored_segmented_img, 1 - alpha, 0)
 
+        # Calculate the scale factor for text size
+        height, width, _ = img.shape
+        scale_factor = np.sqrt(height * width) / 1000  # Example scale, adjust as needed
+
         # Add annotations for each segment
         for segment_info in output['segments_info']:
             segment_id = segment_info['id']
@@ -466,9 +471,10 @@ class Segmenter:
             y, x = np.where(output['segmentation'].cpu().numpy() == segment_id)
             center_x, center_y = np.mean(x), np.mean(y)
             
-            # Add the annotation
-            text = f"{label_name}-{score:.2f}"
-            cv2.putText(blend_img, text, (int(center_x), int(center_y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+            # Add the annotation with dynamic font size
+            font_scale = 1 * scale_factor  # Adjust base font size (1 here) as needed
+            thickness = 1 * scale_factor  # Adjust base thickness (1 here) as needed   
+            cv2.putText(blend_img, f"{label_name}-{score:.2f}", (int(center_x), int(center_y)), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), ceil(thickness), cv2.LINE_AA)
 
         output_file = dir_output / Path(image_file).name
         
