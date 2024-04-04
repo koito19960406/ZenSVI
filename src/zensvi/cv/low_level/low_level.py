@@ -99,7 +99,7 @@ def _detect_all_features_single_image(image_path, dir_image_output=None):
 def get_low_level_features(dir_input, 
                            dir_image_output: Union[str, Path] = None,
                            dir_summary_output: Union[str, Path] = None,
-                           save_format=['json', 'csv'],
+                           save_format="json csv",
                            csv_format='long'):
     if not dir_image_output and not dir_summary_output:
         raise ValueError("At least one of dir_image_output and dir_summary_output must be provided")

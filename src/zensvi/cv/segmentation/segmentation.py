@@ -588,8 +588,8 @@ class Segmenter:
                 dir_image_output: Union[str, Path, None] = None, 
                 dir_segmentation_summary_output: Union[str, Path, None] = None, 
                 batch_size=1, 
-                save_image_options = ["segmented_image", "blend_image"], 
-                pixel_ratio_save_format = ["json", "csv"],
+                save_image_options = "segmented_image blend_image", 
+                pixel_ratio_save_format = "json csv",
                 csv_format = "long", # "long" or "wide"
                 max_workers: Union[int, None] = None):
         # make sure that at least one of dir_image_output and dir_segmentation_summary_output is not None
@@ -749,14 +749,14 @@ class Segmenter:
             shutil.rmtree(dir_cache_segmentation_summary, ignore_errors=True)
 
             
-    def calculate_pixel_ratio_post_process(self, dir_input, dir_output, pixel_ratio_save_format = ["json", "csv"]):
+    def calculate_pixel_ratio_post_process(self, dir_input, dir_output, pixel_ratio_save_format = "json csv"):
         """
         Calculates the pixel ratio of different classes present in the segmented images and saves the results in either JSON or CSV format.
 
         Args:
             dir_input: A string or Path object representing the input directory containing the segmented images.
             dir_output: A string or Path object representing the output directory where the pixel ratio results will be saved.
-            pixel_ratio_save_format: A list containing the file formats in which the results will be saved. The allowed file formats are "json" and "csv". The default value is ["json", "csv"].
+            pixel_ratio_save_format: A list containing the file formats in which the results will be saved. The allowed file formats are "json" and "csv". The default value is "json csv".
 
         Returns:
             None
