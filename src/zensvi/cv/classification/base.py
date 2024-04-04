@@ -1,14 +1,16 @@
-from typing import List, Tuple
+from typing import Tuple, Union
 from pathlib import Path
 import torch
+
 # abstract class
 from abc import ABC, abstractmethod
 
+
 class BaseClassifier(ABC):
-    def __init__(self, device = None):
-        self.device = _get_device(device)
-    
-     def _get_device(self, device) -> torch.device:
+    def __init__(self, device=None):
+        self.device = self._get_device(device)
+
+    def _get_device(self, device) -> torch.device:
         """
         Get the appropriate device for running the model.
 
@@ -27,14 +29,16 @@ class BaseClassifier(ABC):
         else:
             print("Using CPU")
             return torch.device("cpu")
-    
-    @abstractmethod 
-    def classify(self, dir_input: Union[str, Path], 
-                 dir_image_output: Union[str, Path, None] = None, 
-                 dir_summary_output: Union[str, Path, None] = None, 
-                 batch_size: int = 1, 
-                 save_image_options: List[str] = ["cam_image", "blend_image"], 
-                 save_format: List[str] = ["json", "csv"],
-                 csv_format: str = "long" # "long" or "wide"
-                 ) -> Tuple[Path, Path]:
+
+    @abstractmethod
+    def classify(
+        self,
+        dir_input: Union[str, Path],
+        dir_image_output: Union[str, Path, None] = None,
+        dir_summary_output: Union[str, Path, None] = None,
+        batch_size: int = 1,
+        save_image_options: str = "cam_image blend_image",
+        save_format: str = "json csv",
+        csv_format: str = "long",  # "long" or "wide"
+    ) -> Tuple[Path, Path]:
         pass
