@@ -16,6 +16,11 @@ from .utils import wideresnet
 
 
 class ImageDataset(Dataset):
+    """_summary_
+
+    :meta private:
+    """
+
     def __init__(self, img_paths, transform=None):
         self.img_paths = img_paths
         self.transform = transform
@@ -39,6 +44,10 @@ class ImageDataset(Dataset):
 
 
 def returnTF():
+    """_summary_
+
+    :meta private:
+    """
     # load the image transformer
     tf = trn.Compose(
         [
@@ -51,6 +60,10 @@ def returnTF():
 
 
 def recursion_change_bn(module):
+    """_summary_
+
+    :meta private:
+    """
     if isinstance(module, torch.nn.BatchNorm2d):
         module.track_running_stats = 1
     else:
@@ -60,6 +73,10 @@ def recursion_change_bn(module):
 
 
 def returnCAM(feature_conv, weight_softmax, class_idx):
+    """_summary_
+
+    :meta private:
+    """
     # generate the class activation maps upsample to 256x256
     size_upsample = (256, 256)
     nc, h, w = feature_conv.shape
@@ -75,6 +92,16 @@ def returnCAM(feature_conv, weight_softmax, class_idx):
 
 
 class ClassifierPlaces365(BaseClassifier):
+    """
+    A classifier for identifying places using the Places365 model. It extends
+    the functionality of BaseClassifier by providing methods to load specific
+    model parameters, labels, and to classify images based on scene recognition.
+
+    :param device: The device (CPU or GPU) that the model should be loaded onto.
+                   If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
+    :type device: str, optional
+    """
+
     def __init__(self, device=None):
         super().__init__(device)
         self.device = self._get_device(device)
@@ -190,7 +217,28 @@ class ClassifierPlaces365(BaseClassifier):
         save_image_options: str = "cam_image blend_image",
         save_format: str = "json csv",
         csv_format: str = "long",  # "long" or "wide"
-    ) -> Tuple[Path, Path]:
+    ):
+        """
+        Classifies images in a directory, saves class activation mappings (CAM) and
+        classification summaries. It processes images in batches for efficiency.
+
+        :param dir_input: Directory path containing images to classify or a single image file path.
+        :param dir_image_output: Directory path where CAM images will be saved. If `None`, CAM images are not saved.
+        :param dir_summary_output: Directory path where classification summaries will be saved. If `None`, summaries are not saved.
+        :param batch_size: Number of images to process in a batch. Defaults to 1.
+        :param save_image_options: A string containing options for saving images, separated by space.
+                                Options include 'cam_image' for CAMs and 'blend_image' for blended CAMs on original images.
+        :param save_format: Format to save the classification summaries. Can include 'json', 'csv', or both.
+        :param csv_format: Specifies the format of the CSV file if 'csv' is chosen in `save_format`.
+                        Can be 'long' (default) or 'wide'.
+        :type dir_input: Union[str, Path]
+        :type dir_image_output: Union[str, Path, None], optional
+        :type dir_summary_output: Union[str, Path, None], optional
+        :type batch_size: int, optional
+        :type save_image_options: str, optional
+        :type save_format: str, optional
+        :type csv_format: str, optional
+        """
         if not dir_image_output and not dir_summary_output:
             raise ValueError(
                 "At least one of dir_image_output and dir_summary_output must be provided"
@@ -228,7 +276,14 @@ class ClassifierPlaces365(BaseClassifier):
                 for idx, prob in zip(top_idxs.numpy(), top_probs.numpy()):
                     dict_temp[self.classes[idx]] = prob
                 # Extract features for attributes
-                responses_attribute = self.W_attribute.dot(self.features_blobs[1])
+                if len(paths) == 1:
+                    features_blobs_0 = self.features_blobs[0]
+                    features_blobs_1 = self.features_blobs[1]
+                else:
+                    features_blobs_0 = self.features_blobs[0][idx_img_prob]
+                    features_blobs_1 = self.features_blobs[1][idx_img_prob]
+                print(features_blobs_1)
+                responses_attribute = self.W_attribute.dot(features_blobs_1)
                 idx_a = np.argsort(responses_attribute)
                 for i, idx in enumerate(idx_a):
                     dict_temp[self.labels_attribute[idx]] = responses_attribute[idx]
@@ -243,7 +298,7 @@ class ClassifierPlaces365(BaseClassifier):
                 if len(save_image_options) > 0 and dir_image_output is not None:
                     # Generate class activation mapping
                     CAMs = returnCAM(
-                        self.features_blobs[0], self.weight_softmax, [top_idxs[0]]
+                        features_blobs_0, self.weight_softmax, [top_idxs[0]]
                     )
 
                     # Render the CAM and output

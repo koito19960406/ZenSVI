@@ -17,7 +17,8 @@ class TestClassifierPlaces365(unittest.TestCase):
             image_input,
             dir_image_output=dir_image_output,
             dir_summary_output=dir_summary_output,
-            csv_format="long",
+            csv_format="wide",
+            batch_size=3,
         )
 
 

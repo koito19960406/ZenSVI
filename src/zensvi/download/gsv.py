@@ -133,8 +133,9 @@ class GSVDownloader(BaseDownloader):
                 batch_futures = {executor.submit(worker, row, self.proxies): row.Index for row in batch_df.itertuples()}
                 for future in tqdm(as_completed(batch_futures), total=len(batch_futures), desc=f"Augmenting metadata for batch #{i+1}"):
                     row_index, year_month = future.result()
-                    batch_df.at[row_index, 'year'] = year_month['year']
-                    batch_df.at[row_index, 'month'] = year_month['month']
+                    if year_month['year'] is not None:
+                        batch_df.at[row_index, 'year'] = year_month['year']
+                        batch_df.at[row_index, 'month'] = year_month['month']
 
             # Save checkpoint for each batch
             batch_df.to_csv(f'{dir_cache_augmented_metadata}/checkpoint_batch_{checkpoint_start_index+i+1}.csv', index=False)
