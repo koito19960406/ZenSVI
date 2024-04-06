@@ -110,7 +110,7 @@ class ImageTool():
             image = image.crop((0, 0, crop_width, crop_height))
 
             # Resize the image
-            image = image.resize((resize_width, resize_height), Image.ANTIALIAS)
+            image = image.resize((resize_width, resize_height), Image.LANCZOS)
 
         return image            
 
