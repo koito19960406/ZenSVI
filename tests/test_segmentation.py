@@ -156,6 +156,19 @@ class TestSegmentation(unittest.TestCase):
         # assert True if files in image_output are not empty
         self.assertTrue(len(list(image_output.glob("*"))) > 0)
 
+    def test_long_format(self):
+        segmenter = Segmenter()
+        image_input = "tests/data/input/cityscapes_semantic"
+        image_output = self.output / "long_format"
+        summary_output = self.output / "long_format_summary"
+        segmenter.segment(
+            image_input,
+            dir_image_output=image_output,
+            dir_summary_output=summary_output,
+            csv_format="long",
+            max_workers=4,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
