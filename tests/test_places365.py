@@ -1,5 +1,5 @@
 import unittest
-import os 
+import os
 import shutil
 from pathlib import Path
 
@@ -11,7 +11,7 @@ class TestClassifierPlaces365(unittest.TestCase):
     def setUpClass(self):
         self.output = "tests/data/output/classification/places365"
         Path(self.output).mkdir(parents=True, exist_ok=True)
-        
+
     def tearDown(self):
         # remove output directory
         shutil.rmtree(self.output, ignore_errors=True)
@@ -60,6 +60,23 @@ class TestClassifierPlaces365(unittest.TestCase):
         )
         # assert True if files in dir_image_output and dir_summary_output are not empty
         self.assertTrue(os.listdir(dir_image_output) and os.listdir(dir_summary_output))
+
+    def test_classify_to_long_format(self):
+        device = "mps"
+        classifier = ClassifierPlaces365(device=device)
+        image_input = "tests/data/input/images"
+        dir_image_output = str(Path(self.output) / "long/image")
+        dir_summary_output = str(Path(self.output) / "long/summary")
+        classifier.classify(
+            image_input,
+            dir_image_output=dir_image_output,
+            dir_summary_output=dir_summary_output,
+            csv_format="long",
+            batch_size=3,
+        )
+        # assert True if files in dir_image_output and dir_summary_output are not empty
+        self.assertTrue(os.listdir(dir_image_output) and os.listdir(dir_summary_output))
+
 
 if __name__ == "__main__":
     unittest.main()
