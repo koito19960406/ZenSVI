@@ -2,12 +2,12 @@
 ```
 
 ```{toctree}
-:maxdepth: 1
-:hidden:
+:maxdepth: 2
+caption: Contents:
 
-example.ipynb
 changelog.md
 contributing.md
 conduct.md
 autoapi/index
+example.ipynb
 ```

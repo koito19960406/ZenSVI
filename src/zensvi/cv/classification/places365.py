@@ -16,11 +16,7 @@ from .utils import wideresnet
 
 
 class ImageDataset(Dataset):
-    """_summary_
-
-    :meta private:
-    """
-
+    # Dataset class for loading images
     def __init__(self, img_paths, transform=None):
         self.img_paths = img_paths
         self.transform = transform
@@ -43,11 +39,7 @@ class ImageDataset(Dataset):
         return images, list(paths)
 
 
-def returnTF():
-    """_summary_
-
-    :meta private:
-    """
+def _returnTF():
     # load the image transformer
     tf = trn.Compose(
         [
@@ -59,24 +51,17 @@ def returnTF():
     return tf
 
 
-def recursion_change_bn(module):
-    """_summary_
-
-    :meta private:
-    """
+def _recursion_change_bn(module):
+    # change the batchnorm2D layer to batchnorm1D
     if isinstance(module, torch.nn.BatchNorm2d):
         module.track_running_stats = 1
     else:
         for i, (name, module1) in enumerate(module._modules.items()):
-            module1 = recursion_change_bn(module1)
+            module1 = _recursion_change_bn(module1)
     return module
 
 
-def returnCAM(feature_conv, weight_softmax, class_idx):
-    """_summary_
-
-    :meta private:
-    """
+def _returnCAM(feature_conv, weight_softmax, class_idx):
     # generate the class activation maps upsample to 256x256
     size_upsample = (256, 256)
     nc, h, w = feature_conv.shape
@@ -93,12 +78,10 @@ def returnCAM(feature_conv, weight_softmax, class_idx):
 
 class ClassifierPlaces365(BaseClassifier):
     """
-    A classifier for identifying places using the Places365 model. It extends
-    the functionality of BaseClassifier by providing methods to load specific
-    model parameters, labels, and to classify images based on scene recognition.
+    A classifier for identifying places using the Places365 model.
 
-    :param device: The device (CPU or GPU) that the model should be loaded onto.
-                   If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
+    :param device: The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
+        If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
     :type device: str, optional
     """
 
@@ -169,7 +152,7 @@ class ClassifierPlaces365(BaseClassifier):
 
         # hacky way to deal with the upgraded batchnorm2D and avgpool layers...
         for i, (name, module) in enumerate(model._modules.items()):
-            module = recursion_change_bn(module)
+            module = _recursion_change_bn(module)
         model.avgpool = torch.nn.AvgPool2d(kernel_size=14, stride=1, padding=0)
 
         model.eval()
@@ -185,7 +168,7 @@ class ClassifierPlaces365(BaseClassifier):
     def _load_weight_softmax(self):
         # get the softmax weight
         params = list(self.model.parameters())
-        weight_softmax = params[-2].data.numpy()
+        weight_softmax = params[-2].data.cpu().numpy()
         weight_softmax[weight_softmax < 0] = 0
         return weight_softmax
 
@@ -219,25 +202,26 @@ class ClassifierPlaces365(BaseClassifier):
         csv_format: str = "long",  # "long" or "wide"
     ):
         """
-        Classifies images in a directory, saves class activation mappings (CAM) and
-        classification summaries. It processes images in batches for efficiency.
+        Classifies images based on scene recognition using the Places365 model. The output file can be saved in JSON and/or CSV format and will contain the scene categories, scene attributes, and environment type (indoor or outdoor) for each image.
+        
+        A list of categories can be found at https://github.com/CSAILVision/places365/blob/master/categories_places365.txt and a list of attributes can be found at https://github.com/CSAILVision/places365/blob/master/labels_sunattribute.txt
 
-        :param dir_input: Directory path containing images to classify or a single image file path.
-        :param dir_image_output: Directory path where CAM images will be saved. If `None`, CAM images are not saved.
-        :param dir_summary_output: Directory path where classification summaries will be saved. If `None`, summaries are not saved.
-        :param batch_size: Number of images to process in a batch. Defaults to 1.
-        :param save_image_options: A string containing options for saving images, separated by space.
-                                Options include 'cam_image' for CAMs and 'blend_image' for blended CAMs on original images.
-        :param save_format: Format to save the classification summaries. Can include 'json', 'csv', or both.
-        :param csv_format: Specifies the format of the CSV file if 'csv' is chosen in `save_format`.
-                        Can be 'long' (default) or 'wide'.
+        Scene categories' values range from 0 to 1, where 1 is the highest probability of the scene category. Scene attributes' values are the responses of the scene attributes, which are the dot product of the scene attributes' weight and the features of the image, and higher values indicate a higher presence of the attribute in the image. The environment type is either "indoor" or "outdoor".
+
+        :param dir_input: directory containing input images.
         :type dir_input: Union[str, Path]
+        :param dir_image_output: directory to save output images, defaults to None
         :type dir_image_output: Union[str, Path, None], optional
+        :param dir_summary_output: directory to save summary output, defaults to None
         :type dir_summary_output: Union[str, Path, None], optional
+        :param batch_size: batch size for inference, defaults to 1
         :type batch_size: int, optional
+        :param save_image_options: save options for images, defaults to "cam_image blend_image". Options are "cam_image" and "blend_image". Please add a space between options.
         :type save_image_options: str, optional
+        :param save_format: save format for the output, defaults to "json csv". Options are "json" and "csv". Please add a space between options.
         :type save_format: str, optional
-        :type csv_format: str, optional
+        :param csv_format: csv format for the output, defaults to "long". Options are "long" and "wide".
+        :type csv_format: str, optional 
         """
         if not dir_image_output and not dir_summary_output:
             raise ValueError(
@@ -256,7 +240,7 @@ class ClassifierPlaces365(BaseClassifier):
             img_paths = list(Path(dir_input).rglob("*.[jJp][pPn][gG]"))
 
         # Transform and load the dataset
-        transform = returnTF()
+        transform = _returnTF()
         dataset = ImageDataset(img_paths, transform=transform)
         dataloader = DataLoader(
             dataset, batch_size=batch_size, collate_fn=dataset.collate_fn
@@ -282,7 +266,6 @@ class ClassifierPlaces365(BaseClassifier):
                 else:
                     features_blobs_0 = self.features_blobs[0][idx_img_prob]
                     features_blobs_1 = self.features_blobs[1][idx_img_prob]
-                print(features_blobs_1)
                 responses_attribute = self.W_attribute.dot(features_blobs_1)
                 idx_a = np.argsort(responses_attribute)
                 for i, idx in enumerate(idx_a):
@@ -297,7 +280,7 @@ class ClassifierPlaces365(BaseClassifier):
 
                 if len(save_image_options) > 0 and dir_image_output is not None:
                     # Generate class activation mapping
-                    CAMs = returnCAM(
+                    CAMs = _returnCAM(
                         features_blobs_0, self.weight_softmax, [top_idxs[0]]
                     )
 

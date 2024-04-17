@@ -96,7 +96,7 @@ if __name__ == "__main__":
     segmenter = Segmenter(dataset = "cityscapes", task="semantic")
     segmenter.segment(dir_input = "tests/data/output/gsv_panorama/batch_1",
                     dir_image_output = "tests/data/output/segmented", 
-                    dir_segmentation_summary_output= "tests/data/output",
+                    dir_summary_output= "tests/data/output",
                     max_workers=1)
     
     transformer = ImageTransformer(dir_input = "tests/data/output/gsv_panorama/batch_1",

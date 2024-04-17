@@ -1,12 +1,19 @@
 from zensvi import visualization
 import unittest
 from pathlib import Path
+# import shutil
 
 
 class TestVisualization(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(self):
+        self.output = Path("tests/data/output/visualization")
+        self.output.mkdir(parents=True, exist_ok=True)
         pass
+
+    # def tearDown(self):
+    #     # remove output directory
+    #     shutil.rmtree(self.output, ignore_errors=True)
 
     # skip for now
     # @unittest.skip("skip for now")
@@ -18,10 +25,7 @@ class TestVisualization(unittest.TestCase):
         plot_type_list = ["point", "line", "hexagon"]
         for variable in variable_name_list:
             for plot_type in plot_type_list:
-                
-                path_output = f"tests/data/output/visualization/plot_map_{variable}_{plot_type}.png"
-                # create the directory if it does not exist
-                Path(path_output).parent.mkdir(parents=True, exist_ok=True)
+                path_output = str(self.output / f"plot_map_{variable}_{plot_type}.png")
                 fig, ax = visualization.plot_map(
                     path_pid,
                     dir_input=dir_input,
@@ -33,9 +37,15 @@ class TestVisualization(unittest.TestCase):
                     cmap="viridis",
                     legend=True,
                     title=f"{plot_type.title()} Map",
-                    legend_title="Count" if variable is None else f"{variable.title()} View Factor",
+                    legend_title=(
+                        "Count"
+                        if variable is None
+                        else f"{variable.title()} View Factor"
+                    ),
                     dark_mode=False,
                 )
+                # assert True if path_output exists and size is not zero
+                self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
     def test_plot_map_edge_color(self):
         path_pid = "tests/data/input/visualization/gsv_pids.csv"
@@ -43,9 +53,7 @@ class TestVisualization(unittest.TestCase):
         csv_file_pattern = "pixel_ratios.csv"
         variable_name = "sky"
         plot_type = "hexagon"
-        path_output = f"tests/data/output/visualization/plot_map_edge_color.png"
-        # create the directory if it does not exist
-        Path(path_output).parent.mkdir(parents=True, exist_ok=True)
+        path_output = str(self.output / "plot_map_edge_color.png")
         fig, ax = visualization.plot_map(
             path_pid,
             dir_input=dir_input,
@@ -61,15 +69,15 @@ class TestVisualization(unittest.TestCase):
             legend_title="Test Legend Title",
             dark_mode=False,
         )
+        # assert True if path_output exists and size is not zero
+        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
     # @unittest.skip("skip for now")
     def test_plot_image(self):
         dir_image_input = "tests/data/input/visualization/images"
         dir_csv_input = "tests/data/input/visualization"
         csv_file_pattern = "pixel_ratios.csv"
-        path_output = "tests/data/output/visualization/plot_image.png"
-        # create the directory if it does not exist
-        Path(path_output).parent.mkdir(parents=True, exist_ok=True)
+        path_output = str(self.output / "plot_image.png")
         fig, ax = visualization.plot_image(
             dir_image_input,
             4,
@@ -82,16 +90,14 @@ class TestVisualization(unittest.TestCase):
             dark_mode=False,
             random_seed=123,
         )
+        # assert True if path_output exists and size is not zero
+        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
     # @unittest.skip("skip for now")
     def test_plot_image_image_file_pattern(self):
         dir_image_input = "tests/data/input/visualization/mapillary_panoptic"
         image_file_pattern = "*_blend.png"
-        path_output = (
-            "tests/data/output/visualization/plot_image_image_file_pattern.png"
-        )
-        # create the directory if it does not exist
-        Path(path_output).parent.mkdir(parents=True, exist_ok=True)
+        path_output = str(self.output / "plot_image_image_file_pattern.png")
         fig, ax = visualization.plot_image(
             dir_image_input,
             4,
@@ -104,14 +110,14 @@ class TestVisualization(unittest.TestCase):
             dark_mode=False,
             random_seed=123,
         )
+        # assert True if path_output exists and size is not zero
+        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
     # @unittest.skip("skip for now")
     def test_plot_image_sort_by(self):
         dir_image_input = "tests/data/input/visualization/mapillary_panoptic"
         image_file_pattern = "*_blend.png"
-        path_output = "tests/data/output/visualization/plot_image_sort_by.png"
-        # create the directory if it does not exist
-        Path(path_output).parent.mkdir(parents=True, exist_ok=True)
+        path_output = str(self.output / "plot_image_sort_by.png")
         fig, ax = visualization.plot_image(
             dir_image_input,
             4,
@@ -127,7 +133,8 @@ class TestVisualization(unittest.TestCase):
             dark_mode=False,
             random_seed=123,
         )
-
+        # assert True if path_output exists and size is not zero
+        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
 if __name__ == "__main__":
     unittest.main()
