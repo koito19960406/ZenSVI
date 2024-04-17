@@ -20,7 +20,7 @@ import shutil
 from math import ceil
 
 # a label and all meta information
-Label = namedtuple( 'Label' , [
+_Label = namedtuple( '_Label' , [
 
             'name'        , # The identifier of this label, e.g. 'car', 'person', ... .
                             # We use them to uniquely name a class
@@ -56,7 +56,7 @@ Label = namedtuple( 'Label' , [
             'color'       , # The color of this label
             ] )
         
-def create_cityscapes_label_colormap():
+def _create_cityscapes_label_colormap():
         """Creates a label colormap used in CITYSCAPES segmentation benchmark.
         Returns:
             A colormap for visualizing segmentation results.
@@ -64,120 +64,120 @@ def create_cityscapes_label_colormap():
         
         labels = [
         #       name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
-        Label(  'unlabeled'            ,  0 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
-        Label(  'ego vehicle'          ,  1 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
-        Label(  'rectification border' ,  2 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
-        Label(  'out of roi'           ,  3 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
-        Label(  'static'               ,  4 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
-        Label(  'dynamic'              ,  5 ,      255 , 'void'            , 0       , False        , True         , (111, 74,  0) ),
-        Label(  'ground'               ,  6 ,      255 , 'void'            , 0       , False        , True         , ( 81,  0, 81) ),
-        Label(  'road'                 ,  7 ,        0 , 'flat'            , 1       , False        , False        , (128, 64,128) ),
-        Label(  'sidewalk'             ,  8 ,        1 , 'flat'            , 1       , False        , False        , (244, 35,232) ),
-        Label(  'parking'              ,  9 ,      255 , 'flat'            , 1       , False        , True         , (250,170,160) ),
-        Label(  'rail track'           , 10 ,      255 , 'flat'            , 1       , False        , True         , (230,150,140) ),
-        Label(  'building'             , 11 ,        2 , 'construction'    , 2       , False        , False        , ( 70, 70, 70) ),
-        Label(  'wall'                 , 12 ,        3 , 'construction'    , 2       , False        , False        , (102,102,156) ),
-        Label(  'fence'                , 13 ,        4 , 'construction'    , 2       , False        , False        , (190,153,153) ),
-        Label(  'guard rail'           , 14 ,      255 , 'construction'    , 2       , False        , True         , (180,165,180) ),
-        Label(  'bridge'               , 15 ,      255 , 'construction'    , 2       , False        , True         , (150,100,100) ),
-        Label(  'tunnel'               , 16 ,      255 , 'construction'    , 2       , False        , True         , (150,120, 90) ),
-        Label(  'pole'                 , 17 ,        5 , 'object'          , 3       , False        , False        , (153,153,153) ),
-        Label(  'polegroup'            , 18 ,      255 , 'object'          , 3       , False        , True         , (153,153,153) ),
-        Label(  'traffic light'        , 19 ,        6 , 'object'          , 3       , False        , False        , (250,170, 30) ),
-        Label(  'traffic sign'         , 20 ,        7 , 'object'          , 3       , False        , False        , (220,220,  0) ),
-        Label(  'vegetation'           , 21 ,        8 , 'nature'          , 4       , False        , False        , (107,142, 35) ),
-        Label(  'terrain'              , 22 ,        9 , 'nature'          , 4       , False        , False        , (152,251,152) ),
-        Label(  'sky'                  , 23 ,       10 , 'sky'             , 5       , False        , False        , ( 70,130,180) ),
-        Label(  'person'               , 24 ,       11 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
-        Label(  'rider'                , 25 ,       12 , 'human'           , 6       , True         , False        , (255,  0,  0) ),
-        Label(  'car'                  , 26 ,       13 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
-        Label(  'truck'                , 27 ,       14 , 'vehicle'         , 7       , True         , False        , (  0,  0, 70) ),
-        Label(  'bus'                  , 28 ,       15 , 'vehicle'         , 7       , True         , False        , (  0, 60,100) ),
-        Label(  'caravan'              , 29 ,      255 , 'vehicle'         , 7       , True         , True         , (  0,  0, 90) ),
-        Label(  'trailer'              , 30 ,      255 , 'vehicle'         , 7       , True         , True         , (  0,  0,110) ),
-        Label(  'train'                , 31 ,       16 , 'vehicle'         , 7       , True         , False        , (  0, 80,100) ),
-        Label(  'motorcycle'           , 32 ,       17 , 'vehicle'         , 7       , True         , False        , (  0,  0,230) ),
-        Label(  'bicycle'              , 33 ,       18 , 'vehicle'         , 7       , True         , False        , (119, 11, 32) ),
-        Label(  'license plate'        , -1 ,       -1 , 'vehicle'         , 7       , False        , True         , (  0,  0,142) ),
+        _Label(  'unlabeled'            ,  0 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
+        _Label(  'ego vehicle'          ,  1 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
+        _Label(  'rectification border' ,  2 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
+        _Label(  'out of roi'           ,  3 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
+        _Label(  'static'               ,  4 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
+        _Label(  'dynamic'              ,  5 ,      255 , 'void'            , 0       , False        , True         , (111, 74,  0) ),
+        _Label(  'ground'               ,  6 ,      255 , 'void'            , 0       , False        , True         , ( 81,  0, 81) ),
+        _Label(  'road'                 ,  7 ,        0 , 'flat'            , 1       , False        , False        , (128, 64,128) ),
+        _Label(  'sidewalk'             ,  8 ,        1 , 'flat'            , 1       , False        , False        , (244, 35,232) ),
+        _Label(  'parking'              ,  9 ,      255 , 'flat'            , 1       , False        , True         , (250,170,160) ),
+        _Label(  'rail track'           , 10 ,      255 , 'flat'            , 1       , False        , True         , (230,150,140) ),
+        _Label(  'building'             , 11 ,        2 , 'construction'    , 2       , False        , False        , ( 70, 70, 70) ),
+        _Label(  'wall'                 , 12 ,        3 , 'construction'    , 2       , False        , False        , (102,102,156) ),
+        _Label(  'fence'                , 13 ,        4 , 'construction'    , 2       , False        , False        , (190,153,153) ),
+        _Label(  'guard rail'           , 14 ,      255 , 'construction'    , 2       , False        , True         , (180,165,180) ),
+        _Label(  'bridge'               , 15 ,      255 , 'construction'    , 2       , False        , True         , (150,100,100) ),
+        _Label(  'tunnel'               , 16 ,      255 , 'construction'    , 2       , False        , True         , (150,120, 90) ),
+        _Label(  'pole'                 , 17 ,        5 , 'object'          , 3       , False        , False        , (153,153,153) ),
+        _Label(  'polegroup'            , 18 ,      255 , 'object'          , 3       , False        , True         , (153,153,153) ),
+        _Label(  'traffic light'        , 19 ,        6 , 'object'          , 3       , False        , False        , (250,170, 30) ),
+        _Label(  'traffic sign'         , 20 ,        7 , 'object'          , 3       , False        , False        , (220,220,  0) ),
+        _Label(  'vegetation'           , 21 ,        8 , 'nature'          , 4       , False        , False        , (107,142, 35) ),
+        _Label(  'terrain'              , 22 ,        9 , 'nature'          , 4       , False        , False        , (152,251,152) ),
+        _Label(  'sky'                  , 23 ,       10 , 'sky'             , 5       , False        , False        , ( 70,130,180) ),
+        _Label(  'person'               , 24 ,       11 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
+        _Label(  'rider'                , 25 ,       12 , 'human'           , 6       , True         , False        , (255,  0,  0) ),
+        _Label(  'car'                  , 26 ,       13 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
+        _Label(  'truck'                , 27 ,       14 , 'vehicle'         , 7       , True         , False        , (  0,  0, 70) ),
+        _Label(  'bus'                  , 28 ,       15 , 'vehicle'         , 7       , True         , False        , (  0, 60,100) ),
+        _Label(  'caravan'              , 29 ,      255 , 'vehicle'         , 7       , True         , True         , (  0,  0, 90) ),
+        _Label(  'trailer'              , 30 ,      255 , 'vehicle'         , 7       , True         , True         , (  0,  0,110) ),
+        _Label(  'train'                , 31 ,       16 , 'vehicle'         , 7       , True         , False        , (  0, 80,100) ),
+        _Label(  'motorcycle'           , 32 ,       17 , 'vehicle'         , 7       , True         , False        , (  0,  0,230) ),
+        _Label(  'bicycle'              , 33 ,       18 , 'vehicle'         , 7       , True         , False        , (119, 11, 32) ),
+        _Label(  'license plate'        , -1 ,       -1 , 'vehicle'         , 7       , False        , True         , (  0,  0,142) ),
         ]
         return labels
 
-def create_mapillary_vistas_label_colormap():
+def _create_mapillary_vistas_label_colormap():
     """Creates a label colormap used in Mapillary Vistas segmentation benchmark.
     Returns:
         A list of labels for visualizing segmentation results.
     """
 
     labels = [
-        Label('Bird',                   0,      0, 'animal',             0,      True,         False,        (165, 42, 42)),
-        Label('Ground Animal',          1,      1, 'animal',             0,      True,         False,        (0, 192, 0)),
-        Label('Curb',                   2,      2, 'construction',       1,      False,        False,        (196, 196, 196)),
-        Label('Fence',                  3,      3, 'construction',       1,      False,        False,        (190, 153, 153)),
-        Label('Guard Rail',             4,      4, 'construction',       1,      False,        False,        (180, 165, 180)),
-        Label('Barrier',                5,      5, 'construction',       1,      False,        False,        (102, 102, 156)),
-        Label('Wall',                   6,      6, 'construction',       1,      False,        False,        (102, 102, 156)),
-        Label('Bike Lane',              7,      7, 'flat',               2,      False,        False,        (128, 64, 255)),
-        Label('Crosswalk - Plain',      8,      8, 'flat',               2,      False,        False,        (140, 140, 200)),
-        Label('Curb Cut',               9,      9, 'flat',               2,      False,        False,        (170, 170, 170)),
-        Label('Parking',               10,     10, 'flat',               2,      False,        False,        (250, 170, 160)),
-        Label('Pedestrian Area',       11,     11, 'flat',               2,      False,        False,        (96, 96, 96)),
-        Label('Rail Track',            12,     12, 'flat',               2,      False,        False,        (230, 150, 140)),
-        Label('Road',                  13,     13, 'flat',               2,      False,        False,        (128, 64, 128)),
-        Label('Service Lane',          14,     14, 'flat',               2,      False,        False,        (110, 110, 110)),
-        Label('Sidewalk',              15,     15, 'flat',               2,      False,        False,        (244, 35, 232)),
-        Label('Bridge',                16,     16, 'construction',       1,      False,        False,        (150, 100, 100)),
-        Label('Building',              17,     17, 'construction',       1,      False,        False,        (70, 70, 70)),
-        Label('Tunnel',                18,     18, 'construction',       1,      False,        False,        (150, 120, 90)),
-        Label('Person',                19,     19, 'human',              3,      True,         False,        (220, 20, 60)),
-        Label('Bicyclist',             20,     20, 'human',              3,      True,         False,        (255, 0, 0)),
-        Label('Motorcyclist',          21,     21, 'human',              3,      True,         False,        (255, 0, 0)),
-        Label('Other Rider',           22,     22, 'human',              3,      True,         False,        (255, 0, 0)),
-        Label('Lane Marking - Crosswalk',23,  23, 'marking',            4,      False,        True,         (200, 128, 128)),
-        Label('Lane Marking - General',24,     24, 'marking',            4,      True,         False,        (255, 255, 255)),
-        Label('Mountain',              25,     25, 'nature',             5,      False,        False,        (64, 170, 64)),
-        Label('Sand',                  26,     26, 'nature',             5,      False,        False,        (230, 160, 50)),
-        Label('Sky',                   27,     27, 'sky',                6,      False,        False,        (70, 130, 180)),
-        Label('Snow',                  28,     28, 'nature',             5,      False,        False,        (190, 255, 255)),
-        Label('Terrain',               29,     29, 'nature',             5,      False,        False,        (152, 251, 152)),
-        Label('Vegetation',            30,     30, 'nature',             5,      False,        False,        (107, 142, 35)),
-        Label('Water',                 31,     31, 'water',              7,      False,        False,        (0, 170, 30)),
-        Label('Banner',                32,     32, 'object',             8,      False,        False,        (255, 220, 0)),
-        Label('Bench',                 33,     33, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Bike Rack',             34,     34, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Billboard',             35,     35, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Catch Basin',           36,     36, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('CCTV Camera',           37,     37, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Fire Hydrant',          38,     38, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Junction Box',          39,     39, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Mailbox',               40,     40, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Manhole',               41,     41, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Phone Booth',           42,     42, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Pothole',               43,     43, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Street Light',          44,     44, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Pole',                  45,     45, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Traffic Sign Frame',    46,     46, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Utility Pole',          47,     47, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Traffic Light',         48,     48, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Traffic Sign (Back)',   49,     49, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Traffic Sign (Front)',  50,     50, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Trash Can',             51,     51, 'object',             8,      False,        False,        (255, 0, 0)),
-        Label('Bicycle',               52,     52, 'vehicle',            9,      True,         False,        (119, 11, 32)),
-        Label('Boat',                  53,     53, 'vehicle',            9,      False,        False,        (0, 0, 142)),
-        Label('Bus',                   54,     54, 'vehicle',            9,      True,         False,        (0, 60, 100)),
-        Label('Car',                   55,     55, 'vehicle',            9,      True,         False,        (0, 0, 142)),
-        Label('Caravan',               56,     56, 'vehicle',            9,      True,         False,        (0, 0, 90)),
-        Label('Motorcycle',            57,     57, 'vehicle',            9,      True,         False,        (0, 0, 230)),
-        Label('On Rails',              58,     58, 'vehicle',            9,      False,        False,        (0, 80, 100)),
-        Label('Other Vehicle',         59,     59, 'vehicle',            9,      True,         False,        (128, 64, 64)),
-        Label('Trailer',               60,     60, 'vehicle',            9,      True,         False,        (0, 0, 110)),
-        Label('Truck',                 61,     61, 'vehicle',            9,      True,         False,        (0, 0, 70)),
-        Label('Wheeled Slow',          62,     62, 'vehicle',            9,      False,        False,        (0, 0, 192)),
-        Label('Car Mount',             63,     63, 'vehicle',            9,      True,         False,        (32, 32, 32)),
-        Label('Ego Vehicle',           64,     64, 'vehicle',            9,      True,         False,        (120, 10, 10))
+        _Label('Bird',                   0,      0, 'animal',             0,      True,         False,        (165, 42, 42)),
+        _Label('Ground Animal',          1,      1, 'animal',             0,      True,         False,        (0, 192, 0)),
+        _Label('Curb',                   2,      2, 'construction',       1,      False,        False,        (196, 196, 196)),
+        _Label('Fence',                  3,      3, 'construction',       1,      False,        False,        (190, 153, 153)),
+        _Label('Guard Rail',             4,      4, 'construction',       1,      False,        False,        (180, 165, 180)),
+        _Label('Barrier',                5,      5, 'construction',       1,      False,        False,        (102, 102, 156)),
+        _Label('Wall',                   6,      6, 'construction',       1,      False,        False,        (102, 102, 156)),
+        _Label('Bike Lane',              7,      7, 'flat',               2,      False,        False,        (128, 64, 255)),
+        _Label('Crosswalk - Plain',      8,      8, 'flat',               2,      False,        False,        (140, 140, 200)),
+        _Label('Curb Cut',               9,      9, 'flat',               2,      False,        False,        (170, 170, 170)),
+        _Label('Parking',               10,     10, 'flat',               2,      False,        False,        (250, 170, 160)),
+        _Label('Pedestrian Area',       11,     11, 'flat',               2,      False,        False,        (96, 96, 96)),
+        _Label('Rail Track',            12,     12, 'flat',               2,      False,        False,        (230, 150, 140)),
+        _Label('Road',                  13,     13, 'flat',               2,      False,        False,        (128, 64, 128)),
+        _Label('Service Lane',          14,     14, 'flat',               2,      False,        False,        (110, 110, 110)),
+        _Label('Sidewalk',              15,     15, 'flat',               2,      False,        False,        (244, 35, 232)),
+        _Label('Bridge',                16,     16, 'construction',       1,      False,        False,        (150, 100, 100)),
+        _Label('Building',              17,     17, 'construction',       1,      False,        False,        (70, 70, 70)),
+        _Label('Tunnel',                18,     18, 'construction',       1,      False,        False,        (150, 120, 90)),
+        _Label('Person',                19,     19, 'human',              3,      True,         False,        (220, 20, 60)),
+        _Label('Bicyclist',             20,     20, 'human',              3,      True,         False,        (255, 0, 0)),
+        _Label('Motorcyclist',          21,     21, 'human',              3,      True,         False,        (255, 0, 0)),
+        _Label('Other Rider',           22,     22, 'human',              3,      True,         False,        (255, 0, 0)),
+        _Label('Lane Marking - Crosswalk',23,  23, 'marking',            4,      False,        True,         (200, 128, 128)),
+        _Label('Lane Marking - General',24,     24, 'marking',            4,      True,         False,        (255, 255, 255)),
+        _Label('Mountain',              25,     25, 'nature',             5,      False,        False,        (64, 170, 64)),
+        _Label('Sand',                  26,     26, 'nature',             5,      False,        False,        (230, 160, 50)),
+        _Label('Sky',                   27,     27, 'sky',                6,      False,        False,        (70, 130, 180)),
+        _Label('Snow',                  28,     28, 'nature',             5,      False,        False,        (190, 255, 255)),
+        _Label('Terrain',               29,     29, 'nature',             5,      False,        False,        (152, 251, 152)),
+        _Label('Vegetation',            30,     30, 'nature',             5,      False,        False,        (107, 142, 35)),
+        _Label('Water',                 31,     31, 'water',              7,      False,        False,        (0, 170, 30)),
+        _Label('Banner',                32,     32, 'object',             8,      False,        False,        (255, 220, 0)),
+        _Label('Bench',                 33,     33, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Bike Rack',             34,     34, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Billboard',             35,     35, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Catch Basin',           36,     36, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('CCTV Camera',           37,     37, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Fire Hydrant',          38,     38, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Junction Box',          39,     39, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Mailbox',               40,     40, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Manhole',               41,     41, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Phone Booth',           42,     42, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Pothole',               43,     43, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Street Light',          44,     44, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Pole',                  45,     45, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Traffic Sign Frame',    46,     46, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Utility Pole',          47,     47, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Traffic Light',         48,     48, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Traffic Sign (Back)',   49,     49, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Traffic Sign (Front)',  50,     50, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Trash Can',             51,     51, 'object',             8,      False,        False,        (255, 0, 0)),
+        _Label('Bicycle',               52,     52, 'vehicle',            9,      True,         False,        (119, 11, 32)),
+        _Label('Boat',                  53,     53, 'vehicle',            9,      False,        False,        (0, 0, 142)),
+        _Label('Bus',                   54,     54, 'vehicle',            9,      True,         False,        (0, 60, 100)),
+        _Label('Car',                   55,     55, 'vehicle',            9,      True,         False,        (0, 0, 142)),
+        _Label('Caravan',               56,     56, 'vehicle',            9,      True,         False,        (0, 0, 90)),
+        _Label('Motorcycle',            57,     57, 'vehicle',            9,      True,         False,        (0, 0, 230)),
+        _Label('On Rails',              58,     58, 'vehicle',            9,      False,        False,        (0, 80, 100)),
+        _Label('Other Vehicle',         59,     59, 'vehicle',            9,      True,         False,        (128, 64, 64)),
+        _Label('Trailer',               60,     60, 'vehicle',            9,      True,         False,        (0, 0, 110)),
+        _Label('Truck',                 61,     61, 'vehicle',            9,      True,         False,        (0, 0, 70)),
+        _Label('Wheeled Slow',          62,     62, 'vehicle',            9,      False,        False,        (0, 0, 192)),
+        _Label('Car Mount',             63,     63, 'vehicle',            9,      True,         False,        (32, 32, 32)),
+        _Label('Ego Vehicle',           64,     64, 'vehicle',            9,      True,         False,        (120, 10, 10))
     ]
     return labels
 
-def get_resized_dimensions(width: int, height: int, max_size: int = 2048) -> Tuple[int, int]:
+def _get_resized_dimensions(width: int, height: int, max_size: int = 2048) -> Tuple[int, int]:
     """
     Calculate the new dimensions of an image to maintain aspect ratio.
     Returns original dimensions if both are less than max_size.
@@ -211,7 +211,7 @@ class ImageDataset(Dataset):
             raise ValueError(f"Unable to read image at {image_file}")
         
         original_height, original_width = img.shape[:2]
-        new_width, new_height = get_resized_dimensions(original_width, original_height, self.max_size)
+        new_width, new_height = _get_resized_dimensions(original_width, original_height, self.max_size)
         
         # Resize image if necessary
         if (original_width, original_height) != (new_width, new_height):
@@ -237,6 +237,8 @@ class ImageDataset(Dataset):
         return list(image_files), list(images), list(original_img_shape)
 
 class Segmenter:
+    """A class for performing semantic and panoptic segmentation on images.
+    """
     def __init__(self, dataset="cityscapes", task = "semantic", device = None):
         """
         Initialize the Segmenter with a model and dataset.
@@ -295,9 +297,9 @@ class Segmenter:
             np.ndarray: A color map.
         """
         if dataset == "cityscapes":
-            labels = create_cityscapes_label_colormap()
+            labels = _create_cityscapes_label_colormap()
         elif dataset == "mapillary":
-            labels = create_mapillary_vistas_label_colormap()
+            labels = _create_mapillary_vistas_label_colormap()
         else:
             raise ValueError(f"Unknown dataset: {dataset}")
 
@@ -321,12 +323,12 @@ class Segmenter:
             dataset (str): The name of the dataset.
 
         Returns:
-            Dict[Tuple, Label]: A dictionary mapping colors to labels.
+            Dict[Tuple, _Label]: A dictionary mapping colors to labels.
         """
         if dataset == "cityscapes":
-            labels = create_cityscapes_label_colormap()
+            labels = _create_cityscapes_label_colormap()
         elif dataset == "mapillary":
-            labels = create_mapillary_vistas_label_colormap()
+            labels = _create_mapillary_vistas_label_colormap()
         else:
             raise ValueError(f"Unknown dataset: {dataset}")
 
@@ -339,9 +341,9 @@ class Segmenter:
 
     def _create_id_to_name_map(self, dataset):
         if dataset == "cityscapes":
-            labels = create_cityscapes_label_colormap()
+            labels = _create_cityscapes_label_colormap()
         elif dataset == "mapillary":
-            labels = create_mapillary_vistas_label_colormap()
+            labels = _create_mapillary_vistas_label_colormap()
         return {label.trainId: label.name for label in labels}
     
     def _get_device(self, device) -> torch.device:
@@ -406,7 +408,7 @@ class Segmenter:
         Returns:
             list: List of panoptic segmentation outputs.
         """
-        inputs = self.processor(images=images, task_inputs=["panoptic"], return_tensors="pt").to(self.model.device)
+        inputs = self.processor(images=images, return_tensors="pt").to(self.model.device)
         outputs = self.model(**inputs)
         return self.processor.post_process_panoptic_segmentation(outputs, target_sizes=original_img_shape, label_ids_to_fuse = set([]))
 
@@ -586,28 +588,58 @@ class Segmenter:
     # Modify the segment method inside the Segmenter class
     def segment(self, dir_input: Union[str, Path], 
                 dir_image_output: Union[str, Path, None] = None, 
-                dir_segmentation_summary_output: Union[str, Path, None] = None, 
+                dir_summary_output: Union[str, Path, None] = None, 
                 batch_size=1, 
-                save_image_options = "segmented_image blend_image", 
-                pixel_ratio_save_format = "json csv",
-                csv_format = "long", # "long" or "wide"
+                save_image_options="segmented_image blend_image", 
+                pixel_ratio_save_format="json csv",
+                csv_format="long",  # "long" or "wide"
                 max_workers: Union[int, None] = None):
-        # make sure that at least one of dir_image_output and dir_segmentation_summary_output is not None
-        if (dir_image_output is None) & (dir_segmentation_summary_output is None):
-            raise ValueError("At least one of dir_image_output and dir_segmentation_summary_output must not be None.")
+        """
+        Processes a batch of images for segmentation, saves the segmented images and summary statistics.
+
+        This method handles the processing of images for segmentation, managing input/output directories,
+        saving options, and parallel processing settings. The method requires specifying an input directory
+        or a path to a single image and supports optional saving of output images and segmentation summaries.
         
-        # skip if there's pixel_ratio.json and/or pixel_ratios.csv in dir_segmentation_summary_output, depending on pixel_ratio_save_format
-        if dir_segmentation_summary_output is not None:
+        Parameters:
+            dir_input (Union[str, Path]): Path to the directory containing images or a single image file.
+            dir_image_output (Union[str, Path, None], optional): Output directory path where segmented images 
+                are saved. Defaults to None.
+            dir_summary_output (Union[str, Path, None], optional): Output directory path where 
+                segmentation summary files are saved. Defaults to None.
+            batch_size (int, optional): Number of images to process in each batch. Defaults to 1.
+            save_image_options (str, optional): Specifies the types of images to save, options include 
+                "segmented_image" and "blend_image". Defaults to "segmented_image blend_image".
+            pixel_ratio_save_format (str, optional): Format to save pixel ratios, options include "json" and "csv". 
+                Defaults to "json csv".
+            csv_format (str, optional): Specifies the format of the CSV output as either "long" or "wide". 
+                Defaults to "long".
+            max_workers (Union[int, None], optional): Maximum number of worker threads for parallel processing. 
+                Defaults to None, which lets the system decide.
+
+        Raises:
+            ValueError: If neither `dir_image_output` nor `dir_summary_output` is specified.
+            ValueError: If `dir_input` is neither a directory nor a file path.
+
+        Returns:
+            None: The method does not return any value but saves the processed results to specified directories.
+        """
+        # make sure that at least one of dir_image_output and dir_summary_output is not None
+        if (dir_image_output is None) & (dir_summary_output is None):
+            raise ValueError("At least one of dir_image_output and dir_summary_output must not be None.")
+        
+        # skip if there's pixel_ratio.json and/or pixel_ratios.csv in dir_summary_output, depending on pixel_ratio_save_format
+        if dir_summary_output is not None:
             if "json" in pixel_ratio_save_format and "csv" in pixel_ratio_save_format:
-                if (Path(dir_segmentation_summary_output) / 'pixel_ratios.json').exists() and (Path(dir_segmentation_summary_output) / 'pixel_ratios.csv').exists():
+                if (Path(dir_summary_output) / 'pixel_ratios.json').exists() and (Path(dir_summary_output) / 'pixel_ratios.csv').exists():
                     print("Segmentation summary already exists. Skipping segmentation.")
                     return
             elif "json" in pixel_ratio_save_format:
-                if (Path(dir_segmentation_summary_output) / 'pixel_ratios.json').exists():
+                if (Path(dir_summary_output) / 'pixel_ratios.json').exists():
                     print("Segmentation summary already exists. Skipping segmentation.")
                     return
             elif "csv" in pixel_ratio_save_format:
-                if (Path(dir_segmentation_summary_output) / 'pixel_ratios.csv').exists():
+                if (Path(dir_summary_output) / 'pixel_ratios.csv').exists():
                     print("Segmentation summary already exists. Skipping segmentation.")
                     return
         # save_image_options as a property of the class
@@ -624,11 +656,11 @@ class Segmenter:
             # get a list of .png files and _blend.png files in the output directory and get the file names as a set
             completed_image_files.update([str(Path(f).stem).replace("_blend", "").replace("_colored_segmented", "") for f in dir_image_output.glob('*.png')])
                         
-        if dir_segmentation_summary_output is not None:
-            dir_segmentation_summary_output = Path(dir_segmentation_summary_output)
-            dir_segmentation_summary_output.mkdir(parents=True, exist_ok=True)
+        if dir_summary_output is not None:
+            dir_summary_output = Path(dir_summary_output)
+            dir_summary_output.mkdir(parents=True, exist_ok=True)
             # Create a new directory called "pixel_ratio_checkpoints"
-            dir_cache_segmentation_summary = dir_segmentation_summary_output / 'pixel_ratio_checkpoints'
+            dir_cache_segmentation_summary = dir_summary_output / 'pixel_ratio_checkpoints'
             dir_cache_segmentation_summary.mkdir(parents=True, exist_ok=True)
 
             # Load all the checkpoint json files
@@ -692,7 +724,7 @@ class Segmenter:
                 for completed_future in tqdm(as_completed(futures), total=len(futures), desc=f"Processing outer batch #{i+1}"):
                     completed_future.result()
 
-                if dir_segmentation_summary_output is not None:
+                if dir_summary_output is not None:
                     # Save checkpoint for each outer batch
                     with open(f'{dir_cache_segmentation_summary}/checkpoint_batch_{checkpoint_start_index+i+1}_pixel_ratio.json', 'w') as f:
                         json.dump(pixel_ratio_dict, f)
@@ -700,7 +732,7 @@ class Segmenter:
                     if self.task == "panoptic":
                         with open(f'{dir_cache_segmentation_summary}/checkpoint_batch_{checkpoint_start_index+i+1}_panoptic.json', 'w') as f:
                             json.dump(panoptic_dict, f)
-        if dir_segmentation_summary_output is not None:
+        if dir_summary_output is not None:
             # Merge all checkpoints into a single pixel_ratio_dict
             pixel_ratio_dict = defaultdict(dict)
             for checkpoint in glob.glob(str(dir_cache_segmentation_summary / '*_pixel_ratio.json')):
@@ -719,31 +751,31 @@ class Segmenter:
                             panoptic_dict[key] = value
                             
             # Merge existing pixel_ratios.json with the new pixel_ratio_dict
-            if (dir_segmentation_summary_output / 'pixel_ratios.json').exists():
-                with open(dir_segmentation_summary_output / 'pixel_ratios.json', 'r') as f:
+            if (dir_summary_output / 'pixel_ratios.json').exists():
+                with open(dir_summary_output / 'pixel_ratios.json', 'r') as f:
                     existing_pixel_ratio_dict = json.load(f)
                     for key, value in existing_pixel_ratio_dict.items():
                         pixel_ratio_dict[key] = value
                         
             # Merge existing label_counts.json with the new panoptic_dict
             if self.task == "panoptic":
-                if (dir_segmentation_summary_output / 'label_counts.json').exists():
-                    with open(dir_segmentation_summary_output / 'label_counts.json', 'r') as f:
+                if (dir_summary_output / 'label_counts.json').exists():
+                    with open(dir_summary_output / 'label_counts.json', 'r') as f:
                         existing_panoptic_dict = json.load(f)
                         for key, value in existing_panoptic_dict.items():
                             panoptic_dict[key] = value
 
             # Save pixel_ratio_dict as a JSON or CSV file
             if "json" in pixel_ratio_save_format:
-                with open(dir_segmentation_summary_output / "pixel_ratios.json", "w") as f:
+                with open(dir_summary_output / "pixel_ratios.json", "w") as f:
                     json.dump(pixel_ratio_dict, f)
                 if self.task == "panoptic":
-                    with open(dir_segmentation_summary_output / "label_counts.json", "w") as f:
+                    with open(dir_summary_output / "label_counts.json", "w") as f:
                         json.dump(panoptic_dict, f)
             if "csv" in pixel_ratio_save_format:
-                self._save_as_csv(pixel_ratio_dict, dir_segmentation_summary_output, "pixel_ratios", csv_format)
+                self._save_as_csv(pixel_ratio_dict, dir_summary_output, "pixel_ratios", csv_format)
                 if self.task == "panoptic":
-                    self._save_as_csv(panoptic_dict, dir_segmentation_summary_output, "label_counts", csv_format)
+                    self._save_as_csv(panoptic_dict, dir_summary_output, "label_counts", csv_format)
                     
             # Delete the "pixel_ratio_checkpoints" directory
             shutil.rmtree(dir_cache_segmentation_summary, ignore_errors=True)

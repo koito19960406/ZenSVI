@@ -4,8 +4,19 @@ import math
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
+from typing import Union
 
-def xyz2lonlat(xyz):
+
+def _xyz2lonlat(xyz):
+    """
+    Converts 3D Cartesian coordinates (x, y, z) to geographic coordinates (longitude, latitude).
+
+    Args:
+        xyz (np.ndarray): An array of shape (..., 3) containing 3D Cartesian coordinates.
+
+    Returns:
+        np.ndarray: An array of shape (..., 2) containing longitude and latitude coordinates.
+    """
     atan2 = np.arctan2
     asin = np.arcsin
 
@@ -23,7 +34,17 @@ def xyz2lonlat(xyz):
     return out
 
 
-def lonlat2XY(lonlat, shape):
+def _lonlat2XY(lonlat, shape):
+    """
+    Converts geographic coordinates (longitude, latitude) to pixel coordinates (X, Y) based on an image shape.
+
+    Args:
+        lonlat (np.ndarray): An array of shape (..., 2) containing longitude and latitude coordinates.
+        shape (tuple): A tuple (height, width) representing the shape of the image.
+
+    Returns:
+        np.ndarray: An array of shape (..., 2) containing pixel coordinates.
+    """
     X = (lonlat[..., 0:1] / (2 * np.pi) + 0.5) * (shape[1] - 1)
     Y = (lonlat[..., 1:] / (np.pi) + 0.5) * (shape[0] - 1)
     lst = [X, Y]
@@ -33,6 +54,17 @@ def lonlat2XY(lonlat, shape):
 
 
 class ImageTransformer:
+    """
+    Transforms images by applying various projections such as fisheye and perspective adjustments.
+
+    Args:
+        dir_input (Union[str, Path]): Input directory containing images.
+        dir_output (Union[str, Path]): Output directory where transformed images will be saved.
+
+    Raises:
+        TypeError: If the input or output directories are not specified as string or Path objects.
+    """
+
     def __init__(self, dir_input, dir_output):
         if isinstance(dir_input, str):
             dir_input = Path(dir_input)
@@ -44,9 +76,14 @@ class ImageTransformer:
             raise TypeError("dir_output must be a str or Path object.")
         self._dir_input = dir_input
         self._dir_output = dir_output
-    
+
     @property
     def dir_input(self):
+        """Property for the input directory.
+
+        :return: dir_input
+        :rtype: Path
+        """
         return self._dir_input
 
     @dir_input.setter
@@ -59,6 +96,11 @@ class ImageTransformer:
 
     @property
     def dir_output(self):
+        """Property for the output directory.
+
+        :return: dir_output
+        :rtype: Path
+        """
         return self._dir_output
 
     @dir_output.setter
@@ -69,19 +111,33 @@ class ImageTransformer:
             raise TypeError("dir_output must be a str or Path object.")
         self._dir_output = value
 
-    def get_perspective(self, img, FOV, THETA, PHI, height, width):
-        #
-        # THETA is left/right angle, PHI is up/down angle, both in degree
-        #
+    def perspective(self, img, FOV, THETA, PHI, height, width):
+        """
+        Transforms an image to simulate a perspective view from specific angles.
+
+        Args:
+            img (np.ndarray): Source image to transform.
+            FOV (float): Field of view in degrees.
+            THETA (float): Rotation around the vertical axis in degrees.
+            PHI (float): Tilt angle in degrees.
+            height (int): Height of the output image.
+            width (int): Width of the output image.
+
+        Returns:
+            np.ndarray: Transformed image.
+        """
 
         f = 0.5 * width * 1 / np.tan(0.5 * FOV / 180.0 * np.pi)
         cx = (width - 1) / 2.0
         cy = (height - 1) / 2.0
-        K = np.array([
-            [f, 0, cx],
-            [0, f, cy],
-            [0, 0, 1],
-        ], np.float32)
+        K = np.array(
+            [
+                [f, 0, cx],
+                [0, f, cy],
+                [0, 0, 1],
+            ],
+            np.float32,
+        )
         K_inv = np.linalg.inv(K)
 
         x = np.arange(width)
@@ -97,12 +153,24 @@ class ImageTransformer:
         R2, _ = cv2.Rodrigues(np.dot(R1, x_axis) * np.radians(PHI))
         R = R2 @ R1
         xyz = xyz @ R.T
-        lonlat = xyz2lonlat(xyz)
-        XY = lonlat2XY(lonlat, shape=img.shape).astype(np.float32)
-        persp = cv2.remap(img, XY[..., 0], XY[..., 1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP)
+        lonlat = _xyz2lonlat(xyz)
+        XY = _lonlat2XY(lonlat, shape=img.shape).astype(np.float32)
+        persp = cv2.remap(
+            img, XY[..., 0], XY[..., 1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP
+        )
         return persp
-    
+
     def equidistant_fisheye(self, img):
+        """
+        Transforms an image to an equidistant fisheye projection.
+
+        Args:
+            img (np.ndarray): Source image to transform.
+
+        Returns:
+            np.ndarray: Fisheye projected image.
+        """
+        # Implem
         rows, cols, c = img.shape
         R = cols / (2 * math.pi)
         D = int(2 * R)
@@ -114,7 +182,7 @@ class ImageTransformer:
 
         xp = np.floor((theta + np.pi) * cols / (2 * np.pi)).astype(int)
         yp = np.floor(r * rows / R).astype(int)
-        
+
         mask = r < R
 
         new_img = np.zeros((D, D, c), dtype=np.uint8)
@@ -122,8 +190,17 @@ class ImageTransformer:
         new_img[y[mask], x[mask]] = img[yp[mask], xp[mask]]
 
         return new_img
-    
+
     def orthographic_fisheye(self, img):
+        """
+        Transforms an image to an orthographic fisheye projection.
+
+        Args:
+            img (np.ndarray): Source image to transform.
+
+        Returns:
+            np.ndarray: Fisheye projected image.
+        """
         rows, cols, c = img.shape
         R = cols / (2 * math.pi)
         D = int(2 * R)
@@ -135,7 +212,7 @@ class ImageTransformer:
 
         xp = np.floor((theta + np.pi) * cols / (2 * np.pi)).astype(int)
         yp = np.floor((2 / np.pi) * np.arcsin(r / R) * rows).astype(int)
-        
+
         mask = r < R
 
         new_img = np.zeros((D, D, c), dtype=np.uint8)
@@ -145,6 +222,15 @@ class ImageTransformer:
         return new_img
 
     def stereographic_fisheye(self, img):
+        """
+        Transforms an image to a stereographic fisheye projection.
+
+        Args:
+            img (np.ndarray): Source image to transform.
+
+        Returns:
+            np.ndarray: Fisheye projected image.
+        """
         rows, cols, c = img.shape
         R = cols / (2 * math.pi)
         D = int(2 * R)
@@ -156,11 +242,11 @@ class ImageTransformer:
 
         xp = np.floor((theta + np.pi) * cols / (2 * np.pi)).astype(int)
         yp = np.floor(2 * np.tan(r / (2 * R)) * rows).astype(int)
-        
+
         # Clip the values of yp and xp to be within the valid range
-        yp = np.clip(yp, 0, rows-1)
-        xp = np.clip(xp, 0, cols-1)
-        
+        yp = np.clip(yp, 0, rows - 1)
+        xp = np.clip(xp, 0, cols - 1)
+
         mask = r < R
 
         new_img = np.zeros((D, D, c), dtype=np.uint8)
@@ -170,6 +256,15 @@ class ImageTransformer:
         return new_img
 
     def equisolid_fisheye(self, img):
+        """
+        Transforms an image to an equisolid fisheye projection.
+
+        Args:
+            img (np.ndarray): Source image to transform.
+
+        Returns:
+            np.ndarray: Fisheye projected image.
+        """
         rows, cols, c = img.shape
         R = cols / (2 * math.pi)
         D = int(2 * R)
@@ -181,7 +276,7 @@ class ImageTransformer:
 
         xp = np.floor((theta + np.pi) * cols / (2 * np.pi)).astype(int)
         yp = np.floor(2 * np.sin(r / (2 * R)) * rows).astype(int)
-        
+
         mask = r < R
 
         new_img = np.zeros((D, D, c), dtype=np.uint8)
@@ -190,48 +285,70 @@ class ImageTransformer:
 
         return new_img
 
-    def get_fisheye(self, img):
-        rows, cols, c = img.shape
-        R = int(cols / (2 * math.pi))
-        D = R * 2
-        cx = R
-        cy = R
+    def transform_images(
+        self,
+        style_list: str = "perspective equidistant_fisheye orthographic_fisheye stereographic_fisheye equisolid_fisheye",
+        FOV: Union[int, float] = 90,
+        theta: Union[int, float] = 90,
+        phi: Union[int, float] = 0,
+        aspects: tuple = (9, 16),
+        show_size: Union[int, float] = 100,
+    ):
+        """
+        Applies specified transformations to all images in the input directory and saves them in the output directory.
 
-        # Create coordinate grids
-        x, y = np.meshgrid(np.arange(D), np.arange(D))
-        
-        # Compute r and theta in a vectorized way
-        r = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
-        theta = np.arctan2(y - cy, x - cx) % (2 * math.pi)
+        Args:
+            style_list (str): Space-separated list of transformation styles to apply. Valid styles include 'perspective',
+                            'equidistant_fisheye', 'orthographic_fisheye', 'stereographic_fisheye', and 'equisolid_fisheye'.
+            FOV (Union[int, float], optional): Field of view for the 'perspective' style in degrees.
+            theta (Union[int, float], optional): Rotation step for generating multiple perspective images in degrees.
+            phi (Union[int, float], optional): Tilt angle for the 'perspective' style in degrees.
+            aspects (tuple, optional): Aspect ratio of the output images represented as a tuple.
+            show_size (Union[int, float], optional): Base size to calculate the dimensions of the output images.
 
-        # Compute corresponding coordinates in the equirectangular image
-        xp = np.floor(theta / (2 * math.pi) * cols).astype(int)
-        yp = np.floor(r / R * rows).astype(int) - 1
+        Raises:
+            ValueError: If an invalid style is specified in style_list.
 
-        # Create a mask for pixels within the circle
-        mask = r <= R
-
-        # Apply mask to coordinate grids
-        xp = xp[mask]
-        yp = yp[mask]
-
-        # Create new image and fill with white
-        new_img = np.zeros((D, D, c), dtype=np.uint8)
-        new_img.fill(255)
-
-        # Copy pixels from original image to new image
-        new_img[y[mask], x[mask]] = img[yp, xp]
-
-        return new_img
-
-    def transform_images(self, style_list=["perspective", "equidistant_fisheye", "orthographic_fisheye", "stereographic_fisheye", "equisolid_fisheye"], 
-                    FOV = 90, theta = 90, phi = 0, aspects = (9, 16), show_size=100):
+        Notes:
+            This method processes images concurrently, leveraging multi-threading to speed up the transformation tasks. It
+            automatically splits style_list into individual styles and processes each style, creating appropriate subdirectories
+            in the output directory for each style.
+        """
+        # raise an error if the style_list is a list
+        if isinstance(style_list, list):
+            raise ValueError("Please input the correct image style as a string, not a list.")
         # check if there's anything other than "perspective" and "fisheye"
-        if not all(style in ["perspective", "equidistant_fisheye", "orthographic_fisheye", "stereographic_fisheye", "equisolid_fisheye"] for style in style_list):
-            raise ValueError("Please input the correct image style. The correct image style should be 'perspective', 'equidistant_fisheye', 'orthographic_fisheye', 'stereographic_fisheye', or 'equisolid_fisheye'")
+        style_list = style_list.split()
+        if not all(
+            style
+            in [
+                "perspective",
+                "equidistant_fisheye",
+                "orthographic_fisheye",
+                "stereographic_fisheye",
+                "equisolid_fisheye",
+            ]
+            for style in style_list
+        ):
+            raise ValueError(
+                "Please input the correct image style. The correct image style should be 'perspective', 'equidistant_fisheye', 'orthographic_fisheye', 'stereographic_fisheye', or 'equisolid_fisheye'"
+            )
 
         # set image file extensions
-        image_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff', '.tif', '.webp', '.ico', '.jfif', '.heic', '.heif']
+        image_extensions = [
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".bmp",
+            ".gif",
+            ".tiff",
+            ".tif",
+            ".webp",
+            ".ico",
+            ".jfif",
+            ".heic",
+            ".heif",
+        ]
 
         def run(path_input, path_output, show_size, style, theta, aspects, FOV):
             img_raw = cv2.imread(str(path_input), cv2.IMREAD_COLOR)
@@ -239,36 +356,46 @@ class ImageTransformer:
                 if not path_output.exists():
                     img_new = self.equidistant_fisheye(img_raw)
                     cv2.imwrite(str(path_output), img_new)
-            
+
             elif style == "orthographic_fisheye":
                 if not path_output.exists():
                     img_new = self.orthographic_fisheye(img_raw)
                     cv2.imwrite(str(path_output), img_new)
-                
+
             elif style == "stereographic_fisheye":
                 if not path_output.exists():
                     img_new = self.stereographic_fisheye(img_raw)
                     cv2.imwrite(str(path_output), img_new)
-            
+
             elif style == "equisolid_fisheye":
                 if not path_output.exists():
                     img_new = self.equisolid_fisheye(img_raw)
                     cv2.imwrite(str(path_output), img_new)
 
             elif style == "perspective":
-                num_images = 360 // theta  # Calculate the number of images based on theta
-                thetas = [theta * i for i in range(num_images)]  # Calculate thetas based on step size
+                num_images = (
+                    360 // theta
+                )  # Calculate the number of images based on theta
+                thetas = [
+                    theta * i for i in range(num_images)
+                ]  # Calculate thetas based on step size
 
                 for theta in thetas:
                     height = int(aspects[0] * show_size)
                     width = int(aspects[1] * show_size)
-                    aspect_name = '%s--%s' % (aspects[0], aspects[1])
-                    path_output_raw = path_output.with_name(f'{path_output.stem}_Direction_{theta}_FOV_{FOV}_aspect_{aspect_name}_raw.png')
-                    if not path_output_raw.exists(): 
-                        img_new = self.get_perspective(img_raw, FOV, theta, phi, height, width)
+                    aspect_name = "%s--%s" % (aspects[0], aspects[1])
+                    path_output_raw = path_output.with_name(
+                        f"{path_output.stem}_Direction_{theta}_FOV_{FOV}_aspect_{aspect_name}_raw.png"
+                    )
+                    if not path_output_raw.exists():
+                        img_new = self.perspective(
+                            img_raw, FOV, theta, phi, height, width
+                        )
                         cv2.imwrite(str(path_output_raw), img_new)
 
-        def process_image(dir_input, dir_output, name, show_size, style, theta, aspects, FOV):
+        def process_image(
+            dir_input, dir_output, name, show_size, style, theta, aspects, FOV
+        ):
             path_input = dir_input / name.name
             path_output = dir_output / (name.stem + ".png")
             return path_input, path_output, show_size, style, theta, aspects, FOV
@@ -278,7 +405,26 @@ class ImageTransformer:
             dir_output.mkdir(parents=True, exist_ok=True)
 
             with ThreadPoolExecutor() as executor:
-                futures = [executor.submit(run, *process_image(self.dir_input, dir_output, name, show_size, current_style, theta, aspects, FOV)) \
-                    for name in self.dir_input.rglob('*') if name.suffix.lower() in image_extensions]
-                for future in tqdm(as_completed(futures), total=len(futures), desc=f"Converting to {current_style}"):
+                futures = [
+                    executor.submit(
+                        run,
+                        *process_image(
+                            self.dir_input,
+                            dir_output,
+                            name,
+                            show_size,
+                            current_style,
+                            theta,
+                            aspects,
+                            FOV,
+                        ),
+                    )
+                    for name in self.dir_input.rglob("*")
+                    if name.suffix.lower() in image_extensions
+                ]
+                for future in tqdm(
+                    as_completed(futures),
+                    total=len(futures),
+                    desc=f"Converting to {current_style}",
+                ):
                     future.result()

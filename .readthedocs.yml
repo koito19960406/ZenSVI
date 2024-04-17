@@ -1,14 +1,33 @@
+# .readthedocs.yaml
+# Read the Docs configuration file
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+
 # Required
 version: 2
 
-# Image to use
+# Set the OS, Python version and other tools you might need
 build:
-  image: testing
-
-# Configuration
+  os: ubuntu-22.04
+  tools:
+    python: "3.9"
+  jobs:
+    post_create_environment:
+      # Install poetry
+      # https://python-poetry.org/docs/#installing-manually
+      - pip install poetry
+      # Tell poetry to not use a virtual environment
+      - poetry config virtualenvs.create false
+    post_install:
+      # Install dependencies with 'docs' dependency group
+      # https://python-poetry.org/docs/managing-dependencies/#dependency-groups
+      - poetry install
+    
 python:
-  version: 3.9
   install:
-    - requirements: docs/requirements.txt
     - method: pip
       path: .
+    - requirements: docs/requirements.txt
+
+# Build documentation in the "docs/" directory with Sphinx
+sphinx:
+  configuration: docs/conf.py
