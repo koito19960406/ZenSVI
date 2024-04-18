@@ -111,6 +111,7 @@ def plot_map(
     title: str = None,
     legend_title: str = None,
     basemap_source: Any = ctx.providers.CartoDB.PositronNoLabels,
+    figure_size: Tuple[int, int] = (10, 10),
     dpi: int = 300,
     font_size: int = 30,
     dark_mode: bool = False,
@@ -149,7 +150,7 @@ def plot_map(
     # Load path_pid with longitude and latitude
     pid_df = pd.read_csv(path_pid)
 
-    fig, ax = plt.subplots(figsize=(10, 10))
+    fig, ax = plt.subplots(figsize=figure_size)
     if dark_mode:
         plt.style.use("dark_background")
     gdf = None

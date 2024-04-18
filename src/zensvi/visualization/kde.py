@@ -16,6 +16,7 @@ def plot_kde(
     legend: bool = True,
     title: str = None,
     legend_title: str = None,
+    fig_size: Tuple[int, int] = (10, 10),
     dpi: int = 300,
     font_size: int = 30,
     dark_mode: bool = False,
@@ -66,7 +67,7 @@ def plot_kde(
     df = df[columns]
 
     # Create plot
-    fig, ax = plt.subplots(figsize=(10, 10))
+    fig, ax = plt.subplots(figsize=fig_size)
 
     if dark_mode:
         plt.style.use("dark_background")
