@@ -316,7 +316,9 @@ class ImageTransformer:
         """
         # raise an error if the style_list is a list
         if isinstance(style_list, list):
-            raise ValueError("Please input the correct image style as a string, not a list.")
+            raise ValueError(
+                "Please input the correct image style as a string, not a list."
+            )
         # check if there's anything other than "perspective" and "fisheye"
         style_list = style_list.split()
         if not all(
@@ -400,6 +402,23 @@ class ImageTransformer:
             path_output = dir_output / (name.stem + ".png")
             return path_input, path_output, show_size, style, theta, aspects, FOV
 
+        # check if self.dir_input is a directory. If not, then check if it's str or Path, if so, then store in a list
+        if not self.dir_input.is_dir():
+            if (
+                isinstance(self.dir_input, str) or isinstance(self.dir_input, Path)
+            ) and ("." + str(self.dir_input).split(".")[-1] in image_extensions):
+                dir_input = [self.dir_input]
+                # get parent directory of self.dir_input
+                self.dir_input = Path(self.dir_input).parent
+            else:
+                raise ValueError("Please input a valid directory path.")
+        else:
+            dir_input = [
+                name
+                for name in self.dir_input.rglob("*")
+                if name.suffix.lower() in image_extensions
+            ]
+
         for current_style in style_list:
             dir_output = Path(self.dir_output) / current_style
             dir_output.mkdir(parents=True, exist_ok=True)
@@ -419,8 +438,7 @@ class ImageTransformer:
                             FOV,
                         ),
                     )
-                    for name in self.dir_input.rglob("*")
-                    if name.suffix.lower() in image_extensions
+                    for name in dir_input
                 ]
                 for future in tqdm(
                     as_completed(futures),
