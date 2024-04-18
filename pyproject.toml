@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "zensvi"
-version = "0.10.3"
+version = "0.10.4"
 description = "This package handles downloading, cleaning, analyzing street view imagery in a one-stop and zen manner."
 authors = ["koito19960406"]
 license = "CC BY-SA 4.0"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 Pillow = ">=10.0.0"
 geopandas = ">=0.10.0"
 geopy = "^2.2.0"
@@ -58,6 +58,9 @@ turfpy = "^0.0.7"
 geojson = "^2.5.0"
 streetlevel = "^0"
 seaborn = "^0.13.2"
+aiohttp = "^3.9.5"
+h3 = "^3.7.7"
+contextily = "^1.6.0"
 
 [tool.poetry.dev-dependencies]
 

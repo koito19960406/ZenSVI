@@ -101,7 +101,7 @@ def plot_map(
     path_pid: Union[str, Path],
     pid_column: str = "panoid",
     dir_input: Union[str, Path] = None,
-    csv_file_pattern: str = None,
+    csv_file_pattern: str = "*.csv",
     variable_name: str = None,
     plot_type: str = "point",
     path_output: Union[str, Path] = None,

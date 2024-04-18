@@ -541,7 +541,7 @@ class MLYDownloader(BaseDownloader):
                 )
         else:
             # check if the path_pid exists
-            if path_pid.exists():
+            if Path(path_pid).exists():
                 print("The following csv file will be used: {}".format(path_pid))
             else:
                 self._get_pids(

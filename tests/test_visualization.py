@@ -12,9 +12,9 @@ class TestVisualization(unittest.TestCase):
         self.output.mkdir(parents=True, exist_ok=True)
         pass
 
-    def tearDown(self):
-        # remove output directory
-        shutil.rmtree(self.output, ignore_errors=True)
+    # def tearDown(self):
+    #     # remove output directory
+    #     shutil.rmtree(self.output, ignore_errors=True)
 
     # skip for now
     # @unittest.skip("skip for now")
@@ -46,7 +46,9 @@ class TestVisualization(unittest.TestCase):
                     dark_mode=False,
                 )
                 # assert True if path_output exists and size is not zero
-                self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
+                self.assertTrue(
+                    Path(path_output).exists() and Path(path_output).stat().st_size > 0
+                )
 
     def test_plot_map_edge_color(self):
         path_pid = "tests/data/input/visualization/gsv_pids.csv"
@@ -71,7 +73,34 @@ class TestVisualization(unittest.TestCase):
             dark_mode=False,
         )
         # assert True if path_output exists and size is not zero
-        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
+        self.assertTrue(
+            Path(path_output).exists() and Path(path_output).stat().st_size > 0
+        )
+
+    def test_plot_map_batch(self):
+        path_pid = "tests/data/input/visualization/mly_pids.csv"
+        dir_input = "tests/data/input/visualization/batch_segmentation"
+        variable_name = "sky"
+        plot_type = "hexagon"
+        path_output = str(self.output / "plot_map_batch.png")
+        fig, ax = visualization.plot_map(
+            path_pid,
+            pid_column="id",
+            dir_input=dir_input,
+            variable_name=variable_name,
+            plot_type=plot_type,
+            path_output=path_output,
+            resolution=10,
+            cmap="viridis",
+            legend=True,
+            title="Test Plot Map",
+            legend_title="Test Legend Title",
+            dark_mode=False,
+        )
+        # assert True if path_output exists and size is not zero
+        self.assertTrue(
+            Path(path_output).exists() and Path(path_output).stat().st_size > 0
+        )
 
     # @unittest.skip("skip for now")
     def test_plot_image(self):
@@ -92,7 +121,9 @@ class TestVisualization(unittest.TestCase):
             random_seed=123,
         )
         # assert True if path_output exists and size is not zero
-        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
+        self.assertTrue(
+            Path(path_output).exists() and Path(path_output).stat().st_size > 0
+        )
 
     # @unittest.skip("skip for now")
     def test_plot_image_image_file_pattern(self):
@@ -112,7 +143,9 @@ class TestVisualization(unittest.TestCase):
             random_seed=123,
         )
         # assert True if path_output exists and size is not zero
-        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
+        self.assertTrue(
+            Path(path_output).exists() and Path(path_output).stat().st_size > 0
+        )
 
     # @unittest.skip("skip for now")
     def test_plot_image_sort_by(self):
@@ -135,7 +168,9 @@ class TestVisualization(unittest.TestCase):
             random_seed=123,
         )
         # assert True if path_output exists and size is not zero
-        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
+        self.assertTrue(
+            Path(path_output).exists() and Path(path_output).stat().st_size > 0
+        )
 
     def test_plot_kde(self):
         path_input = "tests/data/input/visualization/cityscapes_semantic_summary/pixel_ratios.csv"
@@ -160,7 +195,13 @@ class TestVisualization(unittest.TestCase):
 
     def test_plot_kde_long(self):
         path_input = "tests/data/input/visualization/classification/places365/long/summary/results.csv"
-        columns = ["residential_neighborhood", "highway", "field_road", "hospital", "building_facade"]
+        columns = [
+            "residential_neighborhood",
+            "highway",
+            "field_road",
+            "hospital",
+            "building_facade",
+        ]
         path_output = str(self.output / "plot_kde_long.png")
         fig, ax = visualization.plot_kde(
             path_input,
@@ -178,6 +219,28 @@ class TestVisualization(unittest.TestCase):
         self.assertTrue(
             Path(path_output).exists() and Path(path_output).stat().st_size > 0
         )
+        
+    def test_plot_kde_batch(self):
+        dir_input = "tests/data/input/visualization/batch_segmentation"
+        columns = ["sky", "building", "vegetation", "road", "sidewalk"]
+        path_output = str(self.output / "plot_kde_batch.png")
+        fig, ax = visualization.plot_kde(
+            dir_input,
+            columns,
+            path_output=path_output,
+            palette="twilight",
+            legend=True,
+            title="KDE Plot",
+            legend_title="View Factor",
+            dark_mode=False,
+            font_size=30,
+            clip=(0, 1),
+        )
+        # assert True if path_output exists and size is not zero
+        self.assertTrue(
+            Path(path_output).exists() and Path(path_output).stat().st_size > 0
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

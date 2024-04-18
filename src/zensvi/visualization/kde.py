@@ -3,12 +3,15 @@ from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import glob
+
 from .font_property import _get_font_properties
 
 
 def plot_kde(
-    path_input: Union[str, Path],
+    dir_input: Union[str, Path],
     columns: List[str],
+    csv_file_pattern: str = "*.csv",
     path_output: Union[str, Path] = None,
     legend: bool = True,
     title: str = None,
@@ -39,8 +42,14 @@ def plot_kde(
     prop_title, prop, prop_legend = _get_font_properties(font_size)
     sns.set_theme(context="notebook", style="whitegrid", font=prop.get_family())
 
-    # Load data
-    df = pd.read_csv(path_input)
+    # list of csv files
+    if Path(dir_input).is_file():
+        csv_files = [dir_input]
+    else:
+        dir_input = Path(dir_input)
+        csv_files = glob.glob(str(dir_input / "**" / csv_file_pattern), recursive=True)
+    df_list = [pd.read_csv(file) for file in csv_files]
+    df = pd.concat(df_list, ignore_index=True)
 
     # make sure the df is wide format by checking duplicates in filename_key
     if df["filename_key"].duplicated().any():
