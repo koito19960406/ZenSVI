@@ -27,7 +27,7 @@ def plot_image(
     subplot_width: int = 3,
     subplot_height: int = 3,
     dir_csv_input: Union[str, Path] = None,
-    csv_file_pattern: str = None,
+    csv_file_pattern: str = "*.csv",
     image_file_pattern: str = None,
     sort_by: str = "random",
     ascending: bool = True,
@@ -120,6 +120,7 @@ def plot_image(
         else:
             image_file_names = {file.stem: file for file in image_files}
         # map image file names to the DataFrame by using "filename_key" column and image_file_names keys
+        df["filename_key"] = df["filename_key"].astype(str)
         df["image_full_path"] = df["filename_key"].map(image_file_names)
         # Remove rows with missing image file paths
         df_filtered = df.dropna(subset=["image_full_path"])

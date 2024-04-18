@@ -172,6 +172,28 @@ class TestVisualization(unittest.TestCase):
             Path(path_output).exists() and Path(path_output).stat().st_size > 0
         )
 
+    def test_plot_image_batch(self):
+        dir_image_input = "tests/data/input/visualization/batch_images"
+        path_output = str(self.output / "plot_image_batch.png")
+        fig, ax = visualization.plot_image(
+            dir_image_input,
+            4,
+            5,
+            dir_csv_input="tests/data/input/visualization/batch_segmentation",
+            csv_file_pattern="pixel_ratios.csv",
+            sort_by="vegetation",
+            subplot_width=2,
+            subplot_height=1,
+            title="Image Grid",
+            path_output=path_output,
+            dark_mode=False,
+            random_seed=123,
+        )
+        # assert True if path_output exists and size is not zero
+        self.assertTrue(
+            Path(path_output).exists() and Path(path_output).stat().st_size > 0
+        )
+        
     def test_plot_kde(self):
         path_input = "tests/data/input/visualization/cityscapes_semantic_summary/pixel_ratios.csv"
         columns = ["sky", "building", "vegetation", "road", "sidewalk"]
