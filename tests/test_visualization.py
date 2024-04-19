@@ -1,6 +1,7 @@
 from zensvi import visualization
 import unittest
 from pathlib import Path
+import pandas as pd
 
 # import shutil
 
@@ -193,7 +194,7 @@ class TestVisualization(unittest.TestCase):
         self.assertTrue(
             Path(path_output).exists() and Path(path_output).stat().st_size > 0
         )
-        
+
     def test_plot_kde(self):
         path_input = "tests/data/input/visualization/cityscapes_semantic_summary/pixel_ratios.csv"
         columns = ["sky", "building", "vegetation", "road", "sidewalk"]
@@ -241,7 +242,7 @@ class TestVisualization(unittest.TestCase):
         self.assertTrue(
             Path(path_output).exists() and Path(path_output).stat().st_size > 0
         )
-        
+
     def test_plot_kde_batch(self):
         dir_input = "tests/data/input/visualization/batch_segmentation"
         columns = ["sky", "building", "vegetation", "road", "sidewalk"]
@@ -257,6 +258,52 @@ class TestVisualization(unittest.TestCase):
             dark_mode=False,
             font_size=30,
             clip=(0, 1),
+        )
+        # assert True if path_output exists and size is not zero
+        self.assertTrue(
+            Path(path_output).exists() and Path(path_output).stat().st_size > 0
+        )
+
+    def test_map_year(self):
+        # load mly_pids and calculate the year from captured_at and save to csv with id, year, lat, lon
+        mly_pids = pd.read_csv("tests/data/input/visualization/mly_pids.csv")
+        # Convert 'captured_at' from milliseconds to datetime, then extract the year
+        mly_pids["year"] = pd.to_datetime(
+            mly_pids["captured_at"], unit="ms"
+        ).dt.year.astype(int)
+        mly_pids = mly_pids[["id", "year", "lat", "lon"]]
+        mly_pids.to_csv(str(self.output / "mly_pids_year.csv"), index=False)
+        path_output = str(self.output / "plot_map_year.png")
+        # plot map of mly_pids with plot_map
+        visualization.plot_map(
+            str(self.output / "mly_pids_year.csv"),
+            pid_column="id",
+            plot_type="point",
+            variable_name="year",
+            path_output=path_output,
+            title="Mapillary images in the study area",
+            legend_title="Year of collection",
+            markersize=1,
+        )
+        # assert True if path_output exists and size is not zero
+        self.assertTrue(
+            Path(path_output).exists() and Path(path_output).stat().st_size > 0
+        )
+
+    def test_plot_hist(self):
+        dir_input = "tests/data/input/visualization/cityscapes_semantic_summary"
+        columns = ["sky", "building", "vegetation", "road", "sidewalk"]
+        path_output = str(self.output / "plot_hist.png")
+        fig, ax = visualization.plot_hist(
+            dir_input,
+            columns,
+            path_output=path_output,
+            palette="twilight",
+            legend=True,
+            title="Histogram",
+            legend_title="View Factor",
+            dark_mode=False,
+            font_size=30,
         )
         # assert True if path_output exists and size is not zero
         self.assertTrue(
