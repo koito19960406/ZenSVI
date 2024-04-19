@@ -175,6 +175,19 @@ def plot_map(
                 gdf, resolution=resolution, variable_name=variable_name
             )
         gdf.plot(ax=ax, column=variable_name, cmap=cmap, **kwargs)
+    elif variable_name:
+        gdf = gpd.GeoDataFrame(
+            pid_df, geometry=gpd.points_from_xy(pid_df.lon, pid_df.lat), crs="EPSG:4326"
+        )
+        gdf = gdf.to_crs(3857)
+        if plot_type == "point":
+            gdf.plot(ax=ax, column=variable_name, cmap=cmap, **kwargs)
+        elif plot_type == "line":
+            gdf = _create_line(gdf, variable_name=variable_name)
+            gdf.plot(ax=ax, column=variable_name, cmap=cmap, **kwargs)
+        elif plot_type == "hexagon":
+            gdf = _create_hexagon(gdf, resolution=resolution, variable_name=variable_name)
+            gdf.plot(ax=ax, column=variable_name, cmap=cmap, **kwargs)
     else:
         gdf = gpd.GeoDataFrame(
             pid_df, geometry=gpd.points_from_xy(pid_df.lon, pid_df.lat), crs="EPSG:4326"
