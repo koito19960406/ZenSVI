@@ -84,6 +84,10 @@ def _process_row(row):
 
 
 class MLYMetadata:
+    """A class to compute metadata for the MLY dataset.
+    Args:
+        path_input (Union[str, Path]): The path to the input CSV file (e.g., "mly_pids.csv"). The CSV file should contain the following columns: "id", "lat", "lon", "captured_at", "compass_angle", "creator_id", "sequence_id", "organization_id", "is_pano".
+    """
     def __init__(self, path_input: Union[str, Path]):
         self.path_input = Path(path_input)
         self.df = pd.read_csv(self.path_input)
