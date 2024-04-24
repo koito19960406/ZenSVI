@@ -159,6 +159,20 @@ files = [
 ]
 
 [[package]]
+name = "astral"
+version = "3.2"
+description = "Calculations for the position of the sun and moon."
+optional = false
+python-versions = ">=3.7,<4.0"
+files = [
+    {file = "astral-3.2-py3-none-any.whl", hash = "sha256:cb7b49a3f0d4c64ae666be131276d2a3226134c598db10e672028cf8ff855f83"},
+    {file = "astral-3.2.tar.gz", hash = "sha256:9b7c3b412e9e69d172cfb24be0e6addcc9f1bd01a28db8bebe66d75ccc533d88"},
+]
+
+[package.dependencies]
+tzdata = {version = "*", markers = "sys_platform == \"win32\""}
+
+[[package]]
 name = "astroid"
 version = "3.1.0"
 description = "An abstract syntax tree for Python with inference support."
@@ -3915,6 +3929,27 @@ files = [
 widechars = ["wcwidth"]
 
 [[package]]
+name = "timezonefinder"
+version = "6.5.0"
+description = "python package for finding the timezone of any point on earth (coordinates) offline"
+optional = false
+python-versions = ">=3.8,<4"
+files = [
+    {file = "timezonefinder-6.5.0-cp38-cp38-manylinux_2_35_x86_64.whl", hash = "sha256:3c70e1ea468ecac11272aa0a727450fd7cf43039ae2a2c62f7900a0a42efb6d6"},
+    {file = "timezonefinder-6.5.0.tar.gz", hash = "sha256:7afdb1516927e7766deb6da80c8bd66734a44ba3d898038fe73aef1e9cd39bb0"},
+]
+
+[package.dependencies]
+cffi = ">=1.15.1,<2"
+h3 = ">=3.7.6,<4"
+numpy = {version = ">=1.23,<2", markers = "python_version >= \"3.9\""}
+setuptools = ">=65.5"
+
+[package.extras]
+numba = ["numba (>=0.56,<1)", "numba (>=0.59,<1)"]
+pytz = ["pytz (>=2022.7.1)"]
+
+[[package]]
 name = "tokenizers"
 version = "0.15.2"
 description = ""
@@ -4215,6 +4250,17 @@ files = [
 ]
 
 [[package]]
+name = "tzdata"
+version = "2024.1"
+description = "Provider of IANA time zone data"
+optional = false
+python-versions = ">=2"
+files = [
+    {file = "tzdata-2024.1-py2.py3-none-any.whl", hash = "sha256:9068bc196136463f5245e51efda838afa15aaeca9903f49050dfa2679db4d252"},
+    {file = "tzdata-2024.1.tar.gz", hash = "sha256:2674120f8d891909751c38abcdfd386ac0a5a1127954fbc332af6b5ceae07efd"},
+]
+
+[[package]]
 name = "urllib3"
 version = "2.2.1"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
@@ -4399,4 +4445,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "f989b078946ce3d57f3b5f852c3c6396a99d2955145004ce657b74ec617226f1"
+content-hash = "06b6f1b8f6187c248de7f27f4ec7dabcb1cc63a7ad33ca33a45c946bfe3c1292"

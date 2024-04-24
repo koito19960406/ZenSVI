@@ -61,6 +61,8 @@ seaborn = "^0.13.2"
 aiohttp = "^3.9.5"
 h3 = "^3.7.7"
 contextily = "^1.6.0"
+astral = "^3.2"
+timezonefinder = "^6.5.0"
 
 [tool.poetry.dev-dependencies]
 

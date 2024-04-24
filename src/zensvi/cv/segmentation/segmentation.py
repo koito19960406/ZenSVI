@@ -591,7 +591,7 @@ class Segmenter:
                 dir_summary_output: Union[str, Path, None] = None, 
                 batch_size=1, 
                 save_image_options="segmented_image blend_image", 
-                pixel_ratio_save_format="json csv",
+                save_format="json csv",
                 csv_format="long",  # "long" or "wide"
                 max_workers: Union[int, None] = None):
         """
@@ -610,7 +610,7 @@ class Segmenter:
             batch_size (int, optional): Number of images to process in each batch. Defaults to 1.
             save_image_options (str, optional): Specifies the types of images to save, options include 
                 "segmented_image" and "blend_image". Defaults to "segmented_image blend_image".
-            pixel_ratio_save_format (str, optional): Format to save pixel ratios, options include "json" and "csv". 
+            save_format (str, optional): Format to save pixel ratios, options include "json" and "csv". 
                 Defaults to "json csv".
             csv_format (str, optional): Specifies the format of the CSV output as either "long" or "wide". 
                 Defaults to "long".
@@ -628,17 +628,17 @@ class Segmenter:
         if (dir_image_output is None) & (dir_summary_output is None):
             raise ValueError("At least one of dir_image_output and dir_summary_output must not be None.")
         
-        # skip if there's pixel_ratio.json and/or pixel_ratios.csv in dir_summary_output, depending on pixel_ratio_save_format
+        # skip if there's pixel_ratio.json and/or pixel_ratios.csv in dir_summary_output, depending on save_format
         if dir_summary_output is not None:
-            if "json" in pixel_ratio_save_format and "csv" in pixel_ratio_save_format:
+            if "json" in save_format and "csv" in save_format:
                 if (Path(dir_summary_output) / 'pixel_ratios.json').exists() and (Path(dir_summary_output) / 'pixel_ratios.csv').exists():
                     print("Segmentation summary already exists. Skipping segmentation.")
                     return
-            elif "json" in pixel_ratio_save_format:
+            elif "json" in save_format:
                 if (Path(dir_summary_output) / 'pixel_ratios.json').exists():
                     print("Segmentation summary already exists. Skipping segmentation.")
                     return
-            elif "csv" in pixel_ratio_save_format:
+            elif "csv" in save_format:
                 if (Path(dir_summary_output) / 'pixel_ratios.csv').exists():
                     print("Segmentation summary already exists. Skipping segmentation.")
                     return
@@ -766,13 +766,13 @@ class Segmenter:
                             panoptic_dict[key] = value
 
             # Save pixel_ratio_dict as a JSON or CSV file
-            if "json" in pixel_ratio_save_format:
+            if "json" in save_format:
                 with open(dir_summary_output / "pixel_ratios.json", "w") as f:
                     json.dump(pixel_ratio_dict, f)
                 if self.task == "panoptic":
                     with open(dir_summary_output / "label_counts.json", "w") as f:
                         json.dump(panoptic_dict, f)
-            if "csv" in pixel_ratio_save_format:
+            if "csv" in save_format:
                 self._save_as_csv(pixel_ratio_dict, dir_summary_output, "pixel_ratios", csv_format)
                 if self.task == "panoptic":
                     self._save_as_csv(panoptic_dict, dir_summary_output, "label_counts", csv_format)
@@ -781,14 +781,14 @@ class Segmenter:
             shutil.rmtree(dir_cache_segmentation_summary, ignore_errors=True)
 
             
-    def calculate_pixel_ratio_post_process(self, dir_input, dir_output, pixel_ratio_save_format = "json csv"):
+    def calculate_pixel_ratio_post_process(self, dir_input, dir_output, save_format = "json csv"):
         """
         Calculates the pixel ratio of different classes present in the segmented images and saves the results in either JSON or CSV format.
 
         Args:
             dir_input: A string or Path object representing the input directory containing the segmented images.
             dir_output: A string or Path object representing the output directory where the pixel ratio results will be saved.
-            pixel_ratio_save_format: A list containing the file formats in which the results will be saved. The allowed file formats are "json" and "csv". The default value is "json csv".
+            save_format: A list containing the file formats in which the results will be saved. The allowed file formats are "json" and "csv". The default value is "json csv".
 
         Returns:
             None
@@ -889,13 +889,13 @@ class Segmenter:
 
         results = thread_map(process_image_file, image_files, [self.label_map] * len(image_files))
 
-        if "json" in pixel_ratio_save_format:
+        if "json" in save_format:
             json_output_file = Path(dir_output) / 'pixel_ratio.json'
             nested_dict = results_to_nested_dict(results)
             with open(json_output_file, 'w') as f:
                 json.dump(nested_dict, f, indent=2) 
                 
-        if "csv" in pixel_ratio_save_format:
+        if "csv" in save_format:
             csv_output_file = Path(dir_output) / 'pixel_ratio.csv'
             df = results_to_dataframe(results)
             df.to_csv(csv_output_file)
