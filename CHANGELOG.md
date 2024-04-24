@@ -2,6 +2,9 @@
 
 <!--next-version-placeholder-->
 
+## v0.11.0 (TBD)
+- **Metadata Module Added**: New module for metadata processing. Usage: `from zensvi import metadata`.
+
 ## v0.10.0 (01/04/2024)
 - **Visualization Module Added**: Introducing a new module for plotting maps and images. Usage: `from zensvi import visualization`.
 - **Low Level Features in CV Module**: New function to quantify low-level features. Usage: `from zensvi.cv import get_low_level_features`.
