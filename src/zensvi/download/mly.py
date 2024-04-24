@@ -245,6 +245,7 @@ class MLYDownloader(BaseDownloader):
                 "id",
                 "captured_at",
                 "compass_angle",
+                "creator_id",
                 "is_pano",
                 "organization_id",
                 "sequence_id",
