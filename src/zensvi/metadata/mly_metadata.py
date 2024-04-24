@@ -9,7 +9,7 @@ import geopandas as gpd
 from astral import LocationInfo, sun
 import pytz
 import datetime
-from concurrent.futures import ProcessPoolExecutor 
+from concurrent.futures import ProcessPoolExecutor
 from tqdm.auto import tqdm
 from timezonefinder import TimezoneFinder
 
@@ -33,8 +33,12 @@ def _calculate_angle(line):
 def _create_hexagon(gdf, resolution=7):
     gdf = gdf.to_crs(4326)
     gdf["h3_id"] = gdf.apply(_lat_lng_to_h3, resolution=resolution, axis=1)
-    hex_gdf = gdf["h3_id"].drop_duplicates().apply(_h3_to_polygon)
-    hex_gdf = gpd.GeoDataFrame(geometry=hex_gdf, crs=4326)
+    unique_h3_ids = gdf["h3_id"].drop_duplicates().reset_index(drop=True)
+    # Creating polygons for each unique h3_id
+    hex_gdf = unique_h3_ids.apply(_h3_to_polygon)
+    hex_gdf = gpd.GeoDataFrame(
+        {"geometry": hex_gdf, f"h3_{resolution}": unique_h3_ids}, crs=4326
+    )
     return hex_gdf
 
 
@@ -83,24 +87,105 @@ def _process_row(row):
     return timezone_str, local_datetime
 
 
+def _compute_speed(df):
+    # Convert DataFrame to GeoDataFrame
+    gdf = gpd.GeoDataFrame(
+        df,
+        geometry=gpd.points_from_xy(df.lon, df.lat),
+        crs="EPSG:4326",  # WGS84 Latitude/Longitude
+    )
+
+    # Project to a local CRS
+    gdf = ox.project_gdf(gdf)
+
+    # Sort the DataFrame by sequence_id and local_datetime
+    gdf.sort_values(by=["sequence_id", "local_datetime"], inplace=True, ascending=False)
+
+    # Calculate differences only for consecutive points within the same sequence
+    gdf["shifted_sequence_id"] = gdf["sequence_id"].shift(-1)
+    gdf["shifted_geometry"] = gdf["geometry"].shift(-1)
+    gdf["local_datetime"] = pd.to_datetime(gdf["local_datetime"])
+    gdf["shifted_datetime"] = gdf["local_datetime"].shift(-1)
+
+    # Calculate distances in meters only if the sequence_id is the same
+    gdf["distance_m"] = gdf.apply(
+        lambda row: (
+            row["geometry"].distance(row["shifted_geometry"])
+            if row["sequence_id"] == row["shifted_sequence_id"]
+            else np.nan
+        ),
+        axis=1,
+    )
+
+    # Calculate time differences in hours only if the sequence_id is the same
+    gdf["time_diff_hrs"] = gdf.apply(
+        lambda row: (
+            (row["local_datetime"] - row["shifted_datetime"]).total_seconds() / 3600
+            if row["sequence_id"] == row["shifted_sequence_id"]
+            else np.nan
+        ),
+        axis=1,
+    )
+
+    # Calculate speed in km/h
+    gdf["speed_kmh"] = (gdf["distance_m"] / 1000) / gdf["time_diff_hrs"]
+
+    # Clean up extra columns
+    gdf.drop(
+        columns=["shifted_sequence_id", "shifted_geometry", "shifted_datetime"],
+        inplace=True,
+    )
+
+    return gdf["speed_kmh"]
+
+
+def _datetime_to_season(row):
+    season_month_north = {
+        12: "Winter",
+        1: "Winter",
+        2: "Winter",
+        3: "Spring",
+        4: "Spring",
+        5: "Spring",
+        6: "Summer",
+        7: "Summer",
+        8: "Summer",
+        9: "Autumn",
+        10: "Autumn",
+        11: "Autumn",
+    }
+
+    season_month_south = {
+        12: "Summer",
+        1: "Summer",
+        2: "Summer",
+        3: "Autumn",
+        4: "Autumn",
+        5: "Autumn",
+        6: "Winter",
+        7: "Winter",
+        8: "Winter",
+        9: "Spring",
+        10: "Spring",
+        11: "Spring",
+    }
+
+    month = row["local_datetime"].month
+    if row["lat"] >= 0:
+        return season_month_north[month]
+    else:
+        return season_month_south[month]
+
+
 class MLYMetadata:
     """A class to compute metadata for the MLY dataset.
     Args:
         path_input (Union[str, Path]): The path to the input CSV file (e.g., "mly_pids.csv"). The CSV file should contain the following columns: "id", "lat", "lon", "captured_at", "compass_angle", "creator_id", "sequence_id", "organization_id", "is_pano".
     """
+
     def __init__(self, path_input: Union[str, Path]):
         self.path_input = Path(path_input)
         self.df = pd.read_csv(self.path_input)
-        with ProcessPoolExecutor(initializer=init_timezone_finder) as executor:
-            results = list(
-                tqdm(
-                    executor.map(_process_row, self.df.to_dict("records")),
-                    total=len(self.df),
-                    desc="Computing timezone and local datetime",
-                )
-            )
-        self.df["timezone"], self.df["local_datetime"] = zip(*results)
-
         self.metadata = None
         # get street network in the extent of the dataset with OSMnx
         self.street_network = ox.graph_from_bbox(
@@ -114,17 +199,10 @@ class MLYMetadata:
         )
         self.street_network = ox.convert.graph_to_gdfs(self.street_network, nodes=False)
         self.street_network = ox.projection.project_gdf(self.street_network)
-        self.gdf = gpd.GeoDataFrame(
-            self.df,
-            geometry=gpd.points_from_xy(self.df["lon"], self.df["lat"]),
-            crs=4326,
-        )
-        self.gdf = self.gdf.to_crs(crs=self.street_network.crs)
         # calculate angle of the street segments
         self.street_network["angle"] = self.street_network["geometry"].apply(
             _calculate_angle
         )
-
         # create a dictionary of functions to compute metadata for each indicator at the image level
         self.indicator_metadata_image = {
             "year": self._compute_year_metadata_image,
@@ -133,7 +211,10 @@ class MLYMetadata:
             "hour": self._compute_hour_metadata_image,
             "day_of_week": self._compute_day_of_week_metadata_image,
             "daytime_nighttime": self._compute_daytime_nighttime_metadata_image,
+            "season": self._compute_season_metadata_image,
             "relative_angle": self._compute_relative_angle_metadata_image,
+            "h3_id": self._compute_h3_id_metadata_grid_street,
+            "speed_kmh": self._compute_speed_metadata_image,
         }
 
         # create a dictionary of functions to compute metadata for each indicator at the grid level
@@ -150,12 +231,17 @@ class MLYMetadata:
             "number_of_days_of_week": self._compute_number_of_days_of_week_metadata_grid_street,
             "number_of_daytime": self._compute_number_of_daytime_metadata_grid_street,
             "number_of_nighttime": self._compute_number_of_nighttime_metadata_grid_street,
+            "number_of_spring": self._compute_number_of_spring_metadata_grid_street,
+            "number_of_summer": self._compute_number_of_summer_metadata_grid_street,
+            "number_of_autumn": self._compute_number_of_autumn_metadata_grid_street,
+            "number_of_winter": self._compute_number_of_winter_metadata_grid_street,
             "average_compass_angle": self._compute_average_compass_angle_metadata_grid_street,
             "average_relative_angle": self._compute_average_relative_angle_metadata_grid_street,
             "average_is_pano": self._compute_average_is_pano_metadata_grid_street,
             "number_of_users": self._compute_number_of_users_metadata_grid_street,
             "number_of_sequences": self._compute_number_of_sequences_metadata_grid_street,
             "number_of_organizations": self._compute_number_of_organizations_metadata_grid_street,
+            "average_speed_kmh": self._compute_speed_metadata_grid_street,
         }
 
     def _compute_year_metadata_image(self):
@@ -188,9 +274,24 @@ class MLYMetadata:
             lambda x: _day_or_night(x, pd.to_datetime(x["local_datetime"])), axis=1
         )
 
+    def _compute_season_metadata_image(self):
+        # place holder for season metadata because it is already computed in the compute_metadata function
+        pass
+
     def _compute_relative_angle_metadata_image(self):
         nearest_line = self.nearest_line[["id", "relative_angle"]]
         self.metadata = self.metadata.merge(nearest_line, on="id", how="left")
+
+    def _compute_speed_metadata_image(self):
+        # place holder for speed metadata because it is already computed in the compute_metadata function
+        pass
+
+    def _compute_h3_id_metadata_grid_street(self):
+        ls_res = [x for x in range(16)]
+        for res in ls_res:
+            self.metadata[f"h3_{res}"] = self.metadata.apply(
+                lambda x: h3.geo_to_h3(x["lat"], x["lon"], res), axis=1
+            )
 
     def _compute_coverage_metadata_grid_street(self):
         # calculate the area covered by buffer (self.coverage_buffer) from each point (self.gdf) in gdf
@@ -315,6 +416,54 @@ class MLYMetadata:
         joined = joined.groupby(self.columns_to_group_by)["nighttime"].sum()
         self.metadata["number_of_nighttime"] = joined
 
+    def _compute_number_of_spring_metadata_grid_street(self):
+        # number of points captured during spring
+        # calculate the number of points captured during spring using _datetime_to_season function
+        joined = self.joined.copy()
+        joined["spring"] = self.joined.apply(
+            lambda x: _datetime_to_season(x),
+            axis=1,
+        ).eq("Spring")
+        # group by self.columns_to_group_by and count the number of points captured during spring
+        joined = joined.groupby(self.columns_to_group_by)["spring"].sum()
+        self.metadata["number_of_spring"] = joined
+
+    def _compute_number_of_summer_metadata_grid_street(self):
+        # number of points captured during summer
+        # calculate the number of points captured during summer using _datetime_to_season function
+        joined = self.joined.copy()
+        joined["summer"] = self.joined.apply(
+            lambda x: _datetime_to_season(x),
+            axis=1,
+        ).eq("Summer")
+        # group by self.columns_to_group_by and count the number of points captured during summer
+        joined = joined.groupby(self.columns_to_group_by)["summer"].sum()
+        self.metadata["number_of_summer"] = joined
+
+    def _compute_number_of_autumn_metadata_grid_street(self):
+        # number of points captured during autumn
+        # calculate the number of points captured during autumn using _datetime_to_season function
+        joined = self.joined.copy()
+        joined["autumn"] = self.joined.apply(
+            lambda x: _datetime_to_season(x),
+            axis=1,
+        ).eq("Autumn")
+        # group by self.columns_to_group_by and count the number of points captured during autumn
+        joined = joined.groupby(self.columns_to_group_by)["autumn"].sum()
+        self.metadata["number_of_autumn"] = joined
+
+    def _compute_number_of_winter_metadata_grid_street(self):
+        # number of points captured during winter
+        # calculate the number of points captured during winter using _datetime_to_season function
+        joined = self.joined.copy()
+        joined["winter"] = self.joined.apply(
+            lambda x: _datetime_to_season(x),
+            axis=1,
+        ).eq("Winter")
+        # group by self.columns_to_group_by and count the number of points captured during winter
+        joined = joined.groupby(self.columns_to_group_by)["winter"].sum()
+        self.metadata["number_of_winter"] = joined
+
     def _compute_average_compass_angle_metadata_grid_street(self):
         # average compass angle of the points within self.metadata
         # calculate the average compass angle
@@ -358,6 +507,13 @@ class MLYMetadata:
             self.columns_to_group_by
         )["organization_id"].nunique()
 
+    def _compute_speed_metadata_grid_street(self):
+        # average speed of the points within self.metadata
+        # calculate the average speed
+        self.metadata["average_speed_kmh"] = self.joined.groupby(
+            self.columns_to_group_by
+        )["speed_kmh"].mean()
+
     def _compute_image_metadata(self, indicator_list):
         # define self.metadata as a copy of the input DataFrame with only "id" column
         self.metadata = self.df.copy()
@@ -369,16 +525,23 @@ class MLYMetadata:
                 "hour",
                 "day_of_week",
                 "daytime_nighttime",
+                "season",
                 "relative_angle",
+                "h3_id",
+                "speed_kmh",
             ]
         else:
             # split string of indicators into a list
             indicator_list = indicator_list.split(" ")
         for indicator in indicator_list:
             self.indicator_metadata_image[indicator]()
+        # make sure that columns do not include those that are in self.indicator_metadata_image (key) but not in the indicator_list in this run
+        for key in self.indicator_metadata_image.keys():
+            if key not in indicator_list and key in self.metadata.columns:
+                self.metadata.drop(columns=key, inplace=True)
         return self.metadata
 
-    def _compute_grid_metadata(self, grid_resolution, indicator_list):
+    def _compute_grid_metadata(self, indicator_list):
         if indicator_list == "all":
             indicator_list = [
                 "coverage",
@@ -399,12 +562,17 @@ class MLYMetadata:
                 "number_of_users",
                 "number_of_sequences",
                 "number_of_organizations",
+                "average_speed_kmh",
             ]
         else:
             # split string of indicators into a list
             indicator_list = indicator_list.split(" ")
         for indicator in indicator_list:
             self.indicator_metadata_grid_street[indicator]()
+        # make sure that columns do not include those that are in self.indicator_metadata_grid_street (key) but not in the indicator_list in this run
+        for key in self.indicator_metadata_grid_street.keys():
+            if key not in indicator_list and key in self.metadata.columns:
+                self.metadata.drop(columns=key, inplace=True)
         return self.metadata
 
     def _compute_street_metadata(self, indicator_list):
@@ -422,12 +590,17 @@ class MLYMetadata:
                 "number_of_days_of_week",
                 "number_of_daytime",
                 "number_of_nighttime",
+                "number_of_spring",
+                "number_of_summer",
+                "number_of_autumn",
+                "number_of_winter",
                 "average_compass_angle",
                 "average_relative_angle",
                 "average_is_pano",
                 "number_of_users",
                 "number_of_sequences",
                 "number_of_organizations",
+                "average_speed_kmh",
             ]
         else:
             # split string of indicators into a list
@@ -458,6 +631,51 @@ class MLYMetadata:
         """
         # set coverage buffer as a class attribute
         self.coverage_buffer = coverage_buffer
+
+        # check indicator_list and pre-compute metadata, e.g., timezone and local datetime
+        if (
+            "all" in indicator_list
+            or "year" in indicator_list
+            or "month" in indicator_list
+            or "day" in indicator_list
+            or "hour" in indicator_list
+            or "time" in indicator_list
+            or "speed" in indicator_list
+        ):
+            # calculate local datetime for each point
+            with ProcessPoolExecutor(initializer=init_timezone_finder) as executor:
+                results = list(
+                    tqdm(
+                        executor.map(_process_row, self.df.to_dict("records")),
+                        total=len(self.df),
+                        desc="Computing timezone and local datetime",
+                    )
+                )
+            self.df["timezone"], self.df["local_datetime"] = zip(*results)
+
+        # check indicator_list and pre-compute metadata, e.g., season
+        if (
+            "all" in indicator_list
+            or "season" in indicator_list
+            or "spring" in indicator_list
+            or "summer" in indicator_list
+            or "autumn" in indicator_list
+            or "winter" in indicator_list
+        ):
+            self.df["season"] = self.df.apply(_datetime_to_season, axis=1)
+
+        # check indicator_list and pre-compute metadata, e.g., speed
+        if "all" in indicator_list or "speed" in indicator_list:
+            self.df["speed_kmh"] = _compute_speed(self.df)
+
+        # create self.gdf as a GeoDataFrame
+        self.gdf = gpd.GeoDataFrame(
+            self.df,
+            geometry=gpd.points_from_xy(self.df["lon"], self.df["lat"]),
+            crs=4326,
+        )
+        self.gdf = self.gdf.to_crs(crs=self.street_network.crs)
+
         # check indicator_list and pre-compute metadata, e.g., relative_angle
         if "all" in indicator_list or "relative_angle" in indicator_list:
             # find the nearest street segment for each point with gdf sjoin_nearest
@@ -476,6 +694,7 @@ class MLYMetadata:
             )
             self.nearest_line = gpd.GeoDataFrame(nearest_line)
 
+        # run the appropriate function to compute metadata based on the unit of analysis
         if unit == "image":
             df = self._compute_image_metadata(indicator_list)
         elif unit == "grid":
@@ -486,7 +705,7 @@ class MLYMetadata:
             self.joined = self.gdf.sjoin(self.metadata)
             # Get a list of all columns that contain 'index_right'
             self.columns_to_group_by = "index_right"
-            df = self._compute_grid_metadata(grid_resolution, indicator_list)
+            df = self._compute_grid_metadata(indicator_list)
         elif unit == "street":
             self.metadata = self.street_network.copy()
             # only keep index and geometry columns
@@ -499,6 +718,8 @@ class MLYMetadata:
             df = self._compute_street_metadata(indicator_list)
         else:
             raise ValueError("Invalid unit of analysis provided.")
+
+        # save the output metadata to a file
         if path_output:
             if unit == "image":
                 df.to_csv(path_output, index=False)
