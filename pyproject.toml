@@ -63,6 +63,7 @@ h3 = "^3.7.7"
 contextily = "^1.6.0"
 astral = "^3.2"
 timezonefinder = "^6.5.0"
+lightning = "^2.2.3"
 
 [tool.poetry.dev-dependencies]
 
