@@ -179,8 +179,9 @@ def _datetime_to_season(row):
 
 class MLYMetadata:
     """A class to compute metadata for the MLY dataset.
-    Args:
-        path_input (Union[str, Path]): The path to the input CSV file (e.g., "mly_pids.csv"). The CSV file should contain the following columns: "id", "lat", "lon", "captured_at", "compass_angle", "creator_id", "sequence_id", "organization_id", "is_pano".
+
+    :param path_input: path to the input CSV file (e.g., "mly_pids.csv"). The CSV file should contain the following columns: "id", "lat", "lon", "captured_at", "compass_angle", "creator_id", "sequence_id", "organization_id", "is_pano".
+    :type path_input: Union[str, Path]
     """
 
     def __init__(self, path_input: Union[str, Path]):
@@ -620,14 +621,17 @@ class MLYMetadata:
         """
         Compute metadata for the dataset.
 
-        Args:
-            unit (str): The unit of analysis. Defaults to "image".
-            grid_resolution (int): The resolution of the H3 grid. Defaults to 7.
-            indicator_list (str): List of indicators to compute metadata for. Defaults to "all". Use space-separated string of indicators or "all". Options for image-level metadata: "year", "month", "day", "hour", "day_of_week", "relative_angle". Options for grid-level metadata: "coverage", "count", "days_elapsed", "most_recent_date", "oldest_date", "number_of_years", "number_of_months", "number_of_days", "number_of_hours", "number_of_days_of_week", "number_of_daytime", "number_of_nighttime", "average_compass_angle", "average_relative_angle", "average_is_pano", "number_of_users", "number_of_sequences", "number_of_organizations". Defaults to "all".
-            path_output (Union[str, Path], optional): Path to save the output metadata. Defaults to None.
-
-        Returns:
-            pd.DataFrame: A DataFrame containing the computed metadata.
+        :param unit: The unit of analysis. Defaults to "image".
+        :type unit: str
+        :param grid_resolution: The resolution of the H3 grid. Defaults to 7.
+        :type grid_resolution: int
+        :param indicator_list: List of indicators to compute metadata for. Defaults to "all". Use space-separated string of indicators or "all". Options for image-level metadata: "year", "month", "day", "hour", "day_of_week", "relative_angle". Options for grid-level metadata: "coverage", "count", "days_elapsed", "most_recent_date", "oldest_date", "number_of_years", "number_of_months", "number_of_days", "number_of_hours", "number_of_days_of_week", "number_of_daytime", "number_of_nighttime", "average_compass_angle", "average_relative_angle", "average_is_pano", "number_of_users", "number_of_sequences", "number_of_organizations". Defaults to "all".
+        :type indicator_list: str
+        :param path_output: Path to save the output metadata. Defaults to None.
+        :type path_output: Union[str, Path]
+        
+        :return: A DataFrame containing the computed metadata.
+        :rtype: pd.DataFrame
         """
         # set coverage buffer as a class attribute
         self.coverage_buffer = coverage_buffer

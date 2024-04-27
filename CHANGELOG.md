@@ -4,6 +4,8 @@
 
 ## v0.11.0 (TBD)
 - **Metadata Module Added**: New module for metadata processing. Usage: `from zensvi import metadata`.
+- **ClassifierGlare, ClassifierLighting, ClassifierPanorama, ClassifierPlatform, ClassifierQuality, ClassifierReflection, ClassifierViewDirection, ClassifierWeather Introduced**: New classifiers for various image quality attributes. Usage: `from zensvi.cv import ClassifierGlare, ClassifierLighting, ClassifierPanorama, ClassifierPlatform, ClassifierQuality, ClassifierReflection, ClassifierViewDirection, ClassifierWeather`.
+- **DepthEstimator Introduced**: New module for depth estimation. Usage: `from zensvi.cv import DepthEstimator`.
 
 ## v0.10.0 (01/04/2024)
 - **Visualization Module Added**: Introducing a new module for plotting maps and images. Usage: `from zensvi import visualization`.

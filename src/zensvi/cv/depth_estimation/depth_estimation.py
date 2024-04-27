@@ -70,6 +70,14 @@ class ImageDataset(Dataset):
 
 
 class DepthEstimator:
+    """A class for estimating depth in images. The class uses the DPT model from Hugging Face for relative depth estimation and the ZoeDepth model for absolute depth estimation.
+
+    :param device: device to use for inference, defaults to None
+    :type device: str, optional
+    :param task: task to perform, either "relative" or "absolute", defaults to "relative"
+    :type task: str, optional
+    """
+
     def __init__(self, device=None, task="relative"):
         self.task = task
         if device is None:
@@ -79,23 +87,25 @@ class DepthEstimator:
         print(f"Using {self.device}")
 
         if task == "absolute":
-            self.setup_absolute_depth()
+            self._setup_absolute_depth()
         else:
-            self.setup_relative_depth()
+            self._setup_relative_depth()
 
-    def setup_relative_depth(self):
+    def _setup_relative_depth(self):
         self.processor = DPTImageProcessor.from_pretrained("Intel/dpt-large")
         self.model = DPTForDepthEstimation.from_pretrained("Intel/dpt-large").to(
             self.device
         )
 
-    def setup_absolute_depth(self):
+    def _setup_absolute_depth(self):
         # donwload the model from https://huggingface.co/spaces/LiheYoung/Depth-Anything/resolve/main/checkpoints_metric_depth/depth_anything_metric_depth_outdoor.pt to models/depth_anything_metric_depth_outdoor.pt with request.get
         # Path to the current file (e.g., __file__ in a module)
         current_file_path = Path(__file__)
         # Path to the current file's directory (often the package directory)
         package_directory = current_file_path.parent.parent.parent.parent.parent
-        checkpoint_path = package_directory / "models/depth_anything_metric_depth_outdoor.pt"
+        checkpoint_path = (
+            package_directory / "models/depth_anything_metric_depth_outdoor.pt"
+        )
         checkpoint_path_vit = package_directory / "models/depth_anything_vitl14.pth"
         if Path(checkpoint_path).exists() and Path(checkpoint_path_vit).exists():
             config = get_config(
@@ -158,7 +168,7 @@ class DepthEstimator:
                 else:
                     prediction = torch.nn.functional.interpolate(
                         predicted_depth.unsqueeze(0),
-                        size=original_size, 
+                        size=original_size,
                         mode="bicubic",
                         align_corners=False,
                     )
@@ -235,7 +245,11 @@ class DepthEstimator:
                 image_files, images, original_sizes = batch
                 futures.append(
                     executor.submit(
-                        self._process_images, image_files, images, original_sizes, dir_image_output
+                        self._process_images,
+                        image_files,
+                        images,
+                        original_sizes,
+                        dir_image_output,
                     )
                 )
 
@@ -243,144 +257,3 @@ class DepthEstimator:
                 as_completed(futures), total=len(futures), desc="Estimating depth"
             ):
                 future.result()
-
-        print("Depth estimation completed.")
-
-
-# class DepthEstimator:
-#     def __init__(
-#         self,
-#         device=None,
-#         task = "relative" # or "absolute"
-#     ):
-#         self.device = self._get_device(device)
-#         self.processor = DPTImageProcessor.from_pretrained("Intel/dpt-large")
-#         self.model = DPTForDepthEstimation.from_pretrained("Intel/dpt-large").to(
-#             self.device
-#         )
-#         if task == "absolute":
-#             hf_hub_download(repo_id="LiheYoung/Depth-Anything", filename="checkpoints_metric_depth/depth_anything_metric_depth_outdoor.pt", local_dir="./models/")
-#             model = "ZoeDepth"
-#             pretrained_resource = "local::models/depth_anything_metric_depth_outdoor.pt"
-
-#     def _get_device(self, device) -> torch.device:
-#         """
-#         Get the appropriate device for running the model.
-
-#         Returns:
-#             torch.device: The device to use for running the model.
-#         """
-#         if device is not None:
-#             if device not in ["cpu", "cuda", "mps"]:
-#                 raise ValueError(f"Unknown device: {device}")
-#             else:
-#                 print(f"Using {device.upper()}")
-#                 return torch.device(device)
-#         if torch.cuda.is_available():
-#             print("Using GPU")
-#             return torch.device("cuda")
-#         else:
-#             print("Using CPU")
-#             return torch.device("cpu")
-
-#     def _process_images(self, image_files, images, dir_output):
-#         inputs = self.processor(images=images, return_tensors="pt").to(self.device)
-
-#         with torch.no_grad():
-#             outputs = self.model(**inputs)
-#             predicted_depths = outputs.predicted_depth
-
-#             for i, (image_file, predicted_depth) in enumerate(zip(image_files, predicted_depths)):
-#                 if self.device == torch.device("mps"):
-#                     predicted_depth = predicted_depth.cpu()
-#                 prediction = torch.nn.functional.interpolate(
-#                     predicted_depth.unsqueeze(0).unsqueeze(0),
-#                     size=images[i].shape[1:3],  # if images[i] is in CxHxW format
-#                     mode="bicubic",
-#                     align_corners=False,
-#                 )
-
-#                 output = prediction.squeeze().cpu().numpy()
-#                 formatted = (output * 255 / np.max(output)).astype("uint8")
-#                 depth = Image.fromarray(formatted)
-
-#                 depth.save(Path(dir_output) / image_file.name)
-
-# def estimate_depth(
-#     self,
-#     dir_input: Union[str, Path],
-#     dir_image_output: Union[str, Path],
-#     batch_size: int = 1,
-#     max_workers: int = 4,
-# ):
-#     """
-#     Estimates relative depth in the images. Saves the depth maps in the specified directory.
-
-#     :param dir_input: directory containing input images.
-#     :type dir_input: Union[str, Path]
-#     :param dir_image_output: directory to save the depth maps.
-#     :type dir_image_output: Union[str, Path]
-#     :param batch_size: batch size for inference, defaults to 1
-#     :type batch_size: int, optional
-#     :param max_workers: maximum number of workers for parallel processing, defaults to 4
-#     :type max_workers: int, optional
-#     """
-#     # make directory
-#     dir_input = Path(dir_input)
-#     # Get the list of all image files and filter the ones that are not completed yet
-#     # Handle both single file and directory inputs
-#     if dir_input.is_file():
-#         # Process as a single file
-#         image_file_list = [dir_input]
-#     elif dir_input.is_dir():
-#         # Process all suitable files in the directory
-#         image_extensions = [
-#             ".jpg",
-#             ".jpeg",
-#             ".png",
-#             ".tif",
-#             ".tiff",
-#             ".bmp",
-#             ".dib",
-#             ".pbm",
-#             ".pgm",
-#             ".ppm",
-#             ".sr",
-#             ".ras",
-#             ".exr",
-#             ".jp2",
-#         ]
-#         # Get the list of all image files in the directory that are not completed yet
-#         image_file_list = [
-#             f for f in Path(dir_input).iterdir() if f.suffix in image_extensions
-#         ]
-#     else:
-#         raise ValueError("dir_input must be either a file or a directory.")
-#     # skip if there are no image files to process
-#     if len(image_file_list) == 0:
-#         print("No image files to process. Skipping segmentation.")
-#         return
-#     # make dir_image_output
-#     Path(dir_image_output).mkdir(parents=True, exist_ok=True)
-
-#     dataset = ImageDataset(image_file_list)
-#     dataloader = DataLoader(
-#         dataset, batch_size=batch_size, collate_fn=dataset.collate_fn
-#     )
-#     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-#         futures = []
-
-#         for batch in dataloader:
-#             image_files, images = batch
-#             futures.append(
-#                 executor.submit(
-#                     self._process_images, image_files, images, dir_image_output
-#                 )
-#             )
-
-#         for future in tqdm(
-#             as_completed(futures), total=len(futures), desc="Estimating depth"
-#         ):
-#             future.result()
-
-#     print("Depth estimation completed.")
