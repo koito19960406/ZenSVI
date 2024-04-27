@@ -148,4 +148,4 @@ cache/
 tests/data/*
 
 # models
-src/zensvi/cv/classification/gss-models/*
+models/*

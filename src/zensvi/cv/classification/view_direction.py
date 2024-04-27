@@ -75,7 +75,7 @@ class ClassifierViewDirection(BaseClassifier):
 
         file_name = "view_direction_inverse/a0bd363c-60e8-455c-b077-e5852aca9371_view_direction_view_direction_inverse_checkpoint.ckpt"
         checkpoint_path = hf_hub_download(
-            repo_id="pihalf/gss-models", filename=file_name, local_dir="./src/zensvi/cv/classification/gss-models/"
+            repo_id="pihalf/gss-models", filename=file_name, local_dir=Path(__file__).parent.parent.parent.parent.parent / "models"
         )
 
         checkpoint = torch.load(
@@ -113,7 +113,7 @@ class ClassifierViewDirection(BaseClassifier):
         save_format="json csv",
     ) -> List[str]:
         """
-        Classifies images based on view_direction. The output file can be saved in JSON and/or CSV format and will contain view_direction for each image. The view_direction categories are "clear", "cloudy", "foggy", "rainy", and "snowy".
+        Classifies images based on view_direction. The output file can be saved in JSON and/or CSV format and will contain view_direction for each image. The view_direction categories are "front/back" and "side".
 
         :param dir_input: directory containing input images.
         :type dir_input: Union[str, Path]

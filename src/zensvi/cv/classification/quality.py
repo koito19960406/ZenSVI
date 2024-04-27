@@ -75,7 +75,7 @@ class ClassifierQuality(BaseClassifier):
 
         file_name = "quality_inverse/ce2c16b6-2950-4fb2-b064-1078ed31aa05_quality_quality_inverse_checkpoint.ckpt"
         checkpoint_path = hf_hub_download(
-            repo_id="pihalf/gss-models", filename=file_name, local_dir="./src/zensvi/cv/classification/gss-models/"
+            repo_id="pihalf/gss-models", filename=file_name, local_dir=Path(__file__).parent.parent.parent.parent.parent / "models"
         )
 
         checkpoint = torch.load(
@@ -113,7 +113,7 @@ class ClassifierQuality(BaseClassifier):
         save_format="json csv",
     ) -> List[str]:
         """
-        Classifies images based on quality. The output file can be saved in JSON and/or CSV format and will contain quality for each image. The quality categories are "clear", "cloudy", "foggy", "rainy", and "snowy".
+        Classifies images based on quality. The output file can be saved in JSON and/or CSV format and will contain quality for each image. The quality categories are "good", "slghtly poor", and "very poor".
 
         :param dir_input: directory containing input images.
         :type dir_input: Union[str, Path]

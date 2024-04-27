@@ -75,7 +75,7 @@ class ClassifierPanorama(BaseClassifier):
 
         file_name = "pano_status_inverse/45c8eac3-7d0f-4b20-8f3e-9b7969279544_pano_status_pano_status_inverse_checkpoint.ckpt"
         checkpoint_path = hf_hub_download(
-            repo_id="pihalf/gss-models", filename=file_name, local_dir="./src/zensvi/cv/classification/gss-models/"
+            repo_id="pihalf/gss-models", filename=file_name, local_dir=Path(__file__).parent.parent.parent.parent.parent / "models"
         )
 
         checkpoint = torch.load(
@@ -113,7 +113,7 @@ class ClassifierPanorama(BaseClassifier):
         save_format="json csv",
     ) -> List[str]:
         """
-        Classifies images based on panorama. The output file can be saved in JSON and/or CSV format and will contain panorama for each image. The panorama categories are "clear", "cloudy", "foggy", "rainy", and "snowy".
+        Classifies images based on panorama. The output file can be saved in JSON and/or CSV format and will contain panorama for each image. The panorama categories are "True" and "False".
 
         :param dir_input: directory containing input images.
         :type dir_input: Union[str, Path]

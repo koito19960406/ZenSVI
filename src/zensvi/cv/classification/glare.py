@@ -75,7 +75,7 @@ class ClassifierGlare(BaseClassifier):
 
         file_name = "glare_inverse/f6b03038-0831-43ec-88d4-e6c7eb5f8539_glare_glare_inverse_checkpoint.ckpt"
         checkpoint_path = hf_hub_download(
-            repo_id="pihalf/gss-models", filename=file_name, local_dir="./src/zensvi/cv/classification/gss-models/"
+            repo_id="pihalf/gss-models", filename=file_name, local_dir=Path(__file__).parent.parent.parent.parent.parent / "models"
         )
 
         checkpoint = torch.load(
@@ -113,7 +113,7 @@ class ClassifierGlare(BaseClassifier):
         save_format="json csv",
     ) -> List[str]:
         """
-        Classifies images based on glare. The output file can be saved in JSON and/or CSV format and will contain glare for each image. The glare categories are "clear", "cloudy", "foggy", "rainy", and "snowy".
+        Classifies images based on glare. The output file can be saved in JSON and/or CSV format and will contain glare for each image. The glare categories are "yes" and "no".
 
         :param dir_input: directory containing input images.
         :type dir_input: Union[str, Path]

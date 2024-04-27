@@ -75,7 +75,7 @@ class ClassifierPlatform(BaseClassifier):
 
         file_name = "platform_inverse/e87c7bab-78f3-4192-93c4-e71d1f90598a_platform_platform_inverse_checkpoint.ckpt"
         checkpoint_path = hf_hub_download(
-            repo_id="pihalf/gss-models", filename=file_name, local_dir="./src/zensvi/cv/classification/gss-models/"
+            repo_id="pihalf/gss-models", filename=file_name, local_dir=Path(__file__).parent.parent.parent.parent.parent / "models"
         )
 
         checkpoint = torch.load(
@@ -113,7 +113,7 @@ class ClassifierPlatform(BaseClassifier):
         save_format="json csv",
     ) -> List[str]:
         """
-        Classifies images based on platform. The output file can be saved in JSON and/or CSV format and will contain platform for each image. The platform categories are "clear", "cloudy", "foggy", "rainy", and "snowy".
+        Classifies images based on platform. The output file can be saved in JSON and/or CSV format and will contain platform for each image. The platform categories are "driving surface", "walking surface", "cycling surface", "tunnel", "field", and "railway".
 
         :param dir_input: directory containing input images.
         :type dir_input: Union[str, Path]
