@@ -113,7 +113,7 @@ class ClassifierGlare(BaseClassifier):
         save_format="json csv",
     ) -> List[str]:
         """
-        Classifies images based on glare. The output file can be saved in JSON and/or CSV format and will contain glare for each image. The glare categories are "yes" and "no".
+        Classifies images based on glare. The output file can be saved in JSON and/or CSV format and will contain glare for each image. The glare categories are "True" and "False".
 
         :param dir_input: directory containing input images.
         :type dir_input: Union[str, Path]

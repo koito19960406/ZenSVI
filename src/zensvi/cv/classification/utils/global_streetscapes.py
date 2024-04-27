@@ -12,8 +12,8 @@ weather_dict2idx = {
 }
 
 glare_dict2idx = {
-    "label2index": {"no": 0, "yes": 1},
-    "index2label": {0: "no", 1: "yes"},
+    "label2index": {"False": 0, "True": 1},
+    "index2label": {0: "False", 1: "True"},
 }
 
 lighting_dict2idx = {
@@ -51,8 +51,8 @@ quality_dict2idx = {
 }
 
 reflection_dict2idx = {
-    "label2index": {"no": 0, "yes": 1},
-    "index2label": {0: "no", 1: "yes"},
+    "label2index": {"False": 0, "True": 1},
+    "index2label": {0: "False", 1: "True"},
 }
 
 view_direction_dict2idx = {
