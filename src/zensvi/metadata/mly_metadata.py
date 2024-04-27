@@ -13,12 +13,12 @@ from concurrent.futures import ProcessPoolExecutor
 from tqdm.auto import tqdm
 from timezonefinder import TimezoneFinder
 
-tf_instance = None  # Global variable to store the TimezoneFinder instance
+_tf_instance = None  # Global variable to store the TimezoneFinder instance
 
 
-def init_timezone_finder():
-    global tf_instance
-    tf_instance = TimezoneFinder()
+def _init_timezone_finder():
+    global _tf_instance
+    _tf_instance = TimezoneFinder()
 
 
 def _calculate_angle(line):
@@ -71,8 +71,8 @@ def _day_or_night(series, date_time):
 
 
 def _get_timezone_str(lat, lon):
-    global tf_instance
-    return tf_instance.timezone_at(lng=lon, lat=lat)
+    global _tf_instance
+    return _tf_instance.timezone_at(lng=lon, lat=lat)
 
 
 def _get_local_datetime(timestamp, timezone_str):
@@ -647,7 +647,7 @@ class MLYMetadata:
             or "speed" in indicator_list
         ):
             # calculate local datetime for each point
-            with ProcessPoolExecutor(initializer=init_timezone_finder) as executor:
+            with ProcessPoolExecutor(initializer=_init_timezone_finder) as executor:
                 results = list(
                     tqdm(
                         executor.map(_process_row, self.df.to_dict("records")),

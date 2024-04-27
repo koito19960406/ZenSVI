@@ -66,6 +66,12 @@ def skip_util_classes(app, what, name, obj, skip, options):
         skip = True
     if what == "package" and "low_level" in name:
         skip = True
+    if what == "package" and "zoedepth" in name:
+        skip = True
+    if what == "package" and "depth_anything" in name:
+        skip = True
+    if what == "package" and "torchhub" in name:
+        skip = True
     if what == "class" and "ImageDataset" in name:
         skip = True
     if what == "class" and "GSVDownloader" in name:
