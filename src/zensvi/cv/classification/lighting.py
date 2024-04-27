@@ -75,7 +75,7 @@ class ClassifierLighting(BaseClassifier):
 
         file_name = "lighting_condition_uniform/e14259c3-aea1-4469-a70d-451955255a80_lighting_condition_lighting_condition_uniform_checkpoint.ckpt"
         checkpoint_path = hf_hub_download(
-            repo_id="pihalf/gss-models", filename=file_name, local_dir="./src/zensvi/cv/classification/gss-models/"
+            repo_id="pihalf/gss-models", filename=file_name, local_dir=Path(__file__).parent.parent.parent.parent.parent / "models"
         )
 
         checkpoint = torch.load(
@@ -113,7 +113,7 @@ class ClassifierLighting(BaseClassifier):
         save_format="json csv",
     ) -> List[str]:
         """
-        Classifies images based on lighting. The output file can be saved in JSON and/or CSV format and will contain lighting for each image. The lighting categories are "clear", "cloudy", "foggy", "rainy", and "snowy".
+        Classifies images based on lighting. The output file can be saved in JSON and/or CSV format and will contain lighting for each image. The lighting categories are "day", "night", and "dawn/dusk".
 
         :param dir_input: directory containing input images.
         :type dir_input: Union[str, Path]

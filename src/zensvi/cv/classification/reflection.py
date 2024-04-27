@@ -75,7 +75,7 @@ class ClassifierReflection(BaseClassifier):
 
         file_name = "reflection_inverse/7ef9a22e-9025-4362-87a0-1cb1fe96debc_reflection_reflection_inverse_checkpoint.ckpt"
         checkpoint_path = hf_hub_download(
-            repo_id="pihalf/gss-models", filename=file_name, local_dir="./src/zensvi/cv/classification/gss-models/"
+            repo_id="pihalf/gss-models", filename=file_name, local_dir=Path(__file__).parent.parent.parent.parent.parent / "models"
         )
 
         checkpoint = torch.load(
@@ -113,7 +113,7 @@ class ClassifierReflection(BaseClassifier):
         save_format="json csv",
     ) -> List[str]:
         """
-        Classifies images based on reflection. The output file can be saved in JSON and/or CSV format and will contain reflection for each image. The reflection categories are "clear", "cloudy", "foggy", "rainy", and "snowy".
+        Classifies images based on reflection. The output file can be saved in JSON and/or CSV format and will contain reflection for each image. The reflection categories are "yes" and "no".
 
         :param dir_input: directory containing input images.
         :type dir_input: Union[str, Path]

@@ -75,7 +75,7 @@ class ClassifierWeather(BaseClassifier):
 
         file_name = "weather_inverse/78ff5ce3-dba4-4265-8acb-c2d577ec5403_weather_weather_inverse_checkpoint.ckpt"
         checkpoint_path = hf_hub_download(
-            repo_id="pihalf/gss-models", filename=file_name, local_dir="./src/zensvi/cv/classification/gss-models/"
+            repo_id="pihalf/gss-models", filename=file_name, local_dir=Path(__file__).parent.parent.parent.parent.parent / "models"
         )
 
         checkpoint = torch.load(
