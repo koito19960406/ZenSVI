@@ -78,7 +78,7 @@ def _returnCAM(feature_conv, weight_softmax, class_idx):
 
 class ClassifierPlaces365(BaseClassifier):
     """
-    A classifier for identifying places using the Places365 model.
+    A classifier for identifying places using the Places365 model. The model is from Zhou et al. (2017) (https://github.com/CSAILVision/places365).
 
     :param device: The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
         If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.

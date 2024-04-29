@@ -237,7 +237,7 @@ class ImageDataset(Dataset):
         return list(image_files), list(images), list(original_img_shape)
 
 class Segmenter:
-    """A class for performing semantic and panoptic segmentation on images.
+    """A class for performing semantic and panoptic segmentation on images. The models used are from the Mask2Former (https://huggingface.co/docs/transformers/model_doc/mask2former).
     """
     def __init__(self, dataset="cityscapes", task = "semantic", device = None):
         """

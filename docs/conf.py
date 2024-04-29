@@ -66,12 +66,6 @@ def skip_util_classes(app, what, name, obj, skip, options):
         skip = True
     if what == "package" and "low_level" in name:
         skip = True
-    if what == "package" and "zoedepth" in name:
-        skip = True
-    if what == "package" and "depth_anything" in name:
-        skip = True
-    if what == "package" and "torchhub" in name:
-        skip = True
     if what == "class" and "ImageDataset" in name:
         skip = True
     if what == "class" and "GSVDownloader" in name:
@@ -81,6 +75,14 @@ def skip_util_classes(app, what, name, obj, skip, options):
     if what == "module" and "font_property" in name:
         skip = True
     if what == "module" and "gsv" in name:
+        skip = True
+    if "torchhub" in name:
+        skip = True
+    if "zoedepth" in name:
+        skip = True
+    if "depth_anything" in name:
+        skip = True
+    if "dinov2" in name:
         skip = True
     if what == "attribute" and "__slots__" in name:
         skip = True

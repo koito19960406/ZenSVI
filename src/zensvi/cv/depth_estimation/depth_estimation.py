@@ -17,45 +17,51 @@ from .depth_anything.util.transform import Resize, NormalizeImage, PrepareForNet
 
 
 class ImageDataset(Dataset):
-    def __init__(self, image_files: List[Path]):
+    def __init__(self, image_files: List[Path], task="relative"):
         self.image_files = [
             image_file
             for image_file in image_files
             if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"]
             and not image_file.name.startswith(".")
         ]
-        self.transform = Compose(
-            [
-                Resize(
-                    width=518,
-                    height=518,
-                    resize_target=False,
-                    keep_aspect_ratio=False,
-                    ensure_multiple_of=14,
-                    resize_method="lower_bound",
-                    image_interpolation_method=cv2.INTER_CUBIC,
-                ),
-                NormalizeImage(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-                PrepareForNet(),
-            ]
-        )
+        self.task = task
+        if self.task == "absolute":
+            self.transform = Compose(
+                [
+                    Resize(
+                        width=518,
+                        height=518,
+                        resize_target=False,
+                        keep_aspect_ratio=False,
+                        ensure_multiple_of=14,
+                        resize_method="lower_bound",
+                        image_interpolation_method=cv2.INTER_CUBIC,
+                    ),
+                    NormalizeImage(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                    PrepareForNet(),
+                ]
+            )
 
     def __len__(self) -> int:
         return len(self.image_files)
 
     def __getitem__(self, idx: int) -> Tuple[str, torch.Tensor]:
         image_file = self.image_files[idx]
-        image = cv2.cvtColor(cv2.imread(str(image_file)), cv2.COLOR_BGR2RGB) / 255.0
-        # get the original image size
-        original_size = image.shape[:2]
-        image = self.transform({"image": image})["image"]
-        image = torch.from_numpy(image)
+        if self.task == "absolute":
+            image = cv2.cvtColor(cv2.imread(str(image_file)), cv2.COLOR_BGR2RGB) / 255.0
+            # get the original image size
+            original_size = image.shape[:2]
+            image = self.transform({"image": image})["image"]
+            image = torch.from_numpy(image)
+        else:
+            image = Image.open(image_file)
+            original_size = (image.size[1], image.size[0])
 
         return image_file, image, original_size
 
     def collate_fn(
         self, data: List[Tuple[str, torch.Tensor]]
-    ) -> Tuple[List[str], torch.Tensor]:
+    ) -> Tuple[List[str], torch.Tensor, List[Tuple[int, int]]]:
         """
         Custom collate function for the dataset.
 
@@ -66,11 +72,15 @@ class ImageDataset(Dataset):
             Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
         """
         image_files, images, original_sizes = zip(*data)
-        return list(image_files), torch.stack(images), list(original_sizes)
+        if self.task == "absolute":
+            images = torch.stack(images)
+        else:
+            images = list(images)
+        return list(image_files), images, list(original_sizes)
 
 
 class DepthEstimator:
-    """A class for estimating depth in images. The class uses the DPT model from Hugging Face for relative depth estimation and the ZoeDepth model for absolute depth estimation.
+    """A class for estimating depth in images. The class uses the DPT model from Hugging Face for relative depth estimation (https://huggingface.co/Intel/dpt-large) and the ZoeDepth model for absolute (metric) depth estimation (https://github.com/LiheYoung/Depth-Anything/tree/1e1c8d373ae6383ef6490a5c2eb5ef29fd085993/metric_depth).
 
     :param device: device to use for inference, defaults to None
     :type device: str, optional
@@ -161,7 +171,7 @@ class DepthEstimator:
                 if self.task == "relative":
                     prediction = torch.nn.functional.interpolate(
                         predicted_depth.unsqueeze(0).unsqueeze(0),
-                        size=images[i].shape[1:3],  # if images[i] is in CxHxW format
+                        size=original_size,  # if images[i] is in CxHxW format
                         mode="bicubic",
                         align_corners=False,
                     )
@@ -234,7 +244,7 @@ class DepthEstimator:
         # make dir_image_output
         Path(dir_image_output).mkdir(parents=True, exist_ok=True)
 
-        dataset = ImageDataset(image_file_list)
+        dataset = ImageDataset(image_file_list, task=self.task)
         dataloader = DataLoader(
             dataset, batch_size=batch_size, collate_fn=dataset.collate_fn
         )
