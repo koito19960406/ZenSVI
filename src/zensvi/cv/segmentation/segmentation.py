@@ -890,12 +890,12 @@ class Segmenter:
         results = thread_map(process_image_file, image_files, [self.label_map] * len(image_files))
 
         if "json" in save_format:
-            json_output_file = Path(dir_output) / 'pixel_ratio.json'
+            json_output_file = Path(dir_output) / 'pixel_ratios.json'
             nested_dict = results_to_nested_dict(results)
             with open(json_output_file, 'w') as f:
                 json.dump(nested_dict, f, indent=2) 
                 
         if "csv" in save_format:
-            csv_output_file = Path(dir_output) / 'pixel_ratio.csv'
+            csv_output_file = Path(dir_output) / 'pixel_ratios.csv'
             df = results_to_dataframe(results)
             df.to_csv(csv_output_file)

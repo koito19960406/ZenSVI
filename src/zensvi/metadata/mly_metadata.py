@@ -92,49 +92,33 @@ def _compute_speed(df):
     gdf = gpd.GeoDataFrame(
         df,
         geometry=gpd.points_from_xy(df.lon, df.lat),
-        crs="EPSG:4326",  # WGS84 Latitude/Longitude
+        crs="EPSG:4326"  # WGS84 Latitude/Longitude
     )
 
-    # Project to a local CRS
+    # Project to a local CRS once
     gdf = ox.project_gdf(gdf)
 
     # Sort the DataFrame by sequence_id and local_datetime
-    gdf.sort_values(by=["sequence_id", "local_datetime"], inplace=True, ascending=False)
+    gdf.sort_values(by=["sequence_id", "local_datetime"], inplace=True)
 
-    # Calculate differences only for consecutive points within the same sequence
+    # Convert local_datetime to datetime once
+    gdf['local_datetime'] = pd.to_datetime(gdf['local_datetime'])
+
+    # Create shifted columns for sequence ID, geometry, and datetime
     gdf["shifted_sequence_id"] = gdf["sequence_id"].shift(-1)
     gdf["shifted_geometry"] = gdf["geometry"].shift(-1)
-    gdf["local_datetime"] = pd.to_datetime(gdf["local_datetime"])
     gdf["shifted_datetime"] = gdf["local_datetime"].shift(-1)
 
-    # Calculate distances in meters only if the sequence_id is the same
-    gdf["distance_m"] = gdf.apply(
-        lambda row: (
-            row["geometry"].distance(row["shifted_geometry"])
-            if row["sequence_id"] == row["shifted_sequence_id"]
-            else np.nan
-        ),
-        axis=1,
-    )
-
-    # Calculate time differences in hours only if the sequence_id is the same
-    gdf["time_diff_hrs"] = gdf.apply(
-        lambda row: (
-            (row["local_datetime"] - row["shifted_datetime"]).total_seconds() / 3600
-            if row["sequence_id"] == row["shifted_sequence_id"]
-            else np.nan
-        ),
-        axis=1,
-    )
+    # Calculate distances and time differences where sequence IDs align
+    same_sequence = gdf["sequence_id"] == gdf["shifted_sequence_id"]
+    gdf.loc[same_sequence, "distance_m"] = gdf.loc[same_sequence, "geometry"].distance(gdf.loc[same_sequence, "shifted_geometry"])
+    gdf.loc[same_sequence, "time_diff_hrs"] = (gdf.loc[same_sequence, "shifted_datetime"] - gdf.loc[same_sequence, "local_datetime"]).dt.total_seconds() / 3600
 
     # Calculate speed in km/h
-    gdf["speed_kmh"] = (gdf["distance_m"] / 1000) / gdf["time_diff_hrs"]
+    gdf["speed_kmh"] = gdf["distance_m"] / 1000 / gdf["time_diff_hrs"]
 
-    # Clean up extra columns
-    gdf.drop(
-        columns=["shifted_sequence_id", "shifted_geometry", "shifted_datetime"],
-        inplace=True,
-    )
+    # Drop the intermediate columns
+    gdf.drop(columns=["shifted_sequence_id", "shifted_geometry", "shifted_datetime"], inplace=True)
 
     return gdf["speed_kmh"]
 
@@ -271,9 +255,36 @@ class MLYMetadata:
         ).dt.dayofweek.astype(int)
 
     def _compute_daytime_nighttime_metadata_image(self):
-        self.metadata["daytime_nighttime"] = self.df.apply(
-            lambda x: _day_or_night(x, pd.to_datetime(x["local_datetime"])), axis=1
+        # Create unique keys and map them to their respective sunrise and sunset times
+        self.df['date'] = self.df['local_datetime'].dt.date
+        unique_locations_dates = self.df[['lat', 'lon', 'date']].drop_duplicates()
+
+        # Calculate sunrise and sunset for each unique location and date
+        sun_times_list = []
+        for _, row in unique_locations_dates.iterrows():
+            location = LocationInfo(latitude=row['lat'], longitude=row['lon'])
+            s = sun.sun(location.observer, date=row['date'])
+            sun_times_list.append({
+                'lat': row['lat'],
+                'lon': row['lon'],
+                'date': row['date'],
+                'sunrise': s['sunrise'],
+                'sunset': s['sunset']
+            })
+
+        sun_times_df = pd.DataFrame(sun_times_list)
+
+        # Merge this back into the original DataFrame
+        self.df = self.df.merge(sun_times_df, on=['lat', 'lon', 'date'])
+
+        # Determine if it's daytime or nighttime
+        self.df['daytime_nighttime'] = self.df.apply(
+            lambda row: 'daytime' if row['sunrise'] <= row['local_datetime'] <= row['sunset'] else 'nighttime',
+            axis=1
         )
+
+        # Clean up the DataFrame
+        self.df.drop(columns=['date', 'sunrise', 'sunset'], inplace=True)
 
     def _compute_season_metadata_image(self):
         # place holder for season metadata because it is already computed in the compute_metadata function
@@ -295,20 +306,34 @@ class MLYMetadata:
             )
 
     def _compute_coverage_metadata_grid_street(self):
-        # calculate the area covered by buffer (self.coverage_buffer) from each point (self.gdf) in gdf
+        # Calculate the unified buffer from each point in the GeoDataFrame
         buffer = self.gdf.buffer(self.coverage_buffer).unary_union
-        # if self.metadata is line, calculate the coverage as the ratio of length of the line within the buffer over the total length.
-        # Otherwise, calculate the ratio of area of the polygon within the buffer over the total area.
-        if isinstance(self.metadata["geometry"].iloc[0], LineString):
-            self.metadata["coverage"] = (
-                self.metadata["geometry"].intersection(buffer).length
-                / self.metadata["geometry"].length
+
+        # If possible, use spatial index to improve intersection checks
+        if self.metadata.sindex:
+            possible_matches_index = list(self.metadata.sindex.intersection(buffer.bounds))
+            relevant_geometries = self.metadata.iloc[possible_matches_index]
+        else:
+            relevant_geometries = self.metadata
+
+        # Compute intersections with buffer only for potentially intersecting geometries
+        relevant_geometries['intersection'] = relevant_geometries['geometry'].intersection(buffer)
+
+        # Calculate coverage based on the type of the geometries
+        if isinstance(relevant_geometries['geometry'].iloc[0], LineString):
+            relevant_geometries['coverage'] = (
+                relevant_geometries['intersection'].length / relevant_geometries['geometry'].length
             )
         else:
-            self.metadata["coverage"] = (
-                self.metadata["geometry"].intersection(buffer).area
-                / self.metadata["geometry"].area
+            relevant_geometries['coverage'] = (
+                relevant_geometries['intersection'].area / relevant_geometries['geometry'].area
             )
+
+        # Store the results back into the original metadata GeoDataFrame
+        self.metadata['coverage'] = relevant_geometries['coverage']
+
+        # Cleanup the temporary columns
+        relevant_geometries.drop(columns=['intersection'], inplace=True)
 
     def _compute_count_metadata_grid_street(self):
         self.metadata["count"] = self.joined.groupby(self.columns_to_group_by).size()
@@ -617,6 +642,7 @@ class MLYMetadata:
         coverage_buffer: int = 50,
         indicator_list: str = "all",
         path_output: Union[str, Path] = None,
+        max_distance: int = 50,
     ):
         """
         Compute metadata for the dataset.
@@ -625,10 +651,12 @@ class MLYMetadata:
         :type unit: str
         :param grid_resolution: The resolution of the H3 grid. Defaults to 7.
         :type grid_resolution: int
-        :param indicator_list: List of indicators to compute metadata for. Defaults to "all". Use space-separated string of indicators or "all". Options for image-level metadata: "year", "month", "day", "hour", "day_of_week", "relative_angle". Options for grid-level metadata: "coverage", "count", "days_elapsed", "most_recent_date", "oldest_date", "number_of_years", "number_of_months", "number_of_days", "number_of_hours", "number_of_days_of_week", "number_of_daytime", "number_of_nighttime", "average_compass_angle", "average_relative_angle", "average_is_pano", "number_of_users", "number_of_sequences", "number_of_organizations". Defaults to "all".
+        :param indicator_list: List of indicators to compute metadata for. Use space-separated string of indicators or "all". Options for image-level metadata: "year", "month", "day", "hour", "day_of_week", "relative_angle", "h3_id", "speed_kmh". Options for grid-level metadata: "coverage", "count", "days_elapsed", "most_recent_date", "oldest_date", "number_of_years", "number_of_months", "number_of_days", "number_of_hours", "number_of_days_of_week", "number_of_daytime", "number_of_nighttime", "number_of_spring", "number_of_summer", "number_of_autumn", "number_of_winter", "average_compass_angle", "average_relative_angle", "average_is_pano", "number_of_users", "number_of_sequences", "number_of_organizations", "average_speed_kmh". Defaults to "all".
         :type indicator_list: str
         :param path_output: Path to save the output metadata. Defaults to None.
         :type path_output: Union[str, Path]
+        :param max_distance: The maximum distance to search for the nearest street segment. Defaults to 50.
+        :type max_distance: int
         
         :return: A DataFrame containing the computed metadata.
         :rtype: pd.DataFrame
@@ -682,21 +710,28 @@ class MLYMetadata:
 
         # check indicator_list and pre-compute metadata, e.g., relative_angle
         if "all" in indicator_list or "relative_angle" in indicator_list:
-            # find the nearest street segment for each point with gdf sjoin_nearest
-            nearest_line = self.gdf.sjoin_nearest(self.street_network, how="left")
-            # calculate the relative angle between the street segment and the point. It should be 0-90 degrees if the point is on the right side of the street segment, 90-180 degrees if the point is on the left side of the street segment, and 180-360 degrees if the point is behind the street segment.
-            nearest_line["relative_angle"] = (
-                nearest_line["angle"] - nearest_line["compass_angle"]
+            # Perform the nearest join with the street network
+            nearest_line = self.gdf.sjoin_nearest(
+                self.street_network[['geometry', 'angle']],  # Ensure only necessary columns are loaded
+                how="left",
+                max_distance=max_distance,
+                distance_col="dist"  # Save distances to avoid recomputing
+            )
+
+            # Calculate the relative angle and ensure it is within 0-360 degrees
+            nearest_line['relative_angle'] = (
+                (nearest_line['angle'] - nearest_line['compass_angle']) % 360
             ).abs()
-            # group by id and get the nearest line with the minimum relative angle
-            nearest_line = (
-                nearest_line.groupby("id")["relative_angle"].min().reset_index()
-            )
-            nearest_line = nearest_line[["id", "relative_angle"]]
-            nearest_line = nearest_line[["id", "relative_angle"]].merge(
-                self.gdf, on="id", how="right"
-            )
-            self.nearest_line = gpd.GeoDataFrame(nearest_line)
+
+            # Reduce to the essential data and perform a groupby operation to find the minimum angle for each 'id'
+            min_angle = nearest_line[['id', 'relative_angle']].groupby('id', as_index=False).min()
+
+            # Merge back to the original GeoDataFrame to include all original data
+            self.nearest_line = self.gdf.merge(min_angle, on='id', how='left')
+
+            # Convert to GeoDataFrame if not already one
+            if not isinstance(self.nearest_line, gpd.GeoDataFrame):
+                self.nearest_line = gpd.GeoDataFrame(self.nearest_line, geometry='geometry')
 
         # run the appropriate function to compute metadata based on the unit of analysis
         if unit == "image":
