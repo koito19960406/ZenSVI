@@ -859,9 +859,9 @@ class MLYMetadata:
                 distance_col="dist",  # Save distances to avoid recomputing
             )
 
-            # Calculate the relative angle and ensure it is within 0-360 degrees
+            # Calculate the relative angle and ensure it is within 0-180 degrees because we don't know the direction of the street
             nearest_line["relative_angle"] = (
-                (nearest_line["angle"] - nearest_line["compass_angle"]) % 360
+                (nearest_line["angle"] - nearest_line["compass_angle"]) % 180
             ).abs()
 
             # Reduce to the essential data and perform a group_by operation to find the minimum angle for each 'id'
