@@ -203,7 +203,7 @@ class ClassifierPlaces365(BaseClassifier):
     ):
         """
         Classifies images based on scene recognition using the Places365 model. The output file can be saved in JSON and/or CSV format and will contain the scene categories, scene attributes, and environment type (indoor or outdoor) for each image.
-        
+
         A list of categories can be found at https://github.com/CSAILVision/places365/blob/master/categories_places365.txt and a list of attributes can be found at https://github.com/CSAILVision/places365/blob/master/labels_sunattribute.txt
 
         Scene categories' values range from 0 to 1, where 1 is the highest probability of the scene category. Scene attributes' values are the responses of the scene attributes, which are the dot product of the scene attributes' weight and the features of the image, and higher values indicate a higher presence of the attribute in the image. The environment type is either "indoor" or "outdoor".
@@ -221,7 +221,7 @@ class ClassifierPlaces365(BaseClassifier):
         :param save_format: save format for the output, defaults to "json csv". Options are "json" and "csv". Please add a space between options.
         :type save_format: str, optional
         :param csv_format: csv format for the output, defaults to "long". Options are "long" and "wide".
-        :type csv_format: str, optional 
+        :type csv_format: str, optional
         """
         if not dir_image_output and not dir_summary_output:
             raise ValueError(
@@ -237,7 +237,24 @@ class ClassifierPlaces365(BaseClassifier):
         if Path(dir_input).is_file():
             img_paths = [Path(dir_input)]
         else:
-            img_paths = list(Path(dir_input).rglob("*.[jJp][pPn][gG]"))
+            img_paths = [
+                p
+                for ext in [
+                    "*.jpg",
+                    "*.jpeg",
+                    "*.png",
+                    "*.gif",
+                    "*.bmp",
+                    "*.tiff",
+                    "*.JPG",
+                    "*.JPEG",
+                    "*.PNG",
+                    "*.GIF",
+                    "*.BMP",
+                    "*.TIFF",
+                ]
+                for p in Path(dir_input).rglob(ext)
+            ]
 
         # Transform and load the dataset
         transform = _returnTF()

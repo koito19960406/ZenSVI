@@ -45,7 +45,9 @@ class ImageDataset(Dataset):
 
         return str(image_file), img
 
-    def collate_fn(self, data: List[Tuple[str, torch.Tensor]]) -> Tuple[List[str], torch.Tensor]:
+    def collate_fn(
+        self, data: List[Tuple[str, torch.Tensor]]
+    ) -> Tuple[List[str], torch.Tensor]:
         """
         Custom collate function for the dataset.
 
@@ -75,7 +77,9 @@ class ClassifierWeather(BaseClassifier):
 
         file_name = "weather_inverse/78ff5ce3-dba4-4265-8acb-c2d577ec5403_weather_weather_inverse_checkpoint.ckpt"
         checkpoint_path = hf_hub_download(
-            repo_id="pihalf/gss-models", filename=file_name, local_dir=Path(__file__).parent.parent.parent.parent.parent / "models"
+            repo_id="pihalf/gss-models",
+            filename=file_name,
+            local_dir=Path(__file__).parent.parent.parent.parent.parent / "models",
         )
 
         checkpoint = torch.load(
@@ -91,7 +95,7 @@ class ClassifierWeather(BaseClassifier):
         )
         self.model.eval()
         self.model.to(self.device)
-        
+
     def _save_results_to_file(
         self, results, dir_output, file_name, save_format="csv json"
     ):
@@ -132,7 +136,24 @@ class ClassifierWeather(BaseClassifier):
         if Path(dir_input).is_file():
             img_paths = [Path(dir_input)]
         else:
-            img_paths = list(Path(dir_input).rglob("*.[jJp][pPn][gG]"))
+            img_paths = [
+                p
+                for ext in [
+                    "*.jpg",
+                    "*.jpeg",
+                    "*.png",
+                    "*.gif",
+                    "*.bmp",
+                    "*.tiff",
+                    "*.JPG",
+                    "*.JPEG",
+                    "*.PNG",
+                    "*.GIF",
+                    "*.BMP",
+                    "*.TIFF",
+                ]
+                for p in Path(dir_input).rglob(ext)
+            ]
 
         dataset = ImageDataset(img_paths)
         dataloader = DataLoader(
@@ -151,7 +172,10 @@ class ClassifierWeather(BaseClassifier):
                     dataloader, desc="Classifying weather"
                 )
                 for image_file, pred in zip(
-                    image_files, torch.max(self.model(images.to(self.device, dtype=torch.float32)), 1)[1]
+                    image_files,
+                    torch.max(
+                        self.model(images.to(self.device, dtype=torch.float32)), 1
+                    )[1],
                 )
             ]
 

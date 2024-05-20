@@ -45,7 +45,9 @@ class ImageDataset(Dataset):
 
         return str(image_file), img
 
-    def collate_fn(self, data: List[Tuple[str, torch.Tensor]]) -> Tuple[List[str], torch.Tensor]:
+    def collate_fn(
+        self, data: List[Tuple[str, torch.Tensor]]
+    ) -> Tuple[List[str], torch.Tensor]:
         """
         Custom collate function for the dataset.
 
@@ -75,7 +77,9 @@ class ClassifierPlatform(BaseClassifier):
 
         file_name = "platform_inverse/e87c7bab-78f3-4192-93c4-e71d1f90598a_platform_platform_inverse_checkpoint.ckpt"
         checkpoint_path = hf_hub_download(
-            repo_id="pihalf/gss-models", filename=file_name, local_dir=Path(__file__).parent.parent.parent.parent.parent / "models"
+            repo_id="pihalf/gss-models",
+            filename=file_name,
+            local_dir=Path(__file__).parent.parent.parent.parent.parent / "models",
         )
 
         checkpoint = torch.load(
@@ -91,7 +95,7 @@ class ClassifierPlatform(BaseClassifier):
         )
         self.model.eval()
         self.model.to(self.device)
-        
+
     def _save_results_to_file(
         self, results, dir_output, file_name, save_format="csv json"
     ):
@@ -132,7 +136,24 @@ class ClassifierPlatform(BaseClassifier):
         if Path(dir_input).is_file():
             img_paths = [Path(dir_input)]
         else:
-            img_paths = list(Path(dir_input).rglob("*.[jJp][pPn][gG]"))
+            img_paths = [
+                p
+                for ext in [
+                    "*.jpg",
+                    "*.jpeg",
+                    "*.png",
+                    "*.gif",
+                    "*.bmp",
+                    "*.tiff",
+                    "*.JPG",
+                    "*.JPEG",
+                    "*.PNG",
+                    "*.GIF",
+                    "*.BMP",
+                    "*.TIFF",
+                ]
+                for p in Path(dir_input).rglob(ext)
+            ]
 
         dataset = ImageDataset(img_paths)
         dataloader = DataLoader(
@@ -151,7 +172,10 @@ class ClassifierPlatform(BaseClassifier):
                     dataloader, desc="Classifying platform"
                 )
                 for image_file, pred in zip(
-                    image_files, torch.max(self.model(images.to(self.device, dtype=torch.float32)), 1)[1]
+                    image_files,
+                    torch.max(
+                        self.model(images.to(self.device, dtype=torch.float32)), 1
+                    )[1],
                 )
             ]
 

@@ -28,7 +28,7 @@ class ImageDataset(Dataset):
                 transforms.ToTensor(),
                 transforms.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ), 
+                ),
             ]
         )
 
@@ -37,12 +37,14 @@ class ImageDataset(Dataset):
 
     def __getitem__(self, idx: int) -> Tuple[str, torch.Tensor]:
         image_file = self.image_files[idx]
-        img = Image.open(image_file).convert('RGB') 
-        img = self.transform(img) 
+        img = Image.open(image_file).convert("RGB")
+        img = self.transform(img)
 
         return str(image_file), img
 
-    def collate_fn(self, data: List[Tuple[str, torch.Tensor]]) -> Tuple[List[str], torch.Tensor]:
+    def collate_fn(
+        self, data: List[Tuple[str, torch.Tensor]]
+    ) -> Tuple[List[str], torch.Tensor]:
         """
         Custom collate function for the dataset.
 
@@ -75,7 +77,9 @@ class ClassifierPerception(BaseClassifier):
 
         file_name = f"{perception_study}.pth"
         checkpoint_path = hf_hub_download(
-            repo_id="seshing/placepulse", filename=file_name, local_dir=Path(__file__).parent.parent.parent.parent.parent / "models"
+            repo_id="seshing/placepulse",
+            filename=file_name,
+            local_dir=Path(__file__).parent.parent.parent.parent.parent / "models",
         )
 
         # Now load the model
@@ -83,7 +87,7 @@ class ClassifierPerception(BaseClassifier):
         self.model = self.load_checkpoint(self.model, checkpoint_path)
         self.model.eval()
         self.model.to(self.device)
-        
+
     def _save_results_to_file(
         self, results, dir_output, file_name, save_format="csv json"
     ):
@@ -129,24 +133,44 @@ class ClassifierPerception(BaseClassifier):
         if Path(dir_input).is_file():
             img_paths = [Path(dir_input)]
         else:
-            img_paths = list(Path(dir_input).rglob("*.[jJp][pPn][gG]"))
+            img_paths = [
+                p
+                for ext in [
+                    "*.jpg",
+                    "*.jpeg",
+                    "*.png",
+                    "*.gif",
+                    "*.bmp",
+                    "*.tiff",
+                    "*.JPG",
+                    "*.JPEG",
+                    "*.PNG",
+                    "*.GIF",
+                    "*.BMP",
+                    "*.TIFF",
+                ]
+                for p in Path(dir_input).rglob(ext)
+            ]
 
         dataset = ImageDataset(img_paths)
-        dataloader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=False
-        )
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
         results = []
         with torch.no_grad():
-            for image_files, images in tqdm.tqdm(dataloader, desc=f"Evaluating human perception of study: {self.perception_study}"):
+            for image_files, images in tqdm.tqdm(
+                dataloader,
+                desc=f"Evaluating human perception of study: {self.perception_study}",
+            ):
                 images = images.to(self.device, dtype=torch.float32)
 
                 custom_scores = self.model(images)
                 for image_file, score in zip(image_files, custom_scores):
-                    results.append({
-                        "filename_key": str(Path(image_file).stem),
-                        f"{self.perception_study}": score.item()
-                    })
+                    results.append(
+                        {
+                            "filename_key": str(Path(image_file).stem),
+                            f"{self.perception_study}": score.item(),
+                        }
+                    )
 
         # Save the results to JSON and/or CSV
         self._save_results_to_file(
