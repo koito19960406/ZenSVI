@@ -58,9 +58,7 @@ class EmbeddingVector:
     
     def cosine_similarity(self, other):
         return np.dot(self.vector, other.vector) / (np.linalg.norm(self.vector) * np.linalg.norm(other.vector))
-    
-    def 
-    
+
 
 
 # create a class for extracting embeddings
@@ -134,7 +132,23 @@ class Embeddings:
             np.save(dir_embeddings_output + f'embeddings_{i}.npy', fvectors)
             print(f'Batch {i+1} done!')
     
-    def cluster(self, dir_embeddings_output, dir_summary_output,num_clusters=100, batch_size=100):
+    def cosine_similarity(self, emb1, emb2):
+        """
+        :param emb1: embedding 1
+        :param emb2: embedding 2
+        :return: cosine similarity between the two embeddings
+        """
+        cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+        cos_sim = cos(emb1.unsqueeze(0),
+                    emb2.unsqueeze(0))
+        print('\nCosine similarity: {0}\n'.format(cos_sim))
+        return cos_sim
+
+    def cluster(self, 
+                dir_embeddings_output: List[str],
+                dir_summary_output: str,
+                num_clusters: int =100,
+                batch_size: int =100):
         """
         :param dir_embeddings_output: directory containing the embeddings
         :param dir_summary_output: directory to save the summary of the clustering
@@ -149,7 +163,14 @@ class Embeddings:
         np.save(dir_summary_output + 'centers.npy', kmeans.cluster_centers_)
         print('Clustering done!')
 
-    def search_similar(self, image_path,dir_images, dir_embeddings_output, dir_summary_output, num_similar=5):
+
+    def search_similar(self, 
+                        image_path : str,
+                        dir_images: List[str], 
+                        dir_embeddings_output : str, 
+                        dir_summary_output: str, 
+                        num_similar: int =5
+                        ):
         """
         :param image_path: path to the image to search for similar images
         :param dir_images: directory containing the images
