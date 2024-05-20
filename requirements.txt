@@ -47,3 +47,6 @@ haversine>=2.3.1
 python-dotenv>=0.19.0
 turfpy>=0.0.7
 geojson>=2.5.0
+img2vec_pytorch>=0.2.0
+matplotlib>=3.4.3
+scikit-learn>=1.4.2
