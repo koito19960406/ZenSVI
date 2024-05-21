@@ -8,6 +8,7 @@ import torch.nn as nn
 from shutil import copyfile
 from typing import List, Union
 import matplotlib.pyplot as plt
+from torchvision import datasets
 from collections import namedtuple
 from sklearn.cluster import KMeans
 import torchvision.models as models
@@ -15,6 +16,10 @@ from torch.autograd import Variable
 from img2vec_pytorch import Img2Vec
 from sklearn.decomposition import PCA
 import torchvision.transforms as transforms
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from torch.utils.data import Dataset, DataLoader
+
+
 
 
 _Model = namedtuple('Model', ['name', 'layer', 'layer_output_size'])
@@ -34,31 +39,29 @@ models_dict = {
     'efficientnet_b7': _Model('efficientnet_b7', '_avg_pooling', 2560),
 }
 
-# Embedding vector class for embedding vector operations. 
-class EmbeddingVector:
-    def __init__(self, vector):
-        """
-        :param vector: embedding vector is a multidimensional numpy array 
-        """
-        self.vector = vector
 
-    def __add__(self, other):
-        return EmbeddingVector(self.vector + other.vector)
+class ImageDataset(Dataset):
+    def __init__(self, image_paths, transform=None):
+        self.image_paths = image_paths
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def __getitem__(self, idx):
+        image_path = self.image_paths[idx]
+        img = Image.open(image_path)
+        image = img.resize((224, 224))
+        if self.transform:
+            image = self.transform(image)
+        return str(image_path), image
     
-    def __sub__(self, other):
-        return EmbeddingVector(self.vector - other.vector)
-    
-    def distance_to(self, other):
-        return np.linalg.norm(self.vector - other.vector)
-    
-    def get_dimension(self):
-        return self.vector.shape[0]
-    
-    def __str__(self):
-        return str(self.vector)
-    
-    def cosine_similarity(self, other):
-        return np.dot(self.vector, other.vector) / (np.linalg.norm(self.vector) * np.linalg.norm(other.vector))
+    def collate_fn(self, data):
+        print(data)
+        image_paths, images = zip(*data)
+        # Stack images to create a batch        
+        images = torch.stack(images)
+        return list(image_paths), images
 
 
 
@@ -118,26 +121,72 @@ class Embeddings:
 
         img = self.load_image(image_path)
         return img2vec.get_vec(img)
+
+    def get_image_embedding(self, 
+                            image_path: Union[List[str], str], 
+                            tensor: bool = None, 
+                            cuda: bool = None):
+        """
+        :param image_path: path to the image
+        :return: image embedding
+        """
+        if not tensor:
+            tensor = self.tensor
+        if not cuda:
+            cuda = self.cuda
+            
+        img2vec = Img2Vec(cuda=cuda)
+
+        img = self.load_image(image_path)
+        return img2vec.get_vec(img)
         
-    
-
     def generate_embedding(self, 
-                           dir_images:List[str],
+                           images_path: Union[List[str], str],
                            dir_embeddings_output: str,
+                           embedding_dimension: int = 512,
                            batch_size: int = 100):
-        """
-        :param dir_images: directory containing the images to extract embeddings from
-        :param dir_embeddings_output: directory to save the embeddings
-        :param batch_size: batch size for extracting embeddings (default: 100)
-        """
+        
+        if isinstance(images_path, str):
+            image_paths = [os.path.join(images_path, image) for image in os.listdir(images_path)]
+        else:
+            image_paths = images_path
 
-        for i in tqdm.tqdm(range(len(dir_images)//batch_size)):
-            images = [self.load_image(image_path) for image_path in dir_images[i*batch_size:(i+1)*batch_size]]
-            img2vec = Img2Vec(cuda=self.cuda)
-            fvectors = img2vec.get_vec(images)
-            np.save(dir_embeddings_output + f'embeddings_{i}.npy', fvectors)
-            print(f'Batch {i+1} done!')
-    
+        if not os.path.exists(dir_embeddings_output):
+            os.makedirs(dir_embeddings_output)
+
+        batch_size = min(batch_size, len(image_paths))
+        
+        labels = [0] * len(image_paths)
+        n_batches = (len(image_paths) + batch_size - 1) // batch_size
+        print("Total number of images: ", len(image_paths))
+        print("Number of batches: ", n_batches)
+
+        img2vec = Img2Vec(cuda=self.cuda)
+
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Resize((224, 224)),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+
+        dataset = ImageDataset(image_paths, transform=transform)  # Apply transformations if needed
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=dataset.collate_fn)
+        to_pil = ToPILImage()
+
+
+        def process_image(image):
+            pil_image = to_pil(image)
+            # Apply your functions here
+            return pil_image
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            for i, (image_paths, images) in tqdm.tqdm(enumerate(dataloader), total=n_batches, desc='Progress', ncols=100, ):
+                pil_images = list(executor.map(process_image, images))
+                vec = img2vec.get_vec(pil_images)
+                print(i, vec.shape)
+
+
+
     def cosine_similarity(self, emb1, emb2):
         """
         :param emb1: embedding 1
@@ -154,6 +203,7 @@ class Embeddings:
 
         print('\nCosine similarity: {0}\n'.format(cos_sim))
         return cos_sim
+
 
     def cluster(self, 
                 input_path,
