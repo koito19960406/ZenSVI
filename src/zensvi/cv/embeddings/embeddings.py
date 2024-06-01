@@ -173,6 +173,7 @@ class Embeddings:
                 df = pd.DataFrame(vec)
                 df.insert(0, 'file_key', [os.path.basename(image_path).split('.')[0] for image_path in image_paths])
                 df.to_parquet(os.path.join(dir_embeddings_output, f'batch_{i}.parquet'), index=False)
+        return True
     
     
     def search_similar_images(self, image_key:str, embeddings_dir: str, number_of_items: int = 10):
