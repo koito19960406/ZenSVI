@@ -130,6 +130,16 @@ plot_image(
 )
 ```
 
+### Running Embeddings
+```python
+emb = Embeddings(model_name="alexnet", cuda=True)
+emb.generate_embedding(
+    "./images_3000/",
+    "./embeddings_3000/",
+    batch_size=1000,
+)
+results = emb.search_similar_images("5510346559040433", "./embeddings_3000", 20)
+```
 ## Contributing
 
 Interested in contributing? Check out the contributing guidelines. Please note that this project is released with a Code of Conduct. By contributing to this project, you agree to abide by its terms.
