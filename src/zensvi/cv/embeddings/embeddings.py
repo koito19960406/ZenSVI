@@ -18,6 +18,10 @@ from sklearn.decomposition import PCA
 import torchvision.transforms as transforms
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from torch.utils.data import Dataset, DataLoader
+from torchvision.transforms import ToPILImage
+import pyarrow.parquet as pq
+import pyarrow as pa
+import faiss
 
 
 
@@ -29,14 +33,14 @@ models_dict = {
     'alexnet': _Model('alexnet', 'classifier', 4096),
     'vgg-11': _Model('vgg11', 'classifier', 4096),
     'densenet': _Model('densenet', 'classifier', 1024),
-    'efficientnet_b0': _Model('efficientnet_b0', '_avg_pooling', 1280),
-    'efficientnet_b1': _Model('efficientnet_b1', '_avg_pooling', 1280),
-    'efficientnet_b2': _Model('efficientnet_b2', '_avg_pooling', 1408),
-    'efficientnet_b3': _Model('efficientnet_b3', '_avg_pooling', 1536),
-    'efficientnet_b4': _Model('efficientnet_b4', '_avg_pooling', 1792),
-    'efficientnet_b5': _Model('efficientnet_b5', '_avg_pooling', 2048),
-    'efficientnet_b6': _Model('efficientnet_b6', '_avg_pooling', 2304),
-    'efficientnet_b7': _Model('efficientnet_b7', '_avg_pooling', 2560),
+    'efficientnet_b0': _Model('efficientnet_b0', 'avgpool', 1280),
+    'efficientnet_b1': _Model('efficientnet_b1', 'avgpool', 1280),
+    'efficientnet_b2': _Model('efficientnet_b2', 'avgpool', 1408),
+    'efficientnet_b3': _Model('efficientnet_b3', 'avgpool', 1536),
+    'efficientnet_b4': _Model('efficientnet_b4', 'avgpool', 1792),
+    'efficientnet_b5': _Model('efficientnet_b5', 'avgpool', 2048),
+    'efficientnet_b6': _Model('efficientnet_b6', 'avgpool', 2304),
+    'efficientnet_b7': _Model('efficientnet_b7', 'avgpool', 2560),
 }
 
 
@@ -57,7 +61,6 @@ class ImageDataset(Dataset):
         return str(image_path), image
     
     def collate_fn(self, data):
-        print(data)
         image_paths, images = zip(*data)
         # Stack images to create a batch        
         images = torch.stack(images)
@@ -70,7 +73,7 @@ class Embeddings:
     def __init__(self,
                  model_name: str ='resnet-18',
                  cuda: bool =False,
-                 tensor: bool = True
+                 tensor: bool = True, 
                  ):
         """
         :param model_name: name of the model to be used for extracting embeddings (default: 'resnet-18') 
@@ -122,29 +125,12 @@ class Embeddings:
         img = self.load_image(image_path)
         return img2vec.get_vec(img)
 
-    def get_image_embedding(self, 
-                            image_path: Union[List[str], str], 
-                            tensor: bool = None, 
-                            cuda: bool = None):
-        """
-        :param image_path: path to the image
-        :return: image embedding
-        """
-        if not tensor:
-            tensor = self.tensor
-        if not cuda:
-            cuda = self.cuda
-            
-        img2vec = Img2Vec(cuda=cuda)
-
-        img = self.load_image(image_path)
-        return img2vec.get_vec(img)
         
     def generate_embedding(self, 
                            images_path: Union[List[str], str],
                            dir_embeddings_output: str,
-                           embedding_dimension: int = 512,
-                           batch_size: int = 100):
+                           batch_size: int = 100, 
+                           maxWorkers: int = 8):
         
         if isinstance(images_path, str):
             image_paths = [os.path.join(images_path, image) for image in os.listdir(images_path)]
@@ -161,7 +147,7 @@ class Embeddings:
         print("Total number of images: ", len(image_paths))
         print("Number of batches: ", n_batches)
 
-        img2vec = Img2Vec(cuda=self.cuda)
+        img2vec = Img2Vec(cuda=self.cuda,model=self.model_name)
 
         transform = transforms.Compose([
             transforms.ToTensor(),
@@ -176,82 +162,42 @@ class Embeddings:
 
         def process_image(image):
             pil_image = to_pil(image)
-            # Apply your functions here
             return pil_image
 
-        with ThreadPoolExecutor(max_workers=8) as executor:
+        with ThreadPoolExecutor(max_workers=maxWorkers, thread_name_prefix="emb") as executor:
             for i, (image_paths, images) in tqdm.tqdm(enumerate(dataloader), total=n_batches, desc='Progress', ncols=100, ):
                 pil_images = list(executor.map(process_image, images))
-                vec = img2vec.get_vec(pil_images)
-                print(i, vec.shape)
+                vec = img2vec.get_vec(pil_images, tensor=self.tensor)
+                if isinstance(vec, torch.Tensor):
+                    vec = vec.cpu().numpy()
+                df = pd.DataFrame(vec)
+                df.insert(0, 'file_key', [os.path.basename(image_path).split('.')[0] for image_path in image_paths])
+                df.to_parquet(os.path.join(dir_embeddings_output, f'batch_{i}.parquet'), index=False)
+    
+    
+    def search_similar_images(self, image_key:str, embeddings_dir: str, number_of_items: int = 10):
+        embeddings_df = pq.read_table(embeddings_dir).to_pandas()
+        embeddings_np_array = np.stack(embeddings_df[embeddings_df.columns[1:]].to_numpy())
+        embeddings_layer_size = self.layer_output_size
+        index = faiss.IndexFlatIP(embeddings_layer_size)
+        index.add(embeddings_np_array)
+        id_to_name = {k:v for k,v in enumerate(list(embeddings_df["file_key"]))}
+        name_to_id = {v:k for k,v in id_to_name.items()}
 
 
+        emb_df = embeddings_np_array[name_to_id[image_key]]
+        D, I = index.search(np.expand_dims(emb_df, 0), number_of_items)     # actual search
+        results = list(zip(D[0], [id_to_name[x] for x in I[0]]))
+        results = [(i[0],i[1], i[1]+".png") for i in results]
+        
+        
+        return results
 
-    def cosine_similarity(self, emb1, emb2):
-        """
-        :param emb1: embedding 1
-        :param emb2: embedding 2
-        :return: cosine similarity between the two embeddings
-        """
-        # make sure that emb1 and emb2 are tensors of the same shape:
-        emb1 = torch.tensor(emb1)
-        emb2 = torch.tensor(emb2)
-
-        cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-        cos_sim = cos(emb1.reshape(1, -1),
-              emb2.reshape(1, -1))[0]
-
-        print('\nCosine similarity: {0}\n'.format(cos_sim))
-        return cos_sim
-
-
-    def cluster(self, 
-                input_path,
-                vec_length: int = 512,
-                k_value: int = 2,
-                ):
-        """
-        :param dir_embeddings_output: directory containing the embeddings
-        :param dir_summary_output: directory to save the summary of the clustering
-        :param batch_size: batch size for clustering (default: 100)
-        """
-        files = os.listdir(input_path)
-        img2vec = Img2Vec(self.model, cuda=self.cuda)
-        samples = len(files)
-        vec_mat = np.zeros((samples, vec_length))
-        sample_indices = np.random.choice(range(0, len(files)), size=samples, replace=False)
-
-        print('Reading images...')
-        for index, i in enumerate(sample_indices):
-            file = files[i]
-            filename = os.fsdecode(file)
-            img = Image.open(os.path.join(input_path, filename)).convert('RGB')
-            vec = img2vec.get_vec(img)
-            vec_mat[index, :] = vec
-
-        print('Applying PCA...')
-        reduced_data = PCA(n_components=2).fit_transform(vec_mat)
-        kmeans = KMeans(init='k-means++', n_clusters=k_value, n_init=10)
-        kmeans.fit(reduced_data)
-
-        # Create a folder for each cluster (0, 1, 2, ..)
-        for i in set(kmeans.labels_):
-            try:
-                os.mkdir('./' + str(i))
-            except FileExistsError:
-                continue
-
-        print('Predicting...')
-        preds = kmeans.predict(reduced_data)
-
-        print('Copying images...')
-        for index, i in enumerate(sample_indices):
-            file = files[i]
-            filename = os.fsdecode(file)
-            copyfile(input_path + '/' + filename, './' + str(preds[index]) + '/' + filename)
-
-        print('Done!')
-
+        
+        
+    def get_all_models(self):
+        return models_dict
+                
 
 
 if __name__ == '__main__':
