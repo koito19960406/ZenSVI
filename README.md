@@ -132,6 +132,8 @@ plot_image(
 
 ### Running Embeddings
 ```python
+from zensvi.cv import Embeddings
+
 emb = Embeddings(model_name="alexnet", cuda=True)
 emb.generate_embedding(
     "./images_3000/",
