@@ -12,7 +12,6 @@ import warnings
 from shapely.errors import ShapelyDeprecationWarning
 import json
 import os
-import kartaview.download_functions as kv
 
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
@@ -23,6 +22,7 @@ import osmnx as ox
 from PIL import Image
 
 from zensvi.download.base import BaseDownloader
+import zensvi.download.kartaview.download_functions as kv
 from zensvi.download.utils.geoprocess import GeoProcessor
 from zensvi.download.utils.helpers import standardize_column_names, check_and_buffer
 from zensvi.utils.log import Logger
