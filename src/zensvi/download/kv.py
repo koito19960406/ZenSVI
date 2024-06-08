@@ -39,33 +39,15 @@ class KVDownloader(BaseDownloader):
 
     Args:
         log_path (str, optional): Path to the log file. Defaults to None.
-        max_workers (int, optional): Number of workers for parallel processing. Defaults to None.
     """
 
-    def __init__(self, log_path=None, max_workers=None):
+    def __init__(self, log_path=None):
         super().__init__(log_path)
-        self._max_workers = max_workers
         # initialize the logger
         if log_path is not None:
             self.logger = Logger(log_path)
         else:
             self.logger = None
-
-    @property
-    def max_workers(self):
-        """Property for the number of workers for parallel processing.
-
-        :return: max_workers
-        :rtype: int
-        """
-        return self._max_workers
-
-    @max_workers.setter
-    def max_workers(self, max_workers):
-        if max_workers is None:
-            self._max_workers = min(32, os.cpu_count() + 4)
-        else:
-            self._max_workers = max_workers
 
     def _read_pids(self, path_pid):
         pid_df = pd.read_csv(path_pid)
