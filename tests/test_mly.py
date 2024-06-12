@@ -96,5 +96,22 @@ class TestMapillary(unittest.TestCase):
         self.assertTrue(len(os.listdir(self.mly_svi_output_polygon)) > 0)
 
 
+    # test with kwargs for mly
+    def test_downloader_kwargs(self):
+        # Skip test if the output file already exists
+        if os.path.exists(os.path.join(self.mly_svi_output, "mly_svi")):
+            self.skipTest("Result exists")
+        # download images
+        mly_downloader = MLYDownloader(self.mly_api_key)
+        kwarg = {
+            "image_type": "flat",  # The tile image_type to be obtained, either as 'flat', 'pano' (panoramic), or 'all'.
+            # "min_captured_at": 2010,  # The min date. Format from 'YYYY', to 'YYYY-MM-DDTHH:MM:SS'
+            # "max_captured_at": 2024,  # The max date. Format from 'YYYY', to 'YYYY-MM-DDTHH:MM:SS'
+            "organization_id": [1805883732926354],  # The organization id, ID of the organization this image (or sets of images) belong to. It can be absent. Thus, default is -1 (None)
+        }
+        mly_downloader.download_svi(self.mly_svi_output, input_shp_file=self.mly_input_polygon, **kwarg)
+        # assert True if there are files in the output directory
+        self.assertTrue(len(os.listdir(self.mly_svi_output)) > 0)
+
 if __name__ == "__main__":
     unittest.main()
