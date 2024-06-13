@@ -142,9 +142,7 @@ class MLYDownloader(BaseDownloader):
 
     def _get_raw_pids(self, **kwargs):
         mly_allowed_keys = {
-            "fields",
-            "zoom",
-            "radius",
+            "compass_angle",
             "image_type",
             "min_captured_at",
             "max_captured_at",
