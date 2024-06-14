@@ -42,7 +42,9 @@ class TestKartaView(unittest.TestCase):
         if os.path.exists(os.path.join(self.kv_svi_output, "kv_svi")):
             self.skipTest("Result exists")
         # download images
-        kv_downloader = KVDownloader()
+        kv_downloader = KVDownloader(
+            log_path="tests/data/output/kv_svi/log.log"
+        )
         kv_downloader.download_svi(self.kv_svi_output, input_shp_file=self.kv_input_polygon)
 
         # assert True if there are files in the output directory
@@ -54,8 +56,7 @@ class TestKartaView(unittest.TestCase):
             self.skipTest("Result exists")
         # download metadata only
         kv_downloader = KVDownloader(
-            log_path="tests/data/output/kv_svi/log.log",
-            max_workers=200,
+            log_path="tests/data/output/kv_svi/log.log"
         )
         # kv_downloader.download_svi(self.kv_svi_output, input_place_name="Singapore", metadata_only=True)
         kv_downloader.download_svi(
@@ -72,7 +73,9 @@ class TestKartaView(unittest.TestCase):
         # if os.path.exists(os.path.join(self.kv_svi_output_multipolygon, "kv_svi")):
         #     self.skipTest("Result exists")
         # download images
-        kv_downloader = KVDownloader(max_workers=200)
+        kv_downloader = KVDownloader(
+            log_path="tests/data/output/kv_svi/log.log"
+        )
         kv_downloader.download_svi(
             self.kv_svi_output_multipolygon, input_shp_file=self.kv_input_multipolygon
         )
@@ -85,7 +88,9 @@ class TestKartaView(unittest.TestCase):
         # if os.path.exists(os.path.join(self.kv_svi_output_polygon, "kv_svi")):
         #     self.skipTest("Result exists")
         # download images
-        kv_downloader = KVDownloader(max_workers=200)
+        kv_downloader = KVDownloader(
+            log_path="tests/data/output/kv_svi/log.log"
+        )
         kv_downloader.download_svi(
             self.kv_svi_output_polygon, input_shp_file=self.kv_input_polygon
         )
