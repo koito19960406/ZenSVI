@@ -49,7 +49,7 @@ def get_points_in_sequence(sequenceId):
 def clip_points_with_shape(points, shape):
     try:
         if not points.empty:
-            points = gp.clip(points, shape)
+            points = gp.clip(points, shape.geometry.unary_union)  # clip the points with the union of all polygons in the shape gdf
             return points
         else:
             return points
@@ -59,15 +59,20 @@ def clip_points_with_shape(points, shape):
 
 def get_sequences_in_shape(shape):
     try:
-        minx, miny, maxx, maxy = shape.total_bounds
-        url = f"https://api.openstreetcam.org/2.0/sequence/?bRight={miny},{maxx}&tLeft={maxy},{minx}&itemsPerPage=1000000"
-        data = get_data_from_url(url)
-        if data:
-            df = data_to_dataframe(data)
-            return df
-        else:
-            empty_df = pd.DataFrame()
-            return empty_df
+        ls = []  # empty list to collect sequences
+        shape = shape.explode(ignore_index=True)  # explode the shape gdf in case there's any multipolygon in any row
+        for _, row in shape.iterrows():
+            minx, miny, maxx, maxy = row.geometry.bounds[0], row.geometry.bounds[1], row.geometry.bounds[2], row.geometry.bounds[3]  # find the extent of each polygon geometry
+            url = f"https://api.openstreetcam.org/2.0/sequence/?bRight={miny},{maxx}&tLeft={maxy},{minx}&itemsPerPage=1000000"  # use the extent to query for sequences existing in the extent
+            data = get_data_from_url(url)
+            if data:
+                df = data_to_dataframe(data)
+                ls.append(df)  # append the collected df of sequences to the list
+            else:
+                df = pd.DataFrame()  # if 0 sequences collected, create an empty dataframe
+                ls.append(df)
+        seqs = pd.concat(ls, ignore_index=True)  # concat all collected sequences into a dataframe
+        return seqs
     except Exception as e:
         print(f"Error: {e}")
 
@@ -99,7 +104,7 @@ def get_points_in_shape(shape):
                     ].set_index('id').rename(columns={'distance': 'distanceSeq'}),
                     on='sequenceId',
                     how='left'
-                )
+                )  # append the sequence metadata to each point based on sequence ID
             nSeqs = points_all['sequenceId'].nunique()
             print(f'Download complete, collected', nSeqs,
                 'sequences', len(points_all), 'points')
