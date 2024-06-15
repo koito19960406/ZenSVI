@@ -145,7 +145,7 @@ dmypy.json
 cache/
 
 # test data for local testing
-tests/data/output/*
+tests/data/**
 
 # models
 models/*
