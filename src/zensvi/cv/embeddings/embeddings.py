@@ -4,23 +4,15 @@ import torch
 import numpy as np
 import pandas as pd
 from PIL import Image
-import torch.nn as nn
-from shutil import copyfile
 from typing import List, Union
-import matplotlib.pyplot as plt
-from torchvision import datasets
 from collections import namedtuple
-from sklearn.cluster import KMeans
 import torchvision.models as models
-from torch.autograd import Variable
 from img2vec_pytorch import Img2Vec
-from sklearn.decomposition import PCA
 import torchvision.transforms as transforms
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import ToPILImage
 import pyarrow.parquet as pq
-import pyarrow as pa
 import faiss
 
 
@@ -133,7 +125,8 @@ class Embeddings:
                            maxWorkers: int = 8):
         
         if isinstance(images_path, str):
-            image_paths = [os.path.join(images_path, image) for image in os.listdir(images_path)]
+            valid_extensions = [".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".dib", ".pbm", ".pgm", ".ppm", ".sr", ".ras", ".exr", ".jp2"]
+            image_paths = [os.path.join(images_path, image) for image in os.listdir(images_path) if os.path.splitext(image)[1].lower() in valid_extensions]
         else:
             image_paths = images_path
 
@@ -171,7 +164,9 @@ class Embeddings:
                 if isinstance(vec, torch.Tensor):
                     vec = vec.cpu().numpy()
                 df = pd.DataFrame(vec)
-                df.insert(0, 'file_key', [os.path.basename(image_path).split('.')[0] for image_path in image_paths])
+                df.insert(0, 'filename_key', [os.path.basename(image_path).split('.')[0] for image_path in image_paths])
+                # convert all the column names to string
+                df.columns = [str(col) for col in df.columns]
                 df.to_parquet(os.path.join(dir_embeddings_output, f'batch_{i}.parquet'), index=False)
         return True
     
@@ -182,7 +177,7 @@ class Embeddings:
         embeddings_layer_size = self.layer_output_size
         index = faiss.IndexFlatIP(embeddings_layer_size)
         index.add(embeddings_np_array)
-        id_to_name = {k:v for k,v in enumerate(list(embeddings_df["file_key"]))}
+        id_to_name = {k:v for k,v in enumerate(list(embeddings_df["filename_key"]))}
         name_to_id = {v:k for k,v in id_to_name.items()}
 
 
