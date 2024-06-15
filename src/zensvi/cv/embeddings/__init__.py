@@ -1,1 +1,1 @@
-from embeddings import *
+from .embeddings import *
