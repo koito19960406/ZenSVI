@@ -105,7 +105,10 @@ def get_points_in_shape(shape):
                     on='sequenceId',
                     how='left'
                 )  # append the sequence metadata to each point based on sequence ID
-            nSeqs = points_all['sequenceId'].nunique()
+                points_all = points_all.drop_duplicates(subset=['id'])  # remove duplicated points, if any
+            nSeqs = 0
+            if not points_all.empty:
+                nSeqs = points_all['sequenceId'].nunique()
             print(f'Download complete, collected', nSeqs,
                 'sequences', len(points_all), 'points')
             return points_all
