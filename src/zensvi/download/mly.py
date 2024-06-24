@@ -142,9 +142,7 @@ class MLYDownloader(BaseDownloader):
 
     def _get_raw_pids(self, **kwargs):
         mly_allowed_keys = {
-            "fields",
-            "zoom",
-            "radius",
+            "compass_angle",
             "image_type",
             "min_captured_at",
             "max_captured_at",
@@ -225,7 +223,7 @@ class MLYDownloader(BaseDownloader):
         # get raw pid
         pid = self._get_raw_pids(**kwargs)
 
-        if pid is None:
+        if pid is None or len(pid) == 0:
             print("There is no panorama ID to download")
             return
 

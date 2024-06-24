@@ -614,7 +614,7 @@ def pipeline(data: dict, components: list, **kwargs) -> list:
         props = feature["properties"]
         if not (filter_criteria["min_captured_at"] <= props["captured_at"] <= filter_criteria["max_captured_at"]):
             return None
-        if filter_criteria["image_type"] is not None and props["is_pano"] != filter_criteria["image_type"]:
+        if (filter_criteria["image_type"] is not None) and (props["is_pano"] != (filter_criteria["image_type"] == "pano")) and (filter_criteria["image_type"] != "all"):
             return None
         if filter_criteria["organization_id"] and props.get("organization_id") not in filter_criteria["organization_id"]:
             return None

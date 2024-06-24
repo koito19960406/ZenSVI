@@ -657,7 +657,7 @@ def geojson_features_controller(
                         # Filter using filters.organization_id
                         {
                             "filter": "organization_id",
-                            "organization_id": filters["org_id"],
+                            "organization_id": filters["organization_id"],
                         }
                         if "organization_id" in filters
                         else {},

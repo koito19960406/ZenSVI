@@ -172,7 +172,7 @@ class KVDownloader(BaseDownloader):
         if len(pid) == 0:
             print("There is no image ID to download")
             return
-        urls = pid[['id', 'fileurlProc']]
+        urls = pid[['id', 'fileurlProc']].rename(columns={'fileurlProc': 'url'})
         urls.to_csv(self.pids_url, index=False)
 
     def _download_images_kv(self, path_pid, cropped, batch_size, start_date, end_date):
@@ -180,7 +180,7 @@ class KVDownloader(BaseDownloader):
 
         # Read already downloaded images and convert to ids
         downloaded_ids = set(
-            [Path(file_path).stem for file_path in checkpoints]
+            [int(Path(file_path).stem) for file_path in checkpoints]
         )  # Use set for faster operations
 
         pid_df = pd.read_csv(path_pid).dropna(subset=["id"])
@@ -193,9 +193,12 @@ class KVDownloader(BaseDownloader):
         urls_df = self._filter_pids_date(urls_df, start_date, end_date)
 
         # Filter out the ids that have already been processed
+        print('urls_df size:', len(urls_df))
+        print('downloaded_ids size:', len(downloaded_ids))
         urls_df = urls_df[
             ~urls_df["id"].isin(downloaded_ids)
         ]  # Use isin for efficient operation
+        print('new urls_df size:', len(urls_df))
 
         def worker(row, output_dir, cropped):
             url, panoid = row.url, row.id
@@ -246,9 +249,7 @@ class KVDownloader(BaseDownloader):
             with ThreadPoolExecutor() as executor:
                 batch_futures = {
                     executor.submit(worker, row, batch_out_path, cropped): row.id
-                    for row in urls_df.iloc[
-                        i * batch_size : (i + 1) * batch_size
-                    ].itertuples()
+                    for row in urls_df.itertuples()
                 }
                 for future in tqdm(
                     as_completed(batch_futures),
