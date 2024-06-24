@@ -113,7 +113,7 @@ def get_points_in_shape(shape):
                 'sequences', len(points_all), 'points')
             return points_all
     except Exception as e:
-        print(f"E# encoding: utf-8
+        print(f"E# encoding: utf-8")
 # author: yujunhou
 # contact: hou.yujun@u.nus.edu
 
@@ -220,4 +220,4 @@ def get_points_in_shape(shape):
                 'sequences', len(points_all), 'points')
             return points_all
     except Exception as e:
-        print(f"E
+        print(f"Error: {e}")
