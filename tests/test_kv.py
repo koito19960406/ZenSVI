@@ -2,6 +2,7 @@ import unittest
 import os
 from pathlib import Path
 import geopandas as gp
+import shutil
 
 import zensvi.download.kartaview.download_functions as kv
 from zensvi.download.kv import KVDownloader
@@ -22,9 +23,9 @@ class TestKartaView(unittest.TestCase):
         pass
     
     @classmethod   
-    # def tearDown(self):
-    #     # remove output directory
-    #     shutil.rmtree(self.kv_output, ignore_errors=True)
+    def tearDown(self):
+        # remove output directory
+        shutil.rmtree(self.kv_output, ignore_errors=True)
 
     def test_interface(self):
         print()
@@ -85,9 +86,9 @@ class TestKartaView(unittest.TestCase):
         print('--------------------------------')
         print('Testing multipolygon input...')
         # Skip test if the output file already exists
-        if os.path.exists(os.path.join(self.kv_output_test_multipolygon, "kv_pids.csv")):
-            print('Result exits, skipping')
-            self.skipTest("Result exists")
+        # if os.path.exists(os.path.join(self.kv_output_test_multipolygon, "kv_pids.csv")):
+        #     print('Result exits, skipping')
+        #     self.skipTest("Result exists")
         # download images
         kv_downloader = KVDownloader(
             log_path=os.path.join(self.kv_output_test_multipolygon, "log.log")
@@ -104,9 +105,9 @@ class TestKartaView(unittest.TestCase):
         print('--------------------------------')
         print('Testing polygon input...')
         # Skip test if the output file already exists
-        if os.path.exists(os.path.join(self.kv_output_test_polygon, "kv_pids.csv")):
-            print('Result exits, skipping')
-            self.skipTest("Result exists")
+        # if os.path.exists(os.path.join(self.kv_output_test_polygon, "kv_pids.csv")):
+        #     print('Result exits, skipping')
+        #     self.skipTest("Result exists")
         # download images
         kv_downloader = KVDownloader(
             log_path=os.path.join(self.kv_output_test_polygon, "log.log")
