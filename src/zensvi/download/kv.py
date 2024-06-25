@@ -193,12 +193,9 @@ class KVDownloader(BaseDownloader):
         urls_df = self._filter_pids_date(urls_df, start_date, end_date)
 
         # Filter out the ids that have already been processed
-        print('urls_df size:', len(urls_df))
-        print('downloaded_ids size:', len(downloaded_ids))
         urls_df = urls_df[
             ~urls_df["id"].isin(downloaded_ids)
         ]  # Use isin for efficient operation
-        print('new urls_df size:', len(urls_df))
 
         def worker(row, output_dir, cropped):
             url, panoid = row.url, row.id
@@ -249,7 +246,9 @@ class KVDownloader(BaseDownloader):
             with ThreadPoolExecutor() as executor:
                 batch_futures = {
                     executor.submit(worker, row, batch_out_path, cropped): row.id
-                    for row in urls_df.itertuples()
+                    for row in urls_df.iloc[
+                        (i - start_batch_number) * batch_size : (i + 1 - start_batch_number) * batch_size
+                    ].itertuples()
                 }
                 for future in tqdm(
                     as_completed(batch_futures),
