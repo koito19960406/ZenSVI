@@ -236,21 +236,26 @@ class ImageTransformer:
         D = int(2 * R)
         cx, cy = R, R
 
+        # Create a meshgrid of coordinates
         x, y = np.meshgrid(np.arange(D), np.arange(D))
         r = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
         theta = np.arctan2(y - cy, x - cx)
 
-        xp = np.floor((theta + np.pi) * cols / (2 * np.pi)).astype(int)
-        yp = np.floor(2 * np.tan(r / (2 * R)) * rows).astype(int)
+        # Calculate the new positions in the source image
+        xp = np.floor((theta + np.pi) * cols / (2 * np.pi)).astype(np.int32)
+        yp = np.floor(rows * np.sin(r / R) / np.sin(1)).astype(np.int32)
 
         # Clip the values of yp and xp to be within the valid range
         yp = np.clip(yp, 0, rows - 1)
         xp = np.clip(xp, 0, cols - 1)
 
-        mask = r < R
+        # Create a mask for the valid fisheye region
+        mask = r <= R
 
-        new_img = np.zeros((D, D, c), dtype=np.uint8)
-        new_img.fill(255)
+        # Initialize a new image and fill it with a white background
+        new_img = np.full((D, D, c), 255, dtype=np.uint8)
+
+        # Use advanced indexing to map the original pixels to the new image
         new_img[y[mask], x[mask]] = img[yp[mask], xp[mask]]
 
         return new_img
