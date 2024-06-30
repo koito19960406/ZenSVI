@@ -492,24 +492,24 @@ class MLYDownloader(BaseDownloader):
         if self.logger is not None:
             # record the arguments
             self.logger.log_args(
-                "MLYDownloader download_svi",
+                "MLYDownloader download_sv",
                 dir_output,
-                path_pid,
-                lat,
-                lon,
-                input_csv_file,
-                input_shp_file,
-                input_place_name,
-                buffer,
-                update_pids,
-                resolution,
-                cropped,
-                batch_size,
-                start_date,
-                end_date,
-                metadata_only,
-                use_cache,
-                **kwargs,
+                path_pid=path_pid,
+                lat=lat,
+                lon=lon,
+                input_csv_file=input_csv_file,
+                input_shp_file=input_shp_file,
+                input_place_name=input_place_name,
+                buffer=buffer,
+                update_pids=update_pids,
+                resolution=resolution,
+                cropped=cropped,
+                batch_size=batch_size,
+                start_date=start_date,
+                end_date=end_date,
+                metadata_only=metadata_only,
+                use_cache=use_cache,
+                **kwargs
             )
         # set necessary directories
         self._set_dirs(dir_output)
