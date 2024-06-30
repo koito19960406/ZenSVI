@@ -21,6 +21,7 @@ class TestMapillary(unittest.TestCase):
         self.mly_svi_output = Path(self.mly_output) / "mly_svi"
         self.mly_svi_output_multipolygon = Path(self.mly_output) / "mly_svi_multipolygon"
         self.mly_svi_output_polygon = Path(self.mly_output) / "mly_svi_polygon"
+        self.mly_log = Path(self.mly_output) / "log.log"
         pass
     
     @classmethod   
@@ -102,7 +103,7 @@ class TestMapillary(unittest.TestCase):
         if os.path.exists(os.path.join(self.mly_svi_output, "mly_svi")):
             self.skipTest("Result exists")
         # download images
-        mly_downloader = MLYDownloader(self.mly_api_key)
+        mly_downloader = MLYDownloader(self.mly_api_key, log_path=str(self.mly_log), max_workers=200)
         kwarg = {
             "image_type": "flat",  # The tile image_type to be obtained, either as 'flat', 'pano' (panoramic), or 'all'.
             "min_captured_at": 1484549945000,  # The min date. Format from 'YYYY', to 'YYYY-MM-DDTHH:MM:SS'

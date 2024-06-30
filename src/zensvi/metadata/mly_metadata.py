@@ -15,6 +15,8 @@ from timezonefinder import TimezoneFinder
 import polars as pl
 import geopolars as gpl
 
+from zensvi.utils.log import Logger
+
 def _calculate_angle(line):
     if len(line) > 1:
         start, end = line[0], line[-1]
@@ -22,38 +24,6 @@ def _calculate_angle(line):
         return np.degrees(angle) % 360
     else:
         return None
-
-
-def _calculate_angles_vectorized(gdf):
-    # Extract start and end points of LineStrings
-    start_points = np.array(
-        [
-            line.boundary[0].coords[0]
-            for line in gdf.geometry
-            if isinstance(line, LineString)
-        ]
-    )
-    end_points = np.array(
-        [
-            line.boundary[1].coords[0]
-            for line in gdf.geometry
-            if isinstance(line, LineString)
-        ]
-    )
-
-    # Calculate differences in coordinates
-    deltas = end_points - start_points
-
-    # Compute angles using arctan2 and convert to degrees
-    angles = np.degrees(np.arctan2(deltas[:, 1], deltas[:, 0])) % 360
-
-    # Add angles as a new column in the GeoDataFrame
-    gdf["angle"] = np.nan  # Initialize column with NaNs
-    gdf.loc[gdf.geometry.type == "LineString", "angle"] = (
-        angles  # Assign computed angles
-    )
-
-    return gdf
 
 
 def _create_hexagon(gdf, resolution=7):
@@ -256,9 +226,13 @@ class MLYMetadata:
     :type path_input: Union[str, Path]
     """
 
-    def __init__(self, path_input: Union[str, Path]):
+    def __init__(self, path_input: Union[str, Path], log_path: Union[str, Path] = None):
         self._tf_instance = TimezoneFinder()
         self.path_input = Path(path_input)
+        if log_path is not None:
+            self.logger = Logger(log_path)
+        else:
+            self.logger = None
         self.df = pl.read_csv(self.path_input)
         self.metadata = None
         # get street network in the extent of the dataset with OSMnx
@@ -799,6 +773,18 @@ class MLYMetadata:
         :return: A DataFrame containing the computed metadata.
         :rtype: pd.DataFrame
         """
+        if self.logger is not None:
+            # record the arguments
+            self.logger.log_args(
+                "MLYMetadata compute_metadata",
+                unit=unit,
+                grid_resolution=grid_resolution,
+                coverage_buffer=coverage_buffer,
+                indicator_list=indicator_list,
+                path_output=path_output,
+                max_distance=max_distance
+            )
+            
         # set coverage buffer as a class attribute
         self.coverage_buffer = coverage_buffer
 

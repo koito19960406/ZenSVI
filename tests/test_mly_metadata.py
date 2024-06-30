@@ -16,7 +16,7 @@ class TestMLYMetadata(unittest.TestCase):
     #     shutil.rmtree(self.output_dir, ignore_errors=True)
 
     def test_image_level_metadata(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv")
+        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv", log_path=self.output_dir / "log.log")
         # test image-level metadata
         df = self.metadata.compute_metadata(unit="image", path_output=self.output_dir / "image_metadata.csv")
         print(df.head())
@@ -25,7 +25,7 @@ class TestMLYMetadata(unittest.TestCase):
         self.assertFalse(df["relative_angle"].empty)
 
     def test_grid_level_metadata(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv")
+        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv", log_path=self.output_dir / "log.log")
         # test grid-level metadata
         df = self.metadata.compute_metadata(
             unit="grid",
@@ -43,7 +43,7 @@ class TestMLYMetadata(unittest.TestCase):
         )
 
     def test_street_level_metadata(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv")
+        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv", log_path=self.output_dir / "log.log")
         # test street-level metadata
         df = self.metadata.compute_metadata(
             unit="street",
@@ -60,7 +60,7 @@ class TestMLYMetadata(unittest.TestCase):
         )
     
     def test_image_level_partial_metadata(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv")
+        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv", log_path=self.output_dir / "log.log")
         indicator_list = "day daytime_nighttime relative_angle"
         df = self.metadata.compute_metadata(
             unit="image",
@@ -75,7 +75,7 @@ class TestMLYMetadata(unittest.TestCase):
         df.to_csv(self.output_dir / "image_metadata_partial.csv", index=False)
         
     def test_grid_level_partial_metadata(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv")
+        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv", log_path=self.output_dir / "log.log")
         indicator_list = "coverage most_recent_date average_is_pano number_of_daytime"
         df = self.metadata.compute_metadata(
             unit="grid",
@@ -94,7 +94,7 @@ class TestMLYMetadata(unittest.TestCase):
         )
         
     def test_street_level_partial_metadata(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv")
+        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv", log_path=self.output_dir / "log.log")
         indicator_list = "coverage most_recent_date average_is_pano number_of_daytime"
         df = self.metadata.compute_metadata(
             unit="street",
@@ -113,7 +113,7 @@ class TestMLYMetadata(unittest.TestCase):
 
     # test with mly_pids_large.csv
     def test_image_level_metadata_large(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids_large.csv")
+        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids_large.csv", log_path=self.output_dir / "log.log")
         # test image-level metadata
         df = self.metadata.compute_metadata(unit="image", path_output=self.output_dir / "image_metadata_large.csv")
         print(df.head())
@@ -122,7 +122,7 @@ class TestMLYMetadata(unittest.TestCase):
         self.assertFalse(df["relative_angle"].empty)
 
     def test_grid_level_metadata_large(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids_large.csv")
+        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids_large.csv", log_path=self.output_dir / "log.log")
         # test grid-level metadata
         df = self.metadata.compute_metadata(
             unit="grid",
@@ -140,7 +140,7 @@ class TestMLYMetadata(unittest.TestCase):
         )
         
     def test_street_level_metadata_large(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids_large.csv")
+        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids_large.csv", log_path=self.output_dir / "log.log")
         # test street-level metadata
         df = self.metadata.compute_metadata(
             unit="street",

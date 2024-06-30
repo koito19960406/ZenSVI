@@ -5,10 +5,20 @@ from PIL import Image
 from pathlib import Path
 from typing import List, Dict
 import plotly.graph_objects as go
+from typing import Union
+
+from zensvi.utils.log import Logger
 
 
 class PointCloudProcessor:
-    def __init__(self, image_folder: str, depth_folder: str, output_coordinate_scale: float = 45, depth_max: float = 255):
+    def __init__(
+        self,
+        image_folder: str,
+        depth_folder: str,
+        output_coordinate_scale: float = 45,
+        depth_max: float = 255,
+        log_path: Union[str, Path] = None,
+    ):
         """
         Initializes the PointCloudProcessor with necessary parameters.
 
@@ -21,15 +31,20 @@ class PointCloudProcessor:
         self.depth_folder = Path(depth_folder)
         self.output_coordinate_scale = output_coordinate_scale
         self.depth_max = depth_max
-        self.validate_paths()
+        self._validate_paths()
+        # Initialize logger
+        if log_path is not None:
+            self.logger = Logger(log_path)
+        else:
+            self.logger = None
 
-    def validate_paths(self):
+    def _validate_paths(self):
         if not self.image_folder.exists():
             raise FileNotFoundError(f"Image folder {self.image_folder} does not exist")
         if not self.depth_folder.exists():
             raise FileNotFoundError(f"Depth folder {self.depth_folder} does not exist")
 
-    def load_images(self, data):
+    def _load_images(self, data):
         """
         Preloads all images specified in the data DataFrame to optimize the point cloud generation process.
 
@@ -39,19 +54,21 @@ class PointCloudProcessor:
         Returns:
             Dict: Dictionary containing loaded PIL image objects for depth and color images.
         """
+        if self.logger:
+            self.logger.log_args("PointCloudProcessor._load_images", data=data)
         images = {}
-        for image_id in data['id'].unique():
-            depth_path = self.depth_folder / f'{image_id}_depth.png'
-            color_path = self.image_folder / f'{image_id}_color.jpg'
+        for image_id in data["id"].unique():
+            depth_path = self.depth_folder / f"{image_id}_depth.png"
+            color_path = self.image_folder / f"{image_id}_color.jpg"
             if depth_path.exists() and color_path.exists():
                 images[image_id] = {
-                    'depth': np.array(Image.open(depth_path).convert('L')),
-                    'color': np.array(Image.open(color_path))
+                    "depth": np.array(Image.open(depth_path).convert("L")),
+                    "color": np.array(Image.open(color_path)),
                 }
             else:
                 print(f"Warning: Missing images for ID {image_id}")
         return images
-    
+
     def convert_to_point_cloud(self, depth_img, color_img, depth_max):
         """
         Converts a single depth and color image pair to a point cloud.
@@ -64,6 +81,13 @@ class PointCloudProcessor:
         Returns:
             o3d.geometry.PointCloud: The generated point cloud with color.
         """
+        if self.logger:
+            self.logger.log_args(
+                "PointCloudProcessor.convert_to_point_cloud",
+                depth_img=depth_img,
+                color_img=color_img,
+                depth_max=depth_max,
+            )
 
         xs, ys = depth_img.shape[1], depth_img.shape[0]
 
@@ -77,28 +101,41 @@ class PointCloudProcessor:
             for x in range(xs):
                 a = x * da
                 r1 = depth_img[y, x]
-                r2 = (255-r1) / depth_max
+                r2 = (255 - r1) / depth_max
 
                 # An alternative way to reporject the pixels, to be optimized
-                #xx = (r2 * np.cos(a) * np.cos(b) / (np.log10(2 + 6 * (y / (ys - 1)))))
-                #yy = (r2 * np.sin(a) * np.cos(b) / (np.log10(2 + 6 * (y / (ys - 1)))))
-                #zz = 1.2 * r2 * np.sin(b)
+                # xx = (r2 * np.cos(a) * np.cos(b) / (np.log10(2 + 6 * (y / (ys - 1)))))
+                # yy = (r2 * np.sin(a) * np.cos(b) / (np.log10(2 + 6 * (y / (ys - 1)))))
+                # zz = 1.2 * r2 * np.sin(b)
 
-                xx =  3 * r2**4 * np.cos(a) * np.cos(b) /(np.log(1.1 + 5 * (y / (ys - 1))))
-                yy =  3 * r2**4 * np.sin(a) * np.cos(b) /(np.log(1.1 + 5 * (y / (ys - 1))))
-                zz =  (2 * r2) ** 2 * np.sin(b)
+                xx = (
+                    3
+                    * r2**4
+                    * np.cos(a)
+                    * np.cos(b)
+                    / (np.log(1.1 + 5 * (y / (ys - 1))))
+                )
+                yy = (
+                    3
+                    * r2**4
+                    * np.sin(a)
+                    * np.cos(b)
+                    / (np.log(1.1 + 5 * (y / (ys - 1))))
+                )
+                zz = (2 * r2) ** 2 * np.sin(b)
 
                 c = color_img[y, x] / 255.0  # Normalizing color
                 points.append([xx, yy, zz])
                 colors.append(c)
-    
+
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(np.array(points))
         pcd.colors = o3d.utility.Vector3dVector(np.array(colors))
         return pcd
 
-    
-    def transform_point_cloud(self, pcd, origin_x, origin_y, angle, box_extent, box_center):
+    def transform_point_cloud(
+        self, pcd, origin_x, origin_y, angle, box_extent, box_center
+    ):
         """
         Transforms the point cloud by translating, rotating, and cropping based on given parameters.
 
@@ -113,13 +150,26 @@ class PointCloudProcessor:
         Returns:
             o3d.geometry.PointCloud: Transformed point cloud.
         """
+        if self.logger:
+            self.logger.log_args(
+                "PointCloudProcessor.transform_point_cloud",
+                pcd=pcd,
+                origin_x=origin_x,
+                origin_y=origin_y,
+                angle=angle,
+                box_extent=box_extent,
+                box_center=box_center,
+            )
         translation_vector = np.array([origin_x, origin_y, 0])
         pcd_mv = copy.deepcopy(pcd).translate(translation_vector, relative=False)
         pcd_mv.rotate(pcd.get_rotation_matrix_from_xyz((0, 0, angle)))
-        obb = o3d.geometry.OrientedBoundingBox(center=box_center, R=pcd_mv.get_rotation_matrix_from_xyz((0, 0, angle)), extent=box_extent)
+        obb = o3d.geometry.OrientedBoundingBox(
+            center=box_center,
+            R=pcd_mv.get_rotation_matrix_from_xyz((0, 0, angle)),
+            extent=box_extent,
+        )
         pcd_mv = pcd_mv.crop(obb)
         return pcd_mv
-    
 
     def process_multiple_images(self, data):
         """
@@ -131,14 +181,18 @@ class PointCloudProcessor:
         Returns:
             List[o3d.geometry.PointCloud]: List of unprocessed point clouds with color information.
         """
-        images = self.load_images(data)
+        if self.logger:
+            self.logger.log_args(
+                "PointCloudProcessor.process_multiple_images", data=data
+            )
+        images = self._load_images(data)
         pcd_list = []
 
         for idx, row in data.iterrows():
-            image_id = row['id']
+            image_id = row["id"]
             if image_id in images:
-                depth_img = images[image_id]['depth']
-                color_img = images[image_id]['color']
+                depth_img = images[image_id]["depth"]
+                color_img = images[image_id]["color"]
 
                 pcd = self.convert_to_point_cloud(depth_img, color_img, self.depth_max)
                 pcd_list.append(pcd)
@@ -154,20 +208,25 @@ class PointCloudProcessor:
         Args:
             pcd (o3d.geometry.PointCloud): The point cloud object to visualize.
         """
+        if self.logger:
+            self.logger.log_args("PointCloudProcessor.visualize_point_cloud", pcd=pcd)
         points = np.asarray(pcd.points)
-        colors = np.asarray(pcd.colors)  # Scale colors up as plotly expects colors in [0, 255]
-  
+        colors = np.asarray(
+            pcd.colors
+        )  # Scale colors up as plotly expects colors in [0, 255]
 
         fig = go.Figure(
             data=[
                 go.Scatter3d(
-                    x=points[:, 0], y=points[:, 1], z=points[:, 2],
-                    mode='markers',
+                    x=points[:, 0],
+                    y=points[:, 1],
+                    z=points[:, 2],
+                    mode="markers",
                     marker=dict(
-                size=3,  # Increase marker size
-                color=colors,  # Color mapping
-                opacity=0.8  # Slightly transparent
-            )
+                        size=3,  # Increase marker size
+                        color=colors,  # Color mapping
+                        opacity=0.8,  # Slightly transparent
+                    ),
                 )
             ],
             layout=dict(
@@ -175,9 +234,9 @@ class PointCloudProcessor:
                     xaxis=dict(visible=True),
                     yaxis=dict(visible=True),
                     zaxis=dict(visible=True),
-                    aspectmode='data'  # this controls the scale of the axes
+                    aspectmode="data",  # this controls the scale of the axes
                 )
-            )
+            ),
         )
         # Update layout and camera angles for better initial viewing
         fig.update_layout(
@@ -185,13 +244,9 @@ class PointCloudProcessor:
                 xaxis=dict(visible=True),
                 yaxis=dict(visible=True),
                 zaxis=dict(visible=True),
-                aspectmode='data',  # Keep the scale of axes
-
+                aspectmode="data",  # Keep the scale of axes
             ),
-            margin=dict(l=0, r=0, b=0, t=0)  # Reduce padding to maximize plot area
+            margin=dict(l=0, r=0, b=0, t=0),  # Reduce padding to maximize plot area
         )
 
         fig.show()
-
-
-

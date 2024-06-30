@@ -13,6 +13,7 @@ from typing import List, Union
 from pyproj import Transformer
 from shapely.errors import ShapelyDeprecationWarning
 from zensvi.download.base import BaseDownloader
+from zensvi.utils.log import Logger
 
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
@@ -21,6 +22,10 @@ class AMSDownloader(BaseDownloader):
     def __init__(self, ams_api_key=None, log_path=None):
         super().__init__(log_path)
         self.ams_api_key = ams_api_key
+        if log_path is not None:
+            self.logger = Logger(log_path)
+        else:
+            self.logger = None
 
     def _set_dirs(self, dir_output):
         self.dir_output = Path(dir_output)
@@ -110,6 +115,29 @@ class AMSDownloader(BaseDownloader):
         metadata_only (bool, optional): Whether to download metadata only. Defaults to False.
         **kwargs: Additional keyword arguments.
         """
+        if self.logger is not None:
+            self.logger.log_args(
+                "AMSDownloader download_svi",
+                dir_output=dir_output,
+                path_pid=path_pid,
+                zoom=zoom,
+                cropped=cropped,
+                full=full,
+                lat=lat,
+                lon=lon,
+                input_csv_file=input_csv_file,
+                input_shp_file=input_shp_file,
+                input_place_name=input_place_name,
+                id_columns=id_columns,
+                buffer=buffer,
+                augment_metadata=augment_metadata,
+                batch_size=batch_size,
+                update_pids=update_pids,
+                start_date=start_date,
+                end_date=end_date,
+                metadata_only=metadata_only,
+                **kwargs
+            )
         self._set_dirs(dir_output)
         # path_pid = kwargs.get('path_pid', None)
         # if not path_pid:
@@ -146,5 +174,4 @@ class AMSDownloader(BaseDownloader):
                 _df = pd.DataFrame.from_dict(data_dict)
                 df = pd.concat([df,_df])  
         df.to_csv(os.path.join(self.dir_output, "asv_pids.csv"))  
-
 
