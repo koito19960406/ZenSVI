@@ -12,7 +12,7 @@ class TestAMSDownloader(unittest.TestCase):
         Path("tests/data/output/ams_svi").mkdir(parents=True, exist_ok=True)
         self.output_dir = "tests/data/output/ams_svi"
         self.ams_api_key = None
-        self.sv_downloader = AMSDownloader(ams_api_key=self.ams_api_key, log_path=None)
+        self.sv_downloader = AMSDownloader(ams_api_key=self.ams_api_key, log_path="tests/data/output/ams_svi/log.log")
      
     # def tearDown(self):
     #     # remove output directory
