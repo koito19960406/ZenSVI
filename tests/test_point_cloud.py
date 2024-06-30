@@ -27,7 +27,8 @@ class TestPointCloudProcessor(unittest.TestCase):
         # Initialize the processor
         cls.processor = PointCloudProcessor(
             image_folder=str(image_folder),
-            depth_folder=str(depth_folder)
+            depth_folder=str(depth_folder),
+            log_path= base_dir / 'data' / 'output' / 'point_cloud_processor.log'
         )
 
     def test_process_multiple_images(self):
