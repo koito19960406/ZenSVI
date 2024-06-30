@@ -20,7 +20,7 @@ class TestImageTransformer(unittest.TestCase):
     def test_transform_images(self):
         dir_input = "tests/data/input/images"
         dir_output = str(self.output)
-        transformer = ImageTransformer(dir_input, dir_output)
+        transformer = ImageTransformer(dir_input, dir_output, log_path=self.output / "transformation.log")
         transformer.transform_images()
         # assert True if all the subdirectories are created in the output directory and files are not empty
         assert all(
@@ -40,7 +40,7 @@ class TestImageTransformer(unittest.TestCase):
     def test_transform_single_image(self):
         dir_input = "tests/data/input/images/-3vfS0_iiYVZKh_LEVlHew.jpg"
         dir_output = str(self.output / "single_image")
-        transformer = ImageTransformer(dir_input, dir_output)
+        transformer = ImageTransformer(dir_input, dir_output, log_path=self.output / "transformation.log")
         transformer.transform_images()
         # assert True if all the subdirectories are created in the output directory and files are not empty
         assert all(
