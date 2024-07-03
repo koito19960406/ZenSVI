@@ -192,6 +192,11 @@ class Embeddings:
         
         
     def get_all_models(self):
+        """Get all the available models
+
+        :return: dictionary of available models
+        :rtype: dict
+        """
         return models_dict
                 
 
