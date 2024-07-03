@@ -311,6 +311,7 @@ class ImageTransformer:
         phi: Union[int, float] = 0,
         aspects: tuple = (9, 16),
         show_size: Union[int, float] = 100,
+        use_upper_half: bool = False,
     ):
         """
         Applies specified transformations to all images in the input directory and saves them in the output directory.
@@ -323,6 +324,7 @@ class ImageTransformer:
             phi (Union[int, float], optional): Tilt angle for the 'perspective' style in degrees.
             aspects (tuple, optional): Aspect ratio of the output images represented as a tuple.
             show_size (Union[int, float], optional): Base size to calculate the dimensions of the output images.
+            use_upper_half (bool, optional): If True, only the upper half of the image is used for fisheye transformations.
 
         Raises:
             ValueError: If an invalid style is specified in style_list.
@@ -341,7 +343,8 @@ class ImageTransformer:
                 theta=theta,
                 phi=phi,
                 aspects=aspects,
-                show_size=show_size
+                show_size=show_size,
+                use_upper_half=use_upper_half
             )
         # raise an error if the style_list is a list
         if isinstance(style_list, list):
@@ -383,6 +386,8 @@ class ImageTransformer:
 
         def run(path_input, path_output, show_size, style, theta, aspects, FOV):
             img_raw = cv2.imread(str(path_input), cv2.IMREAD_COLOR)
+            if use_upper_half:
+                img_raw = img_raw[:img_raw.shape[0]//2, :]
             if style == "equidistant_fisheye":
                 if not path_output.exists():
                     img_new = self.equidistant_fisheye(img_raw)
