@@ -276,8 +276,6 @@ class KVDownloader(BaseDownloader):
         start_date=None,
         end_date=None,
         metadata_only=False,
-        # use_cache=True,
-        **kwargs,
     ):
         """
         Downloads street view images from KartaView using specified parameters.
@@ -297,8 +295,6 @@ class KVDownloader(BaseDownloader):
             start_date (str, optional): Start date (YYYY-MM-DD) to filter images by capture date.
             end_date (str, optional): End date (YYYY-MM-DD) to filter images by capture date.
             metadata_only (bool, optional): If True, skips downloading images and only fetches metadata. Defaults to False.
-            use_cache (bool, optional): If True, uses cached data to speed up the operation. Defaults to True.
-            **kwargs: Additional keyword arguments that are passed to the API.
 
         Returns:
             None: This method does not return a value but will save files directly to the specified output directory.
@@ -328,8 +324,6 @@ class KVDownloader(BaseDownloader):
                 start_date=start_date,
                 end_date=end_date,
                 metadata_only=metadata_only,
-                # use_cache=use_cache,
-                **kwargs,
             )
         # set necessary directories
         self._set_dirs(dir_output)
@@ -355,8 +349,6 @@ class KVDownloader(BaseDownloader):
                     buffer=buffer,
                     start_date=start_date,
                     end_date=end_date,
-                    # use_cache=use_cache,
-                    **kwargs,
                 )
         else:
             # check if the path_pid exists
@@ -373,7 +365,6 @@ class KVDownloader(BaseDownloader):
                     buffer=buffer,
                     start_date=start_date,
                     end_date=end_date,
-                    **kwargs,
                 )
         # stop if metadata_only is True
         if metadata_only:
