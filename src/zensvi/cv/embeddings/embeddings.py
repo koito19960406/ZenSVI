@@ -23,8 +23,8 @@ _Model = namedtuple('Model', ['name', 'layer', 'layer_output_size'])
 models_dict = {
     'resnet-18': _Model('resnet18', 'avgpool', 512),
     'alexnet': _Model('alexnet', 'classifier', 4096),
-    'vgg-11': _Model('vgg11', 'classifier', 4096),
-    'densenet': _Model('densenet', 'classifier', 1024),
+    'vgg': _Model('vgg11', 'classifier', 4096),
+    'densenet': _Model('densenet121', 'classifier', 1024),
     'efficientnet_b0': _Model('efficientnet_b0', 'avgpool', 1280),
     'efficientnet_b1': _Model('efficientnet_b1', 'avgpool', 1280),
     'efficientnet_b2': _Model('efficientnet_b2', 'avgpool', 1408),
@@ -163,6 +163,8 @@ class Embeddings:
                 vec = img2vec.get_vec(pil_images, tensor=self.tensor)
                 if isinstance(vec, torch.Tensor):
                     vec = vec.cpu().numpy()
+                if vec.ndim > 2:
+                    vec = vec.reshape(vec.shape[0], -1)
                 df = pd.DataFrame(vec)
                 df.insert(0, 'filename_key', [os.path.basename(image_path).split('.')[0] for image_path in image_paths])
                 # convert all the column names to string
