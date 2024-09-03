@@ -3,9 +3,9 @@ import open3d as o3d
 import copy
 from PIL import Image
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Union
 import plotly.graph_objects as go
-from typing import Union
+import pandas as pd 
 
 from zensvi.utils.log import Logger
 
@@ -103,11 +103,6 @@ class PointCloudProcessor:
                 r1 = depth_img[y, x]
                 r2 = (255 - r1) / depth_max
 
-                # An alternative way to reporject the pixels, to be optimized
-                # xx = (r2 * np.cos(a) * np.cos(b) / (np.log10(2 + 6 * (y / (ys - 1)))))
-                # yy = (r2 * np.sin(a) * np.cos(b) / (np.log10(2 + 6 * (y / (ys - 1)))))
-                # zz = 1.2 * r2 * np.sin(b)
-
                 xx = (
                     3
                     * r2**4
@@ -171,15 +166,43 @@ class PointCloudProcessor:
         pcd_mv = pcd_mv.crop(obb)
         return pcd_mv
 
-    def process_multiple_images(self, data):
+    def save_point_cloud_csv(self, pcd, output_path):
+        """
+        Saves the point cloud in CSV format.
+
+        Args:
+            pcd (o3d.geometry.PointCloud): The point cloud to save.
+            output_path (str): Path to save the CSV file.
+        """
+        points = np.asarray(pcd.points)
+        colors = np.asarray(pcd.colors)
+        df = pd.DataFrame(np.hstack((points, colors)), columns=["x", "y", "z", "r", "g", "b"])
+        df.to_csv(output_path, index=False)
+
+    def save_point_cloud_numpy(self, pcd, output_path):
+        """
+        Saves the point cloud as a NumPy array.
+
+        Args:
+            pcd (o3d.geometry.PointCloud): The point cloud to save.
+            output_path (str): Path to save the NumPy array.
+        """
+        points = np.asarray(pcd.points)
+        colors = np.asarray(pcd.colors)
+        np.savez(output_path, points=points, colors=colors)
+
+    def process_multiple_images(self, data, save_option=False, output_dir=None, save_format="pcd"):
         """
         Generates a point cloud for each entry in the data based on pre-loaded depth and color images.
 
         Args:
             data (DataFrame): DataFrame containing image ids, coordinates, and headings.
+            save_option (bool): If True, saves the point clouds to the specified output directory.
+            output_dir (str): Path to the output directory to save point clouds.
+            save_format (str): Format to save point clouds ('pcd', 'ply', 'npz', 'csv').
 
         Returns:
-            List[o3d.geometry.PointCloud]: List of unprocessed point clouds with color information.
+            List[o3d.geometry.PointCloud]: List of unprocessed point clouds with color information if save_option is False.
         """
         if self.logger:
             self.logger.log_args(
@@ -195,11 +218,23 @@ class PointCloudProcessor:
                 color_img = images[image_id]["color"]
 
                 pcd = self.convert_to_point_cloud(depth_img, color_img, self.depth_max)
-                pcd_list.append(pcd)
+                if save_option:
+                    output_path = Path(output_dir) / f"{image_id}.{save_format}"
+                    if save_format == "pcd":
+                        o3d.io.write_point_cloud(str(output_path), pcd)
+                    elif save_format == "ply":
+                        o3d.io.write_point_cloud(str(output_path), pcd)
+                    elif save_format == "npz":
+                        self.save_point_cloud_numpy(pcd, output_path)
+                    elif save_format == "csv":
+                        self.save_point_cloud_csv(pcd, output_path)
+                else:
+                    pcd_list.append(pcd)
             else:
                 print(f"Image data missing for ID {image_id}, skipping...")
 
-        return pcd_list
+        if not save_option:
+            return pcd_list
 
     def visualize_point_cloud(self, pcd):
         """
@@ -223,7 +258,7 @@ class PointCloudProcessor:
                     z=points[:, 2],
                     mode="markers",
                     marker=dict(
-                        size=3,  # Increase marker size
+                        size=3,
                         color=colors,  # Color mapping
                         opacity=0.8,  # Slightly transparent
                     ),
