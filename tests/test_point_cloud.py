@@ -28,22 +28,31 @@ class TestPointCloudProcessor(unittest.TestCase):
         cls.processor = PointCloudProcessor(
             image_folder=str(image_folder),
             depth_folder=str(depth_folder),
-            log_path= base_dir / 'data' / 'output' / 'point_cloud_processor.log'
+            log_path=base_dir / 'data' / 'output' / 'point_cloud_processor.log'
         )
 
     def test_process_multiple_images(self):
-        # Generate point clouds from the data
-        point_clouds = self.processor.process_multiple_images(self.data)
+        # Generate point clouds from the data without saving
+        point_clouds = self.processor.process_multiple_images(self.data, save_option=False)
         self.assertEqual(len(point_clouds), len(self.data))
 
+        # Test saving point clouds in PCD format
+        output_dir = Path(__file__).resolve().parent / 'data' / 'output' / 'pcd_files'
+        output_dir.mkdir(parents=True, exist_ok=True)
+        self.processor.process_multiple_images(self.data, save_option=True, output_dir=output_dir, save_format='pcd')
+
+        # Verify that PCD files were saved
+        for image_id in self.data['id']:
+            output_file = output_dir / f"{image_id}.pcd"
+            self.assertTrue(output_file.exists(), f"PCD file {output_file} was not saved")
 
     def test_transform_point_cloud(self):
         # Assuming that we already have some point clouds
-        point_clouds = self.processor.process_multiple_images(self.data)
+        point_clouds = self.processor.process_multiple_images(self.data, save_option=False)
         transformed_clouds = []
         for i, pcd in enumerate(point_clouds):
-            origin_x = self.data.at[i, 'x_proj'] 
-            origin_y = self.data.at[i, 'y_proj'] 
+            origin_x = self.data.at[i, 'coordinate_x']
+            origin_y = self.data.at[i, 'coordinate_y']
             angle = self.data.at[i, 'heading']
             box_extent = [4, 4, 4]  # Example box dimensions
             box_center = [origin_x, origin_y, 0]  # Example box center
@@ -52,10 +61,25 @@ class TestPointCloudProcessor(unittest.TestCase):
         self.assertEqual(len(transformed_clouds), len(point_clouds))
         # Additional assertions to check the properties of transformed_clouds can be added here
 
+    def test_save_point_cloud_formats(self):
+        # Generate a point cloud
+        point_clouds = self.processor.process_multiple_images(self.data, save_option=False)
+        output_dir = Path(__file__).resolve().parent / 'data' / 'output'
+
+        # Test saving in NumPy format
+        npz_path = output_dir / 'point_cloud.npz'
+        self.processor.save_point_cloud_numpy(point_clouds[0], npz_path)
+        self.assertTrue(npz_path.exists(), f"NumPy file {npz_path} was not saved")
+
+        # Test saving in CSV format
+        csv_path = output_dir / 'point_cloud.csv'
+        self.processor.save_point_cloud_csv(point_clouds[0], csv_path)
+        self.assertTrue(csv_path.exists(), f"CSV file {csv_path} was not saved")
+
     def test_visualize_point_cloud(self):
         # Testing visualization can be tricky as it doesn't return a value
         # This test can ensure that no exceptions are raised during visualization
-        point_clouds = self.processor.process_multiple_images(self.data)
+        point_clouds = self.processor.process_multiple_images(self.data, save_option=False)
         try:
             self.processor.visualize_point_cloud(point_clouds[0])
             self.assertTrue(True)  # Pass the test if no exceptions
