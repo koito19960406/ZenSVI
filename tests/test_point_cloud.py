@@ -33,13 +33,13 @@ class TestPointCloudProcessor(unittest.TestCase):
 
     def test_process_multiple_images(self):
         # Generate point clouds from the data without saving
-        point_clouds = self.processor.process_multiple_images(self.data, save_option=False)
+        point_clouds = self.processor.process_multiple_images(self.data)
         self.assertEqual(len(point_clouds), len(self.data))
 
         # Test saving point clouds in PCD format
         output_dir = Path(__file__).resolve().parent / 'data' / 'output' / 'pcd_files'
         output_dir.mkdir(parents=True, exist_ok=True)
-        self.processor.process_multiple_images(self.data, save_option=True, output_dir=output_dir, save_format='pcd')
+        self.processor.process_multiple_images(self.data, output_dir=output_dir, save_format='pcd')
 
         # Verify that PCD files were saved
         for image_id in self.data['id']:
@@ -48,11 +48,11 @@ class TestPointCloudProcessor(unittest.TestCase):
 
     def test_transform_point_cloud(self):
         # Assuming that we already have some point clouds
-        point_clouds = self.processor.process_multiple_images(self.data, save_option=False)
+        point_clouds = self.processor.process_multiple_images(self.data)
         transformed_clouds = []
         for i, pcd in enumerate(point_clouds):
-            origin_x = self.data.at[i, 'coordinate_x']
-            origin_y = self.data.at[i, 'coordinate_y']
+            origin_x = self.data.at[i, 'lon']
+            origin_y = self.data.at[i, 'lat']
             angle = self.data.at[i, 'heading']
             box_extent = [4, 4, 4]  # Example box dimensions
             box_center = [origin_x, origin_y, 0]  # Example box center
@@ -63,7 +63,7 @@ class TestPointCloudProcessor(unittest.TestCase):
 
     def test_save_point_cloud_formats(self):
         # Generate a point cloud
-        point_clouds = self.processor.process_multiple_images(self.data, save_option=False)
+        point_clouds = self.processor.process_multiple_images(self.data)
         output_dir = Path(__file__).resolve().parent / 'data' / 'output'
 
         # Test saving in NumPy format
@@ -79,7 +79,7 @@ class TestPointCloudProcessor(unittest.TestCase):
     def test_visualize_point_cloud(self):
         # Testing visualization can be tricky as it doesn't return a value
         # This test can ensure that no exceptions are raised during visualization
-        point_clouds = self.processor.process_multiple_images(self.data, save_option=False)
+        point_clouds = self.processor.process_multiple_images(self.data)
         try:
             self.processor.visualize_point_cloud(point_clouds[0])
             self.assertTrue(True)  # Pass the test if no exceptions

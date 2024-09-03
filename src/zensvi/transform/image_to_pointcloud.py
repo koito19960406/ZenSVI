@@ -191,18 +191,17 @@ class PointCloudProcessor:
         colors = np.asarray(pcd.colors)
         np.savez(output_path, points=points, colors=colors)
 
-    def process_multiple_images(self, data, save_option=False, output_dir=None, save_format="pcd"):
+    def process_multiple_images(self, data, output_dir=None, save_format="pcd"):
         """
         Generates a point cloud for each entry in the data based on pre-loaded depth and color images.
 
         Args:
             data (DataFrame): DataFrame containing image ids, coordinates, and headings.
-            save_option (bool): If True, saves the point clouds to the specified output directory.
             output_dir (str): Path to the output directory to save point clouds.
             save_format (str): Format to save point clouds ('pcd', 'ply', 'npz', 'csv').
 
         Returns:
-            List[o3d.geometry.PointCloud]: List of unprocessed point clouds with color information if save_option is False.
+            List[o3d.geometry.PointCloud]: List of unprocessed point clouds with color information if output_dir is None.
         """
         if self.logger:
             self.logger.log_args(
@@ -218,7 +217,7 @@ class PointCloudProcessor:
                 color_img = images[image_id]["color"]
 
                 pcd = self.convert_to_point_cloud(depth_img, color_img, self.depth_max)
-                if save_option:
+                if output_dir:
                     output_path = Path(output_dir) / f"{image_id}.{save_format}"
                     if save_format == "pcd":
                         o3d.io.write_point_cloud(str(output_path), pcd)
@@ -233,7 +232,7 @@ class PointCloudProcessor:
             else:
                 print(f"Image data missing for ID {image_id}, skipping...")
 
-        if not save_option:
+        if not output_dir:
             return pcd_list
 
     def visualize_point_cloud(self, pcd):
