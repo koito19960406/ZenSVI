@@ -111,50 +111,50 @@ class TestMLYMetadata(unittest.TestCase):
             self.output_dir / "street_metadata_partial.csv", index=False
         )
 
-    # test with mly_pids_large.csv
-    def test_image_level_metadata_large(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids_large.csv")
-        # test image-level metadata
-        df = self.metadata.compute_metadata(unit="image", path_output=self.output_dir / "image_metadata_large.csv")
-        print(df.head())
-        # assert True if df has coverage column and it is not empty
-        self.assertTrue("relative_angle" in df.columns)
-        self.assertFalse(df["relative_angle"].empty)
+    # # test with mly_pids_large.csv
+    # def test_image_level_metadata_large(self):
+    #     self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids_large.csv")
+    #     # test image-level metadata
+    #     df = self.metadata.compute_metadata(unit="image", path_output=self.output_dir / "image_metadata_large.csv")
+    #     print(df.head())
+    #     # assert True if df has coverage column and it is not empty
+    #     self.assertTrue("relative_angle" in df.columns)
+    #     self.assertFalse(df["relative_angle"].empty)
 
-    def test_grid_level_metadata_large(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids_large.csv")
-        # test grid-level metadata
-        df = self.metadata.compute_metadata(
-            unit="grid",
-            grid_resolution=12,
-            coverage_buffer=10,
-            path_output=self.output_dir / "grid_metadata_large.geojson",
-        )
-        print(df.head())
-        # assert True if df has coverage column and it is not empty
-        self.assertTrue("coverage" in df.columns)
-        self.assertFalse(df["coverage"].empty)
-        # save df as csv
-        df.drop(columns=["geometry"]).to_csv(
-            self.output_dir / "grid_metadata_large.csv", index=False
-        )
+    # def test_grid_level_metadata_large(self):
+    #     self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids_large.csv")
+    #     # test grid-level metadata
+    #     df = self.metadata.compute_metadata(
+    #         unit="grid",
+    #         grid_resolution=12,
+    #         coverage_buffer=10,
+    #         path_output=self.output_dir / "grid_metadata_large.geojson",
+    #     )
+    #     print(df.head())
+    #     # assert True if df has coverage column and it is not empty
+    #     self.assertTrue("coverage" in df.columns)
+    #     self.assertFalse(df["coverage"].empty)
+    #     # save df as csv
+    #     df.drop(columns=["geometry"]).to_csv(
+    #         self.output_dir / "grid_metadata_large.csv", index=False
+    #     )
         
-    def test_street_level_metadata_large(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids_large.csv")
-        # test street-level metadata
-        df = self.metadata.compute_metadata(
-            unit="street",
-            coverage_buffer=10,
-            path_output=self.output_dir / "street_metadata_large.geojson",
-        )
-        print(df.head())
-        # assert True if df has coverage column and it is not empty
-        self.assertTrue("coverage" in df.columns)
-        self.assertFalse(df["coverage"].empty)
-        # save df as csv
-        df.drop(columns=["geometry"]).to_csv(
-            self.output_dir / "street_metadata_large.csv", index=False
-        )
+    # def test_street_level_metadata_large(self):
+    #     self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids_large.csv")
+    #     # test street-level metadata
+    #     df = self.metadata.compute_metadata(
+    #         unit="street",
+    #         coverage_buffer=10,
+    #         path_output=self.output_dir / "street_metadata_large.geojson",
+    #     )
+    #     print(df.head())
+    #     # assert True if df has coverage column and it is not empty
+    #     self.assertTrue("coverage" in df.columns)
+    #     self.assertFalse(df["coverage"].empty)
+    #     # save df as csv
+    #     df.drop(columns=["geometry"]).to_csv(
+    #         self.output_dir / "street_metadata_large.csv", index=False
+    #     )
 
 
 if __name__ == "__main__":

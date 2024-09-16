@@ -1,5 +1,4 @@
 import os
-import sys
 import requests
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, as_completed

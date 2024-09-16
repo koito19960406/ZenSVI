@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
-from torchvision.models.resnet import ResNet50_Weights
 from torch.nn import functional as F
 # import pytorch_lightning as pl
 

@@ -8,8 +8,8 @@ from unittest.mock import MagicMock
 import time
 import dotenv
 
-from zensvi.download import GSVDownloader, MLYDownloader
-from zensvi.cv import Segmenter, ImageDataset, create_cityscapes_label_colormap
+from zensvi.download import GSVDownloader
+from zensvi.cv import Segmenter
 from zensvi.transform import xyz2lonlat, lonlat2XY, ImageTransformer
 
 class TestImageTransformerMethods(unittest.TestCase):

@@ -9,7 +9,6 @@ import geopandas as gpd
 from astral import LocationInfo, sun
 import pytz
 import datetime
-from concurrent.futures import ProcessPoolExecutor
 from tqdm.auto import tqdm
 from timezonefinder import TimezoneFinder
 import polars as pl

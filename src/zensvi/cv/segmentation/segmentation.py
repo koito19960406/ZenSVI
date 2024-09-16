@@ -8,9 +8,7 @@ import torch
 from torch import nn
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import namedtuple
-from transformers import OneFormerProcessor, OneFormerForUniversalSegmentation
 from transformers import AutoImageProcessor, Mask2FormerForUniversalSegmentation
-import os
 from tqdm.auto import tqdm
 import json
 from collections import defaultdict

@@ -11,9 +11,9 @@ class TestImageTransformer(unittest.TestCase):
         self.output.mkdir(parents=True, exist_ok=True)
         pass
 
-    # def tearDown(self):
-    #     # remove output directory
-    #     shutil.rmtree(self.output, ignore_errors=True)
+    def tearDown(self):
+        # remove output directory
+        shutil.rmtree(self.output, ignore_errors=True)
 
     # skip for now
     # @unittest.skip("skip for now")

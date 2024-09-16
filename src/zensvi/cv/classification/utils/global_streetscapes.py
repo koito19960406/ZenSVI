@@ -1,7 +1,6 @@
 from torch import nn
 import torch
 from pathlib import Path
-import re
 import pytorch_lightning as pl
 import torchvision
 
