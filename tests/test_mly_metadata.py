@@ -38,7 +38,7 @@ class TestMLYMetadata(unittest.TestCase):
         self.assertTrue("coverage" in df.columns)
         self.assertFalse(df["coverage"].empty)
         # save df as csv
-        df.drop(columns=["geometry"]).to_csv(
+        df.to_csv(
             self.output_dir / "grid_metadata.csv", index=False
         )
 
@@ -55,7 +55,7 @@ class TestMLYMetadata(unittest.TestCase):
         self.assertTrue("coverage" in df.columns)
         self.assertFalse(df["coverage"].empty)
         # save df as csv
-        df.drop(columns=["geometry"]).to_csv(
+        df.to_csv(
             self.output_dir / "street_metadata.csv", index=False
         )
     
@@ -89,7 +89,7 @@ class TestMLYMetadata(unittest.TestCase):
         self.assertTrue("coverage" in df.columns)
         self.assertFalse(df["coverage"].empty)
         # save df as csv
-        df.drop(columns=["geometry"]).to_csv(
+        df.to_csv(
             self.output_dir / "grid_metadata_partial.csv", index=False
         )
         
@@ -107,7 +107,7 @@ class TestMLYMetadata(unittest.TestCase):
         self.assertTrue("coverage" in df.columns)
         self.assertFalse(df["coverage"].empty)
         # save df as csv
-        df.drop(columns=["geometry"]).to_csv(
+        df.to_csv(
             self.output_dir / "street_metadata_partial.csv", index=False
         )
 
@@ -135,7 +135,7 @@ class TestMLYMetadata(unittest.TestCase):
     #     self.assertTrue("coverage" in df.columns)
     #     self.assertFalse(df["coverage"].empty)
     #     # save df as csv
-    #     df.drop(columns=["geometry"]).to_csv(
+    #     df.to_csv(
     #         self.output_dir / "grid_metadata_large.csv", index=False
     #     )
         
@@ -152,7 +152,7 @@ class TestMLYMetadata(unittest.TestCase):
     #     self.assertTrue("coverage" in df.columns)
     #     self.assertFalse(df["coverage"].empty)
     #     # save df as csv
-    #     df.drop(columns=["geometry"]).to_csv(
+    #     df.to_csv(
     #         self.output_dir / "street_metadata_large.csv", index=False
     #     )
 
