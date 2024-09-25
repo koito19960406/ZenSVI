@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zensvi"
-version = "0.12.7"
+version = "0.12.8"
 description = "This package handles downloading, cleaning, analyzing street view imagery in a one-stop and zen manner."
 authors = ["koito19960406"]
 license = "CC BY-SA 4.0"
@@ -47,9 +47,10 @@ contextily = "^1.6.0"
 astral = "^3.2"
 timezonefinder = "^6.5.0"
 lightning = "^2.2.3"
-torch = "<2.3"
+torch = "^2.3"
 pyarrow = "^16.0.0"
 polars-lts-cpu = "^0.20.23"
+torchvision = "^0.19.1"
 
 [tool.poetry.dev-dependencies]
 bleach = "^3.3.0"
@@ -70,7 +71,7 @@ twine = "^1.13.0"
 urllib3 = "^2.0.0"
 webencodings = "^0.5.1"
 
-[tool.poetry.group.dev.dependencies]
+[aool.poetry.group.dev.dependencies]
 myst-nb = {version = "^1.0.0", python = "^3.9"}
 sphinx-autoapi = "^3.0.0"
 sphinx-rtd-theme = "^2.0.0"
