@@ -7,7 +7,6 @@ import requests
 from pathlib import Path
 import geopandas as gpd
 from tqdm import tqdm
-from shapely.geometry import Point
 import warnings
 from shapely.errors import ShapelyDeprecationWarning
 import json

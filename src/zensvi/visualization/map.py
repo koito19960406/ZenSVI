@@ -1,9 +1,8 @@
-from typing import List, Union, Tuple, Any
+from typing import Union, Tuple, Any
 from pathlib import Path
-from matplotlib import pyplot as plt, font_manager, colors
+from matplotlib import pyplot as plt, colors
 import geopandas as gpd
 import pandas as pd
-import numpy as np
 import glob
 import h3
 from shapely.geometry import Polygon

@@ -3,12 +3,11 @@ from torchvision.io import read_image
 from torchvision import transforms as trn
 from pathlib import Path
 import pkg_resources
-from collections import defaultdict
 import pandas as pd
 import numpy as np
 import cv2
 from tqdm import tqdm
-from typing import Union, Tuple
+from typing import Union
 import torch
 
 from .base import BaseClassifier

@@ -158,7 +158,7 @@ class TestSegmentation(unittest.TestCase):
 
     def test_long_format(self):
         segmenter = Segmenter()
-        image_input = "tests/data/input/cityscapes_semantic"
+        image_input = "tests/data/input/images"
         image_output = self.output / "long_format"
         summary_output = self.output / "long_format_summary"
         segmenter.segment(

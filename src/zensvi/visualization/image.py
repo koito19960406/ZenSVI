@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import glob
 from PIL import Image
 import numpy as np
-from typing import List, Union, Tuple, Any
+from typing import Union, Tuple
 from pathlib import Path
 
 from .font_property import _get_font_properties
