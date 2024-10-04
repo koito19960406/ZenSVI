@@ -130,6 +130,10 @@ class MLYDownloader(BaseDownloader):
         # convert to geodataframe
         result_gdf = gpd.GeoDataFrame.from_features(result_json)
 
+        # return None if there is no result
+        if len(result_gdf) == 0:
+            return None
+
         # add lon and lat columns
         result_gdf["lon"] = result_gdf["geometry"].apply(lambda geom: geom.x)
         result_gdf["lat"] = result_gdf["geometry"].apply(lambda geom: geom.y)
