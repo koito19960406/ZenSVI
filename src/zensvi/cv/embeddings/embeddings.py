@@ -20,7 +20,7 @@ import faiss
 
 _Model = namedtuple('Model', ['name', 'layer', 'layer_output_size'])
 
-models_dict = {
+_models_dict = {
     'resnet-18': _Model('resnet18', 'avgpool', 512),
     'alexnet': _Model('alexnet', 'classifier', 4096),
     'vgg': _Model('vgg11', 'classifier', 4096),
@@ -68,14 +68,26 @@ class Embeddings:
                  tensor: bool = True, 
                  ):
         """
-        :param model_name: name of the model to be used for extracting embeddings (default: 'resnet-18') 
-            Other available models: 'alexnet', 'vgg-11', 'densenet', 'efficientnet_b0', 'efficientnet_b1', 
-            'efficientnet_b2', 'efficientnet_b3', 'efficientnet_b4', 'efficientnet_b5', 'efficientnet_b6', 'efficientnet_b7'
-        :param cuda: whether to use cuda or not
+        Initialize the Embeddings class for extracting image embeddings.
+
+        This class uses pre-trained models from the Img2Vec package (https://github.com/christiansafka/img2vec)
+        to extract feature vectors from images. These embeddings can be used for various downstream tasks
+        such as image similarity, clustering, or as input to other machine learning models.
+
+        The available models include popular architectures like ResNet, AlexNet, VGG, DenseNet, and various
+        EfficientNet variants. Each model is configured to extract features from a specific layer,
+        providing embeddings of different sizes depending on the chosen model.
+
+        :param model_name: Name of the model to be used for extracting embeddings. 
+            Default is 'resnet-18'. Other options include 'alexnet', 'vgg', 'densenet', 
+            and 'efficientnet_b0' through 'efficientnet_b7'.
+        :param cuda: Whether to use CUDA for GPU acceleration. Default is False.
+        :param tensor: Whether to return the embedding as a PyTorch tensor. If False, 
+            returns a numpy array. Default is True.
         """
         self.model_name = model_name
-        self.layer = models_dict[model_name].layer
-        self.layer_output_size = models_dict[model_name].layer_output_size
+        self.layer = _models_dict[model_name].layer
+        self.layer_output_size = _models_dict[model_name].layer_output_size
         self.model, self.extraction_layer = self.get_model_and_layer()
         self.model.eval()
         self.cuda = cuda
@@ -94,7 +106,7 @@ class Embeddings:
         """
         :return: model and layer
         """
-        model = models.__dict__[models_dict[self.model_name].name](pretrained=True)
+        model = models.__dict__[_models_dict[self.model_name].name](pretrained=True)
         layer = getattr(model, self.layer)
         return model, layer
     
@@ -199,12 +211,6 @@ class Embeddings:
         :return: dictionary of available models
         :rtype: dict
         """
-        return models_dict
-                
-
-
-if __name__ == '__main__':
-    emb = Embeddings()
-
+        return _models_dict
 
 

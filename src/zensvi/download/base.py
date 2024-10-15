@@ -9,8 +9,8 @@ class BaseDownloader(ABC):
     @abstractmethod
     def __init__(self, log_path=None):
         self._log_path = log_path
-        self.user_agents = self._get_ua()
-        self.proxies = self._get_proxies()
+        self._user_agents = self._get_ua()
+        self._proxies = self._get_proxies()
 
     @property
     def log_path(self):
@@ -98,4 +98,19 @@ class BaseDownloader(ABC):
         end_date=None,
         metadata_only=False,
     ):
+        """Download street view images.
+
+        :param dir_output: Output directory for downloaded images
+        :param lat: Latitude
+        :param lon: Longitude
+        :param input_csv_file: Input CSV file path
+        :param input_shp_file: Input shapefile path
+        :param input_place_name: Input place name
+        :param id_columns: ID columns
+        :param buffer: Buffer distance
+        :param update_pids: Whether to update PIDs
+        :param start_date: Start date for filtering
+        :param end_date: End date for filtering
+        :param metadata_only: Whether to download metadata only
+        """
         pass

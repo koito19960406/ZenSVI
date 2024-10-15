@@ -11,6 +11,25 @@ from zensvi.utils.log import Logger
 
 
 class PointCloudProcessor:
+    """
+    A class for processing images and depth maps to generate point clouds.
+
+    This class provides functionality to load image and depth data, convert them
+    into 3D point clouds, and perform various operations on the resulting point clouds.
+    It supports batch processing of multiple images and offers options for scaling
+    and depth normalization.
+
+    :param image_folder: Path to the folder containing color images.
+    :type image_folder: Path
+    :param depth_folder: Path to the folder containing depth images.
+    :type depth_folder: Path
+    :param output_coordinate_scale: Scaling factor for the output coordinates.
+    :type output_coordinate_scale: float
+    :param depth_max: Maximum depth value for normalization.
+    :type depth_max: float
+    :param logger: Optional logger for tracking operations and errors.
+    :type logger: Logger
+    """
     def __init__(
         self,
         image_folder: str,
@@ -19,14 +38,6 @@ class PointCloudProcessor:
         depth_max: float = 255,
         log_path: Union[str, Path] = None,
     ):
-        """
-        Initializes the PointCloudProcessor with necessary parameters.
-
-        Args:
-            image_folder (str): Path to the folder containing depth and color images.
-            output_coordinate_scale (float): Scaling factor for the coordinates.
-            depth_max (float): The maximum depth value to normalize the depth data.
-        """
         self.image_folder = Path(image_folder)
         self.depth_folder = Path(depth_folder)
         self.output_coordinate_scale = output_coordinate_scale

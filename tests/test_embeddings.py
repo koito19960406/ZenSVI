@@ -69,7 +69,7 @@ class TestEmbeddings(unittest.TestCase):
     # test all models
     def test_all_models_cpu(self):
         _Model = namedtuple('Model', ['name', 'layer', 'layer_output_size'])
-        models_dict = {
+        _models_dict = {
             'resnet-18': _Model('resnet18', 'avgpool', 512),
             'alexnet': _Model('alexnet', 'classifier', 4096),
             'vgg': _Model('vgg11', 'classifier', 4096),
@@ -83,7 +83,7 @@ class TestEmbeddings(unittest.TestCase):
             'efficientnet_b6': _Model('efficientnet_b6', 'avgpool', 2304),
             'efficientnet_b7': _Model('efficientnet_b7', 'avgpool', 2560),
         }
-        for model_name in models_dict.keys():
+        for model_name in _models_dict.keys():
             print(f"Testing model: {model_name}")
             embedding = Embeddings(model_name=model_name, cuda=False)
             image_output = self.output / model_name

@@ -43,13 +43,27 @@ If you are proposing a feature:
 Ready to contribute? Here's how to set up `zensvi` for local development.
 
 1. Download a copy of `zensvi` locally.
-2. Install `zensvi` using `poetry`:
+
+2. Create a virtual environment using conda:
+
+    ```console
+    $ conda create -n zensvi-env python=3.9
+    $ conda activate zensvi-env
+    ```
+
+3. Install Poetry using pip:
+
+    ```console
+    $ pip install poetry
+    ```
+
+4. Install `zensvi` using `poetry`:
 
     ```console
     $ poetry install
     ```
 
-3. Use `git` (or similar) to create a branch for local development and make your changes:
+5. Use `git` (or similar) to create a branch for local development and make your changes:
 
     ```console
     $ git checkout -b name-of-your-bugfix-or-feature

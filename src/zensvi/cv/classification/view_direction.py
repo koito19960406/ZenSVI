@@ -64,7 +64,7 @@ class ImageDataset(Dataset):
 
 class ClassifierViewDirection(BaseClassifier):
     """
-    A classifier for identifying view_direction.
+    A classifier for identifying view_direction. The model is from Hou et al (2024) (https://github.com/ualsg/global-streetscapes).
 
     :param device: The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
         If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.

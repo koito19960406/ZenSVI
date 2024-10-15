@@ -64,13 +64,12 @@ class ImageDataset(Dataset):
 
 class ClassifierPlatform(BaseClassifier):
     """
-    A classifier for identifying platform.
+    A classifier for identifying platform. The model is from Hou et al (2024) (https://github.com/ualsg/global-streetscapes).
 
     :param device: The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
         If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
     :type device: str, optional
     """
-
     def __init__(self, device=None):
         super().__init__(device)
         self.device = self._get_device(device)
