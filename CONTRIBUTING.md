@@ -77,11 +77,46 @@ Ready to contribute? Here's how to set up `zensvi` for local development.
 
 Before you submit a pull request, check that it meets these guidelines:
 
-1. The pull request should include additional tests if appropriate.
-2. If the pull request adds functionality, the docs should be updated.
-3. The pull request should work for all currently supported operating systems and versions of Python.
+1. The pull request should include tests that cover the new functionality or bug fix.
+2. If the pull request adds functionality, the docs should be updated. Put your new functionality into a function with a docstring, and add the feature to the list in README.md.
+3. The pull request should work for all currently supported Python versions. Check https://github.com/koito19960406/ZenSVI/actions and make sure that the tests pass for all supported Python versions.
+4. If your change affects the public API, update the docstrings and ensure they render correctly in the documentation.
+
+## Code Style
+
+This project uses `black` for code formatting and `flake8` for linting. Please ensure your code adheres to these standards before submitting a pull request.
+
+## Commit Messages
+
+Please follow these guidelines for commit messages:
+
+- Use the present tense ("Add feature" not "Added feature")
+- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
+- Limit the first line to 72 characters or less
+- Reference issues and pull requests liberally after the first line
 
 ## Code of Conduct
 
-Please note that the `zensvi` project is released with a
-Code of Conduct. By contributing to this project you agree to abide by its terms.
+Please note that the `zensvi` project is released with a [Code of Conduct](CONDUCT.md). By contributing to this project you agree to abide by its terms.
+
+## Docstring Style
+
+We use Sphinx-style docstrings for this project. Please ensure all functions, classes, and modules have proper docstrings. Here's an example:
+
+```python
+def function_name(param1, param2):
+"""
+Short description of the function.
+Longer description of the function if necessary.
+:param param1: Description of param1.
+:type param1: type
+:param param2: Description of param2.
+:type param2: type
+:returns: Description of the return value.
+:rtype: return_type
+:raises ExceptionType: When and why this exception is raised.
+"""
+# Function body
+```
+
+We use `pydocstyle` to check docstring formatting. Make sure to run it before submitting your code.
