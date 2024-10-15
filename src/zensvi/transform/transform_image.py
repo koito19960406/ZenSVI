@@ -1,10 +1,11 @@
+import math
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import Union
+
 import cv2
 import numpy as np
-import math
-from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
-from typing import Union
 
 from zensvi.utils.log import Logger
 
@@ -168,9 +169,7 @@ class ImageTransformer:
         xyz = xyz @ R.T
         lonlat = _xyz2lonlat(xyz)
         XY = _lonlat2XY(lonlat, shape=img.shape).astype(np.float32)
-        persp = cv2.remap(
-            img, XY[..., 0], XY[..., 1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP
-        )
+        persp = cv2.remap(img, XY[..., 0], XY[..., 1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP)
         return persp
 
     def equidistant_fisheye(self, img):
@@ -344,13 +343,11 @@ class ImageTransformer:
                 phi=phi,
                 aspects=aspects,
                 show_size=show_size,
-                use_upper_half=use_upper_half
+                use_upper_half=use_upper_half,
             )
         # raise an error if the style_list is a list
         if isinstance(style_list, list):
-            raise ValueError(
-                "Please input the correct image style as a string, not a list."
-            )
+            raise ValueError("Please input the correct image style as a string, not a list.")
         # check if there's anything other than "perspective" and "fisheye"
         style_list = style_list.split()
         if not all(
@@ -387,7 +384,7 @@ class ImageTransformer:
         def run(path_input, path_output, show_size, style, theta, aspects, FOV):
             img_raw = cv2.imread(str(path_input), cv2.IMREAD_COLOR)
             if use_upper_half:
-                img_raw = img_raw[:img_raw.shape[0]//2, :]
+                img_raw = img_raw[: img_raw.shape[0] // 2, :]
             if style == "equidistant_fisheye":
                 if not path_output.exists():
                     img_new = self.equidistant_fisheye(img_raw)
@@ -409,12 +406,8 @@ class ImageTransformer:
                     cv2.imwrite(str(path_output), img_new)
 
             elif style == "perspective":
-                num_images = (
-                    360 // theta
-                )  # Calculate the number of images based on theta
-                thetas = [
-                    theta * i for i in range(num_images)
-                ]  # Calculate thetas based on step size
+                num_images = 360 // theta  # Calculate the number of images based on theta
+                thetas = [theta * i for i in range(num_images)]  # Calculate thetas based on step size
 
                 for theta in thetas:
                     height = int(aspects[0] * show_size)
@@ -424,14 +417,12 @@ class ImageTransformer:
                         f"{path_output.stem}_Direction_{theta}_FOV_{FOV}_aspect_{aspect_name}_raw.png"
                     )
                     if not path_output_raw.exists():
-                        img_new = self.perspective(
-                            img_raw, FOV, theta, phi, height, width
-                        )
+                        img_new = self.perspective(img_raw, FOV, theta, phi, height, width)
                         cv2.imwrite(str(path_output_raw), img_new)
 
         def process_image(dir_input, dir_output, file_path, show_size, style, theta, aspects, FOV):
             relative_path = file_path.relative_to(dir_input)
-            path_output = dir_output / relative_path.with_suffix('.png')
+            path_output = dir_output / relative_path.with_suffix(".png")
             path_output.parent.mkdir(parents=True, exist_ok=True)
             return file_path, path_output, show_size, style, theta, aspects, FOV
 

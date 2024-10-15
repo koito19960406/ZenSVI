@@ -1,9 +1,9 @@
-from typing import Tuple, Union
-from pathlib import Path
-import torch
-
 # abstract class
 from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Tuple, Union
+
+import torch
 
 
 class BaseClassifier(ABC):

@@ -1,8 +1,9 @@
-from abc import ABC, abstractmethod
-import pkg_resources
 import csv
 import os
+from abc import ABC, abstractmethod
+
 import pandas as pd
+import pkg_resources
 
 
 class BaseDownloader(ABC):
@@ -26,9 +27,7 @@ class BaseDownloader(ABC):
         self._log_path = log_path
 
     def _get_proxies(self):
-        proxies_file = pkg_resources.resource_filename(
-            "zensvi.download.utils", "proxies.csv"
-        )
+        proxies_file = pkg_resources.resource_filename("zensvi.download.utils", "proxies.csv")
         proxies = []
         # open with "utf-8" encoding to avoid UnicodeDecodeError
         with open(proxies_file, "r", encoding="utf-8") as f:
@@ -42,9 +41,7 @@ class BaseDownloader(ABC):
         return proxies
 
     def _get_ua(self):
-        user_agent_file = pkg_resources.resource_filename(
-            "zensvi.download.utils", "UserAgent.csv"
-        )
+        user_agent_file = pkg_resources.resource_filename("zensvi.download.utils", "UserAgent.csv")
         UA = []
         with open(user_agent_file, "r") as f:
             for line in f:

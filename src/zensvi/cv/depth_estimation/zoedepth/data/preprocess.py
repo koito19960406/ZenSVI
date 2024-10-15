@@ -22,9 +22,11 @@
 
 # File author: Shariq Farooq Bhat
 
-import numpy as np
 from dataclasses import dataclass
-from typing import Tuple, List
+from typing import List, Tuple
+
+import numpy as np
+
 
 # dataclass to store the crop parameters
 @dataclass
@@ -35,11 +37,17 @@ class CropParams:
     right: int
 
 
-
-def get_border_params(rgb_image, tolerance=0.1, cut_off=20, value=0, level_diff_threshold=5, channel_axis=-1, min_border=5) -> CropParams:
+def get_border_params(
+    rgb_image,
+    tolerance=0.1,
+    cut_off=20,
+    value=0,
+    level_diff_threshold=5,
+    channel_axis=-1,
+    min_border=5,
+) -> CropParams:
     gray_image = np.mean(rgb_image, axis=channel_axis)
     h, w = gray_image.shape
-
 
     def num_value_pixels(arr):
         return np.sum(np.abs(arr - value) < level_diff_threshold)
@@ -49,7 +57,7 @@ def get_border_params(rgb_image, tolerance=0.1, cut_off=20, value=0, level_diff_
 
     # Crop top border until number of value pixels become below tolerance
     top = min_border
-    while is_above_tolerance(gray_image[top, :], w) and top < h-1:
+    while is_above_tolerance(gray_image[top, :], w) and top < h - 1:
         top += 1
         if top > cut_off:
             break
@@ -63,7 +71,7 @@ def get_border_params(rgb_image, tolerance=0.1, cut_off=20, value=0, level_diff_
 
     # Crop left border until number of value pixels become below tolerance
     left = min_border
-    while is_above_tolerance(gray_image[:, left], h) and left < w-1:
+    while is_above_tolerance(gray_image[:, left], h) and left < w - 1:
         left += 1
         if left > cut_off:
             break
@@ -74,7 +82,6 @@ def get_border_params(rgb_image, tolerance=0.1, cut_off=20, value=0, level_diff_
         right -= 1
         if w - right > cut_off:
             break
-        
 
     return CropParams(top, bottom, left, right)
 
@@ -97,6 +104,7 @@ def get_white_border(rgb_image, value=255, **kwargs) -> CropParams:
 
     return get_border_params(rgb_image, value=value, **kwargs)
 
+
 def get_black_border(rgb_image, **kwargs) -> CropParams:
     """Crops the black border of the RGB.
 
@@ -109,6 +117,7 @@ def get_black_border(rgb_image, **kwargs) -> CropParams:
 
     return get_border_params(rgb_image, value=0, **kwargs)
 
+
 def crop_image(image: np.ndarray, crop_params: CropParams) -> np.ndarray:
     """Crops the image according to the crop parameters.
 
@@ -119,7 +128,8 @@ def crop_image(image: np.ndarray, crop_params: CropParams) -> np.ndarray:
     Returns:
         Cropped image.
     """
-    return image[crop_params.top:crop_params.bottom, crop_params.left:crop_params.right]
+    return image[crop_params.top : crop_params.bottom, crop_params.left : crop_params.right]
+
 
 def crop_images(*images: np.ndarray, crop_params: CropParams) -> Tuple[np.ndarray]:
     """Crops the images according to the crop parameters.
@@ -133,7 +143,10 @@ def crop_images(*images: np.ndarray, crop_params: CropParams) -> Tuple[np.ndarra
     """
     return tuple(crop_image(image, crop_params) for image in images)
 
-def crop_black_or_white_border(rgb_image, *other_images: np.ndarray, tolerance=0.1, cut_off=20, level_diff_threshold=5) -> Tuple[np.ndarray]:
+
+def crop_black_or_white_border(
+    rgb_image, *other_images: np.ndarray, tolerance=0.1, cut_off=20, level_diff_threshold=5
+) -> Tuple[np.ndarray]:
     """Crops the white and black border of the RGB and depth images.
 
     Args:
@@ -143,12 +156,21 @@ def crop_black_or_white_border(rgb_image, *other_images: np.ndarray, tolerance=0
         Cropped RGB and other images.
     """
     # crop black border
-    crop_params = get_black_border(rgb_image, tolerance=tolerance, cut_off=cut_off, level_diff_threshold=level_diff_threshold)
+    crop_params = get_black_border(
+        rgb_image,
+        tolerance=tolerance,
+        cut_off=cut_off,
+        level_diff_threshold=level_diff_threshold,
+    )
     cropped_images = crop_images(rgb_image, *other_images, crop_params=crop_params)
 
     # crop white border
-    crop_params = get_white_border(cropped_images[0], tolerance=tolerance, cut_off=cut_off, level_diff_threshold=level_diff_threshold)
+    crop_params = get_white_border(
+        cropped_images[0],
+        tolerance=tolerance,
+        cut_off=cut_off,
+        level_diff_threshold=level_diff_threshold,
+    )
     cropped_images = crop_images(*cropped_images, crop_params=crop_params)
 
     return cropped_images
-    

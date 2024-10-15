@@ -1,9 +1,10 @@
-from typing import Union, List, Tuple
-from pathlib import Path
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import glob
+from pathlib import Path
+from typing import List, Tuple, Union
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 
 from .font_property import _get_font_properties
 
@@ -20,7 +21,7 @@ def plot_hist(
     dpi: int = 300,
     font_size: int = 30,
     dark_mode: bool = False,
-    **kwargs
+    **kwargs,
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plots hist (Kernel Density Estimate) plots for specified columns from a CSV file using Seaborn.
@@ -57,9 +58,7 @@ def plot_hist(
         # convert to wide format by assuming the second column is the label and the third column is the value
         # rename the columns to filename_key, label, value
         df = df.rename(columns={df.columns[-2]: "label", df.columns[-1]: "value"})
-        df = df.pivot(
-            index="filename_key", columns="label", values="value"
-        ).reset_index()
+        df = df.pivot(index="filename_key", columns="label", values="value").reset_index()
     else:
         pass
 

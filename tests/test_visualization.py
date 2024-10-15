@@ -1,7 +1,9 @@
-from zensvi import visualization
 import unittest
 from pathlib import Path
+
 import pandas as pd
+
+from zensvi import visualization
 
 # import shutil
 
@@ -39,17 +41,11 @@ class TestVisualization(unittest.TestCase):
                     cmap="viridis",
                     legend=True,
                     title=f"{plot_type.title()} Map",
-                    legend_title=(
-                        "Count"
-                        if variable is None
-                        else f"{variable.title()} View Factor"
-                    ),
+                    legend_title=("Count" if variable is None else f"{variable.title()} View Factor"),
                     dark_mode=False,
                 )
                 # assert True if path_output exists and size is not zero
-                self.assertTrue(
-                    Path(path_output).exists() and Path(path_output).stat().st_size > 0
-                )
+                self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
     def test_plot_map_edge_color(self):
         path_pid = "tests/data/input/visualization/gsv_pids.csv"
@@ -74,9 +70,7 @@ class TestVisualization(unittest.TestCase):
             dark_mode=False,
         )
         # assert True if path_output exists and size is not zero
-        self.assertTrue(
-            Path(path_output).exists() and Path(path_output).stat().st_size > 0
-        )
+        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
     def test_plot_map_batch(self):
         path_pid = "tests/data/input/visualization/mly_pids.csv"
@@ -99,9 +93,7 @@ class TestVisualization(unittest.TestCase):
             dark_mode=False,
         )
         # assert True if path_output exists and size is not zero
-        self.assertTrue(
-            Path(path_output).exists() and Path(path_output).stat().st_size > 0
-        )
+        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
     # @unittest.skip("skip for now")
     def test_plot_image(self):
@@ -122,9 +114,7 @@ class TestVisualization(unittest.TestCase):
             random_seed=123,
         )
         # assert True if path_output exists and size is not zero
-        self.assertTrue(
-            Path(path_output).exists() and Path(path_output).stat().st_size > 0
-        )
+        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
     # @unittest.skip("skip for now")
     def test_plot_image_image_file_pattern(self):
@@ -144,9 +134,7 @@ class TestVisualization(unittest.TestCase):
             random_seed=123,
         )
         # assert True if path_output exists and size is not zero
-        self.assertTrue(
-            Path(path_output).exists() and Path(path_output).stat().st_size > 0
-        )
+        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
     # @unittest.skip("skip for now")
     def test_plot_image_sort_by(self):
@@ -169,9 +157,7 @@ class TestVisualization(unittest.TestCase):
             random_seed=123,
         )
         # assert True if path_output exists and size is not zero
-        self.assertTrue(
-            Path(path_output).exists() and Path(path_output).stat().st_size > 0
-        )
+        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
     def test_plot_image_batch(self):
         dir_image_input = "tests/data/input/visualization/batch_images"
@@ -191,9 +177,7 @@ class TestVisualization(unittest.TestCase):
             random_seed=123,
         )
         # assert True if path_output exists and size is not zero
-        self.assertTrue(
-            Path(path_output).exists() and Path(path_output).stat().st_size > 0
-        )
+        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
     def test_plot_kde(self):
         path_input = "tests/data/input/visualization/cityscapes_semantic_summary/pixel_ratios.csv"
@@ -212,9 +196,7 @@ class TestVisualization(unittest.TestCase):
             clip=(0, 1),
         )
         # assert True if path_output exists and size is not zero
-        self.assertTrue(
-            Path(path_output).exists() and Path(path_output).stat().st_size > 0
-        )
+        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
     def test_plot_kde_long(self):
         path_input = "tests/data/input/visualization/classification/places365/long/summary/results.csv"
@@ -239,9 +221,7 @@ class TestVisualization(unittest.TestCase):
             clip=(0, 1),
         )
         # assert True if path_output exists and size is not zero
-        self.assertTrue(
-            Path(path_output).exists() and Path(path_output).stat().st_size > 0
-        )
+        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
     def test_plot_kde_batch(self):
         dir_input = "tests/data/input/visualization/batch_segmentation"
@@ -260,17 +240,13 @@ class TestVisualization(unittest.TestCase):
             clip=(0, 1),
         )
         # assert True if path_output exists and size is not zero
-        self.assertTrue(
-            Path(path_output).exists() and Path(path_output).stat().st_size > 0
-        )
+        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
     def test_map_year(self):
         # load mly_pids and calculate the year from captured_at and save to csv with id, year, lat, lon
         mly_pids = pd.read_csv("tests/data/input/visualization/mly_pids.csv")
         # Convert 'captured_at' from milliseconds to datetime, then extract the year
-        mly_pids["year"] = pd.to_datetime(
-            mly_pids["captured_at"], unit="ms"
-        ).dt.year.astype(int)
+        mly_pids["year"] = pd.to_datetime(mly_pids["captured_at"], unit="ms").dt.year.astype(int)
         mly_pids = mly_pids[["id", "year", "lat", "lon"]]
         mly_pids.to_csv(str(self.output / "mly_pids_year.csv"), index=False)
         path_output = str(self.output / "plot_map_year.png")
@@ -286,9 +262,7 @@ class TestVisualization(unittest.TestCase):
             markersize=1,
         )
         # assert True if path_output exists and size is not zero
-        self.assertTrue(
-            Path(path_output).exists() and Path(path_output).stat().st_size > 0
-        )
+        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
     def test_plot_hist(self):
         dir_input = "tests/data/input/visualization/cityscapes_semantic_summary"
@@ -306,9 +280,7 @@ class TestVisualization(unittest.TestCase):
             font_size=30,
         )
         # assert True if path_output exists and size is not zero
-        self.assertTrue(
-            Path(path_output).exists() and Path(path_output).stat().st_size > 0
-        )
+        self.assertTrue(Path(path_output).exists() and Path(path_output).stat().st_size > 0)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
+import inspect
 import logging
 from pathlib import Path
-import inspect
+
 
 class Logger:
     _loggers = {}
@@ -23,7 +24,7 @@ class Logger:
             fh = logging.FileHandler(log_file_path)
             fh.setLevel(level)
             # Create formatter and add it to the handlers
-            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+            formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
             fh.setFormatter(formatter)
             # Add the handler to the logger
             instance.logger.addHandler(fh)
@@ -47,7 +48,7 @@ class Logger:
         formatted_args = []
         for i, arg in enumerate(args):
             formatted_args.append(f"arg{i}={repr(arg)}")
-        
+
         for key, value in kwargs.items():
             formatted_args.append(f"{key}={repr(value)}")
         formatted_message = f"Called function '{func_name}' with: {', '.join(formatted_args)}"
@@ -58,7 +59,7 @@ class Logger:
         Logs the failed tiles to a log file.
         """
         self.log_error(f"Failed to process tile: {failed_tile_name}")
-            
+
     def log_failed_pids(self, failed_pid):
         """
         Logs the failed pids to a log file.

@@ -4,23 +4,26 @@ import osmnx as ox
 import pandas as pd
 from shapely.geometry import Point
 from tqdm.auto import tqdm
+
 tqdm.pandas()
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+
+import networkx
 import numpy as np
 from pyproj import Transformer
-import networkx
+
 
 class GeoProcessor:
-    def __init__(self, gdf, distance=1, grid = False, grid_size = 1, id_columns=[], **kwargs):
+    def __init__(self, gdf, distance=1, grid=False, grid_size=1, id_columns=[], **kwargs):
         self.gdf = gdf
         self.distance = distance
         self.processing_functions = {
-            'Point': self.process_point,
-            'MultiPoint': self.process_multipoint,
-            'LineString': self.process_linestring,
-            'MultiLineString': self.process_multilinestring,
-            'Polygon': self.process_polygon,
-            'MultiPolygon': self.process_multipolygon
+            "Point": self.process_point,
+            "MultiPoint": self.process_multipoint,
+            "LineString": self.process_linestring,
+            "MultiLineString": self.process_multilinestring,
+            "Polygon": self.process_polygon,
+            "MultiPolygon": self.process_multipolygon,
         }
         self.grid = grid
         self.grid_size = grid_size
@@ -30,18 +33,18 @@ class GeoProcessor:
             self.network_type = kwargs["network_type"]
         else:
             self.network_type = "all"
-            
+
         if "custom_filter" in kwargs:
             self.custom_filter = kwargs["custom_filter"]
         else:
             self.custom_filter = None
 
     def get_lat_lon(self):
-        self.gdf['feature_type'] = self.gdf['geometry'].apply(lambda x: x.geom_type)
+        self.gdf["feature_type"] = self.gdf["geometry"].apply(lambda x: x.geom_type)
         gdf_list = []
 
         for feature_type, func in self.processing_functions.items():
-            sub_gdf = self.gdf[self.gdf['feature_type'] == feature_type]
+            sub_gdf = self.gdf[self.gdf["feature_type"] == feature_type]
             if not sub_gdf.empty:
                 print(f"Getting longitude and latitude from {feature_type} feature")
                 processed_gdf = func(sub_gdf)
@@ -52,13 +55,13 @@ class GeoProcessor:
 
     # Define other processing functions (process_point, process_multipoint, etc.) as class methods here
     def process_point(self, gdf):
-        gdf['longitude'] = gdf.geometry.x
-        gdf['latitude'] = gdf.geometry.y
-        return gdf[self.id_columns + ['longitude', 'latitude']]
+        gdf["longitude"] = gdf.geometry.x
+        gdf["latitude"] = gdf.geometry.y
+        return gdf[self.id_columns + ["longitude", "latitude"]]
 
     def process_multipoint(self, gdf):
         # Explode the multipoint into individual points
-        gdf = gdf.explode('geometry').reset_index(drop=True)
+        gdf = gdf.explode("geometry").reset_index(drop=True)
 
         # Call process_point on the exploded GeoDataFrame
         return self.process_point(gdf)
@@ -69,16 +72,18 @@ class GeoProcessor:
         self.utm_crs = gdf_utm.crs
 
         # Use osmnx.utils_geo.interpolate_points function to interpolate points along LineStrings
-        gdf_utm['sample_points'] = gdf_utm['geometry'].progress_apply(lambda geom: list(ox.utils_geo.interpolate_points(geom, dist=self.distance)))
-        gdf_utm = gdf_utm.explode('sample_points').reset_index(drop=True)
+        gdf_utm["sample_points"] = gdf_utm["geometry"].progress_apply(
+            lambda geom: list(ox.utils_geo.interpolate_points(geom, dist=self.distance))
+        )
+        gdf_utm = gdf_utm.explode("sample_points").reset_index(drop=True)
 
         # Convert the UTM points to latitude and longitude
-        gdf_utm['longitude'], gdf_utm['latitude'] = zip(*self.utm_to_lat_lon(gdf_utm['sample_points'], self.utm_crs))
-        return gdf_utm[self.id_columns + ['longitude', 'latitude']]
+        gdf_utm["longitude"], gdf_utm["latitude"] = zip(*self.utm_to_lat_lon(gdf_utm["sample_points"], self.utm_crs))
+        return gdf_utm[self.id_columns + ["longitude", "latitude"]]
 
     def process_multilinestring(self, gdf):
         # Explode the multilinestring into individual linestrings
-        gdf = gdf.explode('geometry').reset_index(drop=True)
+        gdf = gdf.explode("geometry").reset_index(drop=True)
 
         # Call process_linestring on the exploded GeoDataFrame
         return self.process_linestring(gdf)
@@ -91,9 +96,11 @@ class GeoProcessor:
         utm_crs = edges_utm.crs
 
         # Use osmnx.utils_geo.interpolate_points function to interpolate points along LineStrings
-        edges_utm['sample_points'] = edges_utm['geometry'].apply(lambda geom: list(ox.utils_geo.interpolate_points(geom, dist=self.distance)))
-        edges_utm = edges_utm.explode('sample_points').reset_index(drop=True)
-        return edges_utm['sample_points'].tolist(), utm_crs
+        edges_utm["sample_points"] = edges_utm["geometry"].apply(
+            lambda geom: list(ox.utils_geo.interpolate_points(geom, dist=self.distance))
+        )
+        edges_utm = edges_utm.explode("sample_points").reset_index(drop=True)
+        return edges_utm["sample_points"].tolist(), utm_crs
 
     def create_point_grid(self, polygon, grid_size, crs="EPSG:4326"):
         """
@@ -127,7 +134,7 @@ class GeoProcessor:
 
         # Return the points as coordinates (x, y) in UTM coordinates
         return [(point.x, point.y) for point in points_utm], utm_crs
-    
+
     def utm_to_lat_lon(self, utm_points, utm_crs):
         transformer = Transformer.from_crs(utm_crs, "EPSG:4326", always_xy=True)
         return [transformer.transform(*point) for point in utm_points]
@@ -138,17 +145,24 @@ class GeoProcessor:
         failed_geoms = []
         results = []
 
-        for i in tqdm(range(num_batches), desc=f"Processing polygon by batch size {min(batch_size, len(gdf))}"):
+        for i in tqdm(
+            range(num_batches),
+            desc=f"Processing polygon by batch size {min(batch_size, len(gdf))}",
+        ):
             with ProcessPoolExecutor() as executor:
                 batch_futures = {}
-                for geom in gdf.geometry.iloc[i*batch_size : (i+1)*batch_size]:
+                for geom in gdf.geometry.iloc[i * batch_size : (i + 1) * batch_size]:
                     if self.grid == False:
                         future = executor.submit(self.get_street_points, geom)
                     else:
                         future = executor.submit(self.create_point_grid, geom, self.grid_size)
                     batch_futures[future] = geom
-                
-                for future in tqdm(as_completed(batch_futures.keys()), total=len(batch_futures), desc=f"Processing polygon for batch #{i+1}"):
+
+                for future in tqdm(
+                    as_completed(batch_futures.keys()),
+                    total=len(batch_futures),
+                    desc=f"Processing polygon for batch #{i+1}",
+                ):
                     geom = batch_futures[future]
                     try:
                         result = future.result()
@@ -163,32 +177,42 @@ class GeoProcessor:
                 for geom in tqdm(failed_geoms, desc="Preparing Failed Geoms"):
                     future = executor.submit(self.create_point_grid, geom, self.grid_size)
                     retry_futures[future] = geom
-                
-                for future in tqdm(as_completed(retry_futures.keys()), total=len(retry_futures), desc="Processing Failed Geoms"):
+
+                for future in tqdm(
+                    as_completed(retry_futures.keys()),
+                    total=len(retry_futures),
+                    desc="Processing Failed Geoms",
+                ):
                     result = future.result()
                     results.append(result)
 
-        gdf['street_points'] = [result[0] for result in results]
-        gdf['utm_crs'] = [result[1] for result in results]  # Store the CRS for each point
+        gdf["street_points"] = [result[0] for result in results]
+        gdf["utm_crs"] = [result[1] for result in results]  # Store the CRS for each point
 
-        gdf_exploded = gdf.explode('street_points').reset_index(drop=True)
+        gdf_exploded = gdf.explode("street_points").reset_index(drop=True)
         gdf_exploded["utm_crs"] = gdf_exploded["utm_crs"].astype(str)
 
         with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(self.utm_to_lat_lon, group['street_points'], crs): crs for crs, group in gdf_exploded.groupby('utm_crs')}
+            futures = {
+                executor.submit(self.utm_to_lat_lon, group["street_points"], crs): crs
+                for crs, group in gdf_exploded.groupby("utm_crs")
+            }
             lat_lon_points = []
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Converting UTM to Lat/Lon"):
+            for future in tqdm(
+                as_completed(futures),
+                total=len(futures),
+                desc="Converting UTM to Lat/Lon",
+            ):
                 lat_lon_points.extend(future.result())
 
         # Assign the longitude and latitude to the existing DataFrame columns
-        gdf_exploded[['longitude', 'latitude']] = pd.DataFrame(lat_lon_points, index=gdf_exploded.index)
+        gdf_exploded[["longitude", "latitude"]] = pd.DataFrame(lat_lon_points, index=gdf_exploded.index)
 
-        return gdf_exploded[self.id_columns + ['longitude', 'latitude']]
-
+        return gdf_exploded[self.id_columns + ["longitude", "latitude"]]
 
     def process_multipolygon(self, gdf):
         # Explode the multipolygon into individual polygons
-        gdf = gdf.explode('geometry').reset_index(drop=True)
+        gdf = gdf.explode("geometry").reset_index(drop=True)
 
         # Call process_polygon on the exploded GeoDataFrame
         return self.process_polygon(gdf)

@@ -168,10 +168,7 @@ class Client:
                 logger.debug(f"Error details: {str(res.json())}")
 
             except ValueError:
-                logger.debug(
-                    "[Client - _initiate_request, ValueError] res.json() not available,"
-                    "empty response"
-                )
+                logger.debug("[Client - _initiate_request, ValueError] res.json() not available," "empty response")
 
             res.raise_for_status()
 
@@ -194,9 +191,7 @@ class Client:
 
         # Determine Authentication method based on the requested endpoint
         if "https://graph.mapillary.com" in url:
-            self.session.headers.update(
-                {"Authorization": f"OAuth {self.__access_token}"}
-            )
+            self.session.headers.update({"Authorization": f"OAuth {self.__access_token}"})
         else:
             params["access_token"] = params.get("access_token", self.__access_token)
 
@@ -229,11 +224,7 @@ class Client:
 
         logger.info(f"Requesting {method} to {url}")
 
-        logger.debug(
-            "{}\n{} {} HTTP/1.1\n{}\n\n{}".format(
-                "-----------REQUEST-----------", method, url, headers, body
-            )
-        )
+        logger.debug("{}\n{} {} HTTP/1.1\n{}\n\n{}".format("-----------REQUEST-----------", method, url, headers, body))
 
     @staticmethod
     def _pprint_response(res):

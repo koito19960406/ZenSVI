@@ -1,14 +1,15 @@
-from torch.utils.data import Dataset, DataLoader
-from torchvision.io import read_image
-from torchvision import transforms as trn
 from pathlib import Path
-import pkg_resources
-import pandas as pd
-import numpy as np
-import cv2
-from tqdm import tqdm
 from typing import Union
+
+import cv2
+import numpy as np
+import pandas as pd
+import pkg_resources
 import torch
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms as trn
+from torchvision.io import read_image
+from tqdm import tqdm
 
 from .base import BaseClassifier
 from .utils import wideresnet
@@ -32,9 +33,7 @@ class ImageDataset(Dataset):
 
     def collate_fn(self, batch):
         images, paths = zip(*batch)
-        images = torch.stack(
-            images, dim=0
-        )  # This combines the images into a single tensor
+        images = torch.stack(images, dim=0)  # This combines the images into a single tensor
         return images, list(paths)
 
 
@@ -87,9 +86,7 @@ class ClassifierPlaces365(BaseClassifier):
     def __init__(self, device=None):
         super().__init__(device)
         self.device = self._get_device(device)
-        self.classes, self.labels_IO, self.labels_attribute, self.W_attribute = (
-            self._load_labels()
-        )
+        self.classes, self.labels_IO, self.labels_attribute, self.W_attribute = self._load_labels()
         self.features_blobs = []
         self.model = self._load_model()
         self.model.eval()
@@ -109,9 +106,7 @@ class ClassifierPlaces365(BaseClassifier):
         classes = tuple(classes)
 
         # indoor and outdoor relevant
-        file_name_IO = pkg_resources.resource_filename(
-            "zensvi.cv.classification.utils", "IO_places365.txt"
-        )
+        file_name_IO = pkg_resources.resource_filename("zensvi.cv.classification.utils", "IO_places365.txt")
         with open(file_name_IO) as f:
             lines = f.readlines()
             labels_IO = []
@@ -138,15 +133,10 @@ class ClassifierPlaces365(BaseClassifier):
         self.features_blobs.append(np.squeeze(output.data.cpu().numpy()))
 
     def _load_model(self):
-        model_file = pkg_resources.resource_filename(
-            "zensvi.cv.classification.utils", "wideresnet18_places365.pth.tar"
-        )
+        model_file = pkg_resources.resource_filename("zensvi.cv.classification.utils", "wideresnet18_places365.pth.tar")
         model = wideresnet.resnet18(num_classes=365)
         checkpoint = torch.load(model_file, map_location=self.device)
-        state_dict = {
-            str.replace(k, "module.", ""): v
-            for k, v in checkpoint["state_dict"].items()
-        }
+        state_dict = {str.replace(k, "module.", ""): v for k, v in checkpoint["state_dict"].items()}
         model.load_state_dict(state_dict)
 
         # hacky way to deal with the upgraded batchnorm2D and avgpool layers...
@@ -171,9 +161,7 @@ class ClassifierPlaces365(BaseClassifier):
         weight_softmax[weight_softmax < 0] = 0
         return weight_softmax
 
-    def _save_results_to_file(
-        self, results, dir_output, file_name, save_format="csv json", csv_format="long"
-    ):
+    def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json", csv_format="long"):
         df = pd.DataFrame(results)
         if csv_format == "long":
             # Convert the DataFrame to long format if necessary
@@ -223,9 +211,7 @@ class ClassifierPlaces365(BaseClassifier):
         :type csv_format: str, optional
         """
         if not dir_image_output and not dir_summary_output:
-            raise ValueError(
-                "At least one of dir_image_output and dir_summary_output must be provided"
-            )
+            raise ValueError("At least one of dir_image_output and dir_summary_output must be provided")
         # Prepare output directories
         if dir_image_output:
             Path(dir_image_output).mkdir(parents=True, exist_ok=True)
@@ -258,9 +244,7 @@ class ClassifierPlaces365(BaseClassifier):
         # Transform and load the dataset
         transform = _returnTF()
         dataset = ImageDataset(img_paths, transform=transform)
-        dataloader = DataLoader(
-            dataset, batch_size=batch_size, collate_fn=dataset.collate_fn
-        )
+        dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=dataset.collate_fn)
         results = []
         # Process images
         for images, paths in tqdm(dataloader, desc="Processing images"):
@@ -287,25 +271,19 @@ class ClassifierPlaces365(BaseClassifier):
                 for i, idx in enumerate(idx_a):
                     dict_temp[self.labels_attribute[idx]] = responses_attribute[idx]
 
-                io_image = np.mean(
-                    self.labels_IO[top_idxs.numpy()[:10]]
-                )  # Assuming labels_IO is correctly shaped
+                io_image = np.mean(self.labels_IO[top_idxs.numpy()[:10]])  # Assuming labels_IO is correctly shaped
                 environment_type = "indoor" if io_image < 0.5 else "outdoor"
                 dict_temp["environment_type"] = environment_type
                 results.append(dict_temp)
 
                 if len(save_image_options) > 0 and dir_image_output is not None:
                     # Generate class activation mapping
-                    CAMs = _returnCAM(
-                        features_blobs_0, self.weight_softmax, [top_idxs[0]]
-                    )
+                    CAMs = _returnCAM(features_blobs_0, self.weight_softmax, [top_idxs[0]])
 
                     # Render the CAM and output
                     img = cv2.imread(paths[idx_img_prob])
                     height, width, _ = img.shape
-                    heatmap = cv2.applyColorMap(
-                        cv2.resize(CAMs[0], (width, height)), cv2.COLORMAP_JET
-                    )
+                    heatmap = cv2.applyColorMap(cv2.resize(CAMs[0], (width, height)), cv2.COLORMAP_JET)
                     if "cam_image" in save_image_options:
                         output_filename = f"{Path(paths[idx_img_prob]).stem}-cam.jpg"
                         output_filepath = Path(dir_image_output) / output_filename

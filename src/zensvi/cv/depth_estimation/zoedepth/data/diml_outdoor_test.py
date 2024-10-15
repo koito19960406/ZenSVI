@@ -35,15 +35,15 @@ class ToTensor(object):
     def __init__(self):
         # self.normalize = transforms.Normalize(
         #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        self.normalize = lambda x : x
+        self.normalize = lambda x: x
 
     def __call__(self, sample):
-        image, depth = sample['image'], sample['depth']
+        image, depth = sample["image"], sample["depth"]
         image = self.to_tensor(image)
         image = self.normalize(image)
         depth = self.to_tensor(depth)
 
-        return {'image': image, 'depth': depth, 'dataset': "diml_outdoor"}
+        return {"image": image, "depth": depth, "dataset": "diml_outdoor"}
 
     def to_tensor(self, pic):
 
@@ -52,17 +52,16 @@ class ToTensor(object):
             return img
 
         #         # handle PIL Image
-        if pic.mode == 'I':
+        if pic.mode == "I":
             img = torch.from_numpy(np.array(pic, np.int32, copy=False))
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             img = torch.from_numpy(np.array(pic, np.int16, copy=False))
         else:
-            img = torch.ByteTensor(
-                torch.ByteStorage.from_buffer(pic.tobytes()))
+            img = torch.ByteTensor(torch.ByteStorage.from_buffer(pic.tobytes()))
         # PIL image mode: 1, L, P, I, F, RGB, YCbCr, RGBA, CMYK
-        if pic.mode == 'YCbCr':
+        if pic.mode == "YCbCr":
             nchannel = 3
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             nchannel = 1
         else:
             nchannel = len(pic.mode)
@@ -80,10 +79,8 @@ class DIML_Outdoor(Dataset):
         import glob
 
         # image paths are of the form <data_dir_root>/{outleft, depthmap}/*.png
-        self.image_files = glob.glob(os.path.join(
-            data_dir_root, 'outleft', '*.png'))
-        self.depth_files = [r.replace("outleft", "depthmap")
-                            for r in self.image_files]
+        self.image_files = glob.glob(os.path.join(data_dir_root, "outleft", "*.png"))
+        self.depth_files = [r.replace("outleft", "depthmap") for r in self.image_files]
         self.transform = ToTensor()
 
     def __getitem__(self, idx):
@@ -91,8 +88,7 @@ class DIML_Outdoor(Dataset):
         depth_path = self.depth_files[idx]
 
         image = np.asarray(Image.open(image_path), dtype=np.float32) / 255.0
-        depth = np.asarray(Image.open(depth_path),
-                           dtype='uint16') / 1000.0  # mm to meters
+        depth = np.asarray(Image.open(depth_path), dtype="uint16") / 1000.0  # mm to meters
 
         # depth[depth > 8] = -1
         depth = depth[..., None]
@@ -109,6 +105,7 @@ class DIML_Outdoor(Dataset):
 def get_diml_outdoor_loader(data_dir_root, batch_size=1, **kwargs):
     dataset = DIML_Outdoor(data_dir_root)
     return DataLoader(dataset, batch_size, **kwargs)
+
 
 # get_diml_outdoor_loader(data_dir_root="datasets/diml/outdoor/test/HR")
 # get_diml_outdoor_loader(data_dir_root="datasets/diml/outdoor/test/LR")

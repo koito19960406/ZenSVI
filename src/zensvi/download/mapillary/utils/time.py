@@ -57,7 +57,4 @@ def is_iso8601_datetime_format(date_time: str) -> bool:
     :rtype: bool
     """
 
-    return (
-        re.match(r"(\d{4})\-(\d{2})\-(\d{2})T(\d{2})\:(\d{2})\:(\d{2})Z", date_time)
-        is not None
-    )
+    return re.match(r"(\d{4})\-(\d{2})\-(\d{2})T(\d{2})\:(\d{2})\:(\d{2})Z", date_time) is not None

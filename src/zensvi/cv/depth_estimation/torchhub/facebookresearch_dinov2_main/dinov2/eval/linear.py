@@ -5,28 +5,26 @@
 # LICENSE file in the root directory of this source tree.
 
 import argparse
-from functools import partial
 import json
 import logging
 import os
 import sys
+from functools import partial
 from typing import List, Optional
 
+import dinov2.distributed as distributed
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.nn.parallel import DistributedDataParallel
-from fvcore.common.checkpoint import Checkpointer, PeriodicCheckpointer
-
 from dinov2.data import SamplerType, make_data_loader, make_dataset
 from dinov2.data.transforms import make_classification_eval_transform, make_classification_train_transform
-import dinov2.distributed as distributed
 from dinov2.eval.metrics import MetricType, build_metric
 from dinov2.eval.setup import get_args_parser as get_setup_args_parser
 from dinov2.eval.setup import setup_and_build_model
 from dinov2.eval.utils import ModelWithIntermediateLayers, evaluate
 from dinov2.logging import MetricLogger
-
+from fvcore.common.checkpoint import Checkpointer, PeriodicCheckpointer
+from torch.nn.parallel import DistributedDataParallel
 
 logger = logging.getLogger("dinov2")
 
@@ -143,7 +141,21 @@ def get_args_parser(
         epoch_length=1250,
         save_checkpoint_frequency=20,
         eval_period_iterations=1250,
-        learning_rates=[1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 5e-3, 1e-2, 2e-2, 5e-2, 0.1],
+        learning_rates=[
+            1e-5,
+            2e-5,
+            5e-5,
+            1e-4,
+            2e-4,
+            5e-4,
+            1e-3,
+            2e-3,
+            5e-3,
+            1e-2,
+            2e-2,
+            5e-2,
+            0.1,
+        ],
         val_metric_type=MetricType.MEAN_ACCURACY,
         test_metric_types=None,
         classifier_fpath=None,
@@ -219,12 +231,15 @@ class LinearPostprocessor(nn.Module):
     def __init__(self, linear_classifier, class_mapping=None):
         super().__init__()
         self.linear_classifier = linear_classifier
-        self.register_buffer("class_mapping", None if class_mapping is None else torch.LongTensor(class_mapping))
+        self.register_buffer(
+            "class_mapping",
+            None if class_mapping is None else torch.LongTensor(class_mapping),
+        )
 
     def forward(self, samples, targets):
         preds = self.linear_classifier(samples)
         return {
-            "preds": preds[:, self.class_mapping] if self.class_mapping is not None else preds,
+            "preds": (preds[:, self.class_mapping] if self.class_mapping is not None else preds),
             "target": targets,
         }
 
@@ -242,12 +257,15 @@ def setup_linear_classifiers(sample_output, n_last_blocks_list, learning_rates, 
                 lr = scale_lr(_lr, batch_size)
                 out_dim = create_linear_input(sample_output, use_n_blocks=n, use_avgpool=avgpool).shape[1]
                 linear_classifier = LinearClassifier(
-                    out_dim, use_n_blocks=n, use_avgpool=avgpool, num_classes=num_classes
+                    out_dim,
+                    use_n_blocks=n,
+                    use_avgpool=avgpool,
+                    num_classes=num_classes,
                 )
                 linear_classifier = linear_classifier.cuda()
-                linear_classifiers_dict[
-                    f"classifier_{n}_blocks_avgpool_{avgpool}_lr_{lr:.5f}".replace(".", "_")
-                ] = linear_classifier
+                linear_classifiers_dict[f"classifier_{n}_blocks_avgpool_{avgpool}_lr_{lr:.5f}".replace(".", "_")] = (
+                    linear_classifier
+                )
                 optim_param_groups.append({"params": linear_classifier.parameters(), "lr": lr})
 
     linear_classifiers = AllClassifiers(linear_classifiers_dict)
@@ -297,7 +315,10 @@ def evaluate_linear_classifiers(
             max_accuracy = metric["top-1"].item()
             best_classifier = classifier_string
 
-    results_dict["best_classifier"] = {"name": best_classifier, "accuracy": max_accuracy}
+    results_dict["best_classifier"] = {
+        "name": best_classifier,
+        "accuracy": max_accuracy,
+    }
 
     logger.info(f"best classifier: {results_dict['best_classifier']}")
 
@@ -422,7 +443,7 @@ def make_eval_data_loader(test_dataset_str, batch_size, num_workers, metric_type
         drop_last=False,
         shuffle=False,
         persistent_workers=False,
-        collate_fn=_pad_and_collate if metric_type == MetricType.IMAGENET_REAL_ACCURACY else None,
+        collate_fn=(_pad_and_collate if metric_type == MetricType.IMAGENET_REAL_ACCURACY else None),
     )
     return test_data_loader
 

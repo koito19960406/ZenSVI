@@ -1,14 +1,16 @@
+import glob
 import os
+import random
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import numpy as np
 import requests
 from PIL import Image
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import numpy as np
-from tqdm import tqdm
-import random
 from requests.exceptions import ProxyError
-import glob
+from tqdm import tqdm
 
-class ImageTool():
+
+class ImageTool:
 
     @staticmethod
     def concat_horizontally(im1, im2):
@@ -21,7 +23,7 @@ class ImageTool():
             im2 (undefined): second PIL image
 
         """
-        dst = Image.new('RGB', (im1.width + im2.width, im1.height))
+        dst = Image.new("RGB", (im1.width + im2.width, im1.height))
         dst.paste(im1, (0, 0))
         dst.paste(im2, (im1.width, 0))
         return dst
@@ -37,11 +39,11 @@ class ImageTool():
             im2 (undefined): second PIL image
 
         """
-        dst = Image.new('RGB', (im1.width, im1.height + im2.height))
+        dst = Image.new("RGB", (im1.width, im1.height + im2.height))
         dst.paste(im1, (0, 0))
         dst.paste(im2, (0, im1.height))
         return dst
-                
+
     @staticmethod
     def fetch_image_with_proxy(pano_id, zoom, x, y, ua, proxies):
         """
@@ -61,7 +63,7 @@ class ImageTool():
         while True:
             # Choose a random proxy for each request
             proxy = random.choice(proxies)
-            url_img = f'https://cbk0.google.com/cbk?output=tile&panoid={pano_id}&zoom={zoom}&x={x}&y={y}'
+            url_img = f"https://cbk0.google.com/cbk?output=tile&panoid={pano_id}&zoom={zoom}&x={x}&y={y}"
             try:
                 image = Image.open(requests.get(url_img, headers=ua, proxies=proxy, stream=True).raw)
                 return image
@@ -102,8 +104,8 @@ class ImageTool():
         """
         if ImageTool.is_bottom_black(image):
             # Compute the crop and resize dimensions based on zoom level
-            crop_height, crop_width = 208 * (2 ** zoom), 416 * (2 ** zoom)
-            resize_height, resize_width = 256 * (2 ** zoom), 512 * (2 ** zoom)
+            crop_height, crop_width = 208 * (2**zoom), 416 * (2**zoom)
+            resize_height, resize_width = 256 * (2**zoom), 512 * (2**zoom)
 
             # Crop the image
             image = image.crop((0, 0, crop_width, crop_height))
@@ -111,13 +113,24 @@ class ImageTool():
             # Resize the image
             image = image.resize((resize_width, resize_height), Image.LANCZOS)
 
-        return image            
+        return image
 
     @staticmethod
-    def get_and_save_image(pano_id, identif, zoom, vertical_tiles, horizontal_tiles, out_path, ua, proxies, cropped=False, full=True):
+    def get_and_save_image(
+        pano_id,
+        identif,
+        zoom,
+        vertical_tiles,
+        horizontal_tiles,
+        out_path,
+        ua,
+        proxies,
+        cropped=False,
+        full=True,
+    ):
         """
         Description of get_and_save_image
-        
+
         Downloads an image tile by tile and composes them together.
 
         Args:
@@ -135,7 +148,7 @@ class ImageTool():
             for y in range(vertical_tiles):
                 new_img = ImageTool.fetch_image_with_proxy(pano_id, zoom, x, y, ua, proxies)
                 if not full:
-                    new_img.save(f'{out_path}/{identif}_x{x}_y{y}.jpg')
+                    new_img.save(f"{out_path}/{identif}_x{x}_y{y}.jpg")
                 if y == 0:
                     first_slice = new_img
                 else:
@@ -147,7 +160,7 @@ class ImageTool():
                 final_image = ImageTool.concat_horizontally(final_image, first_slice)
 
         if full:
-            name = f'{out_path}/{identif}'
+            name = f"{out_path}/{identif}"
             if cropped or zoom == 0:
                 h_cropped = final_image.size[1] // 2
                 final_image = final_image.crop((0, 0, final_image.size[0], h_cropped))
@@ -155,20 +168,31 @@ class ImageTool():
             # Validate image before saving
             if final_image.size[0] > 0 and final_image.size[1] > 0:
                 final_image = ImageTool.process_image(final_image, zoom)
-                final_image.save(f'{name}.jpg')
+                final_image.save(f"{name}.jpg")
             else:
                 raise ValueError(f"Invalid image for pano_id {pano_id}")
 
         return identif
 
-
     @staticmethod
-    def dwl_multiple(panoids, zoom, v_tiles, h_tiles, out_path, uas, proxies, cropped, full, batch_size = 1000, logger = None):
+    def dwl_multiple(
+        panoids,
+        zoom,
+        v_tiles,
+        h_tiles,
+        out_path,
+        uas,
+        proxies,
+        cropped,
+        full,
+        batch_size=1000,
+        logger=None,
+    ):
         """
         Description of dwl_multiple
-        
+
         Calls the get_and_save_image function using multiple threads.
-        
+
         Args:
             panoids (undefined): GSV anorama id
             zoom (undefined):    image resolution
@@ -187,20 +211,23 @@ class ImageTool():
 
         # Calculate current highest batch number
         existing_batches = glob.glob(os.path.join(out_path, "batch_*"))
-        existing_batch_numbers = [int(os.path.basename(batch).split('_')[-1]) for batch in existing_batches]
+        existing_batch_numbers = [int(os.path.basename(batch).split("_")[-1]) for batch in existing_batches]
         start_batch_number = max(existing_batch_numbers, default=0)
 
         num_batches = (len(panoids) + batch_size - 1) // batch_size
 
-        for counter, i in tqdm(enumerate(range(start_batch_number, start_batch_number + num_batches)), desc=f"Downloading images by batch size {min(batch_size, len(panoids))}"):
+        for counter, i in tqdm(
+            enumerate(range(start_batch_number, start_batch_number + num_batches)),
+            desc=f"Downloading images by batch size {min(batch_size, len(panoids))}",
+        ):
             # Create a new sub-folder for each batch
             batch_out_path = os.path.join(out_path, f"batch_{i+1}")
             os.makedirs(batch_out_path, exist_ok=True)
 
             with ThreadPoolExecutor(max_workers=min(len(uas), batch_size)) as executor:
                 jobs = []
-                batch_panoids = panoids[counter*batch_size : (counter+1)*batch_size]
-                batch_uas = uas[counter*batch_size : (counter+1)*batch_size]
+                batch_panoids = panoids[counter * batch_size : (counter + 1) * batch_size]
+                batch_uas = uas[counter * batch_size : (counter + 1) * batch_size]
                 for pano, ua in zip(batch_panoids, batch_uas):
                     kw = {
                         "pano_id": pano,
@@ -212,11 +239,15 @@ class ImageTool():
                         "horizontal_tiles": h_tiles,
                         "out_path": batch_out_path,  # Pass the new sub-folder path
                         "cropped": cropped,
-                        "full": full
+                        "full": full,
                     }
                     jobs.append(executor.submit(ImageTool.get_and_save_image, **kw))
 
-                for job in tqdm(as_completed(jobs), total=len(jobs), desc=f"Downloading images for batch #{i+1}"):
+                for job in tqdm(
+                    as_completed(jobs),
+                    total=len(jobs),
+                    desc=f"Downloading images for batch #{i+1}",
+                ):
                     try:
                         job.result()
                     except Exception as e:
@@ -226,6 +257,6 @@ class ImageTool():
                         if logger:
                             logger.log_failed_pids(failed_panoid)
 
-        print("Total images downloaded:", len(panoids) - errors, "Errors:", errors)  
+        print("Total images downloaded:", len(panoids) - errors, "Errors:", errors)
         if logger:
             logger.log_info(f"Total images downloaded: {len(panoids) - errors}, Errors: {errors}")

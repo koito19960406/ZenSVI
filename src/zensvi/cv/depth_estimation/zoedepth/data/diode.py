@@ -35,18 +35,18 @@ class ToTensor(object):
     def __init__(self):
         # self.normalize = transforms.Normalize(
         #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        self.normalize = lambda x : x
+        self.normalize = lambda x: x
         self.resize = transforms.Resize(480)
 
     def __call__(self, sample):
-        image, depth = sample['image'], sample['depth']
+        image, depth = sample["image"], sample["depth"]
         image = self.to_tensor(image)
         image = self.normalize(image)
         depth = self.to_tensor(depth)
 
         image = self.resize(image)
 
-        return {'image': image, 'depth': depth, 'dataset': "diode"}
+        return {"image": image, "depth": depth, "dataset": "diode"}
 
     def to_tensor(self, pic):
 
@@ -55,17 +55,16 @@ class ToTensor(object):
             return img
 
         #         # handle PIL Image
-        if pic.mode == 'I':
+        if pic.mode == "I":
             img = torch.from_numpy(np.array(pic, np.int32, copy=False))
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             img = torch.from_numpy(np.array(pic, np.int16, copy=False))
         else:
-            img = torch.ByteTensor(
-                torch.ByteStorage.from_buffer(pic.tobytes()))
+            img = torch.ByteTensor(torch.ByteStorage.from_buffer(pic.tobytes()))
         # PIL image mode: 1, L, P, I, F, RGB, YCbCr, RGBA, CMYK
-        if pic.mode == 'YCbCr':
+        if pic.mode == "YCbCr":
             nchannel = 3
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             nchannel = 1
         else:
             nchannel = len(pic.mode)
@@ -84,12 +83,9 @@ class DIODE(Dataset):
         import glob
 
         # image paths are of the form <data_dir_root>/scene_#/scan_#/*.png
-        self.image_files = glob.glob(
-            os.path.join(data_dir_root, '*', '*', '*.png'))
-        self.depth_files = [r.replace(".png", "_depth.npy")
-                            for r in self.image_files]
-        self.depth_mask_files = [
-            r.replace(".png", "_depth_mask.npy") for r in self.image_files]
+        self.image_files = glob.glob(os.path.join(data_dir_root, "*", "*", "*.png"))
+        self.depth_files = [r.replace(".png", "_depth.npy") for r in self.image_files]
+        self.depth_mask_files = [r.replace(".png", "_depth_mask.npy") for r in self.image_files]
         self.transform = ToTensor()
 
     def __getitem__(self, idx):
@@ -121,5 +117,6 @@ class DIODE(Dataset):
 def get_diode_loader(data_dir_root, batch_size=1, **kwargs):
     dataset = DIODE(data_dir_root)
     return DataLoader(dataset, batch_size, **kwargs)
+
 
 # get_diode_loader(data_dir_root="datasets/diode/val/outdoor")

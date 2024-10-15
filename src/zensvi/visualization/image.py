@@ -1,10 +1,11 @@
-import pandas as pd
-import matplotlib.pyplot as plt
 import glob
-from PIL import Image
-import numpy as np
-from typing import Union, Tuple
 from pathlib import Path
+from typing import Tuple, Union
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from PIL import Image
 
 from .font_property import _get_font_properties
 
@@ -103,20 +104,13 @@ def plot_image(
 
     # Find CSV files matching the pattern
     if dir_csv_input is not None and csv_file_pattern is not None:
-        csv_files = glob.glob(
-            str(Path(dir_csv_input) / "**" / csv_file_pattern), recursive=True
-        )
+        csv_files = glob.glob(str(Path(dir_csv_input) / "**" / csv_file_pattern), recursive=True)
         # combine all CSV files into a single DataFrame
         df = pd.concat([pd.read_csv(file) for file in csv_files], ignore_index=True)
         # Pre-filter image file names without extensions
         if image_file_pattern is not None:
-            image_file_pattern_no_regex = _clean_pattern(
-                image_file_pattern, image_extensions
-            )
-            image_file_names = {
-                str(file.stem).replace(image_file_pattern_no_regex, ""): file
-                for file in image_files
-            }
+            image_file_pattern_no_regex = _clean_pattern(image_file_pattern, image_extensions)
+            image_file_names = {str(file.stem).replace(image_file_pattern_no_regex, ""): file for file in image_files}
         else:
             image_file_names = {file.stem: file for file in image_files}
         # map image file names to the DataFrame by using "filename_key" column and image_file_names keys
@@ -138,15 +132,11 @@ def plot_image(
         # Filter and sort the DataFrame
         if sort_by.lower() != "random":
             try:
-                df_filtered = df_filtered.sort_values(
-                    by=sort_by, ascending=ascending
-                ).reset_index(drop=True)
+                df_filtered = df_filtered.sort_values(by=sort_by, ascending=ascending).reset_index(drop=True)
             except KeyError:
                 raise KeyError(f"Column '{sort_by}' not found in the CSV file")
         else:
-            df_filtered = df_filtered.sample(
-                frac=1, random_state=random_seed
-            ).reset_index(
+            df_filtered = df_filtered.sample(frac=1, random_state=random_seed).reset_index(
                 drop=True
             )  # Randomly shuffle the DataFrame
 
@@ -158,9 +148,7 @@ def plot_image(
         df_filtered = pd.DataFrame({"image_full_path": image_files})
 
     # Prepare the subplot
-    fig, axes = plt.subplots(
-        n_row, n_col, figsize=(n_col * subplot_width, n_row * subplot_height)
-    )
+    fig, axes = plt.subplots(n_row, n_col, figsize=(n_col * subplot_width, n_row * subplot_height))
     fig.suptitle(title)
 
     # Flatten the axes array for easy indexing
@@ -177,9 +165,7 @@ def plot_image(
 
     # set title
     prop_title, _, _ = _get_font_properties(font_size)
-    fig.suptitle(
-        title, fontproperties=prop_title, color="#2b2b2b" if not dark_mode else "white"
-    )
+    fig.suptitle(title, fontproperties=prop_title, color="#2b2b2b" if not dark_mode else "white")
 
     if path_output:
         plt.savefig(path_output, bbox_inches="tight", dpi=dpi)

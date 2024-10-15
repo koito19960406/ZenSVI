@@ -1,11 +1,11 @@
 import json
-import unittest
 import os
 import shutil
+import unittest
 from pathlib import Path
 
-from zensvi.download.mapillary import interface
 from zensvi.download import MLYDownloader
+from zensvi.download.mapillary import interface
 
 
 class TestMapillary(unittest.TestCase):
@@ -23,8 +23,8 @@ class TestMapillary(unittest.TestCase):
         self.mly_svi_output_polygon = Path(self.mly_output) / "mly_svi_polygon"
         self.mly_log = Path(self.mly_output) / "log.log"
         pass
-    
-    @classmethod   
+
+    @classmethod
     def tearDown(self):
         # remove output directory
         shutil.rmtree(self.mly_output, ignore_errors=True)
@@ -96,7 +96,6 @@ class TestMapillary(unittest.TestCase):
     #     # assert True if there are files in the output directory
     #     self.assertTrue(len(os.listdir(self.mly_svi_output_polygon)) > 0)
 
-
     # test with kwargs for mly
     def test_downloader_kwargs(self):
         # Skip test if the output file already exists
@@ -108,12 +107,15 @@ class TestMapillary(unittest.TestCase):
             "image_type": "flat",  # The tile image_type to be obtained, either as 'flat', 'pano' (panoramic), or 'all'.
             "min_captured_at": 1484549945000,  # The min date. Format from 'YYYY', to 'YYYY-MM-DDTHH:MM:SS'
             "max_captured_at": 1642935417694,  # The max date. Format from 'YYYY', to 'YYYY-MM-DDTHH:MM:SS'
-            "organization_id": [1805883732926354],  # The organization id, ID of the organization this image (or sets of images) belong to. It can be absent. Thus, default is -1 (None)
-            "compass_angle": (0,180)
+            "organization_id": [
+                1805883732926354
+            ],  # The organization id, ID of the organization this image (or sets of images) belong to. It can be absent. Thus, default is -1 (None)
+            "compass_angle": (0, 180),
         }
         mly_downloader.download_svi(self.mly_svi_output, input_shp_file=self.mly_input_polygon, **kwarg)
         # assert True if there are files in the output directory
         self.assertTrue(len(os.listdir(self.mly_svi_output)) > 0)
+
 
 if __name__ == "__main__":
     unittest.main()

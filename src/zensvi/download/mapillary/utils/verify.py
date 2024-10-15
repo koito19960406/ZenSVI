@@ -15,18 +15,16 @@ For more information, please check out https://www.mapillary.com/developer/api-d
 - License: MIT LICENSE
 """
 
-# Local Imports
-from zensvi.download.mapillary.models.exceptions import (
-    InvalidBBoxError,
-    InvalidKwargError,
-    InvalidOptionError,
-)
-from zensvi.download.mapillary.config.api.entities import Entities
-from zensvi.download.mapillary.models.client import Client
+import re
 
 # Package Imports
 import requests
-import re
+
+from zensvi.download.mapillary.config.api.entities import Entities
+from zensvi.download.mapillary.models.client import Client
+
+# Local Imports
+from zensvi.download.mapillary.models.exceptions import InvalidBBoxError, InvalidKwargError, InvalidOptionError
 
 
 def international_dateline_check(bbox):
@@ -94,14 +92,10 @@ def kwarg_check(kwargs: dict, options: list, callback: str) -> bool:
     # If 'zoom' is in kwargs
     if ("zoom" in kwargs) and (kwargs["zoom"] < 14 or kwargs["zoom"] > 17):
         # Raising exception for invalid zoom value
-        raise InvalidOptionError(
-            param="zoom", value=kwargs["zoom"], options=[14, 15, 16, 17]
-        )
+        raise InvalidOptionError(param="zoom", value=kwargs["zoom"], options=[14, 15, 16, 17])
 
     # if 'image_type' is in kwargs
-    if ("image_type" in kwargs) and (
-        kwargs["image_type"] not in ["pano", "flat", "all"]
-    ):
+    if ("image_type" in kwargs) and (kwargs["image_type"] not in ["pano", "flat", "all"]):
         # Raising exception for invalid image_type value
         raise InvalidOptionError(
             param="image_type",
@@ -151,9 +145,7 @@ def resolution_check(resolution: int) -> bool:
 
     if resolution not in [256, 1024, 2048]:
         # Raising exception for resolution value
-        raise InvalidOptionError(
-            param="resolution", value=str(resolution), options=[256, 1024, 2048]
-        )
+        raise InvalidOptionError(param="resolution", value=str(resolution), options=[256, 1024, 2048])
 
     return True
 

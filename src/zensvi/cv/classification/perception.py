@@ -1,15 +1,16 @@
 from pathlib import Path
 from typing import List, Tuple, Union
-from torch.utils.data import Dataset, DataLoader
-from huggingface_hub import hf_hub_download
-from torchvision import transforms
-from PIL import Image
-import torch
-import pandas as pd
-import tqdm
 
-from .utils.place_pulse import PlacePulseClassificationModel
+import pandas as pd
+import torch
+import tqdm
+from huggingface_hub import hf_hub_download
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
+
 from .base import BaseClassifier
+from .utils.place_pulse import PlacePulseClassificationModel
 
 
 class ImageDataset(Dataset):
@@ -17,8 +18,7 @@ class ImageDataset(Dataset):
         self.image_files = [
             image_file
             for image_file in image_files
-            if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"]
-            and not image_file.name.startswith(".")
+            if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"] and not image_file.name.startswith(".")
         ]
 
         # Image transformations
@@ -26,9 +26,7 @@ class ImageDataset(Dataset):
             [
                 transforms.Resize((224, 224)),
                 transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ]
         )
 
@@ -42,9 +40,7 @@ class ImageDataset(Dataset):
 
         return str(image_file), img
 
-    def collate_fn(
-        self, data: List[Tuple[str, torch.Tensor]]
-    ) -> Tuple[List[str], torch.Tensor]:
+    def collate_fn(self, data: List[Tuple[str, torch.Tensor]]) -> Tuple[List[str], torch.Tensor]:
         """
         Custom collate function for the dataset.
 
@@ -88,9 +84,7 @@ class ClassifierPerception(BaseClassifier):
         self.model.eval()
         self.model.to(self.device)
 
-    def _save_results_to_file(
-        self, results, dir_output, file_name, save_format="csv json"
-    ):
+    def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json"):
         df = pd.DataFrame(results)
         dir_output = Path(dir_output)
         dir_output.mkdir(parents=True, exist_ok=True)

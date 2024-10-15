@@ -1,33 +1,34 @@
-import random
 import datetime
-import pandas as pd
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import warnings
-import requests
-from pathlib import Path
-import geopandas as gpd
-from tqdm import tqdm
-import warnings
-from shapely.errors import ShapelyDeprecationWarning
 import json
 import os
+import random
+import warnings
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+
+import geopandas as gpd
+import pandas as pd
+import requests
+from shapely.errors import ShapelyDeprecationWarning
+from tqdm import tqdm
 
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
 import glob
+
+# set logging level to warning
+import logging
 import shutil
+
 import numpy as np
 import osmnx as ox
 from PIL import Image
 
-from zensvi.download.base import BaseDownloader
 import zensvi.download.mapillary.interface as mly
+from zensvi.download.base import BaseDownloader
 from zensvi.download.utils.geoprocess import GeoProcessor
-from zensvi.download.utils.helpers import standardize_column_names, check_and_buffer
+from zensvi.download.utils.helpers import check_and_buffer, standardize_column_names
 from zensvi.utils.log import Logger
-
-# set logging level to warning
-import logging
 
 logging.getLogger("mapillary.utils.client").setLevel(logging.WARNING)
 
@@ -157,9 +158,7 @@ class MLYDownloader(BaseDownloader):
         if kwargs["lat"] is not None and kwargs["lon"] is not None:
             # create a geodataframe with lat and lon
             df = pd.DataFrame({"lat": [kwargs["lat"]], "lon": [kwargs["lon"]]})
-            gdf = gpd.GeoDataFrame(
-                df, geometry=gpd.points_from_xy(df.lon, df.lat), crs="EPSG:4326"
-            )
+            gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.lon, df.lat), crs="EPSG:4326")
 
         # input: csv file
         elif kwargs["input_csv_file"] != "":
@@ -181,9 +180,7 @@ class MLYDownloader(BaseDownloader):
             gdf = ox.geocoder.geocode_to_gdf(kwargs["input_place_name"])
             # raise error if the input_place_name is not found
             if len(gdf) == 0:
-                raise ValueError(
-                    "The input_place_name is not found. Please try another place name."
-                )
+                raise ValueError("The input_place_name is not found. Please try another place name.")
         else:
             raise ValueError("Please input the lat and lon, csv file, or shapefile.")
 
@@ -209,9 +206,7 @@ class MLYDownloader(BaseDownloader):
             except ValueError:
                 raise ValueError("Incorrect end_date format, should be YYYY-MM-DD")
         # if start_date is not None, filter out the rows with date < start_date
-        pid_df = (
-            pid_df[pid_df["date"] >= start_date] if start_date is not None else pid_df
-        )
+        pid_df = pid_df[pid_df["date"] >= start_date] if start_date is not None else pid_df
         # if end_date is not None, filter out the rows with date > end_date
         pid_df = pid_df[pid_df["date"] <= end_date] if end_date is not None else pid_df
         # drop the temporary column date
@@ -289,9 +284,7 @@ class MLYDownloader(BaseDownloader):
                 continue
 
         # Filter out the panoids that have already been processed
-        panoids = list(
-            panoids - completed_panoids
-        )  # Subtract sets and convert back to list
+        panoids = list(panoids - completed_panoids)  # Subtract sets and convert back to list
         if len(panoids) == 0:
             print("All images have been downloaded")
             return
@@ -340,10 +333,7 @@ class MLYDownloader(BaseDownloader):
 
         # Merge all checkpoints into a single dataframe
         results_df = pd.concat(
-            [
-                pd.read_csv(checkpoint)
-                for checkpoint in glob.glob(str(dir_cache_urls / "*.csv"))
-            ],
+            [pd.read_csv(checkpoint) for checkpoint in glob.glob(str(dir_cache_urls / "*.csv"))],
             ignore_index=True,
         )
         results_df.to_csv(self.pids_url, index=False)
@@ -355,9 +345,7 @@ class MLYDownloader(BaseDownloader):
         checkpoints = glob.glob(str(self.panorama_output / "**/*.png"), recursive=True)
 
         # Read already downloaded images and convert to ids
-        downloaded_ids = set(
-            [Path(file_path).stem for file_path in checkpoints]
-        )  # Use set for faster operations
+        downloaded_ids = set([Path(file_path).stem for file_path in checkpoints])  # Use set for faster operations
 
         pid_df = pd.read_csv(path_pid).dropna(subset=["id"])
         pid_df["id"] = pid_df["id"].astype("int64")
@@ -369,9 +357,7 @@ class MLYDownloader(BaseDownloader):
         urls_df = self._filter_pids_date(urls_df, start_date, end_date)
 
         # Filter out the ids that have already been processed
-        urls_df = urls_df[
-            ~urls_df["id"].isin(downloaded_ids)
-        ]  # Use isin for efficient operation
+        urls_df = urls_df[~urls_df["id"].isin(downloaded_ids)]  # Use isin for efficient operation
 
         def worker(row, output_dir, cropped):
             url, panoid = row.url, row.id
@@ -381,9 +367,7 @@ class MLYDownloader(BaseDownloader):
             image_name = f"{panoid}.png"  # Use id for file name
             image_path = output_dir / image_name
             try:
-                response = requests.get(
-                    url, headers=user_agent, proxies=proxy, timeout=10
-                )
+                response = requests.get(url, headers=user_agent, proxies=proxy, timeout=10)
                 if response.status_code == 200:
                     with open(image_path, "wb") as f:
                         f.write(response.content)
@@ -406,9 +390,7 @@ class MLYDownloader(BaseDownloader):
 
         # Calculate current highest batch number
         existing_batches = glob.glob(str(self.panorama_output / "batch_*"))
-        existing_batch_numbers = [
-            int(Path(batch).name.split("_")[-1]) for batch in existing_batches
-        ]
+        existing_batch_numbers = [int(Path(batch).name.split("_")[-1]) for batch in existing_batches]
         start_batch_number = max(existing_batch_numbers, default=0)
 
         for i in tqdm(
@@ -422,9 +404,7 @@ class MLYDownloader(BaseDownloader):
             with ThreadPoolExecutor() as executor:
                 batch_futures = {
                     executor.submit(worker, row, batch_out_path, cropped): row.id
-                    for row in urls_df.iloc[
-                        i * batch_size : (i + 1) * batch_size
-                    ].itertuples()
+                    for row in urls_df.iloc[i * batch_size : (i + 1) * batch_size].itertuples()
                 }
                 for future in tqdm(
                     as_completed(batch_futures),
@@ -508,7 +488,7 @@ class MLYDownloader(BaseDownloader):
                 end_date=end_date,
                 metadata_only=metadata_only,
                 use_cache=use_cache,
-                **kwargs
+                **kwargs,
             )
         # set necessary directories
         self._set_dirs(dir_output)
@@ -518,11 +498,7 @@ class MLYDownloader(BaseDownloader):
             print("Getting pids...")
             path_pid = self.dir_output / "mly_pids.csv"
             if path_pid.exists() & (update_pids == False):
-                print(
-                    "update_pids is set to False. So the following csv file will be used: {}".format(
-                        path_pid
-                    )
-                )
+                print("update_pids is set to False. So the following csv file will be used: {}".format(path_pid))
             else:
                 self._get_pids(
                     path_pid,
@@ -565,13 +541,9 @@ class MLYDownloader(BaseDownloader):
         if path_pid.exists():
             self._get_urls_mly(path_pid, resolution=resolution)
             # download images
-            self._download_images_mly(
-                path_pid, cropped, batch_size, start_date, end_date
-            )
+            self._download_images_mly(path_pid, cropped, batch_size, start_date, end_date)
         else:
-            print(
-                "There is no panorama ID to download within the given input parameters"
-            )
+            print("There is no panorama ID to download within the given input parameters")
 
         # delete the cache directory
         if self.dir_cache.exists():

@@ -1,7 +1,8 @@
-from zensvi.metadata import MLYMetadata
+import shutil
 import unittest
 from pathlib import Path
-import shutil
+
+from zensvi.metadata import MLYMetadata
 
 
 class TestMLYMetadata(unittest.TestCase):
@@ -16,7 +17,10 @@ class TestMLYMetadata(unittest.TestCase):
     #     shutil.rmtree(self.output_dir, ignore_errors=True)
 
     def test_image_level_metadata(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv", log_path=self.output_dir / "log.log")
+        self.metadata = MLYMetadata(
+            "tests/data/input/metadata/mly_pids.csv",
+            log_path=self.output_dir / "log.log",
+        )
         # test image-level metadata
         df = self.metadata.compute_metadata(unit="image", path_output=self.output_dir / "image_metadata.csv")
         print(df.head())
@@ -25,7 +29,10 @@ class TestMLYMetadata(unittest.TestCase):
         self.assertFalse(df["relative_angle"].empty)
 
     def test_grid_level_metadata(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv", log_path=self.output_dir / "log.log")
+        self.metadata = MLYMetadata(
+            "tests/data/input/metadata/mly_pids.csv",
+            log_path=self.output_dir / "log.log",
+        )
         # test grid-level metadata
         df = self.metadata.compute_metadata(
             unit="grid",
@@ -38,12 +45,13 @@ class TestMLYMetadata(unittest.TestCase):
         self.assertTrue("coverage" in df.columns)
         self.assertFalse(df["coverage"].empty)
         # save df as csv
-        df.to_csv(
-            self.output_dir / "grid_metadata.csv", index=False
-        )
+        df.to_csv(self.output_dir / "grid_metadata.csv", index=False)
 
     def test_street_level_metadata(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv", log_path=self.output_dir / "log.log")
+        self.metadata = MLYMetadata(
+            "tests/data/input/metadata/mly_pids.csv",
+            log_path=self.output_dir / "log.log",
+        )
         # test street-level metadata
         df = self.metadata.compute_metadata(
             unit="street",
@@ -55,12 +63,13 @@ class TestMLYMetadata(unittest.TestCase):
         self.assertTrue("coverage" in df.columns)
         self.assertFalse(df["coverage"].empty)
         # save df as csv
-        df.to_csv(
-            self.output_dir / "street_metadata.csv", index=False
-        )
-    
+        df.to_csv(self.output_dir / "street_metadata.csv", index=False)
+
     def test_image_level_partial_metadata(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv", log_path=self.output_dir / "log.log")
+        self.metadata = MLYMetadata(
+            "tests/data/input/metadata/mly_pids.csv",
+            log_path=self.output_dir / "log.log",
+        )
         indicator_list = "day daytime_nighttime relative_angle"
         df = self.metadata.compute_metadata(
             unit="image",
@@ -73,9 +82,12 @@ class TestMLYMetadata(unittest.TestCase):
         self.assertFalse(df["relative_angle"].empty)
         # save df as csv
         df.to_csv(self.output_dir / "image_metadata_partial.csv", index=False)
-        
+
     def test_grid_level_partial_metadata(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv", log_path=self.output_dir / "log.log")
+        self.metadata = MLYMetadata(
+            "tests/data/input/metadata/mly_pids.csv",
+            log_path=self.output_dir / "log.log",
+        )
         indicator_list = "coverage most_recent_date average_is_pano number_of_daytime"
         df = self.metadata.compute_metadata(
             unit="grid",
@@ -89,12 +101,13 @@ class TestMLYMetadata(unittest.TestCase):
         self.assertTrue("coverage" in df.columns)
         self.assertFalse(df["coverage"].empty)
         # save df as csv
-        df.to_csv(
-            self.output_dir / "grid_metadata_partial.csv", index=False
-        )
-        
+        df.to_csv(self.output_dir / "grid_metadata_partial.csv", index=False)
+
     def test_street_level_partial_metadata(self):
-        self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids.csv", log_path=self.output_dir / "log.log")
+        self.metadata = MLYMetadata(
+            "tests/data/input/metadata/mly_pids.csv",
+            log_path=self.output_dir / "log.log",
+        )
         indicator_list = "coverage most_recent_date average_is_pano number_of_daytime"
         df = self.metadata.compute_metadata(
             unit="street",
@@ -107,9 +120,7 @@ class TestMLYMetadata(unittest.TestCase):
         self.assertTrue("coverage" in df.columns)
         self.assertFalse(df["coverage"].empty)
         # save df as csv
-        df.to_csv(
-            self.output_dir / "street_metadata_partial.csv", index=False
-        )
+        df.to_csv(self.output_dir / "street_metadata_partial.csv", index=False)
 
     # # test with mly_pids_large.csv
     # def test_image_level_metadata_large(self):
@@ -138,7 +149,7 @@ class TestMLYMetadata(unittest.TestCase):
     #     df.to_csv(
     #         self.output_dir / "grid_metadata_large.csv", index=False
     #     )
-        
+
     # def test_street_level_metadata_large(self):
     #     self.metadata = MLYMetadata("tests/data/input/metadata/mly_pids_large.csv")
     #     # test street-level metadata

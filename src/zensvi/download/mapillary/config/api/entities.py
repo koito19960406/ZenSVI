@@ -19,14 +19,15 @@ import datetime
 import logging
 import typing
 
-# # Utils
-from zensvi.download.mapillary.utils.time import is_iso8601_datetime_format
+from zensvi.download.mapillary.models.config import Config
 
 # # Models
 # # # Exception Handling
 from zensvi.download.mapillary.models.exceptions import InvalidFieldError, InvalidNumberOfArguments
-from zensvi.download.mapillary.models.config import Config
 from zensvi.download.mapillary.models.logger import Logger
+
+# # Utils
+from zensvi.download.mapillary.utils.time import is_iso8601_datetime_format
 
 logger: logging.Logger = Logger.setup_logger(name="mapillary.config.api.entities")
 
@@ -99,9 +100,7 @@ class Entities:
         return f"https://graph.mapillary.com/{image_id}/?fields={','.join(fields)}"
 
     @staticmethod
-    def get_images(
-        image_ids: typing.Union[typing.List[str], typing.List[int]], fields: list
-    ) -> str:
+    def get_images(image_ids: typing.Union[typing.List[str], typing.List[int]], fields: list) -> str:
         """
         Represents the metadata of the image on the Mapillary platform with
         the following properties.
@@ -172,9 +171,7 @@ class Entities:
         start_captured_at: typing.Optional[datetime.datetime] = None,
         end_captured_at: typing.Optional[datetime.datetime] = None,
         limit: typing.Optional[int] = None,
-        organization_id: typing.Union[
-            typing.Optional[int], typing.Optional[str]
-        ] = None,
+        organization_id: typing.Union[typing.Optional[int], typing.Optional[str]] = None,
         sequence_id: typing.Optional[typing.List[int]] = None,
         fields: typing.Optional[list] = [],
     ) -> str:
@@ -415,9 +412,7 @@ class Entities:
             endpoint="https://graph.mapillary.com/:map_feature_id?fields=",
         )
 
-        return (
-            f"https://graph.mapillary.com/{map_feature_id}/?fields={','.join(fields)}"
-        )
+        return f"https://graph.mapillary.com/{map_feature_id}/?fields={','.join(fields)}"
 
     @staticmethod
     def get_map_feature_fields() -> list:
@@ -549,9 +544,7 @@ class Entities:
             endpoint="https://graph.mapillary.com/:organization_id?fields=",
         )
 
-        return (
-            f"https://graph.mapillary.com/{organization_id}/?fields={','.join(fields)}"
-        )
+        return f"https://graph.mapillary.com/{organization_id}/?fields={','.join(fields)}"
 
     @staticmethod
     def get_organization_id_fields() -> list:
@@ -584,9 +577,7 @@ class Entities:
         return f"https://graph.mapillary.com/image_ids?sequence_id={sequence_id}"
 
     @staticmethod
-    def __field_validity(
-        given_fields: list, actual_fields: list, endpoint: str
-    ) -> list:
+    def __field_validity(given_fields: list, actual_fields: list, endpoint: str) -> list:
         """
         Checks if the given_fields are the actual correct fields for the given endpoint
         Compares against the list provided in `actual_fields`

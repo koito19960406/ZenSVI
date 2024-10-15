@@ -10,6 +10,6 @@ This package contains all the API v4 endpoints provided with the Mapillary Pytho
 - License: MIT LICENSE
 """
 
-from . import vector_tiles  # noqa: F401
 from . import entities  # noqa: F401
 from . import general  # noqa: F401
+from . import vector_tiles  # noqa: F401

@@ -14,7 +14,6 @@ import numpy as np
 import torch
 from torch import nn
 
-
 logger = logging.getLogger("dinov2")
 
 
@@ -66,7 +65,15 @@ def get_sha():
 
 
 class CosineScheduler(object):
-    def __init__(self, base_value, final_value, total_iters, warmup_iters=0, start_warmup_value=0, freeze_iters=0):
+    def __init__(
+        self,
+        base_value,
+        final_value,
+        total_iters,
+        warmup_iters=0,
+        start_warmup_value=0,
+        freeze_iters=0,
+    ):
         super().__init__()
         self.final_value = final_value
         self.total_iters = total_iters

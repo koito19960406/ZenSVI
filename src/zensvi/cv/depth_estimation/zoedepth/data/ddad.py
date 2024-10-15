@@ -35,18 +35,18 @@ class ToTensor(object):
     def __init__(self, resize_shape):
         # self.normalize = transforms.Normalize(
         #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        self.normalize = lambda x : x
+        self.normalize = lambda x: x
         self.resize = transforms.Resize(resize_shape)
 
     def __call__(self, sample):
-        image, depth = sample['image'], sample['depth']
+        image, depth = sample["image"], sample["depth"]
         image = self.to_tensor(image)
         image = self.normalize(image)
         depth = self.to_tensor(depth)
 
         image = self.resize(image)
 
-        return {'image': image, 'depth': depth, 'dataset': "ddad"}
+        return {"image": image, "depth": depth, "dataset": "ddad"}
 
     def to_tensor(self, pic):
 
@@ -55,17 +55,16 @@ class ToTensor(object):
             return img
 
         #         # handle PIL Image
-        if pic.mode == 'I':
+        if pic.mode == "I":
             img = torch.from_numpy(np.array(pic, np.int32, copy=False))
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             img = torch.from_numpy(np.array(pic, np.int16, copy=False))
         else:
-            img = torch.ByteTensor(
-                torch.ByteStorage.from_buffer(pic.tobytes()))
+            img = torch.ByteTensor(torch.ByteStorage.from_buffer(pic.tobytes()))
         # PIL image mode: 1, L, P, I, F, RGB, YCbCr, RGBA, CMYK
-        if pic.mode == 'YCbCr':
+        if pic.mode == "YCbCr":
             nchannel = 3
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             nchannel = 1
         else:
             nchannel = len(pic.mode)
@@ -84,17 +83,16 @@ class DDAD(Dataset):
         import glob
 
         # image paths are of the form <data_dir_root>/{outleft, depthmap}/*.png
-        
         # self.image_files = glob.glob(os.path.join(data_dir_root, '*.png'))
         # self.depth_files = [r.replace("_rgb.png", "_depth.npy")
         #                     for r in self.image_files]
         self.image_files, self.depth_files = [], []
-        with open('/mnt/bn/liheyang/MTL-SA-1B/dataset/splits/ddad/val.txt', 'r') as f:
+        with open("/mnt/bn/liheyang/MTL-SA-1B/dataset/splits/ddad/val.txt", "r") as f:
             lines = f.read().splitlines()
         for line in lines:
-            self.image_files.append(line.split(' ')[0])
-            self.depth_files.append(line.split(' ')[1])
-        
+            self.image_files.append(line.split(" ")[0])
+            self.depth_files.append(line.split(" ")[1])
+
         self.transform = ToTensor(resize_shape)
 
     def __getitem__(self, idx):

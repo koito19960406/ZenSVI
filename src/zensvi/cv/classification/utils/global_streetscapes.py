@@ -1,8 +1,9 @@
-from torch import nn
-import torch
 from pathlib import Path
+
 import pytorch_lightning as pl
+import torch
 import torchvision
+from torch import nn
 
 # dict2idx -------------------------------------
 weather_dict2idx = {
@@ -78,9 +79,7 @@ class GlobalStreetScapesClassificationModel(pl.LightningModule):
 
         # Setup the model
         if pretrained:
-            self.model = torchvision.models.maxvit_t(
-                weights=torchvision.models.MaxVit_T_Weights.DEFAULT
-            )
+            self.model = torchvision.models.maxvit_t(weights=torchvision.models.MaxVit_T_Weights.DEFAULT)
         else:
             self.model = torchvision.models.maxvit_t(weights=None)
         self.model.classifier[-1] = nn.Linear(in_features=512, out_features=num_classes)

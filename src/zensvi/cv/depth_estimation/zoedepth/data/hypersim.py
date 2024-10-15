@@ -36,13 +36,20 @@ from torchvision import transforms
 def hypersim_distance_to_depth(npyDistance):
     intWidth, intHeight, fltFocal = 1024, 768, 886.81
 
-    npyImageplaneX = np.linspace((-0.5 * intWidth) + 0.5, (0.5 * intWidth) - 0.5, intWidth).reshape(
-        1, intWidth).repeat(intHeight, 0).astype(np.float32)[:, :, None]
-    npyImageplaneY = np.linspace((-0.5 * intHeight) + 0.5, (0.5 * intHeight) - 0.5,
-                                 intHeight).reshape(intHeight, 1).repeat(intWidth, 1).astype(np.float32)[:, :, None]
+    npyImageplaneX = (
+        np.linspace((-0.5 * intWidth) + 0.5, (0.5 * intWidth) - 0.5, intWidth)
+        .reshape(1, intWidth)
+        .repeat(intHeight, 0)
+        .astype(np.float32)[:, :, None]
+    )
+    npyImageplaneY = (
+        np.linspace((-0.5 * intHeight) + 0.5, (0.5 * intHeight) - 0.5, intHeight)
+        .reshape(intHeight, 1)
+        .repeat(intWidth, 1)
+        .astype(np.float32)[:, :, None]
+    )
     npyImageplaneZ = np.full([intHeight, intWidth, 1], fltFocal, np.float32)
-    npyImageplane = np.concatenate(
-        [npyImageplaneX, npyImageplaneY, npyImageplaneZ], 2)
+    npyImageplane = np.concatenate([npyImageplaneX, npyImageplaneY, npyImageplaneZ], 2)
 
     npyDepth = npyDistance / np.linalg.norm(npyImageplane, 2, 2) * fltFocal
     return npyDepth
@@ -56,14 +63,14 @@ class ToTensor(object):
         self.resize = transforms.Resize((480, 640))
 
     def __call__(self, sample):
-        image, depth = sample['image'], sample['depth']
+        image, depth = sample["image"], sample["depth"]
         image = self.to_tensor(image)
         image = self.normalize(image)
         depth = self.to_tensor(depth)
 
         image = self.resize(image)
 
-        return {'image': image, 'depth': depth, 'dataset': "hypersim"}
+        return {"image": image, "depth": depth, "dataset": "hypersim"}
 
     def to_tensor(self, pic):
 
@@ -72,17 +79,16 @@ class ToTensor(object):
             return img
 
         #         # handle PIL Image
-        if pic.mode == 'I':
+        if pic.mode == "I":
             img = torch.from_numpy(np.array(pic, np.int32, copy=False))
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             img = torch.from_numpy(np.array(pic, np.int16, copy=False))
         else:
-            img = torch.ByteTensor(
-                torch.ByteStorage.from_buffer(pic.tobytes()))
+            img = torch.ByteTensor(torch.ByteStorage.from_buffer(pic.tobytes()))
         # PIL image mode: 1, L, P, I, F, RGB, YCbCr, RGBA, CMYK
-        if pic.mode == 'YCbCr':
+        if pic.mode == "YCbCr":
             nchannel = 3
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             nchannel = 1
         else:
             nchannel = len(pic.mode)
@@ -99,10 +105,19 @@ class HyperSim(Dataset):
     def __init__(self, data_dir_root):
         # image paths are of the form <data_dir_root>/<scene>/images/scene_cam_#_final_preview/*.tonemap.jpg
         # depth paths are of the form <data_dir_root>/<scene>/images/scene_cam_#_final_preview/*.depth_meters.hdf5
-        self.image_files = glob.glob(os.path.join(
-            data_dir_root, '*', 'images', 'scene_cam_*_final_preview', '*.tonemap.jpg'))
-        self.depth_files = [r.replace("_final_preview", "_geometry_hdf5").replace(
-            ".tonemap.jpg", ".depth_meters.hdf5") for r in self.image_files]
+        self.image_files = glob.glob(
+            os.path.join(
+                data_dir_root,
+                "*",
+                "images",
+                "scene_cam_*_final_preview",
+                "*.tonemap.jpg",
+            )
+        )
+        self.depth_files = [
+            r.replace("_final_preview", "_geometry_hdf5").replace(".tonemap.jpg", ".depth_meters.hdf5")
+            for r in self.image_files
+        ]
         self.transform = ToTensor()
 
     def __getitem__(self, idx):
@@ -114,9 +129,8 @@ class HyperSim(Dataset):
         # depth from hdf5
         depth_fd = h5py.File(depth_path, "r")
         # in meters (Euclidean distance)
-        distance_meters = np.array(depth_fd['dataset'])
-        depth = hypersim_distance_to_depth(
-            distance_meters)  # in meters (planar depth)
+        distance_meters = np.array(depth_fd["dataset"])
+        depth = hypersim_distance_to_depth(distance_meters)  # in meters (planar depth)
 
         # depth[depth > 8] = -1
         depth = depth[..., None]

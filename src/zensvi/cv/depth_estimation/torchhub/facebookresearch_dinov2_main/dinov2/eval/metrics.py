@@ -4,8 +4,8 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-from enum import Enum
 import logging
+from enum import Enum
 from typing import Any, Dict, Optional
 
 import torch
@@ -13,7 +13,6 @@ from torch import Tensor
 from torchmetrics import Metric, MetricCollection
 from torchmetrics.classification import MulticlassAccuracy
 from torchmetrics.utilities.data import dim_zero_cat, select_topk
-
 
 logger = logging.getLogger("dinov2")
 
@@ -92,7 +91,11 @@ class ImageNetReaLAccuracy(Metric):
         # select top K highest probabilities, use one hot representation
         preds_oh = select_topk(preds, self.top_k)
         # target_oh [B, D + 1] with 0 and 1
-        target_oh = torch.zeros((preds_oh.shape[0], preds_oh.shape[1] + 1), device=target.device, dtype=torch.int32)
+        target_oh = torch.zeros(
+            (preds_oh.shape[0], preds_oh.shape[1] + 1),
+            device=target.device,
+            dtype=torch.int32,
+        )
         target = target.long()
         # for undefined targets (-1) use a fake value `num_classes`
         target[target == -1] = self.num_classes

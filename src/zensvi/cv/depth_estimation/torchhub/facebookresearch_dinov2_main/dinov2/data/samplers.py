@@ -5,14 +5,13 @@
 # LICENSE file in the root directory of this source tree.
 
 import itertools
-from typing import Any, Optional
 import warnings
+from typing import Any, Optional
 
+import dinov2.distributed as distributed
 import numpy as np
 import torch
 from torch.utils.data.sampler import Sampler
-
-import dinov2.distributed as distributed
 
 
 class EpochSampler(Sampler):

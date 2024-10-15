@@ -46,10 +46,7 @@ class General:
     ) -> str:
         """Computed image_type tiles"""
 
-        return (
-            "https://tiles.mapillary.com/maps/vtp/mly1_computed_public/2"
-            f"/{z}/{x}/{y}/"
-        )
+        return "https://tiles.mapillary.com/maps/vtp/mly1_computed_public/2" f"/{z}/{x}/{y}/"
 
     @staticmethod
     def get_map_features_points_tiles(
@@ -59,10 +56,7 @@ class General:
     ) -> str:
         """Map features (points) tiles"""
 
-        return (
-            f"https://tiles.mapillary.com/maps/vtp/mly_map_feature_point/2"
-            f"/{z}/{x}/{y}/"
-        )
+        return f"https://tiles.mapillary.com/maps/vtp/mly_map_feature_point/2" f"/{z}/{x}/{y}/"
 
     @staticmethod
     def get_map_features_traffic_signs_tiles(
@@ -72,7 +66,4 @@ class General:
     ) -> str:
         """Map features (traffic signs) tiles"""
 
-        return (
-            "https://tiles.mapillary.com/maps/vtp/"
-            f"mly_map_feature_traffic_sign/2/{z}/{x}/{y}"
-        )
+        return "https://tiles.mapillary.com/maps/vtp/" f"mly_map_feature_traffic_sign/2/{z}/{x}/{y}"

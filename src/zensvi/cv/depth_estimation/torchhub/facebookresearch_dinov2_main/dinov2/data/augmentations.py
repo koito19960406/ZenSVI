@@ -8,11 +8,7 @@ import logging
 
 from torchvision import transforms
 
-from .transforms import (
-    GaussianBlur,
-    make_normalize_transform,
-)
-
+from .transforms import GaussianBlur, make_normalize_transform
 
 logger = logging.getLogger("dinov2")
 
@@ -45,7 +41,9 @@ class DataAugmentationDINO(object):
         self.geometric_augmentation_global = transforms.Compose(
             [
                 transforms.RandomResizedCrop(
-                    global_crops_size, scale=global_crops_scale, interpolation=transforms.InterpolationMode.BICUBIC
+                    global_crops_size,
+                    scale=global_crops_scale,
+                    interpolation=transforms.InterpolationMode.BICUBIC,
                 ),
                 transforms.RandomHorizontalFlip(p=0.5),
             ]
@@ -54,7 +52,9 @@ class DataAugmentationDINO(object):
         self.geometric_augmentation_local = transforms.Compose(
             [
                 transforms.RandomResizedCrop(
-                    local_crops_size, scale=local_crops_scale, interpolation=transforms.InterpolationMode.BICUBIC
+                    local_crops_size,
+                    scale=local_crops_scale,
+                    interpolation=transforms.InterpolationMode.BICUBIC,
                 ),
                 transforms.RandomHorizontalFlip(p=0.5),
             ]

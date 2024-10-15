@@ -12,27 +12,30 @@ https://www.mapillary.com/developer/api-documentation/
 - Copyright: (c) 2021 Facebook
 - License: MIT LICENSE
 """
-# Package level imports
-from typing import Union
-import requests
 import json
 import os
 
-# Local
-from zensvi.download.mapillary.utils.auth import auth, set_token
+# Package level imports
+from typing import Union
 
-# Models
-from zensvi.download.mapillary.models.geojson import Coordinates, GeoJSON
+import requests
+
+import zensvi.download.mapillary.controller.detection as detection
+import zensvi.download.mapillary.controller.feature as feature
+
+# Controllers
+import zensvi.download.mapillary.controller.image as image
+import zensvi.download.mapillary.controller.save as save
 from zensvi.download.mapillary.models.config import Config
 
 # Exception classes
 from zensvi.download.mapillary.models.exceptions import InvalidOptionError
 
-# Controllers
-import zensvi.download.mapillary.controller.image as image
-import zensvi.download.mapillary.controller.feature as feature
-import zensvi.download.mapillary.controller.detection as detection
-import zensvi.download.mapillary.controller.save as save
+# Models
+from zensvi.download.mapillary.models.geojson import Coordinates, GeoJSON
+
+# Local
+from zensvi.download.mapillary.utils.auth import auth, set_token
 
 
 def configure_mapillary_settings(**kwargs):
@@ -298,9 +301,7 @@ def get_detections_with_image_id(image_id: int, fields: list = []):
 
 
 @auth()
-def get_detections_with_map_feature_id(
-    map_feature_id: str, fields: list = None
-) -> GeoJSON:
+def get_detections_with_map_feature_id(map_feature_id: str, fields: list = None) -> GeoJSON:
     """
     Extracting all detections made for a map feature key
 
@@ -413,9 +414,7 @@ def images_in_bbox(bbox: dict, **filters) -> str:
         ... )
     """
 
-    return image.get_images_in_bbox_controller(
-        bounding_box=bbox, layer="image", zoom=14, filters=filters
-    )
+    return image.get_images_in_bbox_controller(bounding_box=bbox, layer="image", zoom=14, filters=filters)
 
 
 @auth()
@@ -471,15 +470,11 @@ def sequences_in_bbox(bbox: dict, **filters) -> str:
         ... )
     """
 
-    return image.get_images_in_bbox_controller(
-        bounding_box=bbox, layer="sequence", zoom=14, filters=filters
-    )
+    return image.get_images_in_bbox_controller(bounding_box=bbox, layer="sequence", zoom=14, filters=filters)
 
 
 @auth()
-def map_feature_points_in_bbox(
-    bbox: dict, filter_values: list = None, **filters: dict
-) -> str:
+def map_feature_points_in_bbox(bbox: dict, filter_values: list = None, **filters: dict) -> str:
     """
     Extracts map feature points within a bounding box (bbox)
 
@@ -540,9 +535,7 @@ def map_feature_points_in_bbox(
 
 
 @auth()
-def traffic_signs_in_bbox(
-    bbox: dict, filter_values: list = None, **filters: dict
-) -> str:
+def traffic_signs_in_bbox(bbox: dict, filter_values: list = None, **filters: dict) -> str:
     """
     Extracts traffic signs within a bounding box (bbox)
 
@@ -606,7 +599,13 @@ def traffic_signs_in_bbox(
 
 
 @auth()
-def images_in_geojson(geojson: dict, dir_cache: str = None, max_workers: int = 1, logger = None, **filters: dict):
+def images_in_geojson(
+    geojson: dict,
+    dir_cache: str = None,
+    max_workers: int = 1,
+    logger=None,
+    **filters: dict,
+):
     """
     Extracts all images within a shape
 
@@ -650,7 +649,12 @@ def images_in_geojson(geojson: dict, dir_cache: str = None, max_workers: int = 1
     """
 
     return image.geojson_features_controller(
-        geojson=geojson, is_image=True, filters=filters, dir_cache = dir_cache, max_workers=max_workers, logger=logger
+        geojson=geojson,
+        is_image=True,
+        filters=filters,
+        dir_cache=dir_cache,
+        max_workers=max_workers,
+        logger=logger,
     )
 
 
@@ -779,7 +783,9 @@ def map_features_in_geojson(geojson: dict, **filters: dict):
             geojson = json.loads(requests.get(geojson).content.decode("utf-8"))
 
     return image.geojson_features_controller(
-        geojson=geojson, is_image=False, filters=filters, 
+        geojson=geojson,
+        is_image=False,
+        filters=filters,
     )
 
 
@@ -1025,11 +1031,7 @@ def save_locally(
         )
 
     return (
-        save.save_as_geojson_controller(
-            data=geojson_data, path=file_path, file_name=file_name
-        )
+        save.save_as_geojson_controller(data=geojson_data, path=file_path, file_name=file_name)
         if extension.lower() == "geojson"
-        else save.save_as_csv_controller(
-            data=geojson_data, path=file_path, file_name=file_name
-        )
+        else save.save_as_csv_controller(data=geojson_data, path=file_path, file_name=file_name)
     )

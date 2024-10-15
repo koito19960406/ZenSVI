@@ -149,9 +149,7 @@ Hint: Supported image sizes are: 256, 1024, and 2048
         """
 
     def __repr__(self) -> str:
-        return (
-            f'An exception occurred, "{self._resolution}" is not a supported image size'
-        )
+        return f'An exception occurred, "{self._resolution}" is not a supported image size'
 
 
 class InvalidImageKeyError(MapillaryException):
@@ -323,16 +321,10 @@ class InvalidFieldError(MapillaryException):
         self.field = field
 
     def __str__(self):
-        return (
-            f'InvalidFieldError: The invalid field, "{self.field}" was '
-            f'passed to the endpoint, "{self.endpoint}"'
-        )
+        return f'InvalidFieldError: The invalid field, "{self.field}" was ' f'passed to the endpoint, "{self.endpoint}"'
 
     def __repr__(self):
-        return (
-            f'InvalidFieldError: The invalid field, "{self.field}" was '
-            f'passed to the endpoint, "{self.endpoint}"'
-        )
+        return f'InvalidFieldError: The invalid field, "{self.field}" was ' f'passed to the endpoint, "{self.endpoint}"'
 
 
 class LiteralEnforcementException(MapillaryException):
@@ -352,9 +344,7 @@ class LiteralEnforcementException(MapillaryException):
 
         if option_selected not in options:
 
-            raise InvalidOptionError(
-                param=param, value=option_selected, options=options
-            )
+            raise InvalidOptionError(param=param, value=option_selected, options=options)
 
 
 class InvalidNumberOfArguments(MapillaryException):

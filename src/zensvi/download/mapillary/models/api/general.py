@@ -13,12 +13,17 @@ For more information, please check out https://www.mapillary.com/developer/api-d
 - License: MIT LICENSE
 """
 
+import typing
+
 # Package imports
 import mercantile
-import typing
+
+# Library imports
+from requests import HTTPError
 from vt2geojson.tools import vt_bytes_to_geojson
 
-# Local imports
+# # Config
+from zensvi.download.mapillary.config.api.general import General
 
 # # Models
 from zensvi.download.mapillary.models.client import Client
@@ -26,11 +31,11 @@ from zensvi.download.mapillary.models.client import Client
 # # Exception Handling
 from zensvi.download.mapillary.models.exceptions import InvalidOptionError, LiteralEnforcementException
 
-# # Config
-from zensvi.download.mapillary.config.api.general import General
+# Local imports
 
-# Library imports
-from requests import HTTPError
+
+
+
 
 
 class GeneralAdapter(object):
@@ -191,9 +196,7 @@ class GeneralAdapter(object):
             layer=layer,
         )
 
-    def fetch_map_features_traffic_tiles(
-        self, zoom: int, longitude: float, latitude: float, layer: str
-    ):
+    def fetch_map_features_traffic_tiles(self, zoom: int, longitude: float, latitude: float, layer: str):
         """
         Get the map feature traffic for a given coordinate set
 
@@ -236,9 +239,7 @@ class GeneralAdapter(object):
         is_computed: bool = False,
     ) -> any:
         try:
-            tile: mercantile.Tile = mercantile.tile(
-                lng=longitude, lat=latitude, zoom=zoom
-            )
+            tile: mercantile.Tile = mercantile.tile(lng=longitude, lat=latitude, zoom=zoom)
 
             return vt_bytes_to_geojson(
                 # Parameters appropriately
@@ -361,19 +362,14 @@ class GeneralAdapter(object):
         # If lng not in the range [-180, 180], inclusive
         if longitude <= -180 or longitude >= 180:
             # Raise exception
-            raise InvalidOptionError(
-                param="longitude", value=longitude, options=[-180, 180]
-            )
+            raise InvalidOptionError(param="longitude", value=longitude, options=[-180, 180])
 
         # If lat not in the range [-90, 90], inclusive
         if latitude <= -90 or latitude >= 90:
             # Raise exception
-            raise InvalidOptionError(
-                param="latitude", value=latitude, options=[-180, 180]
-            )
+            raise InvalidOptionError(param="latitude", value=latitude, options=[-180, 180])
 
     def __zoom_range_check(self, layer: str, zoom: int):
-
         """
         Checks for the correct zoom values for te specified layer
 

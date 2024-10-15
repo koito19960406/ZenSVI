@@ -2,7 +2,9 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 from torch.nn import functional as F
+
 # import pytorch_lightning as pl
+
 
 class PlacePulseClassificationModel(nn.Module):
     def __init__(self, lr=0.0001, num_classes=None, **kwargs):
@@ -45,7 +47,7 @@ class PlacePulseClassificationModel(nn.Module):
         # Compute the weighted score for each image
         scores = torch.sum(probabilities * weights, dim=1)
         return scores
-    
+
     # def evaluate(self, batch):
     #     x, y = batch
     #     scores = self(x)  # Directly obtain scores from the model's forward pass

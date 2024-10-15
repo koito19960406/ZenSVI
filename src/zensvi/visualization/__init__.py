@@ -1,4 +1,4 @@
-from .map import *
+from .hist import *
 from .image import *
 from .kde import *
-from .hist import *
+from .map import *

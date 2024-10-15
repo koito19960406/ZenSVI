@@ -8,18 +8,18 @@
 #   https://github.com/facebookresearch/dino/blob/main/vision_transformer.py
 #   https://github.com/rwightman/pytorch-image-models/tree/master/timm/models/vision_transformer.py
 
-from functools import partial
-import math
 import logging
-from typing import Sequence, Tuple, Union, Callable
+import math
+from functools import partial
+from typing import Callable, Sequence, Tuple, Union
 
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint
+from dinov2.layers import MemEffAttention, Mlp
+from dinov2.layers import NestedTensorBlock as Block
+from dinov2.layers import PatchEmbed, SwiGLUFFNFused
 from torch.nn.init import trunc_normal_
-
-from dinov2.layers import Mlp, PatchEmbed, SwiGLUFFNFused, MemEffAttention, NestedTensorBlock as Block
-
 
 logger = logging.getLogger("dinov2")
 
@@ -29,7 +29,13 @@ def named_apply(fn: Callable, module: nn.Module, name="", depth_first=True, incl
         fn(module=module, name=name)
     for child_name, child_module in module.named_children():
         child_name = ".".join((name, child_name)) if name else child_name
-        named_apply(fn=fn, module=child_module, name=child_name, depth_first=depth_first, include_root=True)
+        named_apply(
+            fn=fn,
+            module=child_module,
+            name=child_name,
+            depth_first=depth_first,
+            include_root=True,
+        )
     if depth_first and include_root:
         fn(module=module, name=name)
     return module
@@ -95,7 +101,12 @@ class DinoVisionTransformer(nn.Module):
         self.num_heads = num_heads
         self.patch_size = patch_size
 
-        self.patch_embed = embed_layer(img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
+        self.patch_embed = embed_layer(
+            img_size=img_size,
+            patch_size=patch_size,
+            in_chans=in_chans,
+            embed_dim=embed_dim,
+        )
         num_patches = self.patch_embed.num_patches
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))

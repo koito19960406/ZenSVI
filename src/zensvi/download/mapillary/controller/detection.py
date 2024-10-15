@@ -17,8 +17,6 @@ For more information, please check out https://www.mapillary.com/developer/api-d
 # Package imports
 import typing
 
-# Local imports
-
 # # Adapter Imports
 from zensvi.download.mapillary.models.api.entities import EntityAdapter
 
@@ -28,10 +26,13 @@ from zensvi.download.mapillary.models.geojson import GeoJSON
 # # Rules
 from zensvi.download.mapillary.utils.verify import valid_id
 
+# Local imports
 
-def get_image_detections_controller(
-    image_id: typing.Union[str, int], fields: list = []
-) -> GeoJSON:
+
+
+
+
+def get_image_detections_controller(image_id: typing.Union[str, int], fields: list = []) -> GeoJSON:
     """
     Get image detections with given (image) key
 
@@ -59,9 +60,7 @@ def get_image_detections_controller(
     )
 
 
-def get_map_feature_detections_controller(
-    map_feature_id: typing.Union[str, int], fields: list = []
-) -> GeoJSON:
+def get_map_feature_detections_controller(map_feature_id: typing.Union[str, int], fields: list = []) -> GeoJSON:
     """
     Get image detections with given (map feature) key
 

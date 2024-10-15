@@ -1,17 +1,19 @@
-from zensvi.download import GSVDownloader
-import unittest
-import os 
-from pathlib import Path
-import shutil
 import math
+import os
+import shutil
+import unittest
+from pathlib import Path
+
 import pandas as pd
+
+from zensvi.download import GSVDownloader
 
 
 class TestStreetViewDownloader(unittest.TestCase):
     def setUp(self):
         Path("tests/data/output/gsv_svi").mkdir(parents=True, exist_ok=True)
         self.output_dir = "tests/data/output/gsv_svi"
-        self.gsv_api_key = os.getenv('GSV_API_KEY')
+        self.gsv_api_key = os.getenv("GSV_API_KEY")
         self.sv_downloader = GSVDownloader(gsv_api_key=self.gsv_api_key, log_path="tests/data/output/gsv_svi/log.log")
 
     def tearDown(self):
@@ -22,7 +24,7 @@ class TestStreetViewDownloader(unittest.TestCase):
         # Skip test if the output file already exists
         if os.path.exists(os.path.join(self.output_dir, "gsv_panorama")):
             self.skipTest("Result exists")
-        self.sv_downloader.download_svi(self.output_dir,lat=1.342425, lon=103.721523, augment_metadata=True)
+        self.sv_downloader.download_svi(self.output_dir, lat=1.342425, lon=103.721523, augment_metadata=True)
         # assert True if there are files in the output directory
         self.assertTrue(os.listdir(self.output_dir))
 
@@ -46,7 +48,13 @@ class TestStreetViewDownloader(unittest.TestCase):
                 os.makedirs(folder_path)
 
             # Assuming download_svi method can accept a directory path as the output
-            self.sv_downloader.download_svi(folder_path, lat=1.342425, lon=103.721523, augment_metadata=True, zoom=zoom)
+            self.sv_downloader.download_svi(
+                folder_path,
+                lat=1.342425,
+                lon=103.721523,
+                augment_metadata=True,
+                zoom=zoom,
+            )
 
             # Check if any file was downloaded in the folder
             if os.listdir(folder_path):
@@ -66,19 +74,25 @@ class TestStreetViewDownloader(unittest.TestCase):
         # Skip test if the output file already exists
         if os.path.exists(os.path.join(self.output_dir, "gsv_pids.csv")):
             self.skipTest("Result exists")
-        self.sv_downloader.download_svi(self.output_dir,lat=1.342425, lon=103.721523, augment_metadata=True, metadata_only=True)
+        self.sv_downloader.download_svi(
+            self.output_dir,
+            lat=1.342425,
+            lon=103.721523,
+            augment_metadata=True,
+            metadata_only=True,
+        )
         # assert True if there are more than 1 rows in os.path.join(self.output_dir, "gsv_pids.csv")
         df = pd.read_csv(os.path.join(self.output_dir, "gsv_pids.csv"))
         self.assertTrue(df.shape[0] > 1)
-    
 
     def test_download_gsv_depth(self):
         # Skip test if the output file already exists
         # if os.path.exists(os.path.join(self.output_dir, "gsv_depth")):
         #     self.skipTest("Result exists")
-        self.sv_downloader.download_svi(self.output_dir,lat=1.342425, lon=103.721523, download_depth=True)
+        self.sv_downloader.download_svi(self.output_dir, lat=1.342425, lon=103.721523, download_depth=True)
         # assert True if there are files in the output directory
         self.assertTrue(os.listdir(self.output_dir))
-if __name__ == '__main__':
-    unittest.main()
 
+
+if __name__ == "__main__":
+    unittest.main()

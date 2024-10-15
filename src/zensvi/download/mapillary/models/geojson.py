@@ -17,10 +17,11 @@ https://www.mapillary.com/developer/api-documentation/.
 # Package
 import json
 
-# Local
-
 # # Exceptions
 from zensvi.download.mapillary.models.exceptions import InvalidOptionError
+
+# Local
+
 
 
 class Properties:
@@ -70,18 +71,14 @@ class Properties:
     def to_dict(self):
         """Return the dictionary representation of the Properties"""
 
-        attr_representation = [
-            key for key in dir(self) if not key.startswith("__") and key != "to_dict"
-        ]
+        attr_representation = [key for key in dir(self) if not key.startswith("__") and key != "to_dict"]
 
         return {key: getattr(self, key) for key in attr_representation}
 
     def __str__(self):
         """Return the informal string representation of the Properties"""
 
-        attr_representation = [
-            key for key in dir(self) if not key.startswith("__") and key != "to_dict"
-        ]
+        attr_representation = [key for key in dir(self) if not key.startswith("__") and key != "to_dict"]
 
         attr_key_value_pair = {key: getattr(self, key) for key in attr_representation}
 
@@ -90,9 +87,7 @@ class Properties:
     def __repr__(self):
         """Return the formal string representation of the Properties"""
 
-        attr_representation = [
-            key for key in dir(self) if not key.startswith("__") and key != "to_dict"
-        ]
+        attr_representation = [key for key in dir(self) if not key.startswith("__") and key != "to_dict"]
 
         attr_key_value_pair = {key: getattr(self, key) for key in attr_representation}
 
@@ -211,9 +206,7 @@ class Geometry:
         self.type: str = geometry["type"]
 
         # Setting the coordinates of the geometry
-        self.coordinates: Coordinates = Coordinates(
-            geometry["coordinates"][0], geometry["coordinates"][1]
-        )
+        self.coordinates: Coordinates = Coordinates(geometry["coordinates"][0], geometry["coordinates"][1])
 
     def to_dict(self):
         """Return dictionary representation of the geometry"""
@@ -285,34 +278,41 @@ class Feature:
         """Return the informal string representation of the Feature"""
 
         return (
-            f"{{"
-            f"'type': '{self.type}', "
-            f"'geometry': {self.geometry}, "
-            f"'properties': {self.properties}"
-            f"}}"
+            f"{{" f"'type': '{self.type}', " f"'geometry': {self.geometry}, " f"'properties': {self.properties}" f"}}"
         )
 
     def __repr__(self) -> str:
         """Return the formal string representation of the Feature"""
 
-        return (
-            f"{{"
-            f"'type': {self.type}, "
-            f"'geometry': {self.geometry}, "
-            f"'properties': {self.properties}"
-            f"}}"
-        )
-        
+        return f"{{" f"'type': {self.type}, " f"'geometry': {self.geometry}, " f"'properties': {self.properties}" f"}}"
+
     def __hash__(self):
         # Create a unique hash based on an immutable representation of the feature
-        return hash((self.type, (self.geometry.coordinates.latitude, self.geometry.coordinates.longitude), self.properties.captured_at))
+        return hash(
+            (
+                self.type,
+                (
+                    self.geometry.coordinates.latitude,
+                    self.geometry.coordinates.longitude,
+                ),
+                self.properties.captured_at,
+            )
+        )
 
     def __eq__(self, other):
         # Define equality based on type, coordinates, and other properties
-        return (self.type == other.type and
-                (self.geometry.coordinates.latitude, self.geometry.coordinates.longitude) == (other.geometry.coordinates.latitude, other.geometry.coordinates.longitude) and
-                self.properties.captured_at == other.properties.captured_at)
-
+        return (
+            self.type == other.type
+            and (
+                self.geometry.coordinates.latitude,
+                self.geometry.coordinates.longitude,
+            )
+            == (
+                other.geometry.coordinates.latitude,
+                other.geometry.coordinates.longitude,
+            )
+            and self.properties.captured_at == other.properties.captured_at
+        )
 
 
 class GeoJSON:
@@ -410,7 +410,7 @@ class GeoJSON:
             if (geojson["features"] != []) or (geojson["features"] is not None)
             else []
         )
-        
+
         # Convert existing features to a set for faster lookup
         self.features_set = set(self.features)
 
@@ -442,7 +442,7 @@ class GeoJSON:
 
         # Converting to a feature object
         feature = Feature(feature=feature_inputs)
-        
+
         if feature not in self.features_set:
             self.features.append(feature)
             self.features_set.add(feature)
@@ -461,9 +461,7 @@ class GeoJSON:
 
         return {
             "type": self.type,
-            "features": [feature.to_dict() for feature in self.features]
-            if self.features != []
-            else [],
+            "features": ([feature.to_dict() for feature in self.features] if self.features != [] else []),
         }
 
     def __str__(self):

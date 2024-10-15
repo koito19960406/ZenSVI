@@ -11,9 +11,9 @@ This package contains the class representations of logic within the Mapillary Py
 - License: MIT LICENSE
 """
 
+from . import api  # noqa: F401
 from . import client  # noqa: F401
+from . import config  # noqa: F401
 from . import exceptions  # noqa: F401
 from . import geojson  # noqa: F401
-from . import api  # noqa: F401
 from . import logger  # noqa: F401
-from . import config # noqa: F401

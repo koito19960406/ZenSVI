@@ -12,18 +12,18 @@ This module contains the filter utilies for high level filtering logic
 """
 
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import haversine
-from geojson import Point, Feature
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from tqdm import tqdm
-
-# Local imports
-from zensvi.download.mapillary.utils.time import date_to_unix_timestamp
+from geojson import Feature, Point
 from shapely.geometry import shape
+from tqdm import tqdm
 
 # Package imports
 from turfpy.measurement import bearing
+
+# Local imports
+from zensvi.download.mapillary.utils.time import date_to_unix_timestamp
 
 logger = logging.getLogger("pipeline-logger")
 
@@ -136,8 +136,7 @@ def pipeline(data: dict, components: list) -> list:
             # Send over the data
             data=__data,
             # Specify the message on the exception thrown
-            exception_message=f'[pipeline - {component["filter"]}] Filter not applied, '
-            "exception thrown",
+            exception_message=f'[pipeline - {component["filter"]}] Filter not applied, ' "exception thrown",
             # Except the filter name, select the rest as args
             args=tuple(list(component.values())[1:]),
         )
@@ -168,9 +167,7 @@ def max_captured_at(data: list, max_timestamp: str) -> list:
     """
 
     return [
-        feature
-        for feature in data
-        if feature["properties"]["captured_at"] <= date_to_unix_timestamp(max_timestamp)
+        feature for feature in data if feature["properties"]["captured_at"] <= date_to_unix_timestamp(max_timestamp)
     ]
 
 
@@ -196,9 +193,7 @@ def min_captured_at(data: list, min_timestamp: str) -> list:
     """
 
     return [
-        feature
-        for feature in data
-        if feature["properties"]["captured_at"] >= date_to_unix_timestamp(min_timestamp)
+        feature for feature in data if feature["properties"]["captured_at"] >= date_to_unix_timestamp(min_timestamp)
     ]
 
 
@@ -267,9 +262,7 @@ def filter_values(data: list, values: list, property: str = "value") -> list:
     :rtype: dict
     """
 
-    return [
-        feature for feature in data if feature["properties"].get(property) in values
-    ]
+    return [feature for feature in data if feature["properties"].get(property) in values]
 
 
 def existed_at(data: list, existed_at: str) -> list:
@@ -286,11 +279,7 @@ def existed_at(data: list, existed_at: str) -> list:
     :rtype: list
     """
 
-    return [
-        feature
-        for feature in data
-        if feature["properties"]["first_seen_at"] > date_to_unix_timestamp(existed_at)
-    ]
+    return [feature for feature in data if feature["properties"]["first_seen_at"] > date_to_unix_timestamp(existed_at)]
 
 
 def existed_before(data: list, existed_before: str) -> list:
@@ -308,10 +297,7 @@ def existed_before(data: list, existed_before: str) -> list:
     """
 
     return [
-        feature
-        for feature in data
-        if feature["properties"]["first_seen_at"]
-        <= date_to_unix_timestamp(existed_before)
+        feature for feature in data if feature["properties"]["first_seen_at"] <= date_to_unix_timestamp(existed_before)
     ]
 
 
@@ -347,16 +333,12 @@ def haversine_dist(data: dict, radius: float, coords: list, unit: str = "m") -> 
         reversed_feature_coords = feature["geometry"]["coordinates"][::-1]
 
         # If the calculated haversine distance is less than the radius ...
-        if (
-            haversine.haversine(reversed_coords, reversed_feature_coords, unit=unit)
-            < radius
-        ):
+        if haversine.haversine(reversed_coords, reversed_feature_coords, unit=unit) < radius:
             # ... append to the output
             output.append(feature)
 
     # Return the output
     return output
-
 
 
 def image_type(data: list, image_type: str) -> list:
@@ -384,11 +366,7 @@ def image_type(data: list, image_type: str) -> list:
     )
 
     # Return the images based on image type
-    return [
-        feature
-        for feature in data
-        if feature["properties"]["is_pano"] == bool_for_pano_filtering
-    ]
+    return [feature for feature in data if feature["properties"]["is_pano"] == bool_for_pano_filtering]
 
 
 def organization_id(data: list, organization_ids: list) -> list:
@@ -411,8 +389,7 @@ def organization_id(data: list, organization_ids: list) -> list:
         # through the feature in the data
         for feature in data
         # if the found org_id is in the list of organization_ids
-        if "organization_id" in feature["properties"]
-        and feature["properties"]["organization_id"] in organization_ids
+        if "organization_id" in feature["properties"] and feature["properties"]["organization_id"] in organization_ids
     ]
 
 
@@ -454,11 +431,7 @@ def compass_angle(data: list, angles: tuple = (0.0, 360.0)) -> list:
     if angles[0] < 0.0 or angles[1] > 360.0:
         raise ValueError("Angles must be between 0 and 360")
 
-    return [
-        feature
-        for feature in data
-        if angles[0] <= feature["properties"]["compass_angle"] <= angles[1]
-    ]
+    return [feature for feature in data if angles[0] <= feature["properties"]["compass_angle"] <= angles[1]]
 
 
 def is_looking_at(image_feature: Feature, look_at_feature: Feature) -> bool:
@@ -487,11 +460,7 @@ def is_looking_at(image_feature: Feature, look_at_feature: Feature) -> bool:
 
     # Getting the difference between the two provided GeoJSONs and the compass angle
     diff: int = (
-        abs(
-            bearing(start=image_feature, end=look_at_feature)
-            - image_feature["properties"]["compass_angle"]
-        )
-        % 360
+        abs(bearing(start=image_feature, end=look_at_feature) - image_feature["properties"]["compass_angle"]) % 360
     )
 
     # If diff > 310 OR diff < 50
@@ -516,9 +485,7 @@ def by_look_at_feature(image: dict, look_at_feature: Feature) -> bool:
     coords = [image["geometry"]["coordinates"][0], image["geometry"]["coordinates"][1]]
 
     # Getting the feature using `Feature`, `Point` from TurfPy
-    image_feature = Feature(
-        geometry=Point(coords, {"compass_angle": image["properties"]["compass_angle"]})
-    )
+    image_feature = Feature(geometry=Point(coords, {"compass_angle": image["properties"]["compass_angle"]}))
 
     image_feature["properties"] = image["properties"]
 
@@ -585,18 +552,19 @@ def in_shape(data: list, boundary) -> list:
     # Return output
     return output
 
+
 def pipeline(data: dict, components: list, **kwargs) -> list:
     __data = data.copy()["features"]
 
     # Initialize filter criteria with default values
     filter_criteria = {
-        "max_captured_at": float('inf'),
-        "min_captured_at": float('-inf'),
+        "max_captured_at": float("inf"),
+        "min_captured_at": float("-inf"),
         "image_type": None,
         "organization_id": set(),
         "sequence_id": set(),
         "compass_angle": (0.0, 360.0),
-        "in_shape": None
+        "in_shape": None,
     }
 
     # Update filter_criteria based on provided components
@@ -614,15 +582,24 @@ def pipeline(data: dict, components: list, **kwargs) -> list:
         props = feature["properties"]
         if not (filter_criteria["min_captured_at"] <= props["captured_at"] <= filter_criteria["max_captured_at"]):
             return None
-        if (filter_criteria["image_type"] is not None) and (props["is_pano"] != (filter_criteria["image_type"] == "pano")) and (filter_criteria["image_type"] != "all"):
+        if (
+            (filter_criteria["image_type"] is not None)
+            and (props["is_pano"] != (filter_criteria["image_type"] == "pano"))
+            and (filter_criteria["image_type"] != "all")
+        ):
             return None
-        if filter_criteria["organization_id"] and props.get("organization_id") not in filter_criteria["organization_id"]:
+        if (
+            filter_criteria["organization_id"]
+            and props.get("organization_id") not in filter_criteria["organization_id"]
+        ):
             return None
         if filter_criteria["sequence_id"] and props.get("sequence_id") not in filter_criteria["sequence_id"]:
             return None
-        if not (filter_criteria["compass_angle"][0] <= props.get("compass_angle", 0) <= filter_criteria["compass_angle"][1]):
+        if not (
+            filter_criteria["compass_angle"][0] <= props.get("compass_angle", 0) <= filter_criteria["compass_angle"][1]
+        ):
             return None
-        
+
         # in_shape filter
         if filter_criteria["in_shape"]:
             polygon_list = filter_criteria["in_shape"]
@@ -632,7 +609,7 @@ def pipeline(data: dict, components: list, **kwargs) -> list:
                 if polygon.contains(point):
                     return feature
             return None
-        
+
         return feature
 
     # Apply filters in parallel and display a tqdm progress bar

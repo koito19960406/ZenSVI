@@ -1,19 +1,20 @@
-import cv2
-from transformers import DPTImageProcessor, DPTForDepthEstimation
-import torch
-import numpy as np
-from PIL import Image
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import List, Tuple, Union
-from torch.utils.data import Dataset, DataLoader
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from tqdm import tqdm
-import requests
-from torchvision.transforms import Compose
 
+import cv2
+import numpy as np
+import requests
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
+from torchvision.transforms import Compose
+from tqdm import tqdm
+from transformers import DPTForDepthEstimation, DPTImageProcessor
+
+from .depth_anything.util.transform import NormalizeImage, PrepareForNet, Resize
 from .zoedepth.models.builder import build_model
 from .zoedepth.utils.config import get_config
-from .depth_anything.util.transform import Resize, NormalizeImage, PrepareForNet
 
 
 class ImageDataset(Dataset):
@@ -21,8 +22,7 @@ class ImageDataset(Dataset):
         self.image_files = [
             image_file
             for image_file in image_files
-            if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"]
-            and not image_file.name.startswith(".")
+            if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"] and not image_file.name.startswith(".")
         ]
         self.task = task
         if self.task == "absolute":
@@ -59,9 +59,7 @@ class ImageDataset(Dataset):
 
         return image_file, image, original_size
 
-    def collate_fn(
-        self, data: List[Tuple[str, torch.Tensor]]
-    ) -> Tuple[List[str], torch.Tensor, List[Tuple[int, int]]]:
+    def collate_fn(self, data: List[Tuple[str, torch.Tensor]]) -> Tuple[List[str], torch.Tensor, List[Tuple[int, int]]]:
         """
         Custom collate function for the dataset.
 
@@ -103,9 +101,7 @@ class DepthEstimator:
 
     def _setup_relative_depth(self):
         self.processor = DPTImageProcessor.from_pretrained("Intel/dpt-large")
-        self.model = DPTForDepthEstimation.from_pretrained("Intel/dpt-large").to(
-            self.device
-        )
+        self.model = DPTForDepthEstimation.from_pretrained("Intel/dpt-large").to(self.device)
 
     def _setup_absolute_depth(self):
         # donwload the model from https://huggingface.co/spaces/LiheYoung/Depth-Anything/resolve/main/checkpoints_metric_depth/depth_anything_metric_depth_outdoor.pt to models/depth_anything_metric_depth_outdoor.pt with request.get
@@ -113,9 +109,7 @@ class DepthEstimator:
         current_file_path = Path(__file__)
         # Path to the current file's directory (often the package directory)
         package_directory = current_file_path.parent.parent.parent.parent.parent
-        checkpoint_path = (
-            package_directory / "models/depth_anything_metric_depth_outdoor.pt"
-        )
+        checkpoint_path = package_directory / "models/depth_anything_metric_depth_outdoor.pt"
         checkpoint_path_vit = package_directory / "models/depth_anything_vitl14.pth"
         if Path(checkpoint_path).exists() and Path(checkpoint_path_vit).exists():
             config = get_config(
@@ -133,35 +127,25 @@ class DepthEstimator:
         with open(checkpoint_path, "wb") as f:
             f.write(response.content)
 
-        url_vit = "https://huggingface.co/spaces/LiheYoung/Depth-Anything/resolve/main/checkpoints/depth_anything_vitl14.pth"
+        url_vit = (
+            "https://huggingface.co/spaces/LiheYoung/Depth-Anything/resolve/main/checkpoints/depth_anything_vitl14.pth"
+        )
         response_vit = requests.get(url_vit)
         response_vit.raise_for_status()  # This will raise an exception if there is an error
         with open(checkpoint_path_vit, "wb") as f:
             f.write(response_vit.content)
 
-        config = get_config(
-            "zoedepth", mode="infer", pretrained_resource="local::" + checkpoint_path
-        )
+        config = get_config("zoedepth", mode="infer", pretrained_resource="local::" + checkpoint_path)
         self.model = build_model(config).to(self.device)
 
     def _process_images(self, image_files, images, original_sizes, dir_output):
         inputs = (
-            self.processor(images=images, return_tensors="pt").to(self.device)
-            if self.task == "relative"
-            else images
+            self.processor(images=images, return_tensors="pt").to(self.device) if self.task == "relative" else images
         )
 
         with torch.no_grad():
-            outputs = (
-                self.model(**inputs)
-                if self.task == "relative"
-                else self.model(images.to(self.device))
-            )
-            predicted_depths = (
-                outputs.predicted_depth
-                if self.task == "relative"
-                else outputs["metric_depth"]
-            )
+            outputs = self.model(**inputs) if self.task == "relative" else self.model(images.to(self.device))
+            predicted_depths = outputs.predicted_depth if self.task == "relative" else outputs["metric_depth"]
 
             for i, (image_file, predicted_depth, original_size) in enumerate(
                 zip(image_files, predicted_depths, original_sizes)
@@ -232,9 +216,7 @@ class DepthEstimator:
                 ".jp2",
             ]
             # Get the list of all image files in the directory that are not completed yet
-            image_file_list = [
-                f for f in Path(dir_input).iterdir() if f.suffix in image_extensions
-            ]
+            image_file_list = [f for f in Path(dir_input).iterdir() if f.suffix in image_extensions]
         else:
             raise ValueError("dir_input must be either a file or a directory.")
         # skip if there are no image files to process
@@ -245,9 +227,7 @@ class DepthEstimator:
         Path(dir_image_output).mkdir(parents=True, exist_ok=True)
 
         dataset = ImageDataset(image_file_list, task=self.task)
-        dataloader = DataLoader(
-            dataset, batch_size=batch_size, collate_fn=dataset.collate_fn
-        )
+        dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=dataset.collate_fn)
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
 
@@ -263,7 +243,5 @@ class DepthEstimator:
                     )
                 )
 
-            for future in tqdm(
-                as_completed(futures), total=len(futures), desc="Estimating depth"
-            ):
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Estimating depth"):
                 future.result()

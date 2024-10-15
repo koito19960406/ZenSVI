@@ -10,19 +10,22 @@ import math
 import os
 from functools import partial
 
-from fvcore.common.checkpoint import PeriodicCheckpointer
-import torch
-
-from dinov2.data import SamplerType, make_data_loader, make_dataset
-from dinov2.data import collate_data_and_cast, DataAugmentationDINO, MaskingGenerator
 import dinov2.distributed as distributed
+import torch
+from dinov2.data import (
+    DataAugmentationDINO,
+    MaskingGenerator,
+    SamplerType,
+    collate_data_and_cast,
+    make_data_loader,
+    make_dataset,
+)
 from dinov2.fsdp import FSDPCheckpointer
 from dinov2.logging import MetricLogger
+from dinov2.train.ssl_meta_arch import SSLMetaArch
 from dinov2.utils.config import setup
 from dinov2.utils.utils import CosineScheduler
-
-from dinov2.train.ssl_meta_arch import SSLMetaArch
-
+from fvcore.common.checkpoint import PeriodicCheckpointer
 
 torch.backends.cuda.matmul.allow_tf32 = True  # PyTorch 1.12 sets this to False by default
 logger = logging.getLogger("dinov2")
@@ -96,9 +99,9 @@ def build_schedulers(cfg):
     teacher_temp_schedule = CosineScheduler(**teacher_temp)
     last_layer_lr_schedule = CosineScheduler(**lr)
 
-    last_layer_lr_schedule.schedule[
-        : cfg.optim["freeze_last_layer_epochs"] * OFFICIAL_EPOCH_LENGTH
-    ] = 0  # mimicking the original schedules
+    last_layer_lr_schedule.schedule[: cfg.optim["freeze_last_layer_epochs"] * OFFICIAL_EPOCH_LENGTH] = (
+        0  # mimicking the original schedules
+    )
 
     logger.info("Schedulers ready.")
 

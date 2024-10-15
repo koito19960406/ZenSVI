@@ -22,24 +22,23 @@
 
 # File author: Shariq Farooq Bhat
 
-import torch
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
 import os
 
-from PIL import Image
-import numpy as np
 import cv2
+import numpy as np
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
 
 
 class ToTensor(object):
     def __init__(self):
-        self.normalize = transforms.Normalize(
-            mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        self.normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         # self.resize = transforms.Resize((375, 1242))
 
     def __call__(self, sample):
-        image, depth = sample['image'], sample['depth']
+        image, depth = sample["image"], sample["depth"]
 
         image = self.to_tensor(image)
         image = self.normalize(image)
@@ -47,7 +46,7 @@ class ToTensor(object):
 
         # image = self.resize(image)
 
-        return {'image': image, 'depth': depth, 'dataset': "vkitti"}
+        return {"image": image, "depth": depth, "dataset": "vkitti"}
 
     def to_tensor(self, pic):
 
@@ -56,17 +55,16 @@ class ToTensor(object):
             return img
 
         #         # handle PIL Image
-        if pic.mode == 'I':
+        if pic.mode == "I":
             img = torch.from_numpy(np.array(pic, np.int32, copy=False))
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             img = torch.from_numpy(np.array(pic, np.int16, copy=False))
         else:
-            img = torch.ByteTensor(
-                torch.ByteStorage.from_buffer(pic.tobytes()))
+            img = torch.ByteTensor(torch.ByteStorage.from_buffer(pic.tobytes()))
         # PIL image mode: 1, L, P, I, F, RGB, YCbCr, RGBA, CMYK
-        if pic.mode == 'YCbCr':
+        if pic.mode == "YCbCr":
             nchannel = 3
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             nchannel = 1
         else:
             nchannel = len(pic.mode)
@@ -82,11 +80,10 @@ class ToTensor(object):
 class VKITTI(Dataset):
     def __init__(self, data_dir_root, do_kb_crop=True):
         import glob
+
         # image paths are of the form <data_dir_root>/{HR, LR}/<scene>/{color, depth_filled}/*.png
-        self.image_files = glob.glob(os.path.join(
-            data_dir_root, "test_color", '*.png'))
-        self.depth_files = [r.replace("test_color", "test_depth")
-                            for r in self.image_files]
+        self.image_files = glob.glob(os.path.join(data_dir_root, "test_color", "*.png"))
+        self.depth_files = [r.replace("test_color", "test_depth") for r in self.image_files]
         self.do_kb_crop = True
         self.transform = ToTensor()
 
@@ -96,8 +93,7 @@ class VKITTI(Dataset):
 
         image = Image.open(image_path)
         depth = Image.open(depth_path)
-        depth = cv2.imread(depth_path, cv2.IMREAD_ANYCOLOR |
-                           cv2.IMREAD_ANYDEPTH)
+        depth = cv2.imread(depth_path, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
         print("dpeth min max", depth.min(), depth.max())
 
         # print(np.shape(image))
@@ -110,10 +106,8 @@ class VKITTI(Dataset):
             width = image.width
             top_margin = int(height - 352)
             left_margin = int((width - 1216) / 2)
-            depth = depth.crop(
-                (left_margin, top_margin, left_margin + 1216, top_margin + 352))
-            image = image.crop(
-                (left_margin, top_margin, left_margin + 1216, top_margin + 352))
+            depth = depth.crop((left_margin, top_margin, left_margin + 1216, top_margin + 352))
+            image = image.crop((left_margin, top_margin, left_margin + 1216, top_margin + 352))
             # uv = uv[:, top_margin:top_margin + 352, left_margin:left_margin + 1216]
 
         image = np.asarray(image, dtype=np.float32) / 255.0
@@ -139,13 +133,12 @@ def get_vkitti_loader(data_dir_root, batch_size=1, **kwargs):
 
 
 if __name__ == "__main__":
-    loader = get_vkitti_loader(
-        data_dir_root="/home/bhatsf/shortcuts/datasets/vkitti_test")
+    loader = get_vkitti_loader(data_dir_root="/home/bhatsf/shortcuts/datasets/vkitti_test")
     print("Total files", len(loader.dataset))
     for i, sample in enumerate(loader):
         print(sample["image"].shape)
         print(sample["depth"].shape)
         print(sample["dataset"])
-        print(sample['depth'].min(), sample['depth'].max())
+        print(sample["depth"].min(), sample["depth"].max())
         if i > 5:
             break

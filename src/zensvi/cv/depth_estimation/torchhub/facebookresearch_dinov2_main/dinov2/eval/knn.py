@@ -5,24 +5,22 @@
 # LICENSE file in the root directory of this source tree.
 
 import argparse
-from functools import partial
 import json
 import logging
 import os
 import sys
+from functools import partial
 from typing import List, Optional
 
-import torch
-from torch.nn.functional import one_hot, softmax
-
 import dinov2.distributed as distributed
+import torch
 from dinov2.data import SamplerType, make_data_loader, make_dataset
 from dinov2.data.transforms import make_classification_eval_transform
 from dinov2.eval.metrics import AccuracyAveraging, build_topk_accuracy_metric
 from dinov2.eval.setup import get_args_parser as get_setup_args_parser
 from dinov2.eval.setup import setup_and_build_model
 from dinov2.eval.utils import ModelWithNormalize, evaluate, extract_features
-
+from torch.nn.functional import one_hot, softmax
 
 logger = logging.getLogger("dinov2")
 
@@ -293,7 +291,10 @@ def eval_knn(
                 **postprocessors,
                 **{(n_per_class, t, k): DictKeysModule([n_per_class, t, k]) for k in knn_try.nb_knn},
             }
-            metrics = {**metrics, **{(n_per_class, t, k): metric_collection.clone() for k in knn_try.nb_knn}}
+            metrics = {
+                **metrics,
+                **{(n_per_class, t, k): metric_collection.clone() for k in knn_try.nb_knn},
+            }
     model_with_knn = torch.nn.Sequential(model, knn_module_dict)
 
     # ============ evaluation ... ============

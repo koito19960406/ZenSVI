@@ -15,15 +15,17 @@ For more information, please check out https://www.mapillary.com/developer/api-d
 - License: MIT LICENSE
 """
 
-# Package imports
-from vt2geojson.tools import vt_bytes_to_geojson
-import mercantile
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from tqdm import tqdm
+import glob
 import json
 import os
 import shutil
-import glob
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import mercantile
+from tqdm import tqdm
+
+# Package imports
+from vt2geojson.tools import vt_bytes_to_geojson
 
 # Local imports
 # # Config
@@ -92,9 +94,7 @@ class VectorTilesAdapter(object):
         # Setting the min zoom value
         self.__max_zoom = 14
 
-    def fetch_layer(
-        self, layer: str, longitude: float, latitude: float, zoom: int = 14
-    ) -> dict:
+    def fetch_layer(self, layer: str, longitude: float, latitude: float, zoom: int = 14) -> dict:
         """
         Fetches an image tile layer depending on the coordinates, and the layer selected
         along with the zoom level
@@ -131,9 +131,7 @@ class VectorTilesAdapter(object):
             zoom=zoom,
         )
 
-    def fetch_computed_layer(
-        self, layer: str, zoom: int, longitude: float, latitude: float
-    ):
+    def fetch_computed_layer(self, layer: str, zoom: int, longitude: float, latitude: float):
         """
         Same as `fetch_layer`, but gets in return computed tiles only.
         Depends on the layer, zoom level, longitude and the latitude specifications
@@ -170,9 +168,7 @@ class VectorTilesAdapter(object):
             zoom=zoom,
         )
 
-    def fetch_features(
-        self, feature_type: str, zoom: int, longitude: float, latitude: float
-    ):
+    def fetch_features(self, feature_type: str, zoom: int, longitude: float, latitude: float):
         """
         Fetches specified features from the coordinates with the appropriate zoom level
 
@@ -214,7 +210,7 @@ class VectorTilesAdapter(object):
         layer: str = "image",
         zoom: int = 14,
         is_computed: bool = False,
-        **kwargs, 
+        **kwargs,
     ) -> GeoJSON:
         """
         Fetches multiple vector tiles based on a list of multiple coordinates in a listed format
@@ -240,9 +236,7 @@ class VectorTilesAdapter(object):
         self.__zoom_range_check(layer=layer, zoom=zoom)
 
         # The output resultant geojson
-        geojson: GeoJSON = GeoJSON(
-            geojson={"type": "FeatureCollection", "features": []}
-        )
+        geojson: GeoJSON = GeoJSON(geojson={"type": "FeatureCollection", "features": []})
 
         # A list of tiles that are either confined within or intersect with the bbox
         tiles = list(
@@ -266,14 +260,18 @@ class VectorTilesAdapter(object):
         # Create a directory for checkpoints and load existing results
         dir_cache_tiles = None
         processed_tiles = set()
-        
+
         # Function to process each file
         def process_file(file_path):
             try:
-                with open(file_path, 'r') as file:
+                with open(file_path, "r") as file:
                     tile_data = json.load(file)
                 if tile_data["features"]:
-                    return tile_data["features"], file_path, False # last argument is whether there was an error
+                    return (
+                        tile_data["features"],
+                        file_path,
+                        False,
+                    )  # last argument is whether there was an error
                 else:
                     return None, file_path, False
             except Exception as e:
@@ -281,21 +279,25 @@ class VectorTilesAdapter(object):
             return None, file_path, True
 
         if kwargs["dir_cache"]:
-            dir_cache_tiles = os.path.join(kwargs["dir_cache"], 'tiles_results')
+            dir_cache_tiles = os.path.join(kwargs["dir_cache"], "tiles_results")
             os.makedirs(dir_cache_tiles, exist_ok=True)
 
-            existing_files = glob.glob(f'{dir_cache_tiles}/*.geojson')
+            existing_files = glob.glob(f"{dir_cache_tiles}/*.geojson")
 
             # Use ThreadPoolExecutor to process files in parallel
             with ThreadPoolExecutor(max_workers=kwargs["max_workers"]) as executor:
                 future_to_file = {executor.submit(process_file, file_path): file_path for file_path in existing_files}
-                for future in tqdm(as_completed(future_to_file), total=len(existing_files), desc="Loading cache files"):
+                for future in tqdm(
+                    as_completed(future_to_file),
+                    total=len(existing_files),
+                    desc="Loading cache files",
+                ):
                     result, file_path, error = future.result()
                     if result:
                         geojson.append_features(result)
                     if not error:
                         filename = os.path.basename(file_path)
-                        x, y, z = map(int, filename.replace('.geojson', '').split('_'))
+                        x, y, z = map(int, filename.replace(".geojson", "").split("_"))
                         processed_tiles.add((x, y, z))
 
             # Filter out tiles that have already been processed
@@ -304,11 +306,8 @@ class VectorTilesAdapter(object):
         if len(tiles) == 0:
             print("All tiles have already been processed.")
             return geojson
-        
-        print(
-            f'[Vector Tiles API] Fetching {len(tiles)} {"tiles" if len(tiles) > 1 else "tile"}'
-            " for images ..."
-        )
+
+        print(f'[Vector Tiles API] Fetching {len(tiles)} {"tiles" if len(tiles) > 1 else "tile"}' " for images ...")
         # Define the maximum number of retries for processing a tile
         max_retries = 3
         # Process each tile individually: set max_workers to 10 times the number of CPU cores
@@ -325,9 +324,12 @@ class VectorTilesAdapter(object):
                             geojson.append_features(result)
                         if kwargs["dir_cache"]:
                             # Save result for each tile
-                            result_path = f'{dir_cache_tiles}/{tile.x}_{tile.y}_{tile.z}.geojson'
-                            with open(result_path, 'w') as file:
-                                json.dump({"type": "FeatureCollection", "features": result}, file)
+                            result_path = f"{dir_cache_tiles}/{tile.x}_{tile.y}_{tile.z}.geojson"
+                            with open(result_path, "w") as file:
+                                json.dump(
+                                    {"type": "FeatureCollection", "features": result},
+                                    file,
+                                )
                         break  # Break the loop if processing is successful
                     except Exception as e:
                         print(f"Error processing tile {tile.x}_{tile.y}_{tile.z} on attempt {retries + 1}: {e}")
@@ -365,9 +367,7 @@ class VectorTilesAdapter(object):
         self.__zoom_range_check(layer="map_feature", zoom=zoom)
 
         # The output resultant geojson
-        geojson: GeoJSON = GeoJSON(
-            geojson={"type": "FeatureCollection", "features": []}
-        )
+        geojson: GeoJSON = GeoJSON(geojson={"type": "FeatureCollection", "features": []})
 
         # A list of tiles that are either confined within or intersect with the bbox
         tiles = list(
@@ -381,8 +381,7 @@ class VectorTilesAdapter(object):
         )
 
         print(
-            f'[Vector Tiles API] Fetching {len(tiles)} {"tiles" if len(tiles) > 1 else "tile"}'
-            " for map features ..."
+            f'[Vector Tiles API] Fetching {len(tiles)} {"tiles" if len(tiles) > 1 else "tile"}' " for map features ..."
         )
 
         for tile in tiles:
@@ -422,19 +421,14 @@ class VectorTilesAdapter(object):
         # If lng not in the range [-180, 180], inclusive
         if longitude <= -180 or longitude >= 180:
             # Raise exception
-            raise InvalidOptionError(
-                param="longitude", value=longitude, options=[-180, 180]
-            )
+            raise InvalidOptionError(param="longitude", value=longitude, options=[-180, 180])
 
         # If lat not in the range [-90, 90], inclusive
         if latitude <= -90 or latitude >= 90:
             # Raise exception
-            raise InvalidOptionError(
-                param="latitude", value=latitude, options=[-180, 180]
-            )
+            raise InvalidOptionError(param="latitude", value=latitude, options=[-180, 180])
 
     def __zoom_range_check(self, layer: str, zoom: int):
-
         """
         Checks for the correct zoom values for te specified layer
 
@@ -597,9 +591,7 @@ class VectorTilesAdapter(object):
             layer=layer,
         )
 
-    def __preprocess_features(
-        self, feature_type: str, tile: mercantile.Tile, zoom: int
-    ) -> dict:
+    def __preprocess_features(self, feature_type: str, tile: mercantile.Tile, zoom: int) -> dict:
         """
         Preprocess features
 

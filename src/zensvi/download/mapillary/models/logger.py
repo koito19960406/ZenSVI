@@ -14,8 +14,8 @@ the default configuration for each of the loggers per file.
 """
 
 import logging
-import sys
 import os
+import sys
 
 
 class Logger:
@@ -58,9 +58,7 @@ class Logger:
 
         # File logger setup
         formatter: logging.Formatter = logging.Formatter(Logger.format_string)
-        handler: logging.FileHandler = logging.FileHandler(
-            Logger.get_os_log_path(name.split(".")[1] + ".log")
-        )
+        handler: logging.FileHandler = logging.FileHandler(Logger.get_os_log_path(name.split(".")[1] + ".log"))
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 

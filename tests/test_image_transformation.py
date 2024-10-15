@@ -1,7 +1,8 @@
-from zensvi.transform import ImageTransformer
+import shutil
 import unittest
 from pathlib import Path
-import shutil
+
+from zensvi.transform import ImageTransformer
 
 
 class TestImageTransformer(unittest.TestCase):
@@ -25,8 +26,7 @@ class TestImageTransformer(unittest.TestCase):
         # assert True if all the subdirectories are created in the output directory and files are not empty
         assert all(
             [
-                Path(dir_output, sub_dir).is_dir()
-                and len(list(Path(dir_output, sub_dir).rglob("*"))) > 0
+                Path(dir_output, sub_dir).is_dir() and len(list(Path(dir_output, sub_dir).rglob("*"))) > 0
                 for sub_dir in [
                     "equidistant_fisheye",
                     "equisolid_fisheye",
@@ -45,8 +45,7 @@ class TestImageTransformer(unittest.TestCase):
         # assert True if all the subdirectories are created in the output directory and files are not empty
         assert all(
             [
-                Path(dir_output, sub_dir).is_dir()
-                and len(list(Path(dir_output, sub_dir).rglob("*"))) > 0
+                Path(dir_output, sub_dir).is_dir() and len(list(Path(dir_output, sub_dir).rglob("*"))) > 0
                 for sub_dir in [
                     "equidistant_fisheye",
                     "equisolid_fisheye",
@@ -56,7 +55,7 @@ class TestImageTransformer(unittest.TestCase):
                 ]
             ]
         )
-    
+
     def test_upper_half(self):
         dir_input = "tests/data/input/images/-3vfS0_iiYVZKh_LEVlHew.jpg"
         dir_output = str(self.output / "upper_half")
@@ -65,8 +64,7 @@ class TestImageTransformer(unittest.TestCase):
         # assert True if all the subdirectories are created in the output directory and files are not empty
         assert all(
             [
-                Path(dir_output, sub_dir).is_dir()
-                and len(list(Path(dir_output, sub_dir).rglob("*"))) > 0
+                Path(dir_output, sub_dir).is_dir() and len(list(Path(dir_output, sub_dir).rglob("*"))) > 0
                 for sub_dir in [
                     "equidistant_fisheye",
                     "equisolid_fisheye",
@@ -76,6 +74,7 @@ class TestImageTransformer(unittest.TestCase):
                 ]
             ]
         )
+
 
 if __name__ == "__main__":
     unittest.main()

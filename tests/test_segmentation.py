@@ -1,8 +1,8 @@
 import json
-import unittest
 import os
-from pathlib import Path
 import shutil
+import unittest
+from pathlib import Path
 
 from zensvi.cv import Segmenter
 
@@ -31,10 +31,7 @@ class TestSegmentation(unittest.TestCase):
             max_workers=4,
         )
         # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            len(list(image_output.glob("*"))) > 0
-            and len(list(summary_output.glob("*"))) > 0
-        )
+        self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
 
     def test_mapillary_semantic(self):
         segmenter = Segmenter(dataset="mapillary", task="semantic")
@@ -48,10 +45,7 @@ class TestSegmentation(unittest.TestCase):
             max_workers=4,
         )
         # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            len(list(image_output.glob("*"))) > 0
-            and len(list(summary_output.glob("*"))) > 0
-        )
+        self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
 
     def test_cityscapes_panoptic(self):
         segmenter = Segmenter(dataset="cityscapes", task="panoptic")
@@ -65,10 +59,7 @@ class TestSegmentation(unittest.TestCase):
             max_workers=4,
         )
         # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            len(list(image_output.glob("*"))) > 0
-            and len(list(summary_output.glob("*"))) > 0
-        )
+        self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
 
     def test_cityscapes_semantic(self):
         segmenter = Segmenter(dataset="cityscapes", task="semantic")
@@ -82,10 +73,7 @@ class TestSegmentation(unittest.TestCase):
             max_workers=4,
         )
         # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            len(list(image_output.glob("*"))) > 0
-            and len(list(summary_output.glob("*"))) > 0
-        )
+        self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
 
     def test_large_image(self):
         segmenter = Segmenter(dataset="mapillary", task="panoptic")
@@ -99,10 +87,7 @@ class TestSegmentation(unittest.TestCase):
             max_workers=1,
         )
         # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            len(list(image_output.glob("*"))) > 0
-            and len(list(summary_output.glob("*"))) > 0
-        )
+        self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
 
     def test_single_image(self):
         segmenter = Segmenter(dataset="mapillary", task="panoptic")
@@ -117,10 +102,7 @@ class TestSegmentation(unittest.TestCase):
             max_workers=1,
         )
         # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            len(list(image_output.glob("*"))) > 0
-            and len(list(summary_output.glob("*"))) > 0
-        )
+        self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
 
     def test_mps_device(self):
         device = "mps"
@@ -135,10 +117,7 @@ class TestSegmentation(unittest.TestCase):
             max_workers=4,
         )
         # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            len(list(image_output.glob("*"))) > 0
-            and len(list(summary_output.glob("*"))) > 0
-        )
+        self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
 
     def test_calculate_pixel_ratio_post_process(self):
         segmenter = Segmenter(dataset="mapillary", task="panoptic")

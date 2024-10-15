@@ -22,9 +22,9 @@
 
 # File author: Shariq Farooq Bhat
 
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 from torchvision.transforms import Normalize
 
 
@@ -41,15 +41,16 @@ def denormalize(x):
     std = torch.Tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(x.device)
     return x * std + mean
 
+
 def get_activation(name, bank):
     def hook(model, input, output):
         bank[name] = output
+
     return hook
 
 
 class Resize(object):
-    """Resize sample to given size (width, height).
-    """
+    """Resize sample to given size (width, height)."""
 
     def __init__(
         self,
@@ -101,12 +102,10 @@ class Resize(object):
         y = (np.round(x / self.__multiple_of) * self.__multiple_of).astype(int)
 
         if max_val is not None and y > max_val:
-            y = (np.floor(x / self.__multiple_of)
-                 * self.__multiple_of).astype(int)
+            y = (np.floor(x / self.__multiple_of) * self.__multiple_of).astype(int)
 
         if y < min_val:
-            y = (np.ceil(x / self.__multiple_of)
-                 * self.__multiple_of).astype(int)
+            y = (np.ceil(x / self.__multiple_of) * self.__multiple_of).astype(int)
 
         return y
 
@@ -141,54 +140,67 @@ class Resize(object):
                     # fit height
                     scale_width = scale_height
             else:
-                raise ValueError(
-                    f"resize_method {self.__resize_method} not implemented"
-                )
+                raise ValueError(f"resize_method {self.__resize_method} not implemented")
 
         if self.__resize_method == "lower_bound":
-            new_height = self.constrain_to_multiple_of(
-                scale_height * height, min_val=self.__height
-            )
-            new_width = self.constrain_to_multiple_of(
-                scale_width * width, min_val=self.__width
-            )
+            new_height = self.constrain_to_multiple_of(scale_height * height, min_val=self.__height)
+            new_width = self.constrain_to_multiple_of(scale_width * width, min_val=self.__width)
         elif self.__resize_method == "upper_bound":
-            new_height = self.constrain_to_multiple_of(
-                scale_height * height, max_val=self.__height
-            )
-            new_width = self.constrain_to_multiple_of(
-                scale_width * width, max_val=self.__width
-            )
+            new_height = self.constrain_to_multiple_of(scale_height * height, max_val=self.__height)
+            new_width = self.constrain_to_multiple_of(scale_width * width, max_val=self.__width)
         elif self.__resize_method == "minimal":
             new_height = self.constrain_to_multiple_of(scale_height * height)
             new_width = self.constrain_to_multiple_of(scale_width * width)
         else:
-            raise ValueError(
-                f"resize_method {self.__resize_method} not implemented")
+            raise ValueError(f"resize_method {self.__resize_method} not implemented")
 
         return (new_width, new_height)
 
     def __call__(self, x):
         width, height = self.get_size(*x.shape[-2:][::-1])
-        return nn.functional.interpolate(x, (height, width), mode='bilinear', align_corners=True)
+        return nn.functional.interpolate(x, (height, width), mode="bilinear", align_corners=True)
+
 
 class PrepForMidas(object):
-    def __init__(self, resize_mode="minimal", keep_aspect_ratio=True, img_size=384, do_resize=True):
+    def __init__(
+        self,
+        resize_mode="minimal",
+        keep_aspect_ratio=True,
+        img_size=384,
+        do_resize=True,
+    ):
         if isinstance(img_size, int):
             img_size = (img_size, img_size)
         net_h, net_w = img_size
-        self.normalization = Normalize(
-            mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-        self.resizer = Resize(net_w, net_h, keep_aspect_ratio=keep_aspect_ratio, ensure_multiple_of=32, resize_method=resize_mode) \
-            if do_resize else nn.Identity()
+        self.normalization = Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+        self.resizer = (
+            Resize(
+                net_w,
+                net_h,
+                keep_aspect_ratio=keep_aspect_ratio,
+                ensure_multiple_of=32,
+                resize_method=resize_mode,
+            )
+            if do_resize
+            else nn.Identity()
+        )
 
     def __call__(self, x):
         return self.normalization(self.resizer(x))
 
 
 class MidasCore(nn.Module):
-    def __init__(self, midas, trainable=False, fetch_features=True, layer_names=('out_conv', 'l4_rn', 'r4', 'r3', 'r2', 'r1'), freeze_bn=False, keep_aspect_ratio=True,
-                 img_size=384, **kwargs):
+    def __init__(
+        self,
+        midas,
+        trainable=False,
+        fetch_features=True,
+        layer_names=("out_conv", "l4_rn", "r4", "r3", "r2", "r1"),
+        freeze_bn=False,
+        keep_aspect_ratio=True,
+        img_size=384,
+        **kwargs,
+    ):
         """Midas Base model used for multi-scale feature extraction.
 
         Args:
@@ -214,8 +226,11 @@ class MidasCore(nn.Module):
         self.set_trainable(trainable)
         self.set_fetch_features(fetch_features)
 
-        self.prep = PrepForMidas(keep_aspect_ratio=keep_aspect_ratio,
-                                 img_size=img_size, do_resize=kwargs.get('do_resize', True))
+        self.prep = PrepForMidas(
+            keep_aspect_ratio=keep_aspect_ratio,
+            img_size=img_size,
+            do_resize=kwargs.get("do_resize", True),
+        )
 
         if freeze_bn:
             self.freeze_bn()
@@ -263,7 +278,7 @@ class MidasCore(nn.Module):
             x = self.prep(x)
             # print("Shape after prep: ", x.shape)
         # print('pre-processed:', x.shape)
-        
+
         with torch.set_grad_enabled(self.trainable):
 
             # print("Input size to Midascore", x.shape)
@@ -300,23 +315,21 @@ class MidasCore(nn.Module):
         if len(self.handles) > 0:
             self.remove_hooks()
         if "out_conv" in self.layer_names:
-            self.handles.append(list(midas.scratch.output_conv.children())[
-                                3].register_forward_hook(get_activation("out_conv", self.core_out)))
+            self.handles.append(
+                list(midas.scratch.output_conv.children())[3].register_forward_hook(
+                    get_activation("out_conv", self.core_out)
+                )
+            )
         if "r4" in self.layer_names:
-            self.handles.append(midas.scratch.refinenet4.register_forward_hook(
-                get_activation("r4", self.core_out)))
+            self.handles.append(midas.scratch.refinenet4.register_forward_hook(get_activation("r4", self.core_out)))
         if "r3" in self.layer_names:
-            self.handles.append(midas.scratch.refinenet3.register_forward_hook(
-                get_activation("r3", self.core_out)))
+            self.handles.append(midas.scratch.refinenet3.register_forward_hook(get_activation("r3", self.core_out)))
         if "r2" in self.layer_names:
-            self.handles.append(midas.scratch.refinenet2.register_forward_hook(
-                get_activation("r2", self.core_out)))
+            self.handles.append(midas.scratch.refinenet2.register_forward_hook(get_activation("r2", self.core_out)))
         if "r1" in self.layer_names:
-            self.handles.append(midas.scratch.refinenet1.register_forward_hook(
-                get_activation("r1", self.core_out)))
+            self.handles.append(midas.scratch.refinenet1.register_forward_hook(get_activation("r1", self.core_out)))
         if "l4_rn" in self.layer_names:
-            self.handles.append(midas.scratch.layer4_rn.register_forward_hook(
-                get_activation("l4_rn", self.core_out)))
+            self.handles.append(midas.scratch.layer4_rn.register_forward_hook(get_activation("l4_rn", self.core_out)))
 
         return self
 
@@ -332,19 +345,37 @@ class MidasCore(nn.Module):
         self.output_channels = MIDAS_SETTINGS[model_type]
 
     @staticmethod
-    def build(midas_model_type="DPT_BEiT_L_384", train_midas=False, use_pretrained_midas=True, fetch_features=False, freeze_bn=True, force_keep_ar=False, force_reload=False, **kwargs):
+    def build(
+        midas_model_type="DPT_BEiT_L_384",
+        train_midas=False,
+        use_pretrained_midas=True,
+        fetch_features=False,
+        freeze_bn=True,
+        force_keep_ar=False,
+        force_reload=False,
+        **kwargs,
+    ):
         if midas_model_type not in MIDAS_SETTINGS:
-            raise ValueError(
-                f"Invalid model type: {midas_model_type}. Must be one of {list(MIDAS_SETTINGS.keys())}")
+            raise ValueError(f"Invalid model type: {midas_model_type}. Must be one of {list(MIDAS_SETTINGS.keys())}")
         if "img_size" in kwargs:
             kwargs = MidasCore.parse_img_size(kwargs)
         img_size = kwargs.pop("img_size", [384, 384])
         # print("img_size", img_size)
-        midas = torch.hub.load("intel-isl/MiDaS", midas_model_type,
-                               pretrained=use_pretrained_midas, force_reload=force_reload)
-        kwargs.update({'keep_aspect_ratio': force_keep_ar})
-        midas_core = MidasCore(midas, trainable=train_midas, fetch_features=fetch_features,
-                               freeze_bn=freeze_bn, img_size=img_size, **kwargs)
+        midas = torch.hub.load(
+            "intel-isl/MiDaS",
+            midas_model_type,
+            pretrained=use_pretrained_midas,
+            force_reload=force_reload,
+        )
+        kwargs.update({"keep_aspect_ratio": force_keep_ar})
+        midas_core = MidasCore(
+            midas,
+            trainable=train_midas,
+            fetch_features=fetch_features,
+            freeze_bn=freeze_bn,
+            img_size=img_size,
+            **kwargs,
+        )
         midas_core.set_output_channels(midas_model_type)
         return midas_core
 
@@ -354,27 +385,34 @@ class MidasCore(nn.Module):
 
     @staticmethod
     def parse_img_size(config):
-        assert 'img_size' in config
-        if isinstance(config['img_size'], str):
-            assert "," in config['img_size'], "img_size should be a string with comma separated img_size=H,W"
-            config['img_size'] = list(map(int, config['img_size'].split(",")))
-            assert len(
-                config['img_size']) == 2, "img_size should be a string with comma separated img_size=H,W"
-        elif isinstance(config['img_size'], int):
-            config['img_size'] = [config['img_size'], config['img_size']]
+        assert "img_size" in config
+        if isinstance(config["img_size"], str):
+            assert "," in config["img_size"], "img_size should be a string with comma separated img_size=H,W"
+            config["img_size"] = list(map(int, config["img_size"].split(",")))
+            assert len(config["img_size"]) == 2, "img_size should be a string with comma separated img_size=H,W"
+        elif isinstance(config["img_size"], int):
+            config["img_size"] = [config["img_size"], config["img_size"]]
         else:
-            assert isinstance(config['img_size'], list) and len(
-                config['img_size']) == 2, "img_size should be a list of H,W"
+            assert (
+                isinstance(config["img_size"], list) and len(config["img_size"]) == 2
+            ), "img_size should be a list of H,W"
         return config
 
 
 nchannels2models = {
-    tuple([256]*5): ["DPT_BEiT_L_384", "DPT_BEiT_L_512", "DPT_BEiT_B_384", "DPT_SwinV2_L_384", "DPT_SwinV2_B_384", "DPT_SwinV2_T_256", "DPT_Large", "DPT_Hybrid"],
-    (512, 256, 128, 64, 64): ["MiDaS_small"]
+    tuple([256] * 5): [
+        "DPT_BEiT_L_384",
+        "DPT_BEiT_L_512",
+        "DPT_BEiT_B_384",
+        "DPT_SwinV2_L_384",
+        "DPT_SwinV2_B_384",
+        "DPT_SwinV2_T_256",
+        "DPT_Large",
+        "DPT_Hybrid",
+    ],
+    (512, 256, 128, 64, 64): ["MiDaS_small"],
 }
 
 # Model name to number of output channels
-MIDAS_SETTINGS = {m: k for k, v in nchannels2models.items()
-                  for m in v
-                  }
+MIDAS_SETTINGS = {m: k for k, v in nchannels2models.items() for m in v}
 # print('MIDAS_SETTINGS:', MIDAS_SETTINGS)

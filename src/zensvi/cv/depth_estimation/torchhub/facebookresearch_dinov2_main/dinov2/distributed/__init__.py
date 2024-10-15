@@ -237,7 +237,12 @@ class _TorchDistributedEnvironment:
         return self
 
 
-def enable(*, set_cuda_current_device: bool = True, overwrite: bool = False, allow_nccl_timeout: bool = False):
+def enable(
+    *,
+    set_cuda_current_device: bool = True,
+    overwrite: bool = False,
+    allow_nccl_timeout: bool = False,
+):
     """Enable distributed mode
 
     Args:

@@ -12,9 +12,9 @@ This package contains all the internal utilities used within the Mapillary pytho
 """
 
 from . import auth  # noqa: F401
+from . import convert  # noqa: F401
 from . import extract  # noqa: F401
 from . import filter  # noqa: F401
 from . import format  # noqa: F401
 from . import time  # noqa: F401
 from . import verify  # noqa: F401
-from . import convert  # noqa: F401

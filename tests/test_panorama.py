@@ -1,6 +1,6 @@
-import unittest
 import os
 import shutil
+import unittest
 from pathlib import Path
 
 from zensvi.cv import ClassifierPanorama

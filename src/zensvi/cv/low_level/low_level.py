@@ -1,12 +1,13 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import cv2
-import os
-import json
 import csv
+import json
+import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Union
-from tqdm import tqdm
+
+import cv2
 import pandas as pd
+from tqdm import tqdm
 
 
 def _detect_edges_single_image(image_path, dir_image_output):
@@ -25,9 +26,7 @@ def _detect_edges_single_image(image_path, dir_image_output):
     edge_ratios = {}
     for technique, edges in techniques.items():
         # Save processed image
-        output_path = os.path.join(
-            dir_image_output, f"{image_path.stem}_{technique}.png"
-        )
+        output_path = os.path.join(dir_image_output, f"{image_path.stem}_{technique}.png")
 
         if dir_image_output:
             cv2.imwrite(output_path, edges)
@@ -73,9 +72,7 @@ def _detect_blur_single_image(image_path, dir_image_output=None):
     variance_of_laplacian = cv2.Laplacian(image, cv2.CV_64F).var()
 
     # Determine if the image is blurry
-    is_blurry = int(
-        variance_of_laplacian < 100
-    )  # threshold value is arbitrary; adjust based on needs
+    is_blurry = int(variance_of_laplacian < 100)  # threshold value is arbitrary; adjust based on needs
 
     # Return the blur measure and a boolean indicating if it's blurry
     return {"blur_measure": variance_of_laplacian, "is_blurry": is_blurry}
@@ -143,9 +140,7 @@ def get_low_level_features(
         None: The function does not return any value but outputs results to the specified directories.
     """
     if not dir_image_output and not dir_summary_output:
-        raise ValueError(
-            "At least one of dir_image_output and dir_summary_output must be provided"
-        )
+        raise ValueError("At least one of dir_image_output and dir_summary_output must be provided")
 
     if dir_image_output:
         Path(dir_image_output).mkdir(parents=True, exist_ok=True)
@@ -177,14 +172,9 @@ def get_low_level_features(
     summary_data = []
     with ThreadPoolExecutor() as executor:
         future_to_image = {
-            executor.submit(
-                _detect_all_features_single_image, image, dir_image_output
-            ): image
-            for image in images
+            executor.submit(_detect_all_features_single_image, image, dir_image_output): image for image in images
         }
-        for future in tqdm(
-            as_completed(future_to_image), desc="Processing images", total=len(images)
-        ):
+        for future in tqdm(as_completed(future_to_image), desc="Processing images", total=len(images)):
             image = future_to_image[future]
             try:
                 result = future.result()
@@ -202,7 +192,5 @@ def get_low_level_features(
             summary_path = os.path.join(dir_summary_output, "low_level_features.csv")
             summary_df = pd.DataFrame(summary_data)
             if csv_format == "long":
-                summary_df = summary_df.melt(
-                    id_vars="filename_key", var_name="feature", value_name="value"
-                )
+                summary_df = summary_df.melt(id_vars="filename_key", var_name="feature", value_name="value")
             summary_df.to_csv(summary_path, index=False)

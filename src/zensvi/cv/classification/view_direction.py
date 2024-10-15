@@ -1,18 +1,16 @@
 from pathlib import Path
 from typing import List, Tuple, Union
-from torch.utils.data import Dataset, DataLoader
-from huggingface_hub import hf_hub_download
-from torchvision import transforms
-from PIL import Image
-import torch
-import pandas as pd
-import tqdm
 
-from .utils.global_streetscapes import (
-    view_direction_dict2idx,
-    GlobalStreetScapesClassificationModel,
-)
+import pandas as pd
+import torch
+import tqdm
+from huggingface_hub import hf_hub_download
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
+
 from .base import BaseClassifier
+from .utils.global_streetscapes import GlobalStreetScapesClassificationModel, view_direction_dict2idx
 
 
 class ImageDataset(Dataset):
@@ -20,8 +18,7 @@ class ImageDataset(Dataset):
         self.image_files = [
             image_file
             for image_file in image_files
-            if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"]
-            and not image_file.name.startswith(".")
+            if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"] and not image_file.name.startswith(".")
         ]
 
         # Image transformations
@@ -29,9 +26,7 @@ class ImageDataset(Dataset):
             [
                 transforms.Resize((224, 224)),
                 transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),  # ImageNet normalization
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),  # ImageNet normalization
             ]
         )
 
@@ -45,9 +40,7 @@ class ImageDataset(Dataset):
 
         return str(image_file), img
 
-    def collate_fn(
-        self, data: List[Tuple[str, torch.Tensor]]
-    ) -> Tuple[List[str], torch.Tensor]:
+    def collate_fn(self, data: List[Tuple[str, torch.Tensor]]) -> Tuple[List[str], torch.Tensor]:
         """
         Custom collate function for the dataset.
 
@@ -82,9 +75,7 @@ class ClassifierViewDirection(BaseClassifier):
             local_dir=Path(__file__).parent.parent.parent.parent.parent / "models",
         )
 
-        checkpoint = torch.load(
-            checkpoint_path, map_location=lambda storage, loc: storage
-        )
+        checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
 
         # Extract the number of classes
         num_classes = checkpoint["state_dict"]["model.classifier.5.weight"].shape[0]
@@ -96,9 +87,7 @@ class ClassifierViewDirection(BaseClassifier):
         self.model.eval()
         self.model.to(self.device)
 
-    def _save_results_to_file(
-        self, results, dir_output, file_name, save_format="csv json"
-    ):
+    def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json"):
         df = pd.DataFrame(results)
         dir_output = Path(dir_output)
         dir_output.mkdir(parents=True, exist_ok=True)
@@ -156,9 +145,7 @@ class ClassifierViewDirection(BaseClassifier):
             ]
 
         dataset = ImageDataset(img_paths)
-        dataloader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=False, collate_fn=dataset.collate_fn
-        )
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=dataset.collate_fn)
 
         results = []
         # Using torch.no_grad() to avoid unnecessary gradient computations during inference
@@ -166,18 +153,12 @@ class ClassifierViewDirection(BaseClassifier):
             results = [
                 {
                     "filename_key": str(Path(image_file).stem),
-                    "view_direction": view_direction_dict2idx["index2label"][
-                        pred.item()
-                    ],
+                    "view_direction": view_direction_dict2idx["index2label"][pred.item()],
                 }
-                for image_files, images in tqdm.tqdm(
-                    dataloader, desc="Classifying view_direction"
-                )
+                for image_files, images in tqdm.tqdm(dataloader, desc="Classifying view_direction")
                 for image_file, pred in zip(
                     image_files,
-                    torch.max(
-                        self.model(images.to(self.device, dtype=torch.float32)), 1
-                    )[1],
+                    torch.max(self.model(images.to(self.device, dtype=torch.float32)), 1)[1],
                 )
             ]
 

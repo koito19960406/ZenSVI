@@ -1,11 +1,12 @@
+import copy
+from pathlib import Path
+from typing import Dict, List, Union
+
 import numpy as np
 import open3d as o3d
-import copy
-from PIL import Image
-from pathlib import Path
-from typing import List, Dict, Union
+import pandas as pd
 import plotly.graph_objects as go
-import pandas as pd 
+from PIL import Image
 
 from zensvi.utils.log import Logger
 
@@ -30,6 +31,7 @@ class PointCloudProcessor:
     :param logger: Optional logger for tracking operations and errors.
     :type logger: Logger
     """
+
     def __init__(
         self,
         image_folder: str,
@@ -114,20 +116,8 @@ class PointCloudProcessor:
                 r1 = depth_img[y, x]
                 r2 = (255 - r1) / depth_max
 
-                xx = (
-                    3
-                    * r2**4
-                    * np.cos(a)
-                    * np.cos(b)
-                    / (np.log(1.1 + 5 * (y / (ys - 1))))
-                )
-                yy = (
-                    3
-                    * r2**4
-                    * np.sin(a)
-                    * np.cos(b)
-                    / (np.log(1.1 + 5 * (y / (ys - 1))))
-                )
+                xx = 3 * r2**4 * np.cos(a) * np.cos(b) / (np.log(1.1 + 5 * (y / (ys - 1))))
+                yy = 3 * r2**4 * np.sin(a) * np.cos(b) / (np.log(1.1 + 5 * (y / (ys - 1))))
                 zz = (2 * r2) ** 2 * np.sin(b)
 
                 c = color_img[y, x] / 255.0  # Normalizing color
@@ -139,9 +129,7 @@ class PointCloudProcessor:
         pcd.colors = o3d.utility.Vector3dVector(np.array(colors))
         return pcd
 
-    def transform_point_cloud(
-        self, pcd, origin_x, origin_y, angle, box_extent, box_center
-    ):
+    def transform_point_cloud(self, pcd, origin_x, origin_y, angle, box_extent, box_center):
         """
         Transforms the point cloud by translating, rotating, and cropping based on given parameters.
 
@@ -215,9 +203,7 @@ class PointCloudProcessor:
             List[o3d.geometry.PointCloud]: List of unprocessed point clouds with color information if output_dir is None.
         """
         if self.logger:
-            self.logger.log_args(
-                "PointCloudProcessor.process_multiple_images", data=data
-            )
+            self.logger.log_args("PointCloudProcessor.process_multiple_images", data=data)
         images = self._load_images(data)
         pcd_list = []
 
@@ -256,9 +242,7 @@ class PointCloudProcessor:
         if self.logger:
             self.logger.log_args("PointCloudProcessor.visualize_point_cloud", pcd=pcd)
         points = np.asarray(pcd.points)
-        colors = np.asarray(
-            pcd.colors
-        )  # Scale colors up as plotly expects colors in [0, 255]
+        colors = np.asarray(pcd.colors)  # Scale colors up as plotly expects colors in [0, 255]
 
         fig = go.Figure(
             data=[

@@ -15,9 +15,10 @@ This module deals with converting data to and from different file formats.
 import base64
 import json
 import typing
-import mapbox_vector_tile
 from collections.abc import MutableMapping
 from typing import Union
+
+import mapbox_vector_tile
 
 # Local imports
 # # Models
@@ -107,9 +108,7 @@ def join_geojson_with_keys(
                 continue
 
             # Checking if two IDs match up
-            if int(from_features["properties"][geojson_src_key]) == int(
-                into_features["properties"][geojson_dest_key]
-            ):
+            if int(from_features["properties"][geojson_src_key]) == int(into_features["properties"][geojson_dest_key]):
 
                 # Firstly, extract the properties that exist in the
                 # src_geojson for that feature
@@ -125,9 +124,7 @@ def join_geojson_with_keys(
                     # Going through the new properties in the features of dest_geojson
                     if new_property not in old_properties:
                         # Put the new_feature
-                        from_features["properties"][new_property] = old_properties[
-                            "properties"
-                        ][new_property]
+                        from_features["properties"][new_property] = old_properties["properties"][new_property]
 
     return geojson_src
 
@@ -225,26 +222,22 @@ def detection_features_to_geojson(feature_list: list) -> dict:
                 # Type is 'Feature'
                 "type": "Feature",
                 # Let 'geometry' be the `image` key, defaults to {} is `image` not in feature
-                "geometry": {
-                    "type": "Point",
-                    "coordinates": feature["image"]["geometry"]["coordinates"],
-                }
-                if "image" in feature
-                else {},
+                "geometry": (
+                    {
+                        "type": "Point",
+                        "coordinates": feature["image"]["geometry"]["coordinates"],
+                    }
+                    if "image" in feature
+                    else {}
+                ),
                 # Property list
                 "possible_none_properties": {
                     # Only if "image" was specified in the `fields` of the endpoint, else None
-                    "image_id": feature["image"]["id"]
-                    if "image" in "feature"
-                    else None,
+                    "image_id": (feature["image"]["id"] if "image" in "feature" else None),
                     # Only if "created_at" was specified in the `fields` of the endpoint, else None
-                    "created_at": feature["created_at"]
-                    if "created_at" in feature
-                    else None,
+                    "created_at": (feature["created_at"] if "created_at" in feature else None),
                     # Only if "geometry" was specified in the `fields` of the endpoint, else None
-                    "pixel_geometry": feature["geometry"]
-                    if "geometry" in feature
-                    else None,
+                    "pixel_geometry": (feature["geometry"] if "geometry" in feature else None),
                     # Only if "value" was specified in the `fields` of the endpoint, else None
                     "value": feature["value"] if "value" in feature else None,
                     # "id" is always available in the response
@@ -328,10 +321,7 @@ def flatten_geojson(geojson: dict) -> list:
             feature["properties"]["latitude"] = feature["geometry"]["coordinates"][1]
 
     # Return the flattened geojson
-    return [
-        {"geometry": _feature["geometry"], **_feature["properties"]}
-        for _feature in geojson["features"]
-    ]
+    return [{"geometry": _feature["geometry"], **_feature["properties"]} for _feature in geojson["features"]]
 
 
 def geojson_to_polygon(geojson: dict) -> GeoJSON:
@@ -547,9 +537,7 @@ def normalize_list(coordinates: list, width: int = 4096, height: int = 4096) -> 
     return [new_coordinates]
 
 
-def decode_pixel_geometry(
-    base64_string: str, normalized: bool = True, width: int = 4096, height: int = 4096
-) -> dict:
+def decode_pixel_geometry(base64_string: str, normalized: bool = True, width: int = 4096, height: int = 4096) -> dict:
     """
     Decodes the pixel geometry, and return the coordinates, which can be specified to be
     normalized
@@ -677,9 +665,7 @@ def coord_or_list_to_dict(data: Union[Coordinates, list, dict]) -> dict:
     return data_copy
 
 
-def polygon_feature_to_bbox_list(
-    polygon: dict, is_bbox_list_required: bool = True
-) -> typing.Union[list, dict]:
+def polygon_feature_to_bbox_list(polygon: dict, is_bbox_list_required: bool = True) -> typing.Union[list, dict]:
     """
     Converts a polygon to a bounding box
 

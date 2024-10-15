@@ -9,23 +9,21 @@
 #   https://github.com/rwightman/pytorch-image-models/tree/master/timm/layers/patch_embed.py
 
 import logging
-from typing import Callable, List, Any, Tuple, Dict
+from typing import Any, Callable, Dict, List, Tuple
 
 import torch
-from torch import nn, Tensor
+from torch import Tensor, nn
 
 from .attention import Attention, MemEffAttention
 from .drop_path import DropPath
 from .layer_scale import LayerScale
 from .mlp import Mlp
 
-
 logger = logging.getLogger("dinov2")
 
 
 try:
-    from xformers.ops import fmha
-    from xformers.ops import scaled_index_add, index_select_cat
+    from xformers.ops import fmha, index_select_cat, scaled_index_add
 
     XFORMERS_AVAILABLE = True
 except ImportError:
@@ -146,7 +144,11 @@ def add_residual(x, brange, residual, residual_scale_factor, scaling_vector=None
         x_plus_residual = torch.index_add(x_flat, 0, brange, residual.to(dtype=x.dtype), alpha=residual_scale_factor)
     else:
         x_plus_residual = scaled_index_add(
-            x, brange, residual.to(dtype=x.dtype), scaling=scaling_vector, alpha=residual_scale_factor
+            x,
+            brange,
+            residual.to(dtype=x.dtype),
+            scaling=scaling_vector,
+            alpha=residual_scale_factor,
         )
     return x_plus_residual
 
@@ -220,13 +222,13 @@ class NestedTensorBlock(Block):
                 x_list,
                 residual_func=attn_residual_func,
                 sample_drop_ratio=self.sample_drop_ratio,
-                scaling_vector=self.ls1.gamma if isinstance(self.ls1, LayerScale) else None,
+                scaling_vector=(self.ls1.gamma if isinstance(self.ls1, LayerScale) else None),
             )
             x_list = drop_add_residual_stochastic_depth_list(
                 x_list,
                 residual_func=ffn_residual_func,
                 sample_drop_ratio=self.sample_drop_ratio,
-                scaling_vector=self.ls2.gamma if isinstance(self.ls1, LayerScale) else None,
+                scaling_vector=(self.ls2.gamma if isinstance(self.ls1, LayerScale) else None),
             )
             return x_list
         else:

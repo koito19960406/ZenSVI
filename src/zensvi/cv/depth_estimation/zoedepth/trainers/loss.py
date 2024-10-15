@@ -22,14 +22,13 @@
 
 # File author: Shariq Farooq Bhat
 
+import numpy as np
 import torch
+import torch.cuda.amp as amp
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.cuda.amp as amp
-import numpy as np
 
-
-KEY_OUTPUT = 'metric_depth'
+KEY_OUTPUT = "metric_depth"
 
 
 def extract_key(prediction, key):
@@ -41,16 +40,16 @@ def extract_key(prediction, key):
 # Main loss function used for ZoeDepth. Copy/paste from AdaBins repo (https://github.com/shariqfarooq123/AdaBins/blob/0952d91e9e762be310bb4cd055cbfe2448c0ce20/loss.py#L7)
 class SILogLoss(nn.Module):
     """SILog loss (pixel-wise)"""
+
     def __init__(self, beta=0.15):
         super(SILogLoss, self).__init__()
-        self.name = 'SILog'
+        self.name = "SILog"
         self.beta = beta
 
     def forward(self, input, target, mask=None, interpolate=True, return_interpolated=False):
         input = extract_key(input, KEY_OUTPUT)
         if input.shape[-1] != target.shape[-1] and interpolate:
-            input = nn.functional.interpolate(
-                input, target.shape[-2:], mode='bilinear', align_corners=True)
+            input = nn.functional.interpolate(input, target.shape[-2:], mode="bilinear", align_corners=True)
             intr_input = input
         else:
             intr_input = input
@@ -109,15 +108,15 @@ def grad_mask(mask):
 
 class GradL1Loss(nn.Module):
     """Gradient loss"""
+
     def __init__(self):
         super(GradL1Loss, self).__init__()
-        self.name = 'GradL1'
+        self.name = "GradL1"
 
     def forward(self, input, target, mask=None, interpolate=True, return_interpolated=False):
         input = extract_key(input, KEY_OUTPUT)
         if input.shape[-1] != target.shape[-1] and interpolate:
-            input = nn.functional.interpolate(
-                input, target.shape[-2:], mode='bilinear', align_corners=True)
+            input = nn.functional.interpolate(input, target.shape[-2:], mode="bilinear", align_corners=True)
             intr_input = input
         else:
             intr_input = input
@@ -127,8 +126,7 @@ class GradL1Loss(nn.Module):
         mask_g = grad_mask(mask)
 
         loss = nn.functional.l1_loss(grad_pred[0][mask_g], grad_gt[0][mask_g])
-        loss = loss + \
-            nn.functional.l1_loss(grad_pred[1][mask_g], grad_gt[1][mask_g])
+        loss = loss + nn.functional.l1_loss(grad_pred[1][mask_g], grad_gt[1][mask_g])
         if not return_interpolated:
             return loss
         return loss, intr_input
@@ -142,7 +140,7 @@ class OrdinalRegressionLoss(object):
         self.discretization = discretization
 
     def _create_ord_label(self, gt):
-        N,one, H, W = gt.shape
+        N, one, H, W = gt.shape
         # print("gt shape:", gt.shape)
 
         ord_c0 = torch.ones(N, self.ord_num, H, W).to(gt.device)
@@ -151,10 +149,13 @@ class OrdinalRegressionLoss(object):
         else:
             label = self.ord_num * (gt - 1.0) / (self.beta - 1.0)
         label = label.long()
-        mask = torch.linspace(0, self.ord_num - 1, self.ord_num, requires_grad=False) \
-            .view(1, self.ord_num, 1, 1).to(gt.device)
+        mask = (
+            torch.linspace(0, self.ord_num - 1, self.ord_num, requires_grad=False)
+            .view(1, self.ord_num, 1, 1)
+            .to(gt.device)
+        )
         mask = mask.repeat(N, 1, H, W).contiguous().long()
-        mask = (mask > label)
+        mask = mask > label
         ord_c0[mask] = 0
         ord_c1 = 1 - ord_c0
         # implementation according to the paper.
@@ -172,7 +173,7 @@ class OrdinalRegressionLoss(object):
         :return: loss: loss value, torch.float
         """
         # N, C, H, W = prob.shape
-        valid_mask = gt > 0.
+        valid_mask = gt > 0.0
         ord_label, mask = self._create_ord_label(gt)
         # print("prob shape: {}, ord label shape: {}".format(prob.shape, ord_label.shape))
         entropy = -prob * ord_label
@@ -182,9 +183,10 @@ class OrdinalRegressionLoss(object):
 
 class DiscreteNLLLoss(nn.Module):
     """Cross entropy loss"""
+
     def __init__(self, min_depth=1e-3, max_depth=10, depth_bins=64):
         super(DiscreteNLLLoss, self).__init__()
-        self.name = 'CrossEntropy'
+        self.name = "CrossEntropy"
         self.ignore_index = -(depth_bins + 1)
         # self._loss_func = nn.NLLLoss(ignore_index=self.ignore_index)
         self._loss_func = nn.CrossEntropyLoss(ignore_index=self.ignore_index)
@@ -202,12 +204,10 @@ class DiscreteNLLLoss(nn.Module):
         # Quantize depth log-uniformly on [1, self.beta] into self.depth_bins bins
         depth = torch.log(depth / self.alpha) / np.log(self.beta / self.alpha)
         depth = depth * (self.depth_bins - 1)
-        depth = torch.round(depth) 
+        depth = torch.round(depth)
         depth = depth.long()
         return depth
-        
 
-    
     def _dequantize_depth(self, depth):
         """
         Inverse of quantization
@@ -215,16 +215,12 @@ class DiscreteNLLLoss(nn.Module):
         """
         # Get the center of the bin
 
-
-
-
     def forward(self, input, target, mask=None, interpolate=True, return_interpolated=False):
         input = extract_key(input, KEY_OUTPUT)
         # assert torch.all(input <= 0), "Input should be negative"
 
         if input.shape[-1] != target.shape[-1] and interpolate:
-            input = nn.functional.interpolate(
-                input, target.shape[-2:], mode='bilinear', align_corners=True)
+            input = nn.functional.interpolate(input, target.shape[-2:], mode="bilinear", align_corners=True)
             intr_input = input
         else:
             intr_input = input
@@ -243,8 +239,6 @@ class DiscreteNLLLoss(nn.Module):
             input = input * mask + (1 - mask) * self.ignore_index
             target = target * mask + (1 - mask) * self.ignore_index
 
-        
-
         input = input.flatten(2)  # N, nbins, H*W
         target = target.flatten(1)  # N, H*W
         loss = self._loss_func(input, target)
@@ -252,8 +246,6 @@ class DiscreteNLLLoss(nn.Module):
         if not return_interpolated:
             return loss
         return loss, intr_input
-    
-
 
 
 def compute_scale_and_shift(prediction, target, mask):
@@ -278,22 +270,29 @@ def compute_scale_and_shift(prediction, target, mask):
     x_1[valid] = (-a_01[valid] * b_0[valid] + a_00[valid] * b_1[valid]) / det[valid]
 
     return x_0, x_1
+
+
 class ScaleAndShiftInvariantLoss(nn.Module):
     def __init__(self):
         super().__init__()
         self.name = "SSILoss"
 
     def forward(self, prediction, target, mask, interpolate=True, return_interpolated=False):
-        
+
         if prediction.shape[-1] != target.shape[-1] and interpolate:
-            prediction = nn.functional.interpolate(prediction, target.shape[-2:], mode='bilinear', align_corners=True)
+            prediction = nn.functional.interpolate(prediction, target.shape[-2:], mode="bilinear", align_corners=True)
             intr_input = prediction
         else:
             intr_input = prediction
 
-
-        prediction, target, mask = prediction.squeeze(), target.squeeze(), mask.squeeze()
-        assert prediction.shape == target.shape, f"Shape mismatch: Expected same shape but got {prediction.shape} and {target.shape}."
+        prediction, target, mask = (
+            prediction.squeeze(),
+            target.squeeze(),
+            mask.squeeze(),
+        )
+        assert (
+            prediction.shape == target.shape
+        ), f"Shape mismatch: Expected same shape but got {prediction.shape} and {target.shape}."
 
         scale, shift = compute_scale_and_shift(prediction, target, mask)
 
@@ -305,12 +304,15 @@ class ScaleAndShiftInvariantLoss(nn.Module):
         return loss, intr_input
 
 
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Tests for DiscreteNLLLoss
     celoss = DiscreteNLLLoss()
-    print(celoss(torch.rand(4, 64, 26, 32)*10, torch.rand(4, 1, 26, 32)*10, ))
+    print(
+        celoss(
+            torch.rand(4, 64, 26, 32) * 10,
+            torch.rand(4, 1, 26, 32) * 10,
+        )
+    )
 
     d = torch.Tensor([6.59, 3.8, 10.0])
     print(celoss.dequantize_depth(celoss.quantize_depth(d)))

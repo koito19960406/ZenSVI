@@ -4,8 +4,8 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-from enum import Enum
 import os
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -29,7 +29,9 @@ def _guess_cluster_type() -> ClusterType:
     return ClusterType.FAIR
 
 
-def get_cluster_type(cluster_type: Optional[ClusterType] = None) -> Optional[ClusterType]:
+def get_cluster_type(
+    cluster_type: Optional[ClusterType] = None,
+) -> Optional[ClusterType]:
     if cluster_type is None:
         return _guess_cluster_type()
 
@@ -49,7 +51,9 @@ def get_checkpoint_path(cluster_type: Optional[ClusterType] = None) -> Optional[
     return Path("/") / CHECKPOINT_DIRNAMES[cluster_type]
 
 
-def get_user_checkpoint_path(cluster_type: Optional[ClusterType] = None) -> Optional[Path]:
+def get_user_checkpoint_path(
+    cluster_type: Optional[ClusterType] = None,
+) -> Optional[Path]:
     checkpoint_path = get_checkpoint_path(cluster_type)
     if checkpoint_path is None:
         return None

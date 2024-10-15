@@ -23,7 +23,14 @@ class DINOHead(nn.Module):
     ):
         super().__init__()
         nlayers = max(nlayers, 1)
-        self.mlp = _build_mlp(nlayers, in_dim, bottleneck_dim, hidden_dim=hidden_dim, use_bn=use_bn, bias=mlp_bias)
+        self.mlp = _build_mlp(
+            nlayers,
+            in_dim,
+            bottleneck_dim,
+            hidden_dim=hidden_dim,
+            use_bn=use_bn,
+            bias=mlp_bias,
+        )
         self.apply(self._init_weights)
         self.last_layer = weight_norm(nn.Linear(bottleneck_dim, out_dim, bias=False))
         self.last_layer.weight_g.data.fill_(1)

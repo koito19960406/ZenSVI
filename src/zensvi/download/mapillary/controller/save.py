@@ -13,10 +13,12 @@ For more information, please check out https://www.mapillary.com/developer/api-d
 - License: MIT LICENSE
 """
 
+import csv
+import json
+
 # Package Imports
 import os
-import json
-import csv
+
 from shapely.geometry import shape
 
 # Local Imports
@@ -64,11 +66,7 @@ def save_as_csv_controller(data: str, path: str, file_name: str) -> None:
             # Enforce the header for field_names
             field_names = (
                 ["ID", "WKT"]
-                + [
-                    key
-                    for key in features[0].keys()
-                    if key != "id" and key != "geometry"
-                ]
+                + [key for key in features[0].keys() if key != "id" and key != "geometry"]
                 # organization_id may or may not exist in the flattened features
                 # If it does exist, then its value will be reflected
                 # If it does not exist, then it will be set to "NULL"
@@ -91,17 +89,11 @@ def save_as_csv_controller(data: str, path: str, file_name: str) -> None:
                         # It will always exist
                         "WKT": shape(feature["geometry"]).wkt,
                         # The rest of the columns are the features attributes
-                        **{
-                            key: feature[key]
-                            for key in feature.keys()
-                            if key != "id" and key != "geometry"
-                        },
+                        **{key: feature[key] for key in feature.keys() if key != "id" and key != "geometry"},
                         # organization_id is the id of the organization that the feature belongs to.
                         # If it does exist, then its value will be reflected
                         # If it does not exist, then it will be set to "NULL"
-                        "organization_id": feature["organization_id"]
-                        if "organization_id" in feature
-                        else "NULL",
+                        "organization_id": (feature["organization_id"] if "organization_id" in feature else "NULL"),
                     }
                 )
     except Exception as e:

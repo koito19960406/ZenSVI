@@ -129,9 +129,7 @@ class VectorTiles:
         4. is_pano, bool, if it is a panoramic image
         """
 
-        return (
-            f"https://tiles.mapillary.com/maps/vtp/mly1_computed_public/2/{z}/{x}/{y}/"
-        )
+        return f"https://tiles.mapillary.com/maps/vtp/mly1_computed_public/2/{z}/{x}/{y}/"
 
     @staticmethod
     def get_computed_sequence_layer(
@@ -158,9 +156,7 @@ class VectorTiles:
         5. is_pano, bool, if it is a panoramic sequence
         """
 
-        return (
-            f"https://tiles.mapillary.com/maps/vtp/mly1_computed_public/2/{z}/{x}/{y}/"
-        )
+        return f"https://tiles.mapillary.com/maps/vtp/mly1_computed_public/2/{z}/{x}/{y}/"
 
     @staticmethod
     def get_computed_image_layer(
@@ -188,9 +184,7 @@ class VectorTiles:
         6. is_pano, bool, if it is a panoramic image
         """
 
-        return (
-            f"https://tiles.mapillary.com/maps/vtp/mly1_computed_public/2/{z}/{x}/{y}/"
-        )
+        return f"https://tiles.mapillary.com/maps/vtp/mly1_computed_public/2/{z}/{x}/{y}/"
 
     @staticmethod
     def get_map_feature_point(
@@ -218,9 +212,7 @@ class VectorTiles:
             the detection contribute to this map feature
         """
 
-        return (
-            f"https://tiles.mapillary.com/maps/vtp/mly_map_feature_point/2/{z}/{x}/{y}/"
-        )
+        return f"https://tiles.mapillary.com/maps/vtp/mly_map_feature_point/2/{z}/{x}/{y}/"
 
     @staticmethod
     def get_map_feature_traffic_sign(

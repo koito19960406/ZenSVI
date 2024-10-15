@@ -1,24 +1,26 @@
+import json
 import os
+import random
 import warnings
-import pandas as pd
-import geopandas as gpd
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from io import BytesIO
 from pathlib import Path
-from shapely.geometry import Point
+
+import geopandas as gpd
+import osmnx as ox
+import pandas as pd
 import requests
 from PIL import Image
+from shapely.geometry import Point
 from tqdm import tqdm
-from io import BytesIO
-import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import random
-import osmnx as ox
 
 from zensvi.download.base import BaseDownloader
+from zensvi.download.utils.geoprocess import GeoProcessor
 from zensvi.download.utils.helpers import standardize_column_names
 from zensvi.utils.log import Logger
-from zensvi.download.utils.geoprocess import GeoProcessor
 
 warnings.filterwarnings("ignore", category=UserWarning)
+
 
 class AMSDownloader(BaseDownloader):
     """
@@ -69,12 +71,14 @@ class AMSDownloader(BaseDownloader):
                 pids = self._get_raw_pids(row.latitude, row.longitude, self.buffer)
                 result = []
                 for pid in pids:
-                    result.append({
-                        "lat_lon_id": row.lat_lon_id,
-                        "input_latitude": row.latitude,
-                        "input_longitude": row.longitude,
-                        "pano_id": pid
-                    })
+                    result.append(
+                        {
+                            "lat_lon_id": row.lat_lon_id,
+                            "input_latitude": row.latitude,
+                            "input_longitude": row.longitude,
+                            "pano_id": pid,
+                        }
+                    )
                 return result
 
             with ThreadPoolExecutor() as executor:
@@ -94,50 +98,59 @@ class AMSDownloader(BaseDownloader):
 
     def _get_raw_pids(self, lat, lon, buffer):
         """Get raw panorama IDs from the Amsterdam Street View API."""
-        url = f'https://api.data.amsterdam.nl/panorama/panoramas/?tags=mission-2022&near={lon},{lat}&radius={buffer}&srid=4326'
+        url = f"https://api.data.amsterdam.nl/panorama/panoramas/?tags=mission-2022&near={lon},{lat}&radius={buffer}&srid=4326"
         proxy = random.choice(self.proxies)
         user_agent = random.choice(self.user_agents)
-        headers = {'User-Agent': user_agent['user_agent']}  # Extract the string from the dictionary
+        headers = {"User-Agent": user_agent["user_agent"]}  # Extract the string from the dictionary
         response = requests.get(url, proxies=proxy, headers=headers)
         data = json.loads(response.content)
-        panoramas = data['_embedded']['panoramas']
-        return [item['pano_id'] for item in panoramas]
+        panoramas = data["_embedded"]["panoramas"]
+        return [item["pano_id"] for item in panoramas]
 
     def _filter_pids_date(self, pid_df, start_date, end_date):
         """Filter panorama IDs by date."""
-        pid_df['date'] = pd.to_datetime(pid_df['timestamp'], unit='ms')
-        return pid_df[(pid_df['date'] >= start_date) & (pid_df['date'] <= end_date)]
+        pid_df["date"] = pd.to_datetime(pid_df["timestamp"], unit="ms")
+        return pid_df[(pid_df["date"] >= start_date) & (pid_df["date"] <= end_date)]
 
     def _save_image(self, pid, data, cropped):
         """Save an image to disk."""
         img_path = os.path.join(self.dir_output, f"{pid}.jpg")
         try:
             proxy = random.choice(self.proxies)
-            headers = {'User-Agent': random.choice(self.user_agents)['user_agent']}
-            image = Image.open(BytesIO(requests.get(data['_links']['equirectangular_medium']['href'], proxies=proxy, headers=headers).content))
+            headers = {"User-Agent": random.choice(self.user_agents)["user_agent"]}
+            image = Image.open(
+                BytesIO(
+                    requests.get(
+                        data["_links"]["equirectangular_medium"]["href"],
+                        proxies=proxy,
+                        headers=headers,
+                    ).content
+                )
+            )
             if cropped:
                 image = image.crop((0, 0, image.width, image.height // 2))
             image.save(img_path)
         except Exception as e:
             self.logger.log_failed_pids(pid)
-            
-    def download_svi(self, 
-                     dir_output: str,
-                     path_pid: str = None,
-                     cropped: bool = False,
-                     lat: float = None,
-                     lon: float = None,
-                     input_csv_file: str = "",
-                     input_shp_file: str = "",
-                     input_place_name: str = "",
-                     buffer: int = 0,
-                     distance: int = 10,
-                     start_date: str = None,
-                     end_date: str = None,
-                     metadata_only: bool = False,
-                     grid: bool = False,
-                     grid_size: int = 100
-                     ):
+
+    def download_svi(
+        self,
+        dir_output: str,
+        path_pid: str = None,
+        cropped: bool = False,
+        lat: float = None,
+        lon: float = None,
+        input_csv_file: str = "",
+        input_shp_file: str = "",
+        input_place_name: str = "",
+        buffer: int = 0,
+        distance: int = 10,
+        start_date: str = None,
+        end_date: str = None,
+        metadata_only: bool = False,
+        grid: bool = False,
+        grid_size: int = 100,
+    ):
         """
         Download street view images from Amsterdam Street View API using specified parameters.
 
@@ -175,7 +188,7 @@ class AMSDownloader(BaseDownloader):
 
         :raises ValueError: If neither lat and lon, csv file, shapefile, nor place name is provided.
         """
-        
+
         if self.logger is not None:
             self.logger.log_args(
                 "AMSDownloader download_svi",
@@ -193,9 +206,9 @@ class AMSDownloader(BaseDownloader):
                 end_date=end_date,
                 metadata_only=metadata_only,
                 grid=grid,
-                grid_size=grid_size
+                grid_size=grid_size,
             )
-            
+
         self.grid = grid
         self.grid_size = grid_size
         self._set_dirs(dir_output)
@@ -213,7 +226,7 @@ class AMSDownloader(BaseDownloader):
             gdf = ox.geocode_to_gdf(input_place_name)
             pid_df = self._get_pids_from_df(gdf)
         elif lat is not None and lon is not None:
-            df = pd.DataFrame({'latitude': [lat], 'longitude': [lon]})
+            df = pd.DataFrame({"latitude": [lat], "longitude": [lon]})
             pid_df = self._get_pids_from_df(df)
         else:
             raise ValueError("Please provide either lat and lon, input_csv_file, input_shp_file, or input_place_name.")
@@ -224,7 +237,7 @@ class AMSDownloader(BaseDownloader):
         def process_pid(pid):
             img_url = f"https://api.data.amsterdam.nl/panorama/panoramas/{pid}/"
             proxy = random.choice(self.proxies)
-            headers = {'User-Agent': random.choice(self.user_agents)['user_agent']}
+            headers = {"User-Agent": random.choice(self.user_agents)["user_agent"]}
             response = requests.get(img_url, proxies=proxy, headers=headers)
             data = json.loads(response.content)
             if response.status_code == 200:
@@ -232,15 +245,15 @@ class AMSDownloader(BaseDownloader):
                     self._save_image(pid, data, cropped)
 
                 return {
-                    'geometry': Point(data['geometry']['coordinates'][:2]),
-                    'lat': data['geometry']['coordinates'][1],
-                    'lon': data['geometry']['coordinates'][0],
-                    'pano_id': data['pano_id'],
-                    'timestamp': data['timestamp'],
-                    'mission_year': data['mission_year'],
-                    'roll': data['roll'],
-                    'pitch': data['pitch'],
-                    'heading': data['heading']
+                    "geometry": Point(data["geometry"]["coordinates"][:2]),
+                    "lat": data["geometry"]["coordinates"][1],
+                    "lon": data["geometry"]["coordinates"][0],
+                    "pano_id": data["pano_id"],
+                    "timestamp": data["timestamp"],
+                    "mission_year": data["mission_year"],
+                    "roll": data["roll"],
+                    "pitch": data["pitch"],
+                    "heading": data["heading"],
                 }
             else:
                 print(f"Failed to download data for PID {pid}")
@@ -249,7 +262,11 @@ class AMSDownloader(BaseDownloader):
         results = []
         with ThreadPoolExecutor() as executor:
             futures = [executor.submit(process_pid, row.pano_id) for _, row in pid_df.iterrows()]
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Downloading images and metadata"):
+            for future in tqdm(
+                as_completed(futures),
+                total=len(futures),
+                desc="Downloading images and metadata",
+            ):
                 result = future.result()
                 if result is not None:
                     results.append(result)
