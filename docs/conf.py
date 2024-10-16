@@ -56,7 +56,7 @@ html_theme_options = {
 
 
 def skip_util_classes(app, what, name, obj, skip, options):
-    if what == "package" and "utils" in name:
+    if "utils" in name:
         skip = True
     if what == "package" and "mapillary" in name:
         skip = True

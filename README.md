@@ -6,9 +6,36 @@
 [![Downloads](https://pepy.tech/badge/zensvi/week)](https://pepy.tech/project/zensvi)
 [![Documentation Status](https://readthedocs.org/projects/zensvi/badge/?version=latest)](https://zensvi.readthedocs.io/en/latest/?badge=latest)
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="logos/logo_zensvi_white2.png">
+    <img src="logos/logo_zensvi_fixed 2.png" alt="ZenSVI logo" width="400">
+  </picture>
+</p>
+
 # ZenSVI
 
 This package is a one-stop solution for downloading, cleaning, analyzing street view imagery. Detailed documentation can be found [here](https://zensvi.readthedocs.io/en/latest/).
+
+## Table of Contents
+
+- [Installation of `zensvi`](#installation-of-zensvi)
+- [Installation of `pytorch` and `torchvision`](#installation-of-pytorch-and-torchvision)
+- [Usage](#usage)
+  - [Downloading Street View Imagery](#downloading-street-view-imagery)
+  - [Analyzing Metadata of Mapillary Images](#analyzing-metadata-of-mapillary-images)
+  - [Running Segmentation](#running-segmentation)
+  - [Running Places365](#running-places365)
+  - [Running PlacePulse 2.0 Prediction](#running-placepulse-20-prediction)
+  - [Running Global Streetscapes Prediction](#running-global-streetscapes-prediction)
+  - [Running Depth Estimation](#running-depth-estimation)
+  - [Running Embeddings](#running-embeddings)
+  - [Running Low-Level Feature Extraction](#running-low-level-feature-extraction)
+  - [Transforming Images](#transforming-images)
+  - [Visualizing Results](#visualizing-results)
+- [Contributing](#contributing)
+- [License](#license)
+- [Credits](#credits)
 
 ## Installation of `zensvi`
 
@@ -39,6 +66,57 @@ downloader.download_svi("path/to/output_directory", input_csv_file="path/to/csv_
 downloader.download_svi("path/to/output_directory", input_shp_file="path/to/shapefile.shp")
 # with a place name that works on OpenStreetMap:
 downloader.download_svi("path/to/output_directory", input_place_name="Singapore")
+```
+
+***KartaView***
+
+For downloading images from KartaView, utilize the KartaViewDownloader:
+
+```python
+from zensvi.download import KartaViewDownloader
+
+downloader = KartaViewDownloader()
+# with lat and lon:
+downloader.download_svi("path/to/output_directory", lat=1.290270, lon=103.851959)
+# with a csv file with lat and lon:
+downloader.download_svi("path/to/output_directory", input_csv_file="path/to/csv_file.csv")
+# with a shapefile:
+downloader.download_svi("path/to/output_directory", input_shp_file="path/to/shapefile.shp")
+# with a place name that works on OpenStreetMap:
+downloader.download_svi("path/to/output_directory", input_place_name="Singapore")
+```
+
+***Amsterdam***
+
+For downloading images from Amsterdam, utilize the AMSDownloader:
+
+```python
+from zensvi.download import AMSDownloader
+
+downloader = AMSDownloader()
+# with lat and lon:
+downloader.download_svi("path/to/output_directory", lat=4.899431, lon=52.379189)
+# with a csv file with lat and lon:
+downloader.download_svi("path/to/output_directory", input_csv_file="path/to/csv_file.csv")
+# with a shapefile:
+downloader.download_svi("path/to/output_directory", input_shp_file="path/to/shapefile.shp")
+# with a place name that works on OpenStreetMap:
+downloader.download_svi("path/to/output_directory", input_place_name="Amserdam")
+```
+
+### Analyzing Metadata of Mapillary Images
+To analyze the metadata of Mapillary images, use the `MLYMetadata`:
+
+```python
+from zensvi.metadata import MLYMetadata
+
+path_input = "path/to/input"
+mly_metadata = MLYMetadata(path_input)
+mly_metadata.compute_metadata(
+    unit="image", # unit of the metadata. Other options are "street" and "grid"
+    indicator_list="all", # list of indicators to compute. You can specify a list of indicators in space-separated format, e.g., "year month day" or "all" to compute all indicators
+    path_output="path/to/output" # path to the output file
+)
 ```
 
 ### Running Segmentation
@@ -74,6 +152,78 @@ classifier.classify(
 )
 ```
 
+### Running PlacePulse 2.0 Prediction
+To predict the PlacePulse 2.0 score, use the `ClassifierPerception`:
+
+```python
+from zensvi.cv import ClassifierPerception
+
+classifier = ClassifierPerception(
+    perception_study="safer", # Other options are "livelier", "wealthier", "more beautiful", "more boring", "more depressing"
+)
+dir_input = "path/to/input"
+dir_summary_output = "path/to/summary_output"
+classifier.classify(
+    dir_input,
+    dir_summary_output=dir_summary_output
+)
+```
+
+### Running Global Streetscapes Prediction
+To predict the Global Streetscapes indicators, use:
+- `ClassifierGlare`: Whether the image contains glare
+- `ClassifierLighting`: The lighting condition of the image
+- `ClassifierPanorama`: Whether the image is a panorama
+- `ClassifierPlatform`: Platform of the image
+- `ClassifierQuality`: Quality of the image
+- `ClassifierReflection`: Whether the image contains reflection
+- `ClassifierViewDirection`: View direction of the image
+- `ClassifierWeather`: Weather condition of the image
+
+```python
+from zensvi.cv import ClassifierGlare
+
+classifier = ClassifierGlare()
+dir_input = "path/to/input"
+dir_summary_output = "path/to/summary_output"
+classifier.classify(
+    dir_input,
+    dir_summary_output=dir_summary_output,
+)
+```
+
+### Running Depth Estimation
+To estimate the depth of the images, use the `DepthEstimator`:
+
+```python
+from zensvi.cv import DepthEstimator
+
+depth_estimator = DepthEstimator(
+    task="relative" # task to perform (either "relative" or "absolute")
+)
+
+dir_input = "path/to/input"
+dir_image_output = "path/to/image_output" # estimated depth map
+depth_estimator.estimate_depth(
+    dir_input,
+    dir_image_output
+)
+```
+
+### Running Embeddings
+To generate embeddings and search for similar images, use the `Embeddings`:
+```python
+from zensvi.cv import Embeddings
+
+emb = Embeddings(model_name="resnet-1", cuda=True)
+emb.generate_embedding(
+    "path/to/image_directory",
+    "path/to/output_directory",
+    batch_size=1000,
+)
+results = emb.search_similar_images("path/to/target_image_file", "path/to/embeddings_directory", 20)
+```
+
 ### Running Low-Level Feature Extraction
 To extract low-level features, use the `get_low_level_features`:
 
@@ -106,6 +256,7 @@ image_transformer.transform_images(
     phi=0,  # angle of view (vertical)
     aspects=(9, 16),  # aspect ratio
     show_size=100,  # size of the image to show (i.e. scale factor)
+    use_upper_half=True,  # use the upper half of the image for sky view factor calculation
 )
 ```
 
@@ -142,9 +293,9 @@ Please cite the following paper if you use `zensvi` in a scientific publication:
 ***(place holder for the paper citation)***
 ```bibtex
 @article{ito2024zensvi,
-  title={ZenSVI: One-Stop Python Package for Integrated Analysis of Street View Imagery},
+  title={ZenSVI: An Open-Source Software for Integrated Acquisition, Processing and Analysis of Street View Imagery},
   author={Ito, Koichi, XXX, XXX, XXX, ...},
-  journal={XXX},
+  journal={Computers, Environment and Urban Systems},
   volume={XXX},
   pages={XXX},
   year={2024}
@@ -152,5 +303,13 @@ Please cite the following paper if you use `zensvi` in a scientific publication:
 ```
 
 ## Credits
-
-`zensvi` was created with [`cookiecutter`](https://cookiecutter.readthedocs.io/en/latest/) and the `py-pkgs-cookiecutter` [template](https://github.com/py-pkgs/py-pkgs-cookiecutter).
+- Logo design by [Kunihiko Fujiwara](https://ual.sg/author/kunihiko-fujiwara/)
+- All the packages used in this package: [requirements.txt](requirements.txt)
+--------------------------------------------------------------------------------
+<br>
+<br>
+<p align="center">
+  <a href="https://ual.sg/">
+    <img src="logos/ualsg.jpeg" width = 55% alt="Logo">
+  </a>
+</p>
