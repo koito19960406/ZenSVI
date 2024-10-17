@@ -126,6 +126,17 @@ class TestMapillary(unittest.TestCase):
         )
         # assert True if there are files in the output directory
         self.assertTrue(len(os.listdir(self.mly_svi_output_buffer)) > 0)
+
+    # test input_place_name
+    def test_downloader_place_name(self):
+        # Skip test if the output file already exists
+        if os.path.exists(os.path.join(self.mly_svi_output, "mly_svi")):
+            self.skipTest("Result exists")
+        # download images
+        mly_downloader = MLYDownloader(self.mly_api_key, max_workers=300)
+        mly_downloader.download_svi(self.mly_svi_output, input_place_name="Tbilisi")
+        # assert True if there are files in the output directory
+        self.assertTrue(len(os.listdir(self.mly_svi_output)) > 0)
         
 
 if __name__ == "__main__":

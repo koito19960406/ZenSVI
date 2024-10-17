@@ -240,20 +240,23 @@ class MLYDownloader(BaseDownloader):
         # move the "id" column to the first column
         pid = pid[["id"] + [col for col in pid.columns if col != "id"]]
 
-        # keep id,captured_at,compass_angle,is_pano,organization_id,sequence_id,input_latitude,input_longitude,lon,lat drop other columns
-        pid = pid[
-            [
-                "id",
-                "captured_at",
-                "compass_angle",
-                "creator_id",
-                "is_pano",
-                "organization_id",
-                "sequence_id",
-                "lon",
-                "lat",
-            ]
+        # keep id,captured_at,compass_angle,is_pano,sequence_id,lon,lat, and organization_id if it exists
+        columns_to_keep = [
+            "id",
+            "captured_at",
+            "compass_angle",
+            "creator_id",
+            "is_pano",
+            "sequence_id",
+            "lon",
+            "lat",
         ]
+        
+        # Add organization_id to columns_to_keep if it exists in the DataFrame
+        if "organization_id" in pid.columns:
+            columns_to_keep.append("organization_id")
+        
+        pid = pid[columns_to_keep]
 
         pid.to_csv(path_pid, index=False)
         print("The panorama IDs have been saved to {}".format(path_pid))
