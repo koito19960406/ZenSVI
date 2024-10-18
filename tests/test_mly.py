@@ -3,7 +3,11 @@ import unittest
 import os
 import shutil
 from pathlib import Path
-
+import pandas as pd
+from PIL import Image
+import numpy as np
+from scipy.spatial.transform import Rotation as R
+import cv2
 from zensvi.download.mapillary import interface
 from zensvi.download import MLYDownloader
 
@@ -24,10 +28,10 @@ class TestMapillary(unittest.TestCase):
         self.mly_svi_output_buffer = Path(self.mly_output) / "mly_svi_buffer"
         pass
     
-    @classmethod   
-    def tearDown(self):
-        # remove output directory
-        shutil.rmtree(self.mly_output, ignore_errors=True)
+    # @classmethod   
+    # def tearDown(self):
+    #     # remove output directory
+    #     shutil.rmtree(self.mly_output, ignore_errors=True)
 
     def test_interface(self):
         # Skip test if the output file already exists
@@ -95,6 +99,46 @@ class TestMapillary(unittest.TestCase):
         )
         # assert True if there are files in the output directory
         self.assertTrue(len(os.listdir(self.mly_svi_output_polygon)) > 0)
+        
+    def test_downloader_single_field(self):
+        # Set up a new output directory for this test
+        single_field_output = Path(self.mly_output) / "mly_svi_single_field"
+        
+        # Download images with only the 'captured_at' field
+        mly_downloader = MLYDownloader(self.mly_api_key, max_workers=300)
+        mly_downloader.download_svi(
+            single_field_output,
+            input_shp_file=self.mly_input_polygon,
+            additional_fields=["all"]
+        )
+        
+        # Check if the output directory is created and contains files
+        self.assertTrue(single_field_output.exists())
+        self.assertTrue(len(list(single_field_output.glob('**/*'))) > 0)
+        
+        # Check if the mly_pids.csv file exists and contains all the expected columns
+        pids_file = single_field_output / "pids_urls.csv"
+        self.assertTrue(pids_file.exists())
+        
+        df = pd.read_csv(pids_file)
+        
+        # Check for all fields from Entities.get_image_fields()
+        expected_columns = [
+            'altitude', 'atomic_scale', 'camera_parameters', 'camera_type',
+            'captured_at', 'compass_angle', 'computed_altitude',
+            'computed_compass_angle', 'computed_geometry', 'computed_rotation',
+            'exif_orientation', 'geometry', 'height', 'url', 'merge_cc', 'mesh',
+            'quality_score', 'sequence', 'sfm_cluster', 'width'
+        ]
+        
+        for column in expected_columns:
+            self.assertIn(column, df.columns)
+        
+        # Optionally, you can check the content of some image files to ensure they're valid
+        image_files = list(single_field_output.glob('**/*.jpg'))
+        if image_files:
+            with Image.open(image_files[0]) as img:
+                self.assertTrue(img.format in ('JPEG', 'PNG'))
 
     # test with kwargs for mly
     def test_downloader_kwargs(self):
