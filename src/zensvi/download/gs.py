@@ -26,6 +26,16 @@ class GSDownloader(BaseDownloader):
         else:
             self.logger = None
 
+    def _filter_pids_date(self):
+        """Required abstract methods from parent class
+        """
+        pass
+
+    def download_svi(self):
+        """Required abstract methods from parent class
+        """
+        pass
+
     @property
     def repo_id(self):
         """Property for Huggingface download
@@ -65,6 +75,16 @@ class GSDownloader(BaseDownloader):
         for file_path in files_list:
             hf_hub_download(repo_id=self.repo_id, repo_type=self.repo_type,
                             filename=file_path, local_dir=local_dir)
+
+    def download_all_data(self, local_dir='data/'):
+        """Download all folders and files, recursively, from `data/`
+        This folder contains all metadata (csv) for all images of the Global
+        Streetscapes dataset
+
+        :param local_dir: Local folder to download the data
+        :type local_dir: str
+        """
+        self._download_folder("data/", local_dir)
 
     def download_manual_labels(self, local_dir='manual_labels/'):
         """Download all folders and files, recursively, from `manual_labels/`

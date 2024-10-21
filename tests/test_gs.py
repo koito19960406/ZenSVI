@@ -9,6 +9,12 @@ class TestGS(unittest.TestCase):
         self.local_dir = 'test_download/'
         pass
 
+    def test_download_all_data(self):
+        gs_download = GSDownloader()
+        gs_download.download_all_data(self.local_dir)
+        # assert True if there are files in the output directory
+        self.assertTrue(len(os.listdir(self.local_dir)) > 0)
+
     def test_download_manual_labels(self):
         gs_download = GSDownloader()
         gs_download.download_manual_labels(self.local_dir)
