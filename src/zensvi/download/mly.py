@@ -464,7 +464,7 @@ class MLYDownloader(BaseDownloader):
         end_date=None,
         metadata_only=False,
         use_cache=True,
-        additional_fields=["all"],  # New argument
+        additional_fields=["all"], 
         **kwargs,
     ):
         """
@@ -487,6 +487,30 @@ class MLYDownloader(BaseDownloader):
             end_date (str, optional): End date (YYYY-MM-DD) to filter images by capture date.
             metadata_only (bool, optional): If True, skips downloading images and only fetches metadata. Defaults to False.
             use_cache (bool, optional): If True, uses cached data to speed up the operation. Defaults to True.
+            additional_fields (list, optional): Additional fields to fetch from the API. Defaults to ["all"].
+                Possible fields include:
+                1. altitude - float, original altitude from Exif
+                2. atomic_scale - float, scale of the SfM reconstruction around the image
+                3. camera_parameters - array of float, intrinsic camera parameters
+                4. camera_type - enum, type of camera projection (perspective, fisheye, or spherical)
+                5. captured_at - timestamp, capture time
+                6. compass_angle - float, original compass angle of the image
+                7. computed_altitude - float, altitude after running image processing
+                8. computed_compass_angle - float, compass angle after running image processing
+                9. computed_geometry - GeoJSON Point, location after running image processing
+                10. computed_rotation - enum, corrected orientation of the image
+                11. exif_orientation - enum, orientation of the camera as given by the exif tag
+                12. geometry - GeoJSON Point geometry
+                13. height - int, height of the original image uploaded
+                14. thumb_256_url - string, URL to the 256px wide thumbnail
+                15. thumb_1024_url - string, URL to the 1024px wide thumbnail
+                16. thumb_2048_url - string, URL to the 2048px wide thumbnail
+                17. merge_cc - int, id of the connected component of images that were aligned together
+                18. mesh - { id: string, url: string } - URL to the mesh
+                19. quality_score - float, how good the image is (experimental)
+                20. sequence - string, ID of the sequence
+                21. sfm_cluster - { id: string, url: string } - URL to the point cloud
+                22. width - int, width of the original image uploaded
             **kwargs: Additional keyword arguments that are passed to the API.
 
         Returns:
