@@ -3,7 +3,11 @@ import unittest
 import os
 import shutil
 from pathlib import Path
-
+import pandas as pd
+from PIL import Image
+import numpy as np
+from scipy.spatial.transform import Rotation as R
+import cv2
 from zensvi.download.mapillary import interface
 from zensvi.download import MLYDownloader
 from test_base import TestBase
@@ -108,6 +112,31 @@ class TestMapillary(TestBase):
         mly_downloader.download_svi(self.mly_svi_output, input_shp_file=self.mly_input_polygon, **kwarg)
         # assert True if there are files in the output directory
         self.assertTrue(len(os.listdir(self.mly_svi_output)) > 0)
+
+    # test with buffer
+    def test_downloader_with_buffer(self):
+        # Skip test if the output file already exists
+        if os.path.exists(os.path.join(self.mly_svi_output_buffer, "mly_svi")):
+            self.skipTest("Result exists")
+        # download images
+        mly_downloader = MLYDownloader(self.mly_api_key, max_workers=200)
+        mly_downloader.download_svi(
+            self.mly_svi_output_buffer, lat = 52.50, lon = 13.42, buffer=1000
+        )
+        # assert True if there are files in the output directory
+        self.assertTrue(len(os.listdir(self.mly_svi_output_buffer)) > 0)
+
+    # test input_place_name
+    def test_downloader_place_name(self):
+        # Skip test if the output file already exists
+        if os.path.exists(os.path.join(self.mly_svi_output, "mly_svi")):
+            self.skipTest("Result exists")
+        # download images
+        mly_downloader = MLYDownloader(self.mly_api_key, max_workers=300)
+        mly_downloader.download_svi(self.mly_svi_output, input_place_name="Tbilisi")
+        # assert True if there are files in the output directory
+        self.assertTrue(len(os.listdir(self.mly_svi_output)) > 0)
+        
 
 if __name__ == "__main__":
     unittest.main()
