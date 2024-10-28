@@ -4,13 +4,15 @@ import shutil
 from pathlib import Path
 
 from zensvi.cv import ClassifierGlare
+from test_base import TestBase
 
 
-class TestClassifierGlare(unittest.TestCase):
+class TestClassifierGlare(TestBase):
     @classmethod
-    def setUpClass(self):
-        self.output = "tests/data/output/classification/glare"
-        Path(self.output).mkdir(parents=True, exist_ok=True)
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.output = cls.base_output_dir / "classification/glare"
+        cls.ensure_dir(cls.output)
 
     # def tearDown(self):
     #     # remove output directory

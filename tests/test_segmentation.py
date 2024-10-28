@@ -5,15 +5,16 @@ from pathlib import Path
 import shutil
 
 from zensvi.cv import Segmenter
+from test_base import TestBase
 
 
-class TestSegmentation(unittest.TestCase):
+class TestSegmentation(TestBase):
     @classmethod
-    def setUpClass(self):
-        self.image_input = Path("tests/data/input/images")
-        self.output = Path("tests/data/output/segmentation")
-        Path(self.output).mkdir(parents=True, exist_ok=True)
-        pass
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.image_input = cls.input_dir / "images"
+        cls.output = cls.base_output_dir / "segmentation"
+        cls.ensure_dir(cls.output)
 
     def tearDown(self):
         # remove output directory
