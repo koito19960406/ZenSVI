@@ -4,10 +4,4 @@ from .gsv import GSVDownloader
 from .kv import KVDownloader
 from .mly import MLYDownloader
 
-__all__ = [
-    "AMSDownloader",
-    "GSDownloader",
-    "GSVDownloader",
-    "KVDownloader",
-    "MLYDownloader"
-]
+__all__ = ["AMSDownloader", "GSDownloader", "GSVDownloader", "KVDownloader", "MLYDownloader"]

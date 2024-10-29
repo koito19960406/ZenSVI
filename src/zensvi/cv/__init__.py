@@ -8,7 +8,7 @@ from .classification import (
     ClassifierQuality,
     ClassifierReflection,
     ClassifierViewDirection,
-    ClassifierWeather
+    ClassifierWeather,
 )
 from .depth_estimation import DepthEstimator
 from .embeddings import Embeddings
@@ -34,5 +34,5 @@ __all__ = [
     # Low level features
     "LowLevelFeatures",
     # Segmentation
-    "Segmentation"
+    "Segmentation",
 ]

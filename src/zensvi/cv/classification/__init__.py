@@ -19,5 +19,5 @@ __all__ = [
     "ClassifierQuality",
     "ClassifierReflection",
     "ClassifierViewDirection",
-    "ClassifierWeather"
+    "ClassifierWeather",
 ]

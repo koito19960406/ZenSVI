@@ -14,12 +14,7 @@ import dinov2.distributed as distributed
 
 from .helpers import MetricLogger, SmoothedValue  # noqa: F401
 
-__all__ = [
-    "MetricLogger",
-    "SmoothedValue",
-    "setup_logging",
-    "_configure_logger"
-]
+__all__ = ["MetricLogger", "SmoothedValue", "setup_logging", "_configure_logger"]
 
 
 # So that calling _configure_logger multiple times won't add many handlers
