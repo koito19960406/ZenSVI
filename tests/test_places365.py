@@ -1,26 +1,22 @@
 import os
-import shutil
-import unittest
 from pathlib import Path
 
 from zensvi.cv import ClassifierPlaces365
+from test_base import TestBase
 
 
-class TestClassifierPlaces365(unittest.TestCase):
+class TestClassifierPlaces365(TestBase):
     @classmethod
-    def setUpClass(self):
-        self.output = "tests/data/output/classification/places365"
-        Path(self.output).mkdir(parents=True, exist_ok=True)
-
-    def tearDown(self):
-        # remove output directory
-        shutil.rmtree(self.output, ignore_errors=True)
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.output = cls.base_output_dir / "classification/places365"
+        cls.ensure_dir(cls.output)
 
     def test_classify_directory(self):
         classifier = ClassifierPlaces365()
-        image_input = "tests/data/input/images"
-        dir_image_output = str(Path(self.output) / "directory/image")
-        dir_summary_output = str(Path(self.output) / "directory/summary")
+        image_input = str(self.input_dir / "images")
+        dir_image_output = str(self.output / "directory/image")
+        dir_summary_output = str(self.output / "directory/summary")
         classifier.classify(
             image_input,
             dir_image_output=dir_image_output,
@@ -28,7 +24,6 @@ class TestClassifierPlaces365(unittest.TestCase):
             csv_format="wide",
             batch_size=3,
         )
-        # assert True if files in dir_image_output and dir_summary_output are not empty
         self.assertTrue(os.listdir(dir_image_output) and os.listdir(dir_summary_output))
 
     def test_classify_single_image(self):

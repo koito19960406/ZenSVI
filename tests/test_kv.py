@@ -7,23 +7,24 @@ import geopandas as gp
 
 import zensvi.download.kartaview.download_functions as kv
 from zensvi.download.kv import KVDownloader
+from test_base import TestBase
 
 
-class TestKartaView(unittest.TestCase):
+class TestKartaView(TestBase):
     @classmethod
-    def setUpClass(self):
-        self.kv_output = "tests/data/output/kv_output/"
-        os.makedirs(self.kv_output, exist_ok=True)
-        self.kv_input_multipolygon = "tests/data/input/test_multipolygon.geojson"
-        self.kv_input_polygon = "tests/data/input/test_polygon.geojson"
-        self.kv_output_test_interface = Path(self.kv_output) / "test_interface.csv"
-        self.kv_output_test_downloader = Path(self.kv_output) / "test_downloader"
-        self.kv_output_test_polygon_metaonly = Path(self.kv_output) / "test_polygon_metaonly"
-        self.kv_output_test_multipolygon = Path(self.kv_output) / "test_multipolygon"
-        self.kv_output_test_polygon = Path(self.kv_output) / "test_polygon"
-        pass
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.output = cls.base_output_dir / "kv_output"
+        cls.ensure_dir(cls.output)
+        cls.kv_input_multipolygon = cls.input_dir / "test_multipolygon.geojson"
+        cls.kv_input_polygon = cls.input_dir / "test_polygon.geojson"
+        cls.kv_output_test_interface = cls.output / "test_interface.csv"
+        cls.kv_output_test_downloader = cls.output / "test_downloader"
+        cls.kv_output_test_polygon_metaonly = cls.output / "test_polygon_metaonly"
+        cls.kv_output_test_multipolygon = cls.output / "test_multipolygon"
+        cls.kv_output_test_polygon = cls.output / "test_polygon"
 
-    @classmethod
+    @classmethod   
     def tearDown(self):
         # remove output directory
         shutil.rmtree(self.kv_output, ignore_errors=True)

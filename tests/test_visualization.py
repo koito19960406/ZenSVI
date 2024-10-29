@@ -2,18 +2,16 @@ import unittest
 from pathlib import Path
 
 import pandas as pd
-
+from test_base import TestBase
 from zensvi import visualization
 
-# import shutil
 
-
-class TestVisualization(unittest.TestCase):
+class TestVisualization(TestBase):
     @classmethod
-    def setUpClass(self):
-        self.output = Path("tests/data/output/visualization")
-        self.output.mkdir(parents=True, exist_ok=True)
-        pass
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.output = cls.base_output_dir / "visualization"
+        cls.ensure_dir(cls.output)
 
     # def tearDown(self):
     #     # remove output directory
@@ -22,8 +20,8 @@ class TestVisualization(unittest.TestCase):
     # skip for now
     # @unittest.skip("skip for now")
     def test_plot_map(self):
-        path_pid = "tests/data/input/visualization/gsv_pids.csv"
-        dir_input = "tests/data/input/visualization/cityscapes_semantic_summary"
+        path_pid = str(self.input_dir / "visualization/gsv_pids.csv")
+        dir_input = str(self.input_dir / "visualization/cityscapes_semantic_summary")
         csv_file_pattern = "pixel_ratios.csv"
         variable_name_list = ["sky", None]
         plot_type_list = ["point", "line", "hexagon"]

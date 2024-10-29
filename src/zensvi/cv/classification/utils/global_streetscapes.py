@@ -63,6 +63,38 @@ view_direction_dict2idx = {
 
 # ----------------------------------------------
 class GlobalStreetScapesClassificationModel(pl.LightningModule):
+    """
+    Creates an instance of a classification model for one of
+    six different variables:
+    - weather
+    - glare
+    - lighting
+    - panorama
+    - platform
+    - quality
+    - reflection
+    - view direction
+
+    :param lr: Learning rate, defaults to 0.0001
+    :type lr: float
+
+    :param pretrained: Flag for using pretrained weights, defaults to True
+    :type pretrained: boolean
+
+    :param weight: Flag for using existing weights, defaults to True
+    :type weight: boolean
+
+    :param num_classes: Number of unique classes for the target variable, defaults to None
+    :type num_class: int
+
+    :param class_mapping: Mapping of class string names and integer value, defaults to None
+    :type class_mapping: dictionary
+
+    :param model: Model name, defaults to maxvit_t
+    :type model: string
+
+    """
+
     def __init__(
         self,
         lr=0.0001,
@@ -82,7 +114,8 @@ class GlobalStreetScapesClassificationModel(pl.LightningModule):
             self.model = torchvision.models.maxvit_t(weights=torchvision.models.MaxVit_T_Weights.DEFAULT)
         else:
             self.model = torchvision.models.maxvit_t(weights=None)
-        self.model.classifier[-1] = nn.Linear(in_features=512, out_features=num_classes)
+        self.model.classifier[-1] = nn.Linear(
+            in_features=512, out_features=num_classes)
 
         # Configure the loss function
         if weight is not None and Path(weight).exists():

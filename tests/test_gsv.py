@@ -5,16 +5,18 @@ import unittest
 from pathlib import Path
 
 import pandas as pd
+from test_base import TestBase
 
 from zensvi.download import GSVDownloader
 
 
-class TestStreetViewDownloader(unittest.TestCase):
+class TestStreetViewDownloader(TestBase):
     def setUp(self):
-        Path("tests/data/output/gsv_svi").mkdir(parents=True, exist_ok=True)
-        self.output_dir = "tests/data/output/gsv_svi"
+        super().setUp()
+        self.output_dir = self.base_output_dir / "gsv_svi"
+        self.ensure_dir(self.output_dir)
         self.gsv_api_key = os.getenv("GSV_API_KEY")
-        self.sv_downloader = GSVDownloader(gsv_api_key=self.gsv_api_key, log_path="tests/data/output/gsv_svi/log.log")
+        self.sv_downloader = GSVDownloader(gsv_api_key=self.gsv_api_key, log_path=self.output_dir / "log.log")
 
     def tearDown(self):
         # recursively remove the output directory

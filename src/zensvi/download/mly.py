@@ -131,6 +131,10 @@ class MLYDownloader(BaseDownloader):
         # convert to geodataframe
         result_gdf = gpd.GeoDataFrame.from_features(result_json)
 
+        # return None if there is no result
+        if len(result_gdf) == 0:
+            return None
+
         # add lon and lat columns
         result_gdf["lon"] = result_gdf["geometry"].apply(lambda geom: geom.x)
         result_gdf["lat"] = result_gdf["geometry"].apply(lambda geom: geom.y)
@@ -231,20 +235,23 @@ class MLYDownloader(BaseDownloader):
         # move the "id" column to the first column
         pid = pid[["id"] + [col for col in pid.columns if col != "id"]]
 
-        # keep id,captured_at,compass_angle,is_pano,organization_id,sequence_id,input_latitude,input_longitude,lon,lat drop other columns
-        pid = pid[
-            [
-                "id",
-                "captured_at",
-                "compass_angle",
-                "creator_id",
-                "is_pano",
-                "organization_id",
-                "sequence_id",
-                "lon",
-                "lat",
-            ]
+        # keep id,captured_at,compass_angle,is_pano,sequence_id,lon,lat, and organization_id if it exists
+        columns_to_keep = [
+            "id",
+            "captured_at",
+            "compass_angle",
+            "creator_id",
+            "is_pano",
+            "sequence_id",
+            "lon",
+            "lat",
         ]
+        
+        # Add organization_id to columns_to_keep if it exists in the DataFrame
+        if "organization_id" in pid.columns:
+            columns_to_keep.append("organization_id")
+        
+        pid = pid[columns_to_keep]
 
         pid.to_csv(path_pid, index=False)
         print("The panorama IDs have been saved to {}".format(path_pid))
@@ -256,7 +263,7 @@ class MLYDownloader(BaseDownloader):
                 shutil.rmtree(dir_cache_tiles)
                 print("The cache directory for tiles has been deleted")
 
-    def _get_urls_mly(self, path_pid, resolution=1024):
+    def _get_urls_mly(self, path_pid, resolution=1024, additional_fields=["all"]):
         # check if seld.cache_pids_urls exists
         if self.pids_url.exists():
             print("The panorama URLs have been read from the cache")
@@ -290,8 +297,8 @@ class MLYDownloader(BaseDownloader):
             return
 
         def worker(panoid, resolution):
-            url = mly.image_thumbnail(panoid, resolution=resolution)
-            return panoid, url
+            result = mly.image_thumbnail(panoid, resolution=resolution, additional_fields=additional_fields)
+            return panoid, result
 
         results = {}
         batch_size = 1000  # Modify this to a suitable value
@@ -314,8 +321,8 @@ class MLYDownloader(BaseDownloader):
                 ):
                     current_panoid = batch_futures[future]
                     try:
-                        panoid, url = future.result()
-                        results[panoid] = url
+                        panoid, result = future.result()
+                        results[panoid] = result
                     except Exception as e:
                         print(f"Error: {e}")
                         if self.logger is not None:
@@ -323,9 +330,11 @@ class MLYDownloader(BaseDownloader):
                         continue
 
             if len(results) > 0:
-                pd.DataFrame.from_dict(results, orient="index").reset_index().rename(
-                    columns={"index": "id", 0: "url"}
-                ).to_csv(
+                df = pd.DataFrame.from_dict(results, orient="index").reset_index(drop=True).rename(
+                    columns={f"thumb_{resolution}_url": "url"}
+                )
+                df = df[['id'] + [col for col in df.columns if col != 'id']]
+                df.to_csv(
                     f"{dir_cache_urls}/checkpoint_batch_{checkpoint_start_index+i+1}.csv",
                     index=False,
                 )
@@ -351,8 +360,9 @@ class MLYDownloader(BaseDownloader):
         pid_df["id"] = pid_df["id"].astype("int64")
         urls_df = pd.read_csv(self.pids_url)
         urls_df["id"] = urls_df["id"].astype("int64")
-        # merge pid_df and urls_df
-        urls_df = urls_df.merge(pid_df, on="id", how="left")
+        # merge pid_df and urls_df, keeping only one instance of duplicated columns
+        urls_df = urls_df.merge(pid_df, on="id", how="left", suffixes=('', '_drop'))
+        urls_df = urls_df.loc[:, ~urls_df.columns.str.endswith('_drop')]
         # filter out the rows by date
         urls_df = self._filter_pids_date(urls_df, start_date, end_date)
 
@@ -434,6 +444,7 @@ class MLYDownloader(BaseDownloader):
         end_date=None,
         metadata_only=False,
         use_cache=True,
+        additional_fields=["all"], 
         **kwargs,
     ):
         """
@@ -456,6 +467,30 @@ class MLYDownloader(BaseDownloader):
             end_date (str, optional): End date (YYYY-MM-DD) to filter images by capture date.
             metadata_only (bool, optional): If True, skips downloading images and only fetches metadata. Defaults to False.
             use_cache (bool, optional): If True, uses cached data to speed up the operation. Defaults to True.
+            additional_fields (list, optional): Additional fields to fetch from the API. Defaults to ["all"].
+                Possible fields include:
+                1. altitude - float, original altitude from Exif
+                2. atomic_scale - float, scale of the SfM reconstruction around the image
+                3. camera_parameters - array of float, intrinsic camera parameters
+                4. camera_type - enum, type of camera projection (perspective, fisheye, or spherical)
+                5. captured_at - timestamp, capture time
+                6. compass_angle - float, original compass angle of the image
+                7. computed_altitude - float, altitude after running image processing
+                8. computed_compass_angle - float, compass angle after running image processing
+                9. computed_geometry - GeoJSON Point, location after running image processing
+                10. computed_rotation - enum, corrected orientation of the image
+                11. exif_orientation - enum, orientation of the camera as given by the exif tag
+                12. geometry - GeoJSON Point geometry
+                13. height - int, height of the original image uploaded
+                14. thumb_256_url - string, URL to the 256px wide thumbnail
+                15. thumb_1024_url - string, URL to the 1024px wide thumbnail
+                16. thumb_2048_url - string, URL to the 2048px wide thumbnail
+                17. merge_cc - int, id of the connected component of images that were aligned together
+                18. mesh - { id: string, url: string } - URL to the mesh
+                19. quality_score - float, how good the image is (experimental)
+                20. sequence - string, ID of the sequence
+                21. sfm_cluster - { id: string, url: string } - URL to the point cloud
+                22. width - int, width of the original image uploaded
             **kwargs: Additional keyword arguments that are passed to the API.
 
         Returns:
@@ -539,7 +574,7 @@ class MLYDownloader(BaseDownloader):
 
         # get urls
         if path_pid.exists():
-            self._get_urls_mly(path_pid, resolution=resolution)
+            self._get_urls_mly(path_pid, resolution=resolution, additional_fields=additional_fields)
             # download images
             self._download_images_mly(path_pid, cropped, batch_size, start_date, end_date)
         else:
@@ -549,3 +584,5 @@ class MLYDownloader(BaseDownloader):
         if self.dir_cache.exists():
             shutil.rmtree(self.dir_cache)
             print("The cache directory has been deleted")
+
+

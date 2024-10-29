@@ -3,14 +3,14 @@ import unittest
 from pathlib import Path
 
 from zensvi.transform import ImageTransformer
+from test_base import TestBase
 
-
-class TestImageTransformer(unittest.TestCase):
+class TestImageTransformer(TestBase):
     @classmethod
-    def setUpClass(self):
-        self.output = Path("tests/data/output/transformation")
-        self.output.mkdir(parents=True, exist_ok=True)
-        pass
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.output = cls.base_output_dir / "transformation"
+        cls.ensure_dir(cls.output)
 
     def tearDown(self):
         # remove output directory

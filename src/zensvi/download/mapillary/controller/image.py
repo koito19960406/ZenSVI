@@ -344,7 +344,7 @@ def is_image_being_looked_at_controller(
     return len(result["features"]) != 0
 
 
-def get_image_thumbnail_controller(image_id: str, resolution: int) -> str:
+def get_image_thumbnail_controller(image_id: str, resolution: int, additional_fields=["all"]) -> dict:
     """
     This controller holds the business logic for retrieving
     an image thumbnail with a specific resolution (256, 1024, or 2048)
@@ -357,20 +357,27 @@ def get_image_thumbnail_controller(image_id: str, resolution: int) -> str:
         256, 1024, and 2048
     :type resolution: int
 
-    :return: A URL for the thumbnail
-    :rtype: str
+    :param additional_fields: List of additional fields to include in the result
+    :type additional_fields: list
+
+    :return: A dictionary containing the thumbnail URL and additional fields
+    :rtype: dict
     """
 
     # check if the entered resolution is one of the supported image sizes
     resolution_check(resolution)
-
+    if additional_fields != ["all"]:
+        resolution_field = f"thumb_{resolution}_url"
+        # make sure resolution field is included in the additional fields
+        if resolution_field not in additional_fields:
+            additional_fields.append(resolution_field)
     try:
-        res = Client().get(Entities.get_image(image_id, [f"thumb_{resolution}_url"]))
+        result = Client().get(Entities.get_image(image_id, additional_fields)).json()
     except HTTPError:
         # If given ID is an invalid image ID, let the user know
         raise InvalidImageKeyError(image_id)
-
-    return json.loads(res.content.decode("utf-8"))[f"thumb_{resolution}_url"]
+    
+    return result
 
 
 def get_images_in_bbox_controller(bounding_box: dict, layer: str, zoom: int, filters: dict) -> str:

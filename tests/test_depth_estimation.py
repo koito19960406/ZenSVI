@@ -4,17 +4,14 @@ import unittest
 from pathlib import Path
 
 from zensvi.cv import DepthEstimator
+from test_base import TestBase
 
-
-class TestDepthEstimator(unittest.TestCase):
+class TestDepthEstimator(TestBase):
     @classmethod
-    def setUpClass(self):
-        self.output = "tests/data/output/depth_estimation"
-        Path(self.output).mkdir(parents=True, exist_ok=True)
-
-    # def tearDown(self):
-    #     # remove output directory
-    #     shutil.rmtree(self.output, ignore_errors=True)
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.output = cls.base_output_dir / "depth_estimation"
+        cls.ensure_dir(cls.output)
 
     def test_classify_directory(self):
         classifier = DepthEstimator()
