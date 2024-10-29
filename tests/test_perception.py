@@ -18,7 +18,7 @@ class TestClassifierPerception(unittest.TestCase):
     #     shutil.rmtree(self.output, ignore_errors=True)
 
     def test_classify_directory(self):
-        classifier = ClassifierPerception(perception_study = 'more boring')
+        classifier = ClassifierPerception(perception_study='more boring')
         image_input = "tests/data/input/images"
         dir_summary_output = str(Path(self.output) / "directory/summary")
         classifier.classify(
@@ -30,7 +30,7 @@ class TestClassifierPerception(unittest.TestCase):
         self.assertTrue(os.listdir(dir_summary_output))
 
     def test_classify_single_image(self):
-        classifier = ClassifierPerception(perception_study = 'more boring')
+        classifier = ClassifierPerception(perception_study='more boring')
         image_input = "tests/data/input/images/test1.jpg"
         dir_summary_output = str(Path(self.output) / "single/summary")
         classifier.classify(
@@ -40,9 +40,12 @@ class TestClassifierPerception(unittest.TestCase):
         # assert True if files in dir_image_output and dir_summary_output are not empty
         self.assertTrue(os.listdir(dir_summary_output))
 
+        # TODO: add Jiani's model
+
     def test_classify_with_mps_device(self):
         device = "mps"
-        classifier = ClassifierPerception(perception_study = 'more boring', device=device)
+        classifier = ClassifierPerception(
+            perception_study='more boring', device=device)
         image_input = "tests/data/input/images"
         dir_summary_output = str(Path(self.output) / "mps/summary")
         classifier.classify(
