@@ -16,7 +16,7 @@ logger = logging.getLogger("dinov2")
 
 
 class Evaluator:
-    """"""
+    """ """
 
     def __init__(self, args):
         self.args = args
@@ -28,7 +28,7 @@ class Evaluator:
         log_regression_main(self.args)
 
     def checkpoint(self):
-        """"""
+        """ """
         import submitit
 
         logger.info(f"Requeuing {self.args}")
@@ -36,7 +36,7 @@ class Evaluator:
         return submitit.helpers.DelayedSubmission(empty)
 
     def _setup_args(self):
-        """"""
+        """ """
         import submitit
 
         job_env = submitit.JobEnvironment()
@@ -46,7 +46,7 @@ class Evaluator:
 
 
 def main():
-    """"""
+    """ """
     description = "Submitit launcher for DINOv2 logistic evaluation"
     log_regression_args_parser = get_log_regression_args_parser(add_help=False)
     parents = [log_regression_args_parser]

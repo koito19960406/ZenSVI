@@ -28,6 +28,9 @@ def get_args_parser(
       description: Optional[str]:  (Default value = None)
       parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
       add_help: bool:  (Default value = True)
+      description: Optional[str]:  (Default value = None)
+      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
+      add_help: bool:  (Default value = True)
 
     Returns:
 
@@ -66,7 +69,7 @@ def get_autocast_dtype(config):
     """
 
     Args:
-      config:
+      config: 
 
     Returns:
 
@@ -84,8 +87,8 @@ def build_model_for_eval(config, pretrained_weights):
     """
 
     Args:
-      config:
-      pretrained_weights:
+      config: 
+      pretrained_weights: 
 
     Returns:
 
@@ -101,7 +104,7 @@ def setup_and_build_model(args) -> Tuple[Any, torch.dtype]:
     """
 
     Args:
-      args:
+      args: 
 
     Returns:
 

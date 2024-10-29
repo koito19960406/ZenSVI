@@ -18,7 +18,7 @@ logger = logging.getLogger("dinov2")
 
 
 class ModelWithNormalize(torch.nn.Module):
-    """"""
+    """ """
 
     def __init__(self, model):
         super().__init__()
@@ -28,7 +28,7 @@ class ModelWithNormalize(torch.nn.Module):
         """
 
         Args:
-          samples:
+          samples: 
 
         Returns:
 
@@ -37,7 +37,7 @@ class ModelWithNormalize(torch.nn.Module):
 
 
 class ModelWithIntermediateLayers(nn.Module):
-    """"""
+    """ """
 
     def __init__(self, feature_model, n_last_blocks, autocast_ctx):
         super().__init__()
@@ -50,7 +50,7 @@ class ModelWithIntermediateLayers(nn.Module):
         """
 
         Args:
-          images:
+          images: 
 
         Returns:
 
@@ -76,17 +76,22 @@ def evaluate(
 
     Args:
       model: nn.Module:
-      data_loader:
+      data_loader: 
       postprocessors: Dict[str:
-      nn.Module]:
+      nn.Module]: 
       metrics: Dict[str:
-      MetricCollection]:
+      MetricCollection]: 
       device: torch.device:
       criterion: Optional[nn.Module]:  (Default value = None)
       model: nn.Module:
       postprocessors: Dict[str:
       metrics: Dict[str:
       device: torch.device:
+      criterion: Optional[nn.Module]:  (Default value = None)
+      model: nn.Module: 
+      postprocessors: Dict[str: 
+      metrics: Dict[str: 
+      device: torch.device: 
       criterion: Optional[nn.Module]:  (Default value = None)
 
     Returns:
@@ -126,7 +131,7 @@ def all_gather_and_flatten(tensor_rank):
     """
 
     Args:
-      tensor_rank:
+      tensor_rank: 
 
     Returns:
 
@@ -146,10 +151,10 @@ def extract_features(model, dataset, batch_size, num_workers, gather_on_cpu=Fals
     """
 
     Args:
-      model:
-      dataset:
-      batch_size:
-      num_workers:
+      model: 
+      dataset: 
+      batch_size: 
+      num_workers: 
       gather_on_cpu: (Default value = False)
 
     Returns:
@@ -173,9 +178,9 @@ def extract_features_with_dataloader(model, data_loader, sample_count, gather_on
     """
 
     Args:
-      model:
-      data_loader:
-      sample_count:
+      model: 
+      data_loader: 
+      sample_count: 
       gather_on_cpu: (Default value = False)
 
     Returns:

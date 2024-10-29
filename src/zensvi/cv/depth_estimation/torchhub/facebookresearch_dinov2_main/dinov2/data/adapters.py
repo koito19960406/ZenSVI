@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 
 
 class DatasetWithEnumeratedTargets(Dataset):
-    """"""
+    """ """
 
     def __init__(self, dataset):
         self._dataset = dataset
@@ -21,6 +21,7 @@ class DatasetWithEnumeratedTargets(Dataset):
         Args:
           index: int:
           index: int:
+          index: int: 
 
         Returns:
 
@@ -33,6 +34,7 @@ class DatasetWithEnumeratedTargets(Dataset):
         Args:
           index: int:
           index: int:
+          index: int: 
 
         Returns:
 

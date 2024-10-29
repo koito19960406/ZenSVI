@@ -33,7 +33,7 @@ from torchvision import transforms
 
 
 class ToTensor(object):
-    """"""
+    """ """
 
     def __init__(self):
         self.normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -54,7 +54,7 @@ class ToTensor(object):
         """
 
         Args:
-          pic:
+          pic: 
 
         Returns:
 
@@ -88,7 +88,7 @@ class ToTensor(object):
 
 
 class VKITTI(Dataset):
-    """"""
+    """ """
 
     def __init__(self, data_dir_root, do_kb_crop=True):
         import glob
@@ -143,9 +143,9 @@ def get_vkitti_loader(data_dir_root, batch_size=1, **kwargs):
     """
 
     Args:
-      data_dir_root:
+      data_dir_root: 
       batch_size: (Default value = 1)
-      **kwargs:
+      **kwargs: 
 
     Returns:
 

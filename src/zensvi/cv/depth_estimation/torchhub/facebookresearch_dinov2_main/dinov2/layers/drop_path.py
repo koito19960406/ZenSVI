@@ -16,7 +16,9 @@ def drop_path(x, drop_prob: float = 0.0, training: bool = False):
     """
 
     Args:
-      x:
+      x: 
+      drop_prob: float:  (Default value = 0.0)
+      training: bool:  (Default value = False)
       drop_prob: float:  (Default value = 0.0)
       training: bool:  (Default value = False)
       drop_prob: float:  (Default value = 0.0)
@@ -43,6 +45,7 @@ class DropPath(nn.Module):
     Args:
 
     Returns:
+
     """
 
     def __init__(self, drop_prob=None):
@@ -53,7 +56,7 @@ class DropPath(nn.Module):
         """
 
         Args:
-          x:
+          x: 
 
         Returns:
 

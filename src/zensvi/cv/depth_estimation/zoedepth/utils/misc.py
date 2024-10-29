@@ -39,7 +39,7 @@ from torchvision.transforms import ToTensor
 
 
 class RunningAverage:
-    """"""
+    """ """
 
     def __init__(self):
         self.avg = 0
@@ -49,7 +49,7 @@ class RunningAverage:
         """
 
         Args:
-          value:
+          value: 
 
         Returns:
 
@@ -58,7 +58,7 @@ class RunningAverage:
         self.count += 1
 
     def get_value(self):
-        """"""
+        """ """
         return self.avg
 
 
@@ -70,6 +70,7 @@ def denormalize(x):
 
     Returns:
       N: Denormalized input
+
     """
     mean = torch.Tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(x.device)
     std = torch.Tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(x.device)
@@ -86,7 +87,7 @@ class RunningAverageDict:
         """
 
         Args:
-          new_dict:
+          new_dict: 
 
         Returns:
 
@@ -103,7 +104,7 @@ class RunningAverageDict:
             self._dict[key].append(value)
 
     def get_value(self):
-        """"""
+        """ """
         if self._dict is None:
             return None
         return {key: value.get_value() for key, value in self._dict.items()}
@@ -132,11 +133,12 @@ def colorize(
       background_color(tuple[int], optional): 4-tuple RGB color to give to invalid pixels. Defaults to (128, 128, 128, 255).
       gamma_corrected(bool, optional): Apply gamma correction to colored image. Defaults to False.
       value_transform(Callable, optional): Apply transform function to valid pixels before coloring. Defaults to None.
-      128:
-      255):
+      128: 
+      255): 
 
     Returns:
       numpy.ndarray, dtype - uint8: Colored depth map. Shape: (H, W, 4)
+
     """
     if isinstance(value, torch.Tensor):
         value = value.detach().cpu().numpy()
@@ -183,7 +185,7 @@ def count_parameters(model, include_all=False):
     """
 
     Args:
-      model:
+      model: 
       include_all: (Default value = False)
 
     Returns:
@@ -212,6 +214,7 @@ def compute_errors(gt, pred):
       'sq_rel': Squared relative error
       'rmse_log': Root mean squared error on the log scale
       'silog': Scale invariant log error
+
     """
     thresh = np.maximum((gt / pred), (pred / gt))
     a1 = (thresh < 1.25).mean()
@@ -256,22 +259,23 @@ def compute_metrics(
     **kwargs,
 ):
     """Compute metrics of predicted depth maps.
-
+    
     Applies cropping and masking as necessary or specified via arguments. Refer to
     compute_errors for more details on metrics.
 
     Args:
-      gt:
-      pred:
+      gt: 
+      pred: 
       interpolate: (Default value = True)
       garg_crop: (Default value = False)
       eigen_crop: (Default value = True)
       dataset: (Default value = "nyu")
       min_depth_eval: (Default value = 0.1)
       max_depth_eval: (Default value = 10)
-      **kwargs:
+      **kwargs: 
 
     Returns:
+
     """
     if "config" in kwargs:
         config = kwargs["config"]
@@ -325,8 +329,8 @@ def parallelize(config, model, find_unused_parameters=True):
     """
 
     Args:
-      config:
-      model:
+      config: 
+      model: 
       find_unused_parameters: (Default value = True)
 
     Returns:
@@ -411,7 +415,7 @@ class colors:
     invisible = "\033[08m"
 
     class fg:
-        """"""
+        """ """
 
         black = "\033[30m"
         red = "\033[31m"
@@ -430,7 +434,7 @@ class colors:
         lightcyan = "\033[96m"
 
     class bg:
-        """"""
+        """ """
 
         black = "\033[40m"
         red = "\033[41m"
@@ -446,8 +450,8 @@ def printc(text, color):
     """
 
     Args:
-      text:
-      color:
+      text: 
+      color: 
 
     Returns:
 
@@ -462,7 +466,7 @@ def get_image_from_url(url):
     """
 
     Args:
-      url:
+      url: 
 
     Returns:
 
@@ -476,9 +480,9 @@ def url_to_torch(url, size=(384, 384)):
     """
 
     Args:
-      url:
+      url: 
       size: (Default value = (384)
-      384):
+      384): 
 
     Returns:
 
@@ -495,7 +499,7 @@ def pil_to_batched_tensor(img):
     """
 
     Args:
-      img:
+      img: 
 
     Returns:
 
@@ -507,7 +511,7 @@ def save_raw_16bit(depth, fpath="raw.png"):
     """
 
     Args:
-      depth:
+      depth: 
       fpath: (Default value = "raw.png")
 
     Returns:

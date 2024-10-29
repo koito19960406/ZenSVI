@@ -32,7 +32,7 @@ except ImportError:
 
 
 class Block(nn.Module):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -85,6 +85,7 @@ class Block(nn.Module):
         Args:
           x: Tensor:
           x: Tensor:
+          x: Tensor: 
 
         Returns:
 
@@ -96,6 +97,7 @@ class Block(nn.Module):
             Args:
               x: Tensor:
               x: Tensor:
+              x: Tensor: 
 
             Returns:
 
@@ -108,6 +110,7 @@ class Block(nn.Module):
             Args:
               x: Tensor:
               x: Tensor:
+              x: Tensor: 
 
             Returns:
 
@@ -145,10 +148,13 @@ def drop_add_residual_stochastic_depth(
     Args:
       x: Tensor:
       residual_func: Callable[[Tensor]:
-      Tensor]:
+      Tensor]: 
       sample_drop_ratio: float:  (Default value = 0.0)
       x: Tensor:
       residual_func: Callable[[Tensor]:
+      sample_drop_ratio: float:  (Default value = 0.0)
+      x: Tensor: 
+      residual_func: Callable[[Tensor]: 
       sample_drop_ratio: float:  (Default value = 0.0)
 
     Returns:
@@ -177,7 +183,7 @@ def get_branges_scales(x, sample_drop_ratio=0.0):
     """
 
     Args:
-      x:
+      x: 
       sample_drop_ratio: (Default value = 0.0)
 
     Returns:
@@ -194,10 +200,10 @@ def add_residual(x, brange, residual, residual_scale_factor, scaling_vector=None
     """
 
     Args:
-      x:
-      brange:
-      residual:
-      residual_scale_factor:
+      x: 
+      brange: 
+      residual: 
+      residual_scale_factor: 
       scaling_vector: (Default value = None)
 
     Returns:
@@ -226,10 +232,11 @@ def get_attn_bias_and_cat(x_list, branges=None):
     from cache.
 
     Args:
-      x_list:
+      x_list: 
       branges: (Default value = None)
 
     Returns:
+
     """
     batch_sizes = [b.shape[0] for b in branges] if branges is not None else [x.shape[0] for x in x_list]
     all_shapes = tuple((b, x.shape[1]) for b, x in zip(batch_sizes, x_list))
@@ -262,12 +269,15 @@ def drop_add_residual_stochastic_depth_list(
     Args:
       x_list: List[Tensor]:
       residual_func: Callable[[Tensor:
-      Any]:
-      Tensor]:
+      Any]: 
+      Tensor]: 
       sample_drop_ratio: float:  (Default value = 0.0)
       scaling_vector: (Default value = None)
       x_list: List[Tensor]:
       residual_func: Callable[[Tensor:
+      sample_drop_ratio: float:  (Default value = 0.0)
+      x_list: List[Tensor]: 
+      residual_func: Callable[[Tensor: 
       sample_drop_ratio: float:  (Default value = 0.0)
 
     Returns:
@@ -291,7 +301,7 @@ def drop_add_residual_stochastic_depth_list(
 
 
 class NestedTensorBlock(Block):
-    """"""
+    """ """
 
     def forward_nested(self, x_list: List[Tensor]) -> List[Tensor]:
         """x_list contains a list of tensors to nest together and run.
@@ -299,8 +309,10 @@ class NestedTensorBlock(Block):
         Args:
           x_list: List[Tensor]:
           x_list: List[Tensor]:
+          x_list: List[Tensor]: 
 
         Returns:
+
         """
         assert isinstance(self.attn, MemEffAttention)
 
@@ -313,6 +325,7 @@ class NestedTensorBlock(Block):
                   x: Tensor:
                   attn_bias: (Default value = None)
                   x: Tensor:
+                  x: Tensor: 
 
                 Returns:
 
@@ -326,6 +339,7 @@ class NestedTensorBlock(Block):
                   x: Tensor:
                   attn_bias: (Default value = None)
                   x: Tensor:
+                  x: Tensor: 
 
                 Returns:
 
@@ -354,6 +368,7 @@ class NestedTensorBlock(Block):
                   x: Tensor:
                   attn_bias: (Default value = None)
                   x: Tensor:
+                  x: Tensor: 
 
                 Returns:
 
@@ -367,6 +382,7 @@ class NestedTensorBlock(Block):
                   x: Tensor:
                   attn_bias: (Default value = None)
                   x: Tensor:
+                  x: Tensor: 
 
                 Returns:
 
@@ -382,7 +398,7 @@ class NestedTensorBlock(Block):
         """
 
         Args:
-          x_or_x_list:
+          x_or_x_list: 
 
         Returns:
 

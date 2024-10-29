@@ -7,7 +7,7 @@ from torch.nn import functional as F
 
 
 class PlacePulseClassificationModel(nn.Module):
-    """"""
+    """ """
 
     def __init__(self, lr=0.0001, num_classes=None, **kwargs):
         super().__init__()
@@ -27,7 +27,7 @@ class PlacePulseClassificationModel(nn.Module):
         """
 
         Args:
-          x:
+          x: 
 
         Returns:
 
@@ -49,7 +49,7 @@ class PlacePulseClassificationModel(nn.Module):
         """
 
         Args:
-          probabilities:
+          probabilities: 
 
         Returns:
 

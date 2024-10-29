@@ -22,7 +22,7 @@ def get_fsdp_wrapper(model_cfg, modules_to_wrap=set()):
     """
 
     Args:
-      model_cfg:
+      model_cfg: 
       modules_to_wrap: (Default value = set())
 
     Returns:
@@ -66,7 +66,7 @@ def is_fsdp(x):
     """
 
     Args:
-      x:
+      x: 
 
     Returns:
 
@@ -78,7 +78,7 @@ def is_sharded_fsdp(x):
     """
 
     Args:
-      x:
+      x: 
 
     Returns:
 
@@ -90,7 +90,7 @@ def free_if_fsdp(x):
     """
 
     Args:
-      x:
+      x: 
 
     Returns:
 
@@ -105,7 +105,7 @@ def get_fsdp_modules(x):
     """
 
     Args:
-      x:
+      x: 
 
     Returns:
 
@@ -117,7 +117,7 @@ def reshard_fsdp_model(x):
     """
 
     Args:
-      x:
+      x: 
 
     Returns:
 
@@ -127,12 +127,12 @@ def reshard_fsdp_model(x):
 
 
 def rankstr():
-    """"""
+    """ """
     return f"rank_{distributed.get_global_rank()}"
 
 
 class FSDPCheckpointer(Checkpointer):
-    """"""
+    """ """
 
     def save(self, name: str, **kwargs: Any) -> None:
         """Dump model and checkpointables to a file.
@@ -144,8 +144,11 @@ class FSDPCheckpointer(Checkpointer):
           **kwargs: Any:
           name: str:
           **kwargs: Any:
+          name: str: 
+          **kwargs: Any: 
 
         Returns:
+
         """
         if not self.save_dir or not self.save_to_disk:
             return
@@ -171,8 +174,8 @@ class FSDPCheckpointer(Checkpointer):
         """
 
         Args:
-          *args:
-          **kwargs:
+          *args: 
+          **kwargs: 
 
         Returns:
 
@@ -220,8 +223,10 @@ class FSDPCheckpointer(Checkpointer):
           last_filename_basename(str): the basename of the last filename.
           last_filename_basename: str:
           last_filename_basename: str:
+          last_filename_basename: str: 
 
         Returns:
+
         """
         if distributed.is_enabled():
             torch.distributed.barrier()

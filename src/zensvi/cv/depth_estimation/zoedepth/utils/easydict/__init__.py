@@ -6,25 +6,25 @@ Original author: Mathieu Leplatre <mathieu.leplatre@makina-corpus.com>
 
 class EasyDict(dict):
     """Get attributes.
-
+    
     Works recursively
-
-
+    
+    
     Bullet-proof
-
-
+    
+    
     Set attributes
-
-
+    
+    
     Values extraction
-
-
+    
+    
     Still like a dict though
-
-
+    
+    
     And like a class
-
-
+    
+    
     update and pop items
 
     Args:
@@ -40,13 +40,13 @@ class EasyDict(dict):
     Traceback (most recent call last):
     ...
     AttributeError: 'EasyDict' object has no attribute 'bar'
-
+    
     >>> d = EasyDict({'foo':3, 'bar':{'x':1, 'y':2}})
     >>> isinstance(d.bar, dict)
     True
     >>> d.bar.x
     1
-
+    
     >>> EasyDict({})
     {}
     >>> EasyDict(d={})
@@ -58,7 +58,7 @@ class EasyDict(dict):
     {'a': 1}
     >>> EasyDict((('a', 1), ('b', 2)))
     {'a': 1, 'b': 2}
-
+    
     >>> d = EasyDict()
     >>> d.foo = 3
     >>> d.foo
@@ -71,7 +71,7 @@ class EasyDict(dict):
     >>> d.bar.prop = 'newer'
     >>> d.bar.prop
     'newer'
-
+    
     >>> d = EasyDict({'foo':0, 'bar':[{'x':1, 'y':2}, {'x':3, 'y':4}]})
     >>> isinstance(d.bar, list)
     True
@@ -88,11 +88,11 @@ class EasyDict(dict):
     3
     >>> d.bar.x
     1
-
+    
     >>> o = EasyDict({'clean':True})
     >>> list(o.items())
     [('clean', True)]
-
+    
     >>> class Flower(EasyDict):
     ...     power = 1
     ...
@@ -106,7 +106,7 @@ class EasyDict(dict):
     1
     >>> sorted(f.keys())
     ['height', 'power']
-
+    
     >>> d = EasyDict(a=1, b='2')
     >>> e = EasyDict(c=3.0, a=9.0)
     >>> d.update(e)
@@ -159,7 +159,7 @@ class EasyDict(dict):
 
         Args:
           e: (Default value = None)
-          **f:
+          **f: 
 
         Returns:
 
@@ -173,7 +173,7 @@ class EasyDict(dict):
         """
 
         Args:
-          k:
+          k: 
           d: (Default value = None)
 
         Returns:

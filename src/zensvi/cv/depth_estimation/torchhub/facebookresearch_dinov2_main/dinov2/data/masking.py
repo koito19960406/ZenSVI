@@ -11,7 +11,7 @@ import numpy as np
 
 
 class MaskingGenerator:
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -48,15 +48,15 @@ class MaskingGenerator:
         return repr_str
 
     def get_shape(self):
-        """"""
+        """ """
         return self.height, self.width
 
     def _mask(self, mask, max_mask_patches):
         """
 
         Args:
-          mask:
-          max_mask_patches:
+          mask: 
+          max_mask_patches: 
 
         Returns:
 

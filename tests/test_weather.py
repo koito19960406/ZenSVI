@@ -1,6 +1,6 @@
 import os
-from pathlib import Path
 import unittest
+from pathlib import Path
 
 from test_base import TestBase
 

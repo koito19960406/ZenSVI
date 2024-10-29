@@ -43,6 +43,9 @@ def get_args_parser(
       description: Optional[str]:  (Default value = None)
       parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
       add_help: bool:  (Default value = True)
+      description: Optional[str]:  (Default value = None)
+      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
+      add_help: bool:  (Default value = True)
 
     Returns:
 
@@ -184,6 +187,7 @@ def has_ddp_wrapper(m: nn.Module) -> bool:
     Args:
       m: nn.Module:
       m: nn.Module:
+      m: nn.Module: 
 
     Returns:
 
@@ -197,6 +201,7 @@ def remove_ddp_wrapper(m: nn.Module) -> nn.Module:
     Args:
       m: nn.Module:
       m: nn.Module:
+      m: nn.Module: 
 
     Returns:
 
@@ -208,7 +213,7 @@ def _pad_and_collate(batch):
     """
 
     Args:
-      batch:
+      batch: 
 
     Returns:
 
@@ -224,9 +229,9 @@ def create_linear_input(x_tokens_list, use_n_blocks, use_avgpool):
     """
 
     Args:
-      x_tokens_list:
-      use_n_blocks:
-      use_avgpool:
+      x_tokens_list: 
+      use_n_blocks: 
+      use_avgpool: 
 
     Returns:
 
@@ -262,7 +267,7 @@ class LinearClassifier(nn.Module):
         """
 
         Args:
-          x_tokens_list:
+          x_tokens_list: 
 
         Returns:
 
@@ -272,7 +277,7 @@ class LinearClassifier(nn.Module):
 
 
 class AllClassifiers(nn.Module):
-    """"""
+    """ """
 
     def __init__(self, classifiers_dict):
         super().__init__()
@@ -283,7 +288,7 @@ class AllClassifiers(nn.Module):
         """
 
         Args:
-          inputs:
+          inputs: 
 
         Returns:
 
@@ -295,7 +300,7 @@ class AllClassifiers(nn.Module):
 
 
 class LinearPostprocessor(nn.Module):
-    """"""
+    """ """
 
     def __init__(self, linear_classifier, class_mapping=None):
         super().__init__()
@@ -309,8 +314,8 @@ class LinearPostprocessor(nn.Module):
         """
 
         Args:
-          samples:
-          targets:
+          samples: 
+          targets: 
 
         Returns:
 
@@ -326,8 +331,8 @@ def scale_lr(learning_rates, batch_size):
     """
 
     Args:
-      learning_rates:
-      batch_size:
+      learning_rates: 
+      batch_size: 
 
     Returns:
 
@@ -339,10 +344,10 @@ def setup_linear_classifiers(sample_output, n_last_blocks_list, learning_rates, 
     """
 
     Args:
-      sample_output:
-      n_last_blocks_list:
-      learning_rates:
-      batch_size:
+      sample_output: 
+      n_last_blocks_list: 
+      learning_rates: 
+      batch_size: 
       num_classes: (Default value = 1000)
 
     Returns:
@@ -390,13 +395,13 @@ def evaluate_linear_classifiers(
     """
 
     Args:
-      feature_model:
-      linear_classifiers:
-      data_loader:
-      metric_type:
-      metrics_file_path:
-      training_num_classes:
-      iteration:
+      feature_model: 
+      linear_classifiers: 
+      data_loader: 
+      metric_type: 
+      metrics_file_path: 
+      training_num_classes: 
+      iteration: 
       prefixstring: (Default value = "")
       class_mapping: (Default value = None)
       best_classifier_on_val: (Default value = None)
@@ -471,22 +476,22 @@ def eval_linear(
     """
 
     Args:
-      *:
-      feature_model:
-      linear_classifiers:
-      train_data_loader:
-      val_data_loader:
-      metrics_file_path:
-      optimizer:
-      scheduler:
-      output_dir:
-      max_iter:
-      checkpoint_period:
-      # In number of iter:
-      creates a new file every periodrunning_checkpoint_period:
-      # Period to update main checkpoint fileeval_period:
-      metric_type:
-      training_num_classes:
+      *: 
+      feature_model: 
+      linear_classifiers: 
+      train_data_loader: 
+      val_data_loader: 
+      metrics_file_path: 
+      optimizer: 
+      scheduler: 
+      output_dir: 
+      max_iter: 
+      checkpoint_period: 
+      # In number of iter: 
+      creates a new file every periodrunning_checkpoint_period: 
+      # Period to update main checkpoint fileeval_period: 
+      metric_type: 
+      training_num_classes: 
       resume: (Default value = True)
       classifier_fpath: (Default value = None)
       val_class_mapping: (Default value = None)
@@ -576,10 +581,10 @@ def make_eval_data_loader(test_dataset_str, batch_size, num_workers, metric_type
     """
 
     Args:
-      test_dataset_str:
-      batch_size:
-      num_workers:
-      metric_type:
+      test_dataset_str: 
+      batch_size: 
+      num_workers: 
+      metric_type: 
 
     Returns:
 
@@ -618,16 +623,16 @@ def test_on_datasets(
     """
 
     Args:
-      feature_model:
-      linear_classifiers:
-      test_dataset_strs:
-      batch_size:
-      num_workers:
-      test_metric_types:
-      metrics_file_path:
-      training_num_classes:
-      iteration:
-      best_classifier_on_val:
+      feature_model: 
+      linear_classifiers: 
+      test_dataset_strs: 
+      batch_size: 
+      num_workers: 
+      test_metric_types: 
+      metrics_file_path: 
+      training_num_classes: 
+      iteration: 
+      best_classifier_on_val: 
       prefixstring: (Default value = "")
       test_class_mappings: (Default value = [None])
 
@@ -678,18 +683,18 @@ def run_eval_linear(
     """
 
     Args:
-      model:
-      output_dir:
-      train_dataset_str:
-      val_dataset_str:
-      batch_size:
-      epochs:
-      epoch_length:
-      num_workers:
-      save_checkpoint_frequency:
-      eval_period_iterations:
-      learning_rates:
-      autocast_dtype:
+      model: 
+      output_dir: 
+      train_dataset_str: 
+      val_dataset_str: 
+      batch_size: 
+      epochs: 
+      epoch_length: 
+      num_workers: 
+      save_checkpoint_frequency: 
+      eval_period_iterations: 
+      learning_rates: 
+      autocast_dtype: 
       test_dataset_strs: (Default value = None)
       resume: (Default value = True)
       classifier_fpath: (Default value = None)
@@ -816,7 +821,7 @@ def main(args):
     """
 
     Args:
-      args:
+      args: 
 
     Returns:
 

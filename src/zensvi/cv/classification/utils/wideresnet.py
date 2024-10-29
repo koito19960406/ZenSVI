@@ -19,8 +19,8 @@ def conv3x3(in_planes, out_planes, stride=1):
     """
 
     Args:
-      in_planes:
-      out_planes:
+      in_planes: 
+      out_planes: 
       stride: (Default value = 1)
 
     Returns:
@@ -31,7 +31,7 @@ def conv3x3(in_planes, out_planes, stride=1):
 
 
 class BasicBlock(nn.Module):
-    """"""
+    """ """
 
     expansion = 1
 
@@ -49,7 +49,7 @@ class BasicBlock(nn.Module):
         """
 
         Args:
-          x:
+          x: 
 
         Returns:
 
@@ -73,7 +73,7 @@ class BasicBlock(nn.Module):
 
 
 class Bottleneck(nn.Module):
-    """"""
+    """ """
 
     expansion = 4
 
@@ -93,7 +93,7 @@ class Bottleneck(nn.Module):
         """
 
         Args:
-          x:
+          x: 
 
         Returns:
 
@@ -121,7 +121,7 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    """"""
+    """ """
 
     def __init__(self, block, layers, num_classes=1000):
         self.inplanes = 64
@@ -151,9 +151,9 @@ class ResNet(nn.Module):
         """
 
         Args:
-          block:
-          planes:
-          blocks:
+          block: 
+          planes: 
+          blocks: 
           stride: (Default value = 1)
 
         Returns:
@@ -184,7 +184,7 @@ class ResNet(nn.Module):
         """
 
         Args:
-          x:
+          x: 
 
         Returns:
 
@@ -211,9 +211,10 @@ def resnet18(pretrained=False, **kwargs):
 
     Args:
       pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
-      **kwargs:
+      **kwargs: 
 
     Returns:
+
     """
     model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
     if pretrained:
@@ -226,9 +227,10 @@ def resnet34(pretrained=False, **kwargs):
 
     Args:
       pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
-      **kwargs:
+      **kwargs: 
 
     Returns:
+
     """
     model = ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
     if pretrained:
@@ -241,9 +243,10 @@ def resnet50(pretrained=False, **kwargs):
 
     Args:
       pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
-      **kwargs:
+      **kwargs: 
 
     Returns:
+
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
@@ -256,9 +259,10 @@ def resnet101(pretrained=False, **kwargs):
 
     Args:
       pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
-      **kwargs:
+      **kwargs: 
 
     Returns:
+
     """
     model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
     if pretrained:
@@ -271,9 +275,10 @@ def resnet152(pretrained=False, **kwargs):
 
     Args:
       pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
-      **kwargs:
+      **kwargs: 
 
     Returns:
+
     """
     model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
     if pretrained:

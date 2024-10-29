@@ -27,14 +27,15 @@ import numpy as np
 
 def get_intrinsics(H, W):
     """Intrinsics for a pinhole camera model.
-
+    
     Assume fov of 55 degrees and central principal point.
 
     Args:
-      H:
-      W:
+      H: 
+      W: 
 
     Returns:
+
     """
     f = 0.5 * W / np.tan(0.5 * 55 * np.pi / 180.0)
     cx = 0.5 * W
@@ -46,7 +47,7 @@ def depth_to_points(depth, R=None, t=None):
     """
 
     Args:
-      depth:
+      depth: 
       R: (Default value = None)
       t: (Default value = None)
 
@@ -96,7 +97,7 @@ def create_triangles(h, w, mask=None):
 
     Args:
       h: (int) denoting the height of the image.
-      w:
+      w: 
       mask: (Default value = None)
 
     Returns:

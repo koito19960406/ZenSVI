@@ -16,7 +16,7 @@ logger = logging.getLogger("dinov2")
 
 
 class Trainer(object):
-    """"""
+    """ """
 
     def __init__(self, args):
         self.args = args
@@ -28,7 +28,7 @@ class Trainer(object):
         train_main(self.args)
 
     def checkpoint(self):
-        """"""
+        """ """
         import submitit
 
         logger.info(f"Requeuing {self.args}")
@@ -36,7 +36,7 @@ class Trainer(object):
         return submitit.helpers.DelayedSubmission(empty)
 
     def _setup_args(self):
-        """"""
+        """ """
         import submitit
 
         job_env = submitit.JobEnvironment()
@@ -46,7 +46,7 @@ class Trainer(object):
 
 
 def main():
-    """"""
+    """ """
     description = "Submitit launcher for DINOv2 training"
     train_args_parser = get_train_args_parser(add_help=False)
     parents = [train_args_parser]

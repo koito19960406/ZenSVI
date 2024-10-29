@@ -44,7 +44,7 @@ def is_rank_zero(args):
     """
 
     Args:
-      args:
+      args: 
 
     Returns:
 
@@ -54,7 +54,7 @@ def is_rank_zero(args):
 
 class BaseTrainer:
     def __init__(self, config, model, train_loader, test_loader=None, device=None):
-        """Base Trainer class for training a model."""
+    """Base Trainer class for training a model."""
 
         self.config = config
         self.metric_criterion = "abs_rel"
@@ -71,8 +71,8 @@ class BaseTrainer:
         """
 
         Args:
-          prediction:
-          target:
+          prediction: 
+          target: 
 
         Returns:
 
@@ -117,7 +117,7 @@ class BaseTrainer:
         self.model = model
 
     def init_optimizer(self):
-        """"""
+        """ """
         m = self.model.module if self.config.multigpu else self.model
 
         if self.config.same_lr:
@@ -137,7 +137,7 @@ class BaseTrainer:
         return optim.AdamW(params, lr=self.config.lr, weight_decay=self.config.wd)
 
     def init_scheduler(self):
-        """"""
+        """ """
         lrs = [params["lr"] for params in self.optimizer.param_groups]
         return optim.lr_scheduler.OneCycleLR(
             self.optimizer,
@@ -157,8 +157,8 @@ class BaseTrainer:
         """
 
         Args:
-          batch:
-          train_step:
+          batch: 
+          train_step: 
 
         Returns:
 
@@ -169,8 +169,8 @@ class BaseTrainer:
         """
 
         Args:
-          batch:
-          val_step:
+          batch: 
+          val_step: 
 
         Returns:
 
@@ -181,7 +181,7 @@ class BaseTrainer:
         """
 
         Args:
-          losses:
+          losses: 
 
         Returns:
 
@@ -192,21 +192,21 @@ class BaseTrainer:
 
     @property
     def iters_per_epoch(self):
-        """"""
+        """ """
         return len(self.train_loader)
 
     @property
     def total_iters(self):
-        """"""
+        """ """
         return self.config.epochs * self.iters_per_epoch
 
     def should_early_stop(self):
-        """"""
+        """ """
         if self.config.get("early_stop", False) and self.step > self.config.early_stop:
             return True
 
     def train(self):
-        """"""
+        """ """
         print(f"Training {self.config.name}")
         if self.config.uid is None:
             self.config.uid = str(uuid.uuid4()).split("-")[-1]
@@ -251,7 +251,7 @@ class BaseTrainer:
             """
 
             Args:
-              L:
+              L: 
 
             Returns:
 
@@ -362,7 +362,7 @@ class BaseTrainer:
         self.model.train()
 
     def validate(self):
-        """"""
+        """ """
         with torch.no_grad():
             losses_avg = RunningAverageDict()
             metrics_avg = RunningAverageDict()
@@ -385,7 +385,7 @@ class BaseTrainer:
         """
 
         Args:
-          filename:
+          filename: 
 
         Returns:
 
@@ -431,6 +431,9 @@ class BaseTrainer:
           rgb: Dict[str:
           depth: Dict[str:
           scalar_field: Dict[str:
+          rgb: Dict[str: 
+          depth: Dict[str: 
+          scalar_field: Dict[str: 
 
         Returns:
 
@@ -456,7 +459,7 @@ class BaseTrainer:
         """
 
         Args:
-          data:
+          data: 
 
         Returns:
 
@@ -473,9 +476,9 @@ class BaseTrainer:
         """
 
         Args:
-          title:
-          labels:
-          values:
+          title: 
+          labels: 
+          values: 
 
         Returns:
 

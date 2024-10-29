@@ -31,7 +31,7 @@ from torch.utils.data import DataLoader, Dataset
 
 
 class ToTensor(object):
-    """"""
+    """ """
 
     def __init__(self):
         # self.normalize = transforms.Normalize(
@@ -50,7 +50,7 @@ class ToTensor(object):
         """
 
         Args:
-          pic:
+          pic: 
 
         Returns:
 
@@ -84,7 +84,7 @@ class ToTensor(object):
 
 
 class SunRGBD(Dataset):
-    """"""
+    """ """
 
     def __init__(self, data_dir_root):
         # test_file_dirs = loadmat(train_test_file)['alltest'].squeeze()
@@ -124,9 +124,9 @@ def get_sunrgbd_loader(data_dir_root, batch_size=1, **kwargs):
     """
 
     Args:
-      data_dir_root:
+      data_dir_root: 
       batch_size: (Default value = 1)
-      **kwargs:
+      **kwargs: 
 
     Returns:
 

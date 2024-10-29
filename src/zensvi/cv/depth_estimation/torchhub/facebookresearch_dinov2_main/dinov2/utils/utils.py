@@ -21,9 +21,9 @@ def load_pretrained_weights(model, pretrained_weights, checkpoint_key):
     """
 
     Args:
-      model:
-      pretrained_weights:
-      checkpoint_key:
+      model: 
+      pretrained_weights: 
+      checkpoint_key: 
 
     Returns:
 
@@ -50,6 +50,7 @@ def fix_random_seeds(seed=31):
       seed: (Default value = 31)
 
     Returns:
+
     """
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -58,14 +59,14 @@ def fix_random_seeds(seed=31):
 
 
 def get_sha():
-    """"""
+    """ """
     cwd = os.path.dirname(os.path.abspath(__file__))
 
     def _run(command):
         """
 
         Args:
-          command:
+          command: 
 
         Returns:
 
@@ -88,7 +89,7 @@ def get_sha():
 
 
 class CosineScheduler(object):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -124,7 +125,7 @@ def has_batchnorms(model):
     """
 
     Args:
-      model:
+      model: 
 
     Returns:
 

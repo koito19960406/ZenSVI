@@ -2,6 +2,7 @@
 
 import os
 import unittest
+
 from test_base import TestBase
 
 from zensvi.cv import ClassifierPerception

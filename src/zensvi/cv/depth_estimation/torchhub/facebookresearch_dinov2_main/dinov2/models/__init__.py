@@ -15,7 +15,7 @@ def build_model(args, only_teacher=False, img_size=224):
     """
 
     Args:
-      args:
+      args: 
       only_teacher:  (Default value = False)
       img_size:  (Default value = 224)
 
@@ -50,7 +50,7 @@ def build_model_from_cfg(cfg, only_teacher=False):
     """
 
     Args:
-      cfg:
+      cfg: 
       only_teacher: (Default value = False)
 
     Returns:

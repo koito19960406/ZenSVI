@@ -30,7 +30,7 @@ logger = logging.getLogger("dinov2")
 
 
 class SSLMetaArch(nn.Module):
-    """"""
+    """ """
 
     def __init__(self, cfg):
         super().__init__()
@@ -127,7 +127,7 @@ class SSLMetaArch(nn.Module):
         """
 
         Args:
-          inputs:
+          inputs: 
 
         Returns:
 
@@ -138,7 +138,7 @@ class SSLMetaArch(nn.Module):
         """
 
         Args:
-          loss:
+          loss: 
 
         Returns:
 
@@ -152,8 +152,8 @@ class SSLMetaArch(nn.Module):
         """
 
         Args:
-          images:
-          teacher_temp:
+          images: 
+          teacher_temp: 
 
         Returns:
 
@@ -184,7 +184,7 @@ class SSLMetaArch(nn.Module):
         # teacher output
         @torch.no_grad()
         def get_teacher_output():
-            """"""
+            """ """
             x, n_global_crops_teacher = global_crops, n_global_crops
             teacher_backbone_output_dict = self.teacher.backbone(x, is_training=True)
             teacher_cls_tokens = teacher_backbone_output_dict["x_norm_clstoken"]
@@ -391,7 +391,7 @@ class SSLMetaArch(nn.Module):
         return loss_dict
 
     def fsdp_synchronize_streams(self):
-        """"""
+        """ """
         if self.need_to_synchronize_fsdp_streams:
             torch.cuda.synchronize()
             self.student.dino_head._streams = self.teacher.dino_head._streams = self.student.backbone._streams = (
@@ -403,7 +403,7 @@ class SSLMetaArch(nn.Module):
         """
 
         Args:
-          m:
+          m: 
 
         Returns:
 
@@ -419,7 +419,7 @@ class SSLMetaArch(nn.Module):
             torch._foreach_add_(teacher_param_list, student_param_list, alpha=1 - m)
 
     def train(self):
-        """"""
+        """ """
         super().train()
         self.teacher.eval()
 
@@ -427,7 +427,7 @@ class SSLMetaArch(nn.Module):
         """
 
         Args:
-          m:
+          m: 
 
         Returns:
 
@@ -445,14 +445,14 @@ class SSLMetaArch(nn.Module):
         return fused_params_groups
 
     def get_params_groups(self):
-        """"""
+        """ """
         all_params_groups = []
         for m in self.student.values():
             all_params_groups += self.get_maybe_fused_params_for_submodel(m)
         return all_params_groups
 
     def prepare_for_distributed_training(self):
-        """"""
+        """ """
         logger.info("DISTRIBUTED FSDP -- preparing model for distributed training")
         if has_batchnorms(self.student):
             raise NotImplementedError

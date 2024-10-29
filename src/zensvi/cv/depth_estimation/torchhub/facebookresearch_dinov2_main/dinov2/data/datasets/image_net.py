@@ -19,7 +19,7 @@ _Target = int
 
 
 class _Split(Enum):
-    """"""
+    """ """
 
     TRAIN = "train"
     VAL = "val"
@@ -27,7 +27,7 @@ class _Split(Enum):
 
     @property
     def length(self) -> int:
-        """"""
+        """ """
         split_lengths = {
             _Split.TRAIN: 1_281_167,
             _Split.VAL: 50_000,
@@ -39,6 +39,7 @@ class _Split(Enum):
         """
 
         Args:
+          class_id: Optional[str]:  (Default value = None)
           class_id: Optional[str]:  (Default value = None)
           class_id: Optional[str]:  (Default value = None)
 
@@ -54,6 +55,8 @@ class _Split(Enum):
           actual_index: int:
           class_id: Optional[str]:  (Default value = None)
           actual_index: int:
+          class_id: Optional[str]:  (Default value = None)
+          actual_index: int: 
           class_id: Optional[str]:  (Default value = None)
 
         Returns:
@@ -72,6 +75,7 @@ class _Split(Enum):
         Args:
           image_relpath: str:
           image_relpath: str:
+          image_relpath: str: 
 
         Returns:
 
@@ -85,7 +89,7 @@ class _Split(Enum):
 
 
 class ImageNet(ExtendedVisionDataset):
-    """"""
+    """ """
 
     Target = Union[_Target]
     Split = Union[_Split]
@@ -110,7 +114,7 @@ class ImageNet(ExtendedVisionDataset):
 
     @property
     def split(self) -> "ImageNet.Split":
-        """"""
+        """ """
         return self._split
 
     def _get_extra_full_path(self, extra_path: str) -> str:
@@ -119,6 +123,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           extra_path: str:
           extra_path: str:
+          extra_path: str: 
 
         Returns:
 
@@ -131,6 +136,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           extra_path: str:
           extra_path: str:
+          extra_path: str: 
 
         Returns:
 
@@ -146,6 +152,8 @@ class ImageNet(ExtendedVisionDataset):
           extra_path: str:
           extra_array: np.ndarray:
           extra_path: str:
+          extra_array: np.ndarray: 
+          extra_path: str: 
 
         Returns:
 
@@ -156,28 +164,28 @@ class ImageNet(ExtendedVisionDataset):
 
     @property
     def _entries_path(self) -> str:
-        """"""
+        """ """
         return f"entries-{self._split.value.upper()}.npy"
 
     @property
     def _class_ids_path(self) -> str:
-        """"""
+        """ """
         return f"class-ids-{self._split.value.upper()}.npy"
 
     @property
     def _class_names_path(self) -> str:
-        """"""
+        """ """
         return f"class-names-{self._split.value.upper()}.npy"
 
     def _get_entries(self) -> np.ndarray:
-        """"""
+        """ """
         if self._entries is None:
             self._entries = self._load_extra(self._entries_path)
         assert self._entries is not None
         return self._entries
 
     def _get_class_ids(self) -> np.ndarray:
-        """"""
+        """ """
         if self._split == _Split.TEST:
             assert False, "Class IDs are not available in TEST split"
         if self._class_ids is None:
@@ -186,7 +194,7 @@ class ImageNet(ExtendedVisionDataset):
         return self._class_ids
 
     def _get_class_names(self) -> np.ndarray:
-        """"""
+        """ """
         if self._split == _Split.TEST:
             assert False, "Class names are not available in TEST split"
         if self._class_names is None:
@@ -200,6 +208,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           class_index: int:
           class_index: int:
+          class_index: int: 
 
         Returns:
 
@@ -213,6 +222,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           class_index: int:
           class_index: int:
+          class_index: int: 
 
         Returns:
 
@@ -226,6 +236,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           index: int:
           index: int:
+          index: int: 
 
         Returns:
 
@@ -247,6 +258,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           index: int:
           index: int:
+          index: int: 
 
         Returns:
 
@@ -256,7 +268,7 @@ class ImageNet(ExtendedVisionDataset):
         return None if self.split == _Split.TEST else int(class_index)
 
     def get_targets(self) -> Optional[np.ndarray]:
-        """"""
+        """ """
         entries = self._get_entries()
         return None if self.split == _Split.TEST else entries["class_index"]
 
@@ -266,6 +278,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           index: int:
           index: int:
+          index: int: 
 
         Returns:
 
@@ -280,6 +293,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           index: int:
           index: int:
+          index: int: 
 
         Returns:
 
@@ -299,6 +313,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           labels_path: str:
           labels_path: str:
+          labels_path: str: 
 
         Returns:
 
@@ -318,7 +333,7 @@ class ImageNet(ExtendedVisionDataset):
         return labels
 
     def _dump_entries(self) -> None:
-        """"""
+        """ """
         split = self.split
         if split == ImageNet.Split.TEST:
             dataset = None
@@ -385,7 +400,7 @@ class ImageNet(ExtendedVisionDataset):
         self._save_extra(entries_array, self._entries_path)
 
     def _dump_class_ids_and_names(self) -> None:
-        """"""
+        """ """
         split = self.split
         if split == ImageNet.Split.TEST:
             return
@@ -422,6 +437,6 @@ class ImageNet(ExtendedVisionDataset):
         self._save_extra(class_names_array, self._class_names_path)
 
     def dump_extra(self) -> None:
-        """"""
+        """ """
         self._dump_entries()
         self._dump_class_ids_and_names()

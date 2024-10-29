@@ -38,6 +38,8 @@ def exp_attractor(dx, alpha: float = 300, gamma: int = 2):
       gamma: int:  (Default value = 2)
       alpha: float:  (Default value = 300)
       gamma: int:  (Default value = 2)
+      alpha: float:  (Default value = 300)
+      gamma: int:  (Default value = 2)
 
     Returns:
       torch.Tensor: Delta shifts - dc; New bin centers = Old bin centers + dc
@@ -59,6 +61,8 @@ def inv_attractor(dx, alpha: float = 300, gamma: int = 2):
       gamma: int:  (Default value = 2)
       alpha: float:  (Default value = 300)
       gamma: int:  (Default value = 2)
+      alpha: float:  (Default value = 300)
+      gamma: int:  (Default value = 2)
 
     Returns:
       torch.Tensor: Delta shifts - dc; New bin centers = Old bin centers + dc
@@ -68,7 +72,7 @@ def inv_attractor(dx, alpha: float = 300, gamma: int = 2):
 
 
 class AttractorLayer(nn.Module):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -165,7 +169,7 @@ class AttractorLayer(nn.Module):
 
 
 class AttractorLayerUnnormed(nn.Module):
-    """"""
+    """ """
 
     def __init__(
         self,

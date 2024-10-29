@@ -37,7 +37,7 @@ def hypersim_distance_to_depth(npyDistance):
     """
 
     Args:
-      npyDistance:
+      npyDistance: 
 
     Returns:
 
@@ -64,7 +64,7 @@ def hypersim_distance_to_depth(npyDistance):
 
 
 class ToTensor(object):
-    """"""
+    """ """
 
     def __init__(self):
         # self.normalize = transforms.Normalize(
@@ -86,7 +86,7 @@ class ToTensor(object):
         """
 
         Args:
-          pic:
+          pic: 
 
         Returns:
 
@@ -120,7 +120,7 @@ class ToTensor(object):
 
 
 class HyperSim(Dataset):
-    """"""
+    """ """
 
     def __init__(self, data_dir_root):
         # image paths are of the form <data_dir_root>/<scene>/images/scene_cam_#_final_preview/*.tonemap.jpg
@@ -171,9 +171,9 @@ def get_hypersim_loader(data_dir_root, batch_size=1, **kwargs):
     """
 
     Args:
-      data_dir_root:
+      data_dir_root: 
       batch_size: (Default value = 1)
-      **kwargs:
+      **kwargs: 
 
     Returns:
 

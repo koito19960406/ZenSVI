@@ -34,6 +34,8 @@ def named_apply(fn: Callable, module: nn.Module, name="", depth_first=True, incl
       include_root: (Default value = False)
       fn: Callable:
       module: nn.Module:
+      fn: Callable: 
+      module: nn.Module: 
 
     Returns:
 
@@ -55,13 +57,13 @@ def named_apply(fn: Callable, module: nn.Module, name="", depth_first=True, incl
 
 
 class BlockChunk(nn.ModuleList):
-    """"""
+    """ """
 
     def forward(self, x):
         """
 
         Args:
-          x:
+          x: 
 
         Returns:
 
@@ -72,7 +74,7 @@ class BlockChunk(nn.ModuleList):
 
 
 class DinoVisionTransformer(nn.Module):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -167,8 +169,8 @@ class DinoVisionTransformer(nn.Module):
                 """
 
                 Args:
-                  *args:
-                  **kwargs:
+                  *args: 
+                  **kwargs: 
 
                 Returns:
 
@@ -215,7 +217,7 @@ class DinoVisionTransformer(nn.Module):
         self.init_weights()
 
     def init_weights(self):
-        """"""
+        """ """
         trunc_normal_(self.pos_embed, std=0.02)
         nn.init.normal_(self.cls_token, std=1e-6)
         if self.register_tokens is not None:
@@ -226,9 +228,9 @@ class DinoVisionTransformer(nn.Module):
         """
 
         Args:
-          x:
-          w:
-          h:
+          x: 
+          w: 
+          h: 
 
         Returns:
 
@@ -269,7 +271,7 @@ class DinoVisionTransformer(nn.Module):
         """
 
         Args:
-          x:
+          x: 
           masks: (Default value = None)
 
         Returns:
@@ -299,8 +301,8 @@ class DinoVisionTransformer(nn.Module):
         """
 
         Args:
-          x_list:
-          masks_list:
+          x_list: 
+          masks_list: 
 
         Returns:
 
@@ -328,7 +330,7 @@ class DinoVisionTransformer(nn.Module):
         """
 
         Args:
-          x:
+          x: 
           masks: (Default value = None)
 
         Returns:
@@ -355,7 +357,7 @@ class DinoVisionTransformer(nn.Module):
         """
 
         Args:
-          x:
+          x: 
           n: (Default value = 1)
 
         Returns:
@@ -376,7 +378,7 @@ class DinoVisionTransformer(nn.Module):
         """
 
         Args:
-          x:
+          x: 
           n: (Default value = 1)
 
         Returns:
@@ -412,14 +414,19 @@ class DinoVisionTransformer(nn.Module):
           Layers: or n last layers to takereshape
           return_class_token: bool
           norm: Default value
-          x: torch.Tensor:
-          n: Union[int:
+          x: torch
+          n: Union
+          Sequence: Default value
+          Layers: or n last layers to takereshape
+          return_class_token: bool
+          x: torch.Tensor: 
+          n: Union[int: 
           Sequence]:  (Default value = 1)
           # Layers or n last layers to takereshape: bool:  (Default value = False)
           return_class_token: bool:  (Default value = False)
 
         Returns:
-
+          
 
         """
         if self.chunked_blocks:
@@ -444,9 +451,9 @@ class DinoVisionTransformer(nn.Module):
         """
 
         Args:
-          *args:
+          *args: 
           is_training: (Default value = False)
-          **kwargs:
+          **kwargs: 
 
         Returns:
 
@@ -466,8 +473,11 @@ def init_weights_vit_timm(module: nn.Module, name: str = ""):
       name: str:  (Default value = "")
       module: nn.Module:
       name: str:  (Default value = "")
+      module: nn.Module: 
+      name: str:  (Default value = "")
 
     Returns:
+
     """
     if isinstance(module, nn.Linear):
         trunc_normal_(module.weight, std=0.02)
@@ -481,7 +491,7 @@ def vit_small(patch_size=16, num_register_tokens=0, **kwargs):
     Args:
       patch_size: (Default value = 16)
       num_register_tokens: (Default value = 0)
-      **kwargs:
+      **kwargs: 
 
     Returns:
 
@@ -505,7 +515,7 @@ def vit_base(patch_size=16, num_register_tokens=0, **kwargs):
     Args:
       patch_size: (Default value = 16)
       num_register_tokens: (Default value = 0)
-      **kwargs:
+      **kwargs: 
 
     Returns:
 
@@ -529,7 +539,7 @@ def vit_large(patch_size=16, num_register_tokens=0, **kwargs):
     Args:
       patch_size: (Default value = 16)
       num_register_tokens: (Default value = 0)
-      **kwargs:
+      **kwargs: 
 
     Returns:
 
@@ -553,9 +563,10 @@ def vit_giant2(patch_size=16, num_register_tokens=0, **kwargs):
     Args:
       patch_size: (Default value = 16)
       num_register_tokens: (Default value = 0)
-      **kwargs:
+      **kwargs: 
 
     Returns:
+
     """
     model = DinoVisionTransformer(
         patch_size=patch_size,

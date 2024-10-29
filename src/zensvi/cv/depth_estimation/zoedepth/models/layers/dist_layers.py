@@ -30,11 +30,12 @@ def log_binom(n, k, eps=1e-7):
     """Log(nCk) using stirling approximation.
 
     Args:
-      n:
-      k:
+      n: 
+      k: 
       eps: (Default value = 1e-7)
 
     Returns:
+
     """
     n = n + eps
     k = k + eps
@@ -43,13 +44,14 @@ def log_binom(n, k, eps=1e-7):
 
 class LogBinomial(nn.Module):
     def __init__(self, n_classes=256, act=torch.softmax):
-        """Compute log binomial distribution for n_classes.
+    """Compute log binomial distribution for n_classes.
 
-        Args:
-          n_classes(int): number of output classes. Defaults to 256.
+    Args:
+      n_classes(int): number of output classes. Defaults to 256.
 
-        Returns:
-        """
+    Returns:
+
+    """
         super().__init__()
         self.K = n_classes
         self.act = act
@@ -66,6 +68,7 @@ class LogBinomial(nn.Module):
 
         Returns:
           torch.Tensor -NCHW: log binomial distribution logbinomial(p;t)
+
         """
         if x.ndim == 3:
             x = x.unsqueeze(1)  # make it nchw
@@ -81,7 +84,7 @@ class LogBinomial(nn.Module):
 
 
 class ConditionalLogBinomial(nn.Module):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -134,6 +137,7 @@ class ConditionalLogBinomial(nn.Module):
 
         Returns:
           torch.Tensor: Output log binomial distribution
+
         """
         pt = self.mlp(torch.concat((x, cond), dim=1))
         p, t = pt[:, :2, ...], pt[:, 2:, ...]

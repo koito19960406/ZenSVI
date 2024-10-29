@@ -16,7 +16,7 @@ from .utils import wideresnet
 
 
 class ImageDataset(Dataset):
-    """"""
+    """ """
 
     # Dataset class for loading images
     def __init__(self, img_paths, transform=None):
@@ -37,7 +37,7 @@ class ImageDataset(Dataset):
         """
 
         Args:
-          batch:
+          batch: 
 
         Returns:
 
@@ -48,7 +48,7 @@ class ImageDataset(Dataset):
 
 
 def _returnTF():
-    """"""
+    """ """
     # load the image transformer
     tf = trn.Compose(
         [
@@ -64,7 +64,7 @@ def _recursion_change_bn(module):
     """
 
     Args:
-      module:
+      module: 
 
     Returns:
 
@@ -82,9 +82,9 @@ def _returnCAM(feature_conv, weight_softmax, class_idx):
     """
 
     Args:
-      feature_conv:
-      weight_softmax:
-      class_idx:
+      feature_conv: 
+      weight_softmax: 
+      class_idx: 
 
     Returns:
 
@@ -127,7 +127,7 @@ class ClassifierPlaces365(BaseClassifier):
         self.weight_softmax = self._load_weight_softmax()
 
     def _load_labels(self):
-        """"""
+        """ """
         # prepare all the labels
         # scene category relevant
         file_name_category = pkg_resources.resource_filename(
@@ -167,9 +167,9 @@ class ClassifierPlaces365(BaseClassifier):
         """
 
         Args:
-          module:
-          input:
-          output:
+          module: 
+          input: 
+          output: 
 
         Returns:
 
@@ -177,7 +177,7 @@ class ClassifierPlaces365(BaseClassifier):
         self.features_blobs.append(np.squeeze(output.data.cpu().numpy()))
 
     def _load_model(self):
-        """"""
+        """ """
         model_file = pkg_resources.resource_filename("zensvi.cv.classification.utils", "wideresnet18_places365.pth.tar")
         model = wideresnet.resnet18(num_classes=365)
         checkpoint = torch.load(model_file, map_location=self.device)
@@ -200,7 +200,7 @@ class ClassifierPlaces365(BaseClassifier):
         return model
 
     def _load_weight_softmax(self):
-        """"""
+        """ """
         # get the softmax weight
         params = list(self.model.parameters())
         weight_softmax = params[-2].data.cpu().numpy()
@@ -211,9 +211,9 @@ class ClassifierPlaces365(BaseClassifier):
         """
 
         Args:
-          results:
-          dir_output:
-          file_name:
+          results: 
+          dir_output: 
+          file_name: 
           save_format: (Default value = "csv json")
           csv_format: (Default value = "long")
 
@@ -250,12 +250,12 @@ class ClassifierPlaces365(BaseClassifier):
         output file can be saved in JSON and/or CSV format and will contain the scene
         categories, scene attributes, and environment type (indoor or outdoor) for each
         image.
-
+        
         A list of categories can be found at
         https://github.com/CSAILVision/places365/blob/master/categories_places365.txt
         and a list of attributes can be found at
         https://github.com/CSAILVision/places365/blob/master/labels_sunattribute.txt
-
+        
         Scene categories' values range from 0 to 1, where 1 is the highest probability
         of the scene category. Scene attributes' values are the responses of the scene
         attributes, which are the dot product of the scene attributes' weight and the
@@ -279,16 +279,16 @@ class ClassifierPlaces365(BaseClassifier):
           csv_format(str): csv format for the output,
         defaults to "long". Options are "long" and "wide".
           dir_input: Union[str:
-          Path]:
+          Path]: 
           dir_image_output: Union[str:
-          Path:
+          Path: 
           None]: (Default value = None)
           dir_summary_output: Union[str:
           batch_size: int:  (Default value = 1)
           save_image_options: str:  (Default value = "cam_image blend_image")
           save_format: str:  (Default value = "json csv")
           csv_format: str:  (Default value = "long")
-          # "long" or "wide":
+          # "long" or "wide": 
           dir_input: Union[str:
           dir_image_output: Union[str:
           dir_summary_output: Union[str:
@@ -296,8 +296,16 @@ class ClassifierPlaces365(BaseClassifier):
           save_image_options: str:  (Default value = "cam_image blend_image")
           save_format: str:  (Default value = "json csv")
           csv_format: str:  (Default value = "long")
+          dir_input: Union[str: 
+          dir_image_output: Union[str: 
+          dir_summary_output: Union[str: 
+          batch_size: int:  (Default value = 1)
+          save_image_options: str:  (Default value = "cam_image blend_image")
+          save_format: str:  (Default value = "json csv")
+          csv_format: str:  (Default value = "long")
 
         Returns:
+
         """
         if not dir_image_output and not dir_summary_output:
             raise ValueError("At least one of dir_image_output and dir_summary_output must be provided")

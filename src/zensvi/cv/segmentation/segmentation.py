@@ -56,6 +56,7 @@ def _create_cityscapes_label_colormap():
 
     Returns:
       : A colormap for visualizing segmentation results.
+
     """
 
     labels = [
@@ -106,6 +107,7 @@ def _create_mapillary_vistas_label_colormap():
 
     Returns:
       : A list of labels for visualizing segmentation results.
+
     """
 
     labels = [
@@ -189,7 +191,7 @@ def _create_mapillary_vistas_label_colormap():
 
 def _get_resized_dimensions(width: int, height: int, max_size: int = 2048) -> Tuple[int, int]:
     """Calculate the new dimensions of an image to maintain aspect ratio.
-
+    
     Returns original dimensions if both are less than max_size.
 
     Args:
@@ -199,8 +201,12 @@ def _get_resized_dimensions(width: int, height: int, max_size: int = 2048) -> Tu
       width: int:
       height: int:
       max_size: int:  (Default value = 2048)
+      width: int: 
+      height: int: 
+      max_size: int:  (Default value = 2048)
 
     Returns:
+
     """
     if max(width, height) > max_size:
         scaling_factor = max_size / max(width, height)
@@ -214,13 +220,14 @@ def _get_resized_dimensions(width: int, height: int, max_size: int = 2048) -> Tu
 
 class ImageDataset(Dataset):
     def __init__(self, image_files: List[Path], max_size: int = 2048, rgb: bool = True) -> None:
-        """Initialize the dataset with the path to images, the maximum size for resizing,
+    """Initialize the dataset with the path to images, the maximum size for resizing,
         and color mode.
 
-        Args:
+    Args:
 
-        Returns:
-        """
+    Returns:
+
+    """
         self.image_files = [
             image_file
             for image_file in image_files
@@ -259,13 +266,15 @@ class ImageDataset(Dataset):
         Args:
           data(List[Tuple[str): List of tuples containing image file path, image data, and original image dimensions.
           data: List[Tuple[str:
-          cv2.Mat:
-          Tuple[int:
-          int]]]:
+          cv2.Mat: 
+          Tuple[int: 
+          int]]]: 
           data: List[Tuple[str:
+          data: List[Tuple[str: 
 
         Returns:
           Tuple[List[str], List[cv2.Mat], List[Tuple[int, int]]]: Tuple containing lists of image file paths, image data, and original image dimensions.
+
         """
         image_files, images, original_img_shape = zip(*data)
         return list(image_files), list(images), list(original_img_shape)
@@ -273,12 +282,13 @@ class ImageDataset(Dataset):
 
 class Segmenter:
     """A class for performing semantic and panoptic segmentation on images.
-
+    
     The models used are from the Mask2Former (https://huggingface.co/docs/transformers/model_doc/mask2former).
 
     Args:
 
     Returns:
+
     """
 
     def __init__(self, dataset="cityscapes", task="semantic", device=None):
@@ -301,8 +311,8 @@ class Segmenter:
         """
 
         Args:
-          dataset:
-          task:
+          dataset: 
+          task: 
 
         Returns:
 
@@ -328,6 +338,7 @@ class Segmenter:
 
         Returns:
           Tuple: The model and processor.
+
         """
         # Add other models in the future
         if "mask2former" in model_name:
@@ -343,6 +354,7 @@ class Segmenter:
 
         Returns:
           np.ndarray: A color map.
+
         """
         if dataset == "cityscapes":
             labels = _create_cityscapes_label_colormap()
@@ -371,6 +383,7 @@ class Segmenter:
 
         Returns:
           Dict[Tuple, _Label]: A dictionary mapping colors to labels.
+
         """
         if dataset == "cityscapes":
             labels = _create_cityscapes_label_colormap()
@@ -390,7 +403,7 @@ class Segmenter:
         """
 
         Args:
-          dataset:
+          dataset: 
 
         Returns:
 
@@ -405,10 +418,11 @@ class Segmenter:
         """Get the appropriate device for running the model.
 
         Args:
-          device:
+          device: 
 
         Returns:
           torch.device: The device to use for running the model.
+
         """
         if device is not None:
             if device not in ["cpu", "cuda", "mps"]:
@@ -431,6 +445,7 @@ class Segmenter:
 
         Returns:
           dict: A dictionary with class names as keys and pixel ratios as values.
+
         """
         unique, counts = np.unique(segmented_img, return_counts=True)
         total_pixels = np.sum(counts)
@@ -444,10 +459,10 @@ class Segmenter:
         """
 
         Args:
-          input_dict:
-          dir_output:
-          value_name:
-          csv_format:
+          input_dict: 
+          dir_output: 
+          value_name: 
+          csv_format: 
 
         Returns:
 
@@ -482,6 +497,7 @@ class Segmenter:
 
         Returns:
           list: List of panoptic segmentation outputs.
+
         """
         inputs = self.processor(images=images, return_tensors="pt").to(self.model.device)
         outputs = self.model(**inputs)
@@ -498,6 +514,7 @@ class Segmenter:
 
         Returns:
           tuple: Tuple containing list of semantic segmentation outputs and list of pixel ratios.
+
         """
         inputs = self.processor(images=images, return_tensors="pt").to(self.model.device)
         with torch.no_grad():
@@ -513,6 +530,7 @@ class Segmenter:
 
         Returns:
           numpy.ndarray: Colored segmented image.
+
         """
         colored_img = self.color_map[segmented_img]
         return colored_img
@@ -528,6 +546,7 @@ class Segmenter:
           output(dict): The output dictionary containing the segmentation data.
 
         Returns:
+
         """
         colored_segmented_img = self._trainid_to_color(output["label_segmentation"].cpu().numpy())
         alpha = 0.5
@@ -589,6 +608,7 @@ class Segmenter:
           output(Tensor): The output tensor containing the semantic segmentation data.
 
         Returns:
+
         """
         colored_segmented_img = self._trainid_to_color(output.cpu().numpy())
         alpha = 0.5
@@ -612,7 +632,7 @@ class Segmenter:
         """
 
         Args:
-          output:
+          output: 
 
         Returns:
 
@@ -641,6 +661,7 @@ class Segmenter:
 
         Returns:
           : segmentation with label_ids instead of segment_ids
+
         """
         # Extract the segmentation and segments_info from the output
         segmentation = output["segmentation"]
@@ -680,6 +701,7 @@ class Segmenter:
 
         Returns:
           : None
+
         """
         outputs = None
         if task == "panoptic":
@@ -720,7 +742,7 @@ class Segmenter:
     ):
         """Processes a batch of images for segmentation, saves the segmented images and
         summary statistics.
-
+        
         This method handles the processing of images for segmentation, managing input/output directories,
         saving options, and parallel processing settings. The method requires specifying an input directory
         or a path to a single image and supports optional saving of output images and segmentation summaries.
@@ -741,9 +763,9 @@ class Segmenter:
           max_workers: Union
           Defaults: to None
           dir_input: Union[str:
-          Path]:
+          Path]: 
           dir_image_output: Union[str:
-          Path:
+          Path: 
           None]: (Default value = None)
           dir_summary_output: Union[str:
           # "long" or "wide"max_workers: Union[int:
@@ -751,6 +773,10 @@ class Segmenter:
           dir_image_output: Union[str:
           dir_summary_output: Union[str:
           # "long" or "wide"max_workers: Union[int:
+          dir_input: Union[str: 
+          dir_image_output: Union[str: 
+          dir_summary_output: Union[str: 
+          # "long" or "wide"max_workers: Union[int: 
 
         Returns:
           None: The method does not return any value but saves the processed results to specified directories.
@@ -758,6 +784,7 @@ class Segmenter:
         Raises:
           ValueError: If neither
           ValueError: If
+
         """
         # make sure that at least one of dir_image_output and dir_summary_output is not None
         if (dir_image_output is None) & (dir_summary_output is None):
@@ -986,6 +1013,7 @@ class Segmenter:
 
         Returns:
           : None
+
         """
 
         def calculate_label_ratios(image, label_map):
@@ -998,6 +1026,7 @@ class Segmenter:
 
             Returns:
               : A dictionary containing the pixel ratio of different classes in the given image.
+
             """
             label_ratios = {}
             total_pixels = image.shape[0] * image.shape[1]
@@ -1018,6 +1047,7 @@ class Segmenter:
 
             Returns:
               : A tuple containing the image file key and the pixel ratio of different classes in the given image.
+
             """
             image_file_key = str(Path(image_file).stem).replace("_colored_segmented", "")
             image = cv2.imread(str(image_file))
@@ -1034,6 +1064,7 @@ class Segmenter:
 
             Returns:
               : A Pandas DataFrame containing the pixel ratios of different classes in each image file.
+
             """
             pixel_ratio_dict = {}
 
@@ -1055,6 +1086,7 @@ class Segmenter:
 
             Returns:
               : A nested dictionary containing the pixel ratios of different classes in each image file.
+
             """
             data = {}
 

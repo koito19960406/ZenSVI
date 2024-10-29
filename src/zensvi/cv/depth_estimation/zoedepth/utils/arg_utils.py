@@ -2,7 +2,7 @@ def infer_type(x):  # hacky way to infer type from string args
     """
 
     Args:
-      x:
+      x: 
 
     Returns:
 
@@ -29,7 +29,7 @@ def parse_unknown(unknown_args):
     """
 
     Args:
-      unknown_args:
+      unknown_args: 
 
     Returns:
 

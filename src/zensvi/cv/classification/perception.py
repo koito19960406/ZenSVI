@@ -14,7 +14,7 @@ from .utils.place_pulse import PlacePulseClassificationModel
 
 
 class ImageDataset(Dataset):
-    """"""
+    """ """
 
     def __init__(self, image_files: List[Path]):
         self.image_files = [
@@ -48,11 +48,13 @@ class ImageDataset(Dataset):
         Args:
           data(List[Tuple[str): List of tuples containing image file path and transformed image tensor.
           data: List[Tuple[str:
-          torch.Tensor]]:
+          torch.Tensor]]: 
           data: List[Tuple[str:
+          data: List[Tuple[str: 
 
         Returns:
           Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
+
         """
         image_files, images = zip(*data)
         images = torch.stack(images)  # Stack images to create a batch
@@ -73,6 +75,7 @@ class ClassifierPerception(BaseClassifier):
     depressing". This affects the checkpoint file used.
 
     Returns:
+
     """
 
     def __init__(self, perception_study, device=None):
@@ -97,9 +100,9 @@ class ClassifierPerception(BaseClassifier):
         """
 
         Args:
-          results:
-          dir_output:
-          file_name:
+          results: 
+          dir_output: 
+          file_name: 
           save_format: (Default value = "csv json")
 
         Returns:
@@ -119,8 +122,8 @@ class ClassifierPerception(BaseClassifier):
         """
 
         Args:
-          model:
-          checkpoint_path:
+          model: 
+          checkpoint_path: 
 
         Returns:
 
@@ -151,12 +154,15 @@ class ClassifierPerception(BaseClassifier):
         defaults to "json csv". Options are "json" and "csv".
         Please add a space between options.
           dir_input: Union[str:
-          Path]:
+          Path]: 
           dir_summary_output: Union[str:
           dir_input: Union[str:
           dir_summary_output: Union[str:
+          dir_input: Union[str: 
+          dir_summary_output: Union[str: 
 
         Returns:
+
         """
         # Prepare output directories
         if dir_summary_output:

@@ -37,6 +37,7 @@ def get_trainer(config):
 
     Raises:
       ValueError: If the specified trainer does not exist under trainers/ folder
+
     """
     assert (
         "trainer" in config and config.trainer is not None and config.trainer != ""

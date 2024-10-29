@@ -34,6 +34,7 @@ def get_requirements(
     Args:
       path: str:  (Default value = HERE / "requirements.txt")
       path: str:  (Default value = HERE / "requirements.txt")
+      path: str:  (Default value = HERE / "requirements.txt")
 
     Returns:
 
@@ -51,7 +52,7 @@ def get_requirements(
 
 
 def get_package_version() -> str:
-    """"""
+    """ """
     with open(HERE / "dinov2/__init__.py") as f:
         result = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", f.read(), re.M)
         if result:

@@ -30,6 +30,9 @@ def get_args_parser(
       description: Optional[str]:  (Default value = None)
       parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
       add_help: bool:  (Default value = True)
+      description: Optional[str]:  (Default value = None)
+      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
+      add_help: bool:  (Default value = True)
 
     Returns:
 
@@ -89,7 +92,7 @@ def get_args_parser(
 
 
 def get_shared_folder() -> Path:
-    """"""
+    """ """
     user_checkpoint_path = get_user_checkpoint_path()
     if user_checkpoint_path is None:
         raise RuntimeError("Path to user checkpoint cannot be determined")
@@ -102,9 +105,9 @@ def submit_jobs(task_class, args, name: str):
     """
 
     Args:
-      task_class:
-      args:
-      name: str:
+      task_class: 
+      args: 
+      name: str: 
 
     Returns:
 

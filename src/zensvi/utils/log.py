@@ -25,6 +25,7 @@ class Logger:
 
         Returns:
           : None
+
         """
         instance.logger = logging.getLogger(str(log_file_path))
         if not instance.logger.handlers:
@@ -48,6 +49,7 @@ class Logger:
 
         Returns:
           : None
+
         """
         self.logger.info(message)
 
@@ -59,6 +61,7 @@ class Logger:
 
         Returns:
           : None
+
         """
         self.logger.error(message)
 
@@ -70,6 +73,7 @@ class Logger:
 
         Returns:
           : None
+
         """
         self.logger.warning(message)
 
@@ -81,6 +85,7 @@ class Logger:
 
         Returns:
           : None
+
         """
         self.logger.debug(message)
 
@@ -94,6 +99,7 @@ class Logger:
 
         Returns:
           : None
+
         """
         formatted_args = []
         for i, arg in enumerate(args):
@@ -112,6 +118,7 @@ class Logger:
 
         Returns:
           : None
+
         """
         self.log_error(f"Failed to process tile: {failed_tile_name}")
 
@@ -123,5 +130,6 @@ class Logger:
 
         Returns:
           : None
+
         """
         self.log_error(f"Failed to process pid: {failed_pid}")

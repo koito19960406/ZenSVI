@@ -76,6 +76,7 @@ def get_local_size() -> int:
     Returns:
       : The size of the per-machine process group,
       : The size of the per-machine process group,
+      : The size of the per-machine process group,
       i.e. the number of processes per machine.
 
     """
@@ -107,8 +108,8 @@ def _restrict_print_to_main_process() -> None:
         """
 
         Args:
-          *args:
-          **kwargs:
+          *args: 
+          **kwargs: 
 
         Returns:
 
@@ -126,6 +127,7 @@ def _get_master_port(seed: int = 0) -> int:
     Args:
       seed: int:  (Default value = 0)
       seed: int:  (Default value = 0)
+      seed: int:  (Default value = 0)
 
     Returns:
 
@@ -141,7 +143,7 @@ def _get_master_port(seed: int = 0) -> int:
 
 
 def _get_available_port() -> int:
-    """"""
+    """ """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         # A "" host address means INADDR_ANY i.e. binding to all interfaces.
         # Note this is not compatible with IPv6.
@@ -161,12 +163,12 @@ _TORCH_DISTRIBUTED_ENV_VARS = (
 
 
 def _collect_env_vars() -> Dict[str, str]:
-    """"""
+    """ """
     return {env_var: os.environ[env_var] for env_var in _TORCH_DISTRIBUTED_ENV_VARS if env_var in os.environ}
 
 
 def _is_slurm_job_process() -> bool:
-    """"""
+    """ """
     return "SLURM_JOB_ID" in os.environ
 
 
@@ -176,6 +178,7 @@ def _parse_slurm_node_list(s: str) -> List[str]:
     Args:
       s: str:
       s: str:
+      s: str: 
 
     Returns:
 
@@ -204,6 +207,8 @@ def _check_env_variable(key: str, new_value: str):
       new_value: str:
       key: str:
       new_value: str:
+      key: str: 
+      new_value: str: 
 
     Returns:
 
@@ -214,7 +219,7 @@ def _check_env_variable(key: str, new_value: str):
 
 
 class _TorchDistributedEnvironment:
-    """"""
+    """ """
 
     def __init__(self):
         self.master_addr = "127.0.0.1"
@@ -246,7 +251,7 @@ class _TorchDistributedEnvironment:
 
     # Slurm job created with sbatch, submitit, etc...
     def _set_from_slurm_env(self):
-        """"""
+        """ """
         # logger.info("Initialization from Slurm environment")
         job_id = int(os.environ["SLURM_JOB_ID"])
         node_count = int(os.environ["SLURM_JOB_NUM_NODES"])
@@ -264,7 +269,7 @@ class _TorchDistributedEnvironment:
 
     # Single node job with preset environment (i.e. torchrun)
     def _set_from_preset_env(self):
-        """"""
+        """ """
         # logger.info("Initialization from preset environment")
         self.master_addr = os.environ["MASTER_ADDR"]
         self.master_port = os.environ["MASTER_PORT"]
@@ -277,7 +282,7 @@ class _TorchDistributedEnvironment:
 
     # Single node and GPU job (i.e. local script run)
     def _set_from_local(self):
-        """"""
+        """ """
         # logger.info("Initialization from local")
         self.master_addr = "127.0.0.1"
         self.master_port = _get_available_port()
@@ -290,9 +295,10 @@ class _TorchDistributedEnvironment:
         """
 
         Args:
-          *:
+          *: 
           overwrite: bool:
           overwrite: bool:
+          overwrite: bool: 
 
         Returns:
 
@@ -328,7 +334,10 @@ def enable(
       set_cuda_current_device: If True, call torch.cuda.set_device() to set the
     current PyTorch CUDA device to the one matching the local rank.
       overwrite: If True, overwrites already set variables. Else fails.
-      *:
+      *: 
+      set_cuda_current_device: bool:  (Default value = True)
+      overwrite: bool:  (Default value = False)
+      allow_nccl_timeout: bool:  (Default value = False)
       set_cuda_current_device: bool:  (Default value = True)
       overwrite: bool:  (Default value = False)
       allow_nccl_timeout: bool:  (Default value = False)
@@ -337,6 +346,7 @@ def enable(
       allow_nccl_timeout: bool:  (Default value = False)
 
     Returns:
+
     """
 
     global _LOCAL_RANK, _LOCAL_WORLD_SIZE

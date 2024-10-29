@@ -36,7 +36,7 @@ from zoedepth.models.model_io import load_state_from_resource
 
 
 class ZoeDepthNK(DepthModel):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -200,8 +200,9 @@ class ZoeDepthNK(DepthModel):
           return_final_centers: bool (Default value = False)
           denorm: bool (Default value = False)
           return_probs: bool (Default value = False)
-          kwargs:
-          **kwargs:
+          kwargs: 
+          kwargs: 
+          **kwargs: 
 
         Returns:
           dict: Dictionary of outputs with keys:
@@ -280,23 +281,24 @@ class ZoeDepthNK(DepthModel):
         """Learning rate configuration for different layers of the model.
 
         Args:
-          lr:
+          lr: 
 
         Returns:
           list: list of parameters to optimize and their learning rates, in the format required by torch optimizers.
+
         """
         param_conf = []
         if self.train_midas:
 
             def get_rel_pos_params():
-                """"""
+                """ """
                 for name, p in self.core.core.pretrained.named_parameters():
                     # if "relative_position" in name:
                     if "pos_embed" in name:
                         yield p
 
             def get_enc_params_except_rel_pos():
-                """"""
+                """ """
                 for name, p in self.core.core.pretrained.named_parameters():
                     # if "relative_position" not in name:
                     if "pos_embed" not in name:
@@ -328,9 +330,10 @@ class ZoeDepthNK(DepthModel):
         for the given bin configuration.
 
         Args:
-          conf_name:
+          conf_name: 
 
         Returns:
+
         """
         params = []
         for name, child in self.named_children():
@@ -345,9 +348,10 @@ class ZoeDepthNK(DepthModel):
         exclusively used for the given bin configuration.
 
         Args:
-          conf_name:
+          conf_name: 
 
         Returns:
+
         """
         for p in self.get_conf_parameters(conf_name):
             p.requires_grad = False
@@ -357,9 +361,10 @@ class ZoeDepthNK(DepthModel):
         exclusively used for the given bin configuration.
 
         Args:
-          conf_name:
+          conf_name: 
 
         Returns:
+
         """
         for p in self.get_conf_parameters(conf_name):
             p.requires_grad = True
@@ -389,7 +394,7 @@ class ZoeDepthNK(DepthModel):
           use_pretrained_midas: (Default value = False)
           train_midas: (Default value = False)
           freeze_midas_bn: (Default value = True)
-          **kwargs:
+          **kwargs: 
 
         Returns:
 
@@ -417,7 +422,7 @@ class ZoeDepthNK(DepthModel):
         """
 
         Args:
-          config:
+          config: 
 
         Returns:
 

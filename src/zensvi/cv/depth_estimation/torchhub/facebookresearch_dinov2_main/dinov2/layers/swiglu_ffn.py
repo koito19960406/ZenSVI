@@ -11,7 +11,7 @@ from torch import Tensor, nn
 
 
 class SwiGLUFFN(nn.Module):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -34,6 +34,7 @@ class SwiGLUFFN(nn.Module):
         Args:
           x: Tensor:
           x: Tensor:
+          x: Tensor: 
 
         Returns:
 
@@ -54,7 +55,7 @@ except ImportError:
 
 
 class SwiGLUFFNFused(SwiGLU):
-    """"""
+    """ """
 
     def __init__(
         self,

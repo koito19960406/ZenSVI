@@ -33,7 +33,7 @@ from .base_trainer import BaseTrainer
 
 
 class Trainer(BaseTrainer):
-    """"""
+    """ """
 
     def __init__(self, config, model, train_loader, test_loader=None, device=None):
         super().__init__(config, model, train_loader, test_loader=test_loader, device=device)
@@ -47,14 +47,15 @@ class Trainer(BaseTrainer):
     def train_on_batch(self, batch, train_step):
         """Expects a batch of images and depth as input batch["image"].shape :
         batch_size, c, h, w batch["depth"].shape : batch_size, 1, h, w.
-
+        
         Assumes all images in a batch are from the same dataset
 
         Args:
-          batch:
-          train_step:
+          batch: 
+          train_step: 
 
         Returns:
+
         """
 
         images, depths_gt = batch["image"].to(self.device), batch["depth"].to(self.device)
@@ -130,8 +131,8 @@ class Trainer(BaseTrainer):
         """
 
         Args:
-          batch:
-          val_step:
+          batch: 
+          val_step: 
 
         Returns:
 

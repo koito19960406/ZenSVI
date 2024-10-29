@@ -15,7 +15,7 @@ from torch import Tensor, nn
 
 
 class Mlp(nn.Module):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -40,6 +40,7 @@ class Mlp(nn.Module):
         Args:
           x: Tensor:
           x: Tensor:
+          x: Tensor: 
 
         Returns:
 

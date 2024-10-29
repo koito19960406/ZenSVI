@@ -25,7 +25,7 @@ except ImportError:
 
 
 class Attention(nn.Module):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -52,6 +52,7 @@ class Attention(nn.Module):
         Args:
           x: Tensor:
           x: Tensor:
+          x: Tensor: 
 
         Returns:
 
@@ -72,7 +73,7 @@ class Attention(nn.Module):
 
 
 class MemEffAttention(Attention):
-    """"""
+    """ """
 
     def forward(self, x: Tensor, attn_bias=None) -> Tensor:
         """
@@ -81,6 +82,7 @@ class MemEffAttention(Attention):
           x: Tensor:
           attn_bias: (Default value = None)
           x: Tensor:
+          x: Tensor: 
 
         Returns:
 

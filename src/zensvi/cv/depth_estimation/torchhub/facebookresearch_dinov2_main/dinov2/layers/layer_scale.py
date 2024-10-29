@@ -13,7 +13,7 @@ from torch import Tensor, nn
 
 
 class LayerScale(nn.Module):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -31,6 +31,7 @@ class LayerScale(nn.Module):
         Args:
           x: Tensor:
           x: Tensor:
+          x: Tensor: 
 
         Returns:
 

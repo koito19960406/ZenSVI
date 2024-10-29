@@ -37,6 +37,7 @@ def get_args_parser(add_help: bool = True):
     Args:
       add_help: bool:  (Default value = True)
       add_help: bool:  (Default value = True)
+      add_help: bool:  (Default value = True)
 
     Returns:
 
@@ -74,13 +75,16 @@ For python-based LazyConfig, use "path.key=value".
 def build_optimizer(cfg, params_groups):
     """Args:
       cfg:
-
+    
     Args:
       cfg:
-      params_groups:
+
+    Args:
+      cfg: 
+      params_groups: 
 
     Returns:
-
+      
 
     """
     return torch.optim.AdamW(params_groups, betas=(cfg.optim.adamw_beta1, cfg.optim.adamw_beta2))
@@ -90,7 +94,7 @@ def build_schedulers(cfg):
     """
 
     Args:
-      cfg:
+      cfg: 
 
     Returns:
 
@@ -146,10 +150,10 @@ def apply_optim_scheduler(optimizer, lr, wd, last_layer_lr):
     """
 
     Args:
-      optimizer:
-      lr:
-      wd:
-      last_layer_lr:
+      optimizer: 
+      lr: 
+      wd: 
+      last_layer_lr: 
 
     Returns:
 
@@ -166,9 +170,9 @@ def do_test(cfg, model, iteration):
     """
 
     Args:
-      cfg:
-      model:
-      iteration:
+      cfg: 
+      model: 
+      iteration: 
 
     Returns:
 
@@ -188,8 +192,8 @@ def do_train(cfg, model, resume=False):
     """
 
     Args:
-      cfg:
-      model:
+      cfg: 
+      model: 
       resume: (Default value = False)
 
     Returns:
@@ -361,7 +365,7 @@ def main(args):
     """
 
     Args:
-      args:
+      args: 
 
     Returns:
 

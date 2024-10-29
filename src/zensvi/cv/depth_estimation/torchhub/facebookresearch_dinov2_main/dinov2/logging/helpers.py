@@ -17,7 +17,7 @@ logger = logging.getLogger("dinov2")
 
 
 class MetricLogger(object):
-    """"""
+    """ """
 
     def __init__(self, delimiter="\t", output_file=None):
         self.meters = defaultdict(SmoothedValue)
@@ -28,7 +28,7 @@ class MetricLogger(object):
         """
 
         Args:
-          **kwargs:
+          **kwargs: 
 
         Returns:
 
@@ -53,7 +53,7 @@ class MetricLogger(object):
         return self.delimiter.join(loss_str)
 
     def synchronize_between_processes(self):
-        """"""
+        """ """
         for meter in self.meters.values():
             meter.synchronize_between_processes()
 
@@ -61,8 +61,8 @@ class MetricLogger(object):
         """
 
         Args:
-          name:
-          meter:
+          name: 
+          meter: 
 
         Returns:
 
@@ -73,9 +73,9 @@ class MetricLogger(object):
         """
 
         Args:
-          iteration:
-          iter_time:
-          data_time:
+          iteration: 
+          iter_time: 
+          data_time: 
 
         Returns:
 
@@ -96,8 +96,8 @@ class MetricLogger(object):
         """
 
         Args:
-          iterable:
-          print_freq:
+          iterable: 
+          print_freq: 
           header: (Default value = None)
           n_iterations: (Default value = None)
           start_iteration: (Default value = 0)
@@ -178,6 +178,7 @@ class SmoothedValue:
     Args:
 
     Returns:
+
     """
 
     def __init__(self, window_size=20, fmt=None):
@@ -192,7 +193,7 @@ class SmoothedValue:
         """
 
         Args:
-          value:
+          value: 
           num: (Default value = 1)
 
         Returns:
@@ -222,29 +223,29 @@ class SmoothedValue:
 
     @property
     def median(self):
-        """"""
+        """ """
         d = torch.tensor(list(self.deque))
         return d.median().item()
 
     @property
     def avg(self):
-        """"""
+        """ """
         d = torch.tensor(list(self.deque), dtype=torch.float32)
         return d.mean().item()
 
     @property
     def global_avg(self):
-        """"""
+        """ """
         return self.total / self.count
 
     @property
     def max(self):
-        """"""
+        """ """
         return max(self.deque)
 
     @property
     def value(self):
-        """"""
+        """ """
         return self.deque[-1]
 
     def __str__(self):

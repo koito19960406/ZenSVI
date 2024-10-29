@@ -25,7 +25,7 @@ _DEFAULT_MMAP_CACHE_SIZE = 16  # Warning: This can exhaust file descriptors
 
 @dataclass
 class _ClassEntry:
-    """"""
+    """ """
 
     block_offset: int
     maybe_filename: Optional[str] = None
@@ -33,7 +33,7 @@ class _ClassEntry:
 
 @dataclass
 class _Entry:
-    """"""
+    """ """
 
     class_index: int  # noqa: E701
     start_offset: int
@@ -42,21 +42,21 @@ class _Entry:
 
 
 class _Split(Enum):
-    """"""
+    """ """
 
     TRAIN = "train"
     VAL = "val"
 
     @property
     def length(self) -> int:
-        """"""
+        """ """
         return {
             _Split.TRAIN: 11_797_647,
             _Split.VAL: 561_050,
         }[self]
 
     def entries_path(self):
-        """"""
+        """ """
         return f"imagenet21kp_{self.value}.txt"
 
 
@@ -66,6 +66,7 @@ def _get_tarball_path(class_id: str) -> str:
     Args:
       class_id: str:
       class_id: str:
+      class_id: str: 
 
     Returns:
 
@@ -81,6 +82,8 @@ def _make_mmap_tarball(tarballs_root: str, mmap_cache_size: int):
       mmap_cache_size: int:
       tarballs_root: str:
       mmap_cache_size: int:
+      tarballs_root: str: 
+      mmap_cache_size: int: 
 
     Returns:
 
@@ -93,6 +96,7 @@ def _make_mmap_tarball(tarballs_root: str, mmap_cache_size: int):
         Args:
           class_id: str:
           class_id: str:
+          class_id: str: 
 
         Returns:
 
@@ -106,7 +110,7 @@ def _make_mmap_tarball(tarballs_root: str, mmap_cache_size: int):
 
 
 class ImageNet22k(ExtendedVisionDataset):
-    """"""
+    """ """
 
     _GZIPPED_INDICES: Set[int] = {
         841_545,
@@ -166,6 +170,7 @@ class ImageNet22k(ExtendedVisionDataset):
         Args:
           root: Optional[str]:  (Default value = None)
           root: Optional[str]:  (Default value = None)
+          root: Optional[str]:  (Default value = None)
 
         Returns:
 
@@ -176,6 +181,7 @@ class ImageNet22k(ExtendedVisionDataset):
         """
 
         Args:
+          root: Optional[str]:  (Default value = None)
           root: Optional[str]:  (Default value = None)
           root: Optional[str]:  (Default value = None)
 
@@ -190,6 +196,7 @@ class ImageNet22k(ExtendedVisionDataset):
         Args:
           path: str:
           path: str:
+          path: str: 
 
         Returns:
 
@@ -209,6 +216,7 @@ class ImageNet22k(ExtendedVisionDataset):
         """
 
         Args:
+          root: Optional[str]:  (Default value = None)
           root: Optional[str]:  (Default value = None)
           root: Optional[str]:  (Default value = None)
 
@@ -264,6 +272,7 @@ class ImageNet22k(ExtendedVisionDataset):
         Args:
           extra_path: str:
           extra_path: str:
+          extra_path: str: 
 
         Returns:
 
@@ -280,6 +289,8 @@ class ImageNet22k(ExtendedVisionDataset):
           extra_path: str:
           extra_array: np.ndarray:
           extra_path: str:
+          extra_array: np.ndarray: 
+          extra_path: str: 
 
         Returns:
 
@@ -291,7 +302,7 @@ class ImageNet22k(ExtendedVisionDataset):
 
     @property
     def _tarballs_root(self) -> str:
-        """"""
+        """ """
         return self.root
 
     def find_class_id(self, class_index: int) -> str:
@@ -300,6 +311,7 @@ class ImageNet22k(ExtendedVisionDataset):
         Args:
           class_index: int:
           class_index: int:
+          class_index: int: 
 
         Returns:
 
@@ -312,6 +324,7 @@ class ImageNet22k(ExtendedVisionDataset):
         Args:
           index: int:
           index: int:
+          index: int: 
 
         Returns:
 
@@ -340,6 +353,7 @@ class ImageNet22k(ExtendedVisionDataset):
         Args:
           index: int:
           index: int:
+          index: int: 
 
         Returns:
 
@@ -347,7 +361,7 @@ class ImageNet22k(ExtendedVisionDataset):
         return int(self._entries[index]["class_index"])
 
     def get_targets(self) -> np.ndarray:
-        """"""
+        """ """
         return self._entries["class_index"]
 
     def get_class_id(self, index: int) -> str:
@@ -356,6 +370,7 @@ class ImageNet22k(ExtendedVisionDataset):
         Args:
           index: int:
           index: int:
+          index: int: 
 
         Returns:
 
@@ -363,7 +378,7 @@ class ImageNet22k(ExtendedVisionDataset):
         return str(self._entries[index]["class_id"])
 
     def get_class_ids(self) -> np.ndarray:
-        """"""
+        """ """
         return self._entries["class_id"]
 
     def __getitem__(self, index: int) -> Tuple[Any, Any]:
@@ -378,8 +393,8 @@ class ImageNet22k(ExtendedVisionDataset):
         """
 
         Args:
-          *args:
-          **kwargs:
+          *args: 
+          **kwargs: 
 
         Returns:
 
@@ -425,8 +440,8 @@ class ImageNet22k(ExtendedVisionDataset):
         """
 
         Args:
-          *args:
-          **kwargs:
+          *args: 
+          **kwargs: 
 
         Returns:
 
@@ -451,8 +466,8 @@ class ImageNet22k(ExtendedVisionDataset):
         """
 
         Args:
-          *args:
-          **kwargs:
+          *args: 
+          **kwargs: 
 
         Returns:
 
@@ -464,6 +479,7 @@ class ImageNet22k(ExtendedVisionDataset):
         """
 
         Args:
+          root: Optional[str]:  (Default value = None)
           root: Optional[str]:  (Default value = None)
           root: Optional[str]:  (Default value = None)
 

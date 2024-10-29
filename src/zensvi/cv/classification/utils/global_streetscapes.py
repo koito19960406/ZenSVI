@@ -64,7 +64,7 @@ view_direction_dict2idx = {
 # ----------------------------------------------
 class GlobalStreetScapesClassificationModel(pl.LightningModule):
     """Creates an instance of a classification model for one of.
-
+    
     six different variables:
     - weather
     - glare
@@ -84,6 +84,7 @@ class GlobalStreetScapesClassificationModel(pl.LightningModule):
       model(string): Model name, defaults to maxvit_t
 
     Returns:
+
     """
 
     def __init__(
@@ -119,7 +120,7 @@ class GlobalStreetScapesClassificationModel(pl.LightningModule):
         """
 
         Args:
-          x:
+          x: 
 
         Returns:
 

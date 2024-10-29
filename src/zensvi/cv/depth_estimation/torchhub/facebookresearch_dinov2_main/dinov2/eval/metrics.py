@@ -18,7 +18,7 @@ logger = logging.getLogger("dinov2")
 
 
 class MetricType(Enum):
-    """"""
+    """ """
 
     MEAN_ACCURACY = "mean_accuracy"
     MEAN_PER_CLASS_ACCURACY = "mean_per_class_accuracy"
@@ -27,7 +27,7 @@ class MetricType(Enum):
 
     @property
     def accuracy_averaging(self):
-        """"""
+        """ """
         return getattr(AccuracyAveraging, self.name, None)
 
     def __str__(self):
@@ -35,7 +35,7 @@ class MetricType(Enum):
 
 
 class AccuracyAveraging(Enum):
-    """"""
+    """ """
 
     MEAN_ACCURACY = "micro"
     MEAN_PER_CLASS_ACCURACY = "macro"
@@ -50,11 +50,14 @@ def build_metric(metric_type: MetricType, *, num_classes: int, ks: Optional[tupl
 
     Args:
       metric_type: MetricType:
-      *:
+      *: 
       num_classes: int:
       ks: Optional[tuple]:  (Default value = None)
       metric_type: MetricType:
       num_classes: int:
+      ks: Optional[tuple]:  (Default value = None)
+      metric_type: MetricType: 
+      num_classes: int: 
       ks: Optional[tuple]:  (Default value = None)
 
     Returns:
@@ -82,9 +85,12 @@ def build_topk_accuracy_metric(average_type: AccuracyAveraging, num_classes: int
       average_type: AccuracyAveraging:
       num_classes: int:
       ks: tuple:  (Default value = (1)
-      5):
+      5): 
       average_type: AccuracyAveraging:
       num_classes: int:
+      ks: tuple:  (Default value = (1)
+      average_type: AccuracyAveraging: 
+      num_classes: int: 
       ks: tuple:  (Default value = (1)
 
     Returns:
@@ -102,8 +108,10 @@ def build_topk_imagenet_real_accuracy_metric(num_classes: int, ks: tuple = (1, 5
     Args:
       num_classes: int:
       ks: tuple:  (Default value = (1)
-      5):
+      5): 
       num_classes: int:
+      ks: tuple:  (Default value = (1)
+      num_classes: int: 
       ks: tuple:  (Default value = (1)
 
     Returns:
@@ -114,7 +122,7 @@ def build_topk_imagenet_real_accuracy_metric(num_classes: int, ks: tuple = (1, 5
 
 
 class ImageNetReaLAccuracy(Metric):
-    """"""
+    """ """
 
     is_differentiable: bool = False
     higher_is_better: Optional[bool] = None
@@ -139,6 +147,8 @@ class ImageNetReaLAccuracy(Metric):
           target: Tensor:
           preds: Tensor:
           target: Tensor:
+          preds: Tensor: 
+          target: Tensor: 
 
         Returns:
 
@@ -171,6 +181,6 @@ class ImageNetReaLAccuracy(Metric):
         self.tp.append(tp)  # type: ignore
 
     def compute(self) -> Tensor:
-        """"""
+        """ """
         tp = dim_zero_cat(self.tp)  # type: ignore
         return tp.float().mean()

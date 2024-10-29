@@ -14,7 +14,7 @@ logger = logging.getLogger("dinov2")
 
 
 class DataAugmentationDINO(object):
-    """"""
+    """ """
 
     def __init__(
         self,

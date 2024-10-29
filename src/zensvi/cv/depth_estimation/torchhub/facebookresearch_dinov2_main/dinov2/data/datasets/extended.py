@@ -12,7 +12,7 @@ from .decoders import ImageDataDecoder, TargetDecoder
 
 
 class ExtendedVisionDataset(VisionDataset):
-    """"""
+    """ """
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)  # type: ignore
@@ -23,6 +23,7 @@ class ExtendedVisionDataset(VisionDataset):
         Args:
           index: int:
           index: int:
+          index: int: 
 
         Returns:
 
@@ -35,6 +36,7 @@ class ExtendedVisionDataset(VisionDataset):
         Args:
           index: int:
           index: int:
+          index: int: 
 
         Returns:
 

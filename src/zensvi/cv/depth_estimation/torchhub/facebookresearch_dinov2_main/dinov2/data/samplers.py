@@ -15,7 +15,7 @@ from torch.utils.data.sampler import Sampler
 
 
 class EpochSampler(Sampler):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -54,7 +54,7 @@ class EpochSampler(Sampler):
         """
 
         Args:
-          epoch:
+          epoch: 
 
         Returns:
 
@@ -68,6 +68,7 @@ def _get_numpy_dtype(size: int) -> Any:
     Args:
       size: int:
       size: int:
+      size: int: 
 
     Returns:
 
@@ -81,6 +82,7 @@ def _get_torch_dtype(size: int) -> Any:
     Args:
       size: int:
       size: int:
+      size: int: 
 
     Returns:
 
@@ -92,13 +94,16 @@ def _generate_randperm_indices(*, size: int, generator: torch.Generator):
     """Generate the indices of a random permutation.
 
     Args:
-      *:
+      *: 
       size: int:
       generator: torch.Generator:
       size: int:
       generator: torch.Generator:
+      size: int: 
+      generator: torch.Generator: 
 
     Returns:
+
     """
     dtype = _get_torch_dtype(size)
     # This is actually matching PyTorch's CPU implementation, see: https://github.com/pytorch/pytorch/blob/master/aten/src/ATen/native/TensorFactories.cpp#L900-L921
@@ -114,7 +119,7 @@ def _generate_randperm_indices(*, size: int, generator: torch.Generator):
 
 
 class InfiniteSampler(Sampler):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -142,7 +147,7 @@ class InfiniteSampler(Sampler):
         yield from itertools.islice(iterator, self._advance, None)
 
     def _iterator(self):
-        """"""
+        """ """
         assert not self._shuffle
 
         while True:
@@ -150,7 +155,7 @@ class InfiniteSampler(Sampler):
             yield from itertools.islice(iterable, self._start, None, self._step)
 
     def _shuffled_iterator(self):
-        """"""
+        """ """
         assert self._shuffle
 
         # Instantiate a generator here (rather than in the ctor) to keep the class
@@ -170,7 +175,7 @@ def _shuffle_tensor_slice(
     """
 
     Args:
-      *:
+      *: 
       tensor: torch.Tensor:
       start: int:  (Default value = 0)
       step: int:  (Default value = 1)
@@ -179,6 +184,10 @@ def _shuffle_tensor_slice(
       start: int:  (Default value = 0)
       step: int:  (Default value = 1)
       generator: torch.Generator:
+      tensor: torch.Tensor: 
+      start: int:  (Default value = 0)
+      step: int:  (Default value = 1)
+      generator: torch.Generator: 
 
     Returns:
 
@@ -207,7 +216,7 @@ def _new_shuffle_tensor_slice(
     """
 
     Args:
-      *:
+      *: 
       tensor: torch.Tensor:
       start: int:  (Default value = 0)
       step: int:  (Default value = 1)
@@ -216,6 +225,10 @@ def _new_shuffle_tensor_slice(
       start: int:  (Default value = 0)
       step: int:  (Default value = 1)
       generator: torch.Generator:
+      tensor: torch.Tensor: 
+      start: int:  (Default value = 0)
+      step: int:  (Default value = 1)
+      generator: torch.Generator: 
 
     Returns:
 
@@ -241,6 +254,9 @@ def _make_seed(seed: int, start: int, iter_count: int) -> int:
       seed: int:
       start: int:
       iter_count: int:
+      seed: int: 
+      start: int: 
+      iter_count: int: 
 
     Returns:
 
@@ -250,7 +266,7 @@ def _make_seed(seed: int, start: int, iter_count: int) -> int:
 
 
 class ShardedInfiniteSampler(Sampler):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -288,7 +304,7 @@ class ShardedInfiniteSampler(Sampler):
         yield from itertools.islice(iterator, self._advance, None)
 
     def _iterator(self):
-        """"""
+        """ """
         assert not self._shuffle
 
         while True:
@@ -296,7 +312,7 @@ class ShardedInfiniteSampler(Sampler):
             yield from itertools.islice(iterable, self._start, None, self._step)
 
     def _shuffled_iterator(self):
-        """"""
+        """ """
         assert self._shuffle
 
         # Instantiate a generator here (rather than in the ctor) to be keep the class

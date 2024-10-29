@@ -31,7 +31,7 @@ from torchvision import transforms
 
 
 class ToTensor(object):
-    """"""
+    """ """
 
     def __init__(self, resize_shape):
         # self.normalize = transforms.Normalize(
@@ -53,7 +53,7 @@ class ToTensor(object):
         """
 
         Args:
-          pic:
+          pic: 
 
         Returns:
 
@@ -88,7 +88,7 @@ class ToTensor(object):
 
 
 class DDAD(Dataset):
-    """"""
+    """ """
 
     def __init__(self, data_dir_root, resize_shape):
 
@@ -132,10 +132,10 @@ def get_ddad_loader(data_dir_root, resize_shape, batch_size=1, **kwargs):
     """
 
     Args:
-      data_dir_root:
-      resize_shape:
+      data_dir_root: 
+      resize_shape: 
       batch_size: (Default value = 1)
-      **kwargs:
+      **kwargs: 
 
     Returns:
 

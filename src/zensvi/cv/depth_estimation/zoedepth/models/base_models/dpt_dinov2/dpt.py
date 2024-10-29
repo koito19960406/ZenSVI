@@ -9,8 +9,8 @@ def _make_fusion_block(features, use_bn, size=None):
     """
 
     Args:
-      features:
-      use_bn:
+      features: 
+      use_bn: 
       size: (Default value = None)
 
     Returns:
@@ -28,7 +28,7 @@ def _make_fusion_block(features, use_bn, size=None):
 
 
 class DPTHead(nn.Module):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -128,9 +128,9 @@ class DPTHead(nn.Module):
         """
 
         Args:
-          out_features:
-          patch_h:
-          patch_w:
+          out_features: 
+          patch_h: 
+          patch_w: 
 
         Returns:
 
@@ -176,7 +176,7 @@ class DPTHead(nn.Module):
 
 
 class DPT_DINOv2(nn.Module):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -207,7 +207,7 @@ class DPT_DINOv2(nn.Module):
         """
 
         Args:
-          x:
+          x: 
 
         Returns:
 

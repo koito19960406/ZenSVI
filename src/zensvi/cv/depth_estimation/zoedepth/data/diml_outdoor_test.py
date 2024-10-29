@@ -31,7 +31,7 @@ from torch.utils.data import DataLoader, Dataset
 
 
 class ToTensor(object):
-    """"""
+    """ """
 
     def __init__(self):
         # self.normalize = transforms.Normalize(
@@ -50,7 +50,7 @@ class ToTensor(object):
         """
 
         Args:
-          pic:
+          pic: 
 
         Returns:
 
@@ -84,7 +84,7 @@ class ToTensor(object):
 
 
 class DIML_Outdoor(Dataset):
-    """"""
+    """ """
 
     def __init__(self, data_dir_root):
         import glob
@@ -117,9 +117,9 @@ def get_diml_outdoor_loader(data_dir_root, batch_size=1, **kwargs):
     """
 
     Args:
-      data_dir_root:
+      data_dir_root: 
       batch_size: (Default value = 1)
-      **kwargs:
+      **kwargs: 
 
     Returns:
 

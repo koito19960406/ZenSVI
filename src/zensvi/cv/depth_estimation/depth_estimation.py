@@ -18,7 +18,7 @@ from .zoedepth.utils.config import get_config
 
 
 class ImageDataset(Dataset):
-    """"""
+    """ """
 
     def __init__(self, image_files: List[Path], task="relative"):
         self.image_files = [
@@ -67,11 +67,13 @@ class ImageDataset(Dataset):
         Args:
           data(List[Tuple[str): List of tuples containing image file path and transformed image tensor.
           data: List[Tuple[str:
-          torch.Tensor]]:
+          torch.Tensor]]: 
           data: List[Tuple[str:
+          data: List[Tuple[str: 
 
         Returns:
           Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
+
         """
         image_files, images, original_sizes = zip(*data)
         if self.task == "absolute":
@@ -108,12 +110,12 @@ class DepthEstimator:
             self._setup_relative_depth()
 
     def _setup_relative_depth(self):
-        """"""
+        """ """
         self.processor = DPTImageProcessor.from_pretrained("Intel/dpt-large")
         self.model = DPTForDepthEstimation.from_pretrained("Intel/dpt-large").to(self.device)
 
     def _setup_absolute_depth(self):
-        """"""
+        """ """
         # donwload the model from https://huggingface.co/spaces/LiheYoung/Depth-Anything/resolve/main/checkpoints_metric_depth/depth_anything_metric_depth_outdoor.pt to models/depth_anything_metric_depth_outdoor.pt with request.get
         # Path to the current file (e.g., __file__ in a module)
         current_file_path = Path(__file__)
@@ -152,10 +154,10 @@ class DepthEstimator:
         """
 
         Args:
-          image_files:
-          images:
-          original_sizes:
-          dir_output:
+          image_files: 
+          images: 
+          original_sizes: 
+          dir_output: 
 
         Returns:
 
@@ -212,7 +214,7 @@ class DepthEstimator:
           max_workers(int): maximum number of workers for
         parallel processing, defaults to 4
           dir_input: Union[str:
-          Path]:
+          Path]: 
           dir_image_output: Union[str:
           batch_size: int:  (Default value = 1)
           max_workers: int:  (Default value = 4)
@@ -220,8 +222,13 @@ class DepthEstimator:
           dir_image_output: Union[str:
           batch_size: int:  (Default value = 1)
           max_workers: int:  (Default value = 4)
+          dir_input: Union[str: 
+          dir_image_output: Union[str: 
+          batch_size: int:  (Default value = 1)
+          max_workers: int:  (Default value = 4)
 
         Returns:
+
         """
         # make directory
         dir_input = Path(dir_input)

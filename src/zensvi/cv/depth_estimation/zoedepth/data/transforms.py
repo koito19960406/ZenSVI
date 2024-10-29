@@ -61,6 +61,7 @@ def apply_min_size(sample, size, image_interpolation_method=cv2.INTER_AREA):
 
     Returns:
       tuple: new size
+
     """
     shape = list(sample["disparity"].shape)
 
@@ -191,7 +192,7 @@ class Resize(object):
         """
 
         Args:
-          x:
+          x: 
           min_val: (Default value = 0)
           max_val: (Default value = None)
 
@@ -212,8 +213,8 @@ class Resize(object):
         """
 
         Args:
-          width:
-          height:
+          width: 
+          height: 
 
         Returns:
 
@@ -268,7 +269,7 @@ class Resize(object):
         """
 
         Args:
-          sample:
+          sample: 
 
         Returns:
 
@@ -323,7 +324,7 @@ class Resize(object):
 
 
 class ResizeFixed(object):
-    """"""
+    """ """
 
     def __init__(self, size):
         self.__size = size
@@ -345,12 +346,13 @@ class ResizeFixed(object):
 
 class Rescale(object):
     """Rescale target values to the interval [0, max_val].
-
+    
     If input is constant, values are set to max_val / 2.
 
     Args:
 
     Returns:
+
     """
 
     def __init__(self, max_val=1.0, use_mask=True):
@@ -401,12 +403,13 @@ class NormalizeImage(object):
 
 class DepthToDisparity(object):
     """Convert depth to disparity.
-
+    
     Removes depth from sample.
 
     Args:
 
     Returns:
+
     """
 
     def __init__(self, eps=1e-4):
@@ -427,12 +430,13 @@ class DepthToDisparity(object):
 
 class DisparityToDepth(object):
     """Convert disparity to depth.
-
+    
     Removes disparity from sample.
 
     Args:
 
     Returns:
+
     """
 
     def __init__(self, eps=1e-4):

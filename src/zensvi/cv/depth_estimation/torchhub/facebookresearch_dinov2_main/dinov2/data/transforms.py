@@ -27,6 +27,7 @@ class MaybeToTensor(transforms.ToTensor):
     Args:
 
     Returns:
+
     """
 
     def __call__(self, pic):
@@ -56,6 +57,8 @@ def make_normalize_transform(
       std: Sequence[float]:  (Default value = IMAGENET_DEFAULT_STD)
       mean: Sequence[float]:  (Default value = IMAGENET_DEFAULT_MEAN)
       std: Sequence[float]:  (Default value = IMAGENET_DEFAULT_STD)
+      mean: Sequence[float]:  (Default value = IMAGENET_DEFAULT_MEAN)
+      std: Sequence[float]:  (Default value = IMAGENET_DEFAULT_STD)
 
     Returns:
 
@@ -76,9 +79,13 @@ def make_classification_train_transform(
     """
 
     Args:
-      *:
+      *: 
       crop_size: int:  (Default value = 224)
       interpolation: (Default value = transforms.InterpolationMode.BICUBIC)
+      hflip_prob: float:  (Default value = 0.5)
+      mean: Sequence[float]:  (Default value = IMAGENET_DEFAULT_MEAN)
+      std: Sequence[float]:  (Default value = IMAGENET_DEFAULT_STD)
+      crop_size: int:  (Default value = 224)
       hflip_prob: float:  (Default value = 0.5)
       mean: Sequence[float]:  (Default value = IMAGENET_DEFAULT_MEAN)
       std: Sequence[float]:  (Default value = IMAGENET_DEFAULT_STD)
@@ -115,9 +122,13 @@ def make_classification_eval_transform(
     """
 
     Args:
-      *:
+      *: 
       resize_size: int:  (Default value = 256)
       interpolation: (Default value = transforms.InterpolationMode.BICUBIC)
+      crop_size: int:  (Default value = 224)
+      mean: Sequence[float]:  (Default value = IMAGENET_DEFAULT_MEAN)
+      std: Sequence[float]:  (Default value = IMAGENET_DEFAULT_STD)
+      resize_size: int:  (Default value = 256)
       crop_size: int:  (Default value = 224)
       mean: Sequence[float]:  (Default value = IMAGENET_DEFAULT_MEAN)
       std: Sequence[float]:  (Default value = IMAGENET_DEFAULT_STD)

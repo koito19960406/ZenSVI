@@ -18,7 +18,7 @@ def make_2tuple(x):
     """
 
     Args:
-      x:
+      x: 
 
     Returns:
 
@@ -82,6 +82,7 @@ class PatchEmbed(nn.Module):
         Args:
           x: Tensor:
           x: Tensor:
+          x: Tensor: 
 
         Returns:
 
@@ -101,7 +102,7 @@ class PatchEmbed(nn.Module):
         return x
 
     def flops(self) -> float:
-        """"""
+        """ """
         Ho, Wo = self.patches_resolution
         flops = Ho * Wo * self.embed_dim * self.in_chans * (self.patch_size[0] * self.patch_size[1])
         if self.norm is not None:

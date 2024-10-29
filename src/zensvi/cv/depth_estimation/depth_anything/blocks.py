@@ -5,8 +5,8 @@ def _make_scratch(in_shape, out_shape, groups=1, expand=False):
     """
 
     Args:
-      in_shape:
-      out_shape:
+      in_shape: 
+      out_shape: 
       groups: (Default value = 1)
       expand: (Default value = False)
 
@@ -120,6 +120,7 @@ class ResidualConvUnit(nn.Module):
 
         Returns:
           tensor: output
+
         """
 
         out = self.activation(x)
@@ -189,11 +190,12 @@ class FeatureFusionBlock(nn.Module):
         """Forward pass.
 
         Args:
-          *xs:
+          *xs: 
           size: (Default value = None)
 
         Returns:
           tensor: output
+
         """
         output = xs[0]
 

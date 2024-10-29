@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional
 
 
 class ClusterType(Enum):
-    """"""
+    """ """
 
     AWS = "aws"
     FAIR = "fair"
@@ -19,7 +19,7 @@ class ClusterType(Enum):
 
 
 def _guess_cluster_type() -> ClusterType:
-    """"""
+    """ """
     uname = os.uname()
     if uname.sysname == "Linux":
         if uname.release.endswith("-aws"):
@@ -40,6 +40,7 @@ def get_cluster_type(
     Args:
       cluster_type: Optional[ClusterType]:  (Default value = None)
       cluster_type: Optional[ClusterType]:  (Default value = None)
+      cluster_type: Optional[ClusterType]:  (Default value = None)
 
     Returns:
 
@@ -54,6 +55,7 @@ def get_checkpoint_path(cluster_type: Optional[ClusterType] = None) -> Optional[
     """
 
     Args:
+      cluster_type: Optional[ClusterType]:  (Default value = None)
       cluster_type: Optional[ClusterType]:  (Default value = None)
       cluster_type: Optional[ClusterType]:  (Default value = None)
 
@@ -80,6 +82,7 @@ def get_user_checkpoint_path(
     Args:
       cluster_type: Optional[ClusterType]:  (Default value = None)
       cluster_type: Optional[ClusterType]:  (Default value = None)
+      cluster_type: Optional[ClusterType]:  (Default value = None)
 
     Returns:
 
@@ -97,6 +100,7 @@ def get_slurm_partition(cluster_type: Optional[ClusterType] = None) -> Optional[
     """
 
     Args:
+      cluster_type: Optional[ClusterType]:  (Default value = None)
       cluster_type: Optional[ClusterType]:  (Default value = None)
       cluster_type: Optional[ClusterType]:  (Default value = None)
 
@@ -124,9 +128,12 @@ def get_slurm_executor_parameters(
       nodes: int:
       num_gpus_per_node: int:
       cluster_type: Optional[ClusterType]:  (Default value = None)
-      **kwargs:
+      **kwargs: 
       nodes: int:
       num_gpus_per_node: int:
+      cluster_type: Optional[ClusterType]:  (Default value = None)
+      nodes: int: 
+      num_gpus_per_node: int: 
       cluster_type: Optional[ClusterType]:  (Default value = None)
 
     Returns:

@@ -26,7 +26,7 @@ def _configure_logger(
     output: Optional[str] = None,
 ):
     """Configure a logger.
-
+    
     Adapted from Detectron2.
 
     Args:
@@ -36,7 +36,10 @@ def _configure_logger(
     If ends with ".txt" or ".log", assumed to be a file name.
     Otherwise, logs will be saved to `output/log.txt`.
       name: Optional[str]:  (Default value = None)
-      *:
+      *: 
+      level: int:  (Default value = logging.DEBUG)
+      output: Optional[str]:  (Default value = None)
+      name: Optional[str]:  (Default value = None)
       level: int:  (Default value = logging.DEBUG)
       output: Optional[str]:  (Default value = None)
       name: Optional[str]:  (Default value = None)
@@ -45,6 +48,7 @@ def _configure_logger(
 
     Returns:
       : The configured logger.
+
     """
 
     logger = logging.getLogger(name)
@@ -107,7 +111,11 @@ def setup_logging(
       level: The logging level to use.
       capture_warnings: Whether warnings should be captured as logs.
       output: Optional[str]:  (Default value = None)
-      *:
+      *: 
+      name: Optional[str]:  (Default value = None)
+      level: int:  (Default value = logging.DEBUG)
+      capture_warnings: bool:  (Default value = True)
+      output: Optional[str]:  (Default value = None)
       name: Optional[str]:  (Default value = None)
       level: int:  (Default value = logging.DEBUG)
       capture_warnings: bool:  (Default value = True)
@@ -117,6 +125,7 @@ def setup_logging(
       capture_warnings: bool:  (Default value = True)
 
     Returns:
+
     """
     logging.captureWarnings(capture_warnings)
     _configure_logger(name, level=level, output=output)

@@ -27,7 +27,7 @@ import torch.nn as nn
 
 
 class PatchTransformerEncoder(nn.Module):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -65,11 +65,12 @@ class PatchTransformerEncoder(nn.Module):
         Args:
           sequence_length(int): Sequence length
           embedding_dim(int): Embedding dimension
-          batch_size:
+          batch_size: 
           device: (Default value = "cpu")
 
         Returns:
           torch.Tensor SBE: Positional encodings
+
         """
         position = torch.arange(0, sequence_length, dtype=torch.float32, device=device).unsqueeze(1)
         index = torch.arange(0, embedding_dim, 2, dtype=torch.float32, device=device).unsqueeze(0)
@@ -87,6 +88,7 @@ class PatchTransformerEncoder(nn.Module):
 
         Returns:
           torch.Tensor - SNE: Transformer output embeddings. S - sequence length (=HW/patch_size^2), N - batch size, E - embedding dim
+
         """
         embeddings = self.embedding_convPxP(x).flatten(2)  # .shape = n,c,s = n, embedding_dim, s
         if self.use_class_token:

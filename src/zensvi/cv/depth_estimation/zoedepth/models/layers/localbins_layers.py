@@ -28,18 +28,19 @@ import torch.nn as nn
 
 class SeedBinRegressor(nn.Module):
     def __init__(self, in_features, n_bins=16, mlp_dim=256, min_depth=1e-3, max_depth=10):
-        """Bin center regressor network. Bin centers are bounded on (min_depth, max_depth)
+    """Bin center regressor network. Bin centers are bounded on (min_depth, max_depth)
         interval.
 
-        Args:
-        in_features(int): input channels
-        n_bins(int): Number of bin centers. Defaults to 16.
-        mlp_dim(int): Hidden dimension. Defaults to 256.
-        min_depth(float): Min depth value. Defaults to 1e-3.
-        max_depth(float): Max depth value. Defaults to 10.
+    Args:
+      in_features(int): input channels
+      n_bins(int): Number of bin centers. Defaults to 16.
+      mlp_dim(int): Hidden dimension. Defaults to 256.
+      min_depth(float): Min depth value. Defaults to 1e-3.
+      max_depth(float): Max depth value. Defaults to 10.
 
-        Returns:
-        """
+    Returns:
+
+    """
         super().__init__()
         self.version = "1_1"
         self.min_depth = min_depth
@@ -54,13 +55,14 @@ class SeedBinRegressor(nn.Module):
 
     def forward(self, x):
         """Returns tensor of bin_width vectors (centers).
-
+        
         One vector b for every pixel
 
         Args:
-          x:
+          x: 
 
         Returns:
+
         """
         B = self._net(x)
         eps = 1e-3
@@ -77,17 +79,18 @@ class SeedBinRegressor(nn.Module):
 
 class SeedBinRegressorUnnormed(nn.Module):
     def __init__(self, in_features, n_bins=16, mlp_dim=256, min_depth=1e-3, max_depth=10):
-        """Bin center regressor network. Bin centers are unbounded.
+    """Bin center regressor network. Bin centers are unbounded.
 
-        Args:
-        in_features(int): input channels
-        n_bins(int): Number of bin centers. Defaults to 16.
-        mlp_dim(int): Hidden dimension. Defaults to 256.
-        min_depth(float): Not used. (for compatibility with SeedBinRegressor)
-        max_depth(float): Not used. (for compatibility with SeedBinRegressor)
+    Args:
+      in_features(int): input channels
+      n_bins(int): Number of bin centers. Defaults to 16.
+      mlp_dim(int): Hidden dimension. Defaults to 256.
+      min_depth(float): Not used. (for compatibility with SeedBinRegressor)
+      max_depth(float): Not used. (for compatibility with SeedBinRegressor)
 
-        Returns:
-        """
+    Returns:
+
+    """
         super().__init__()
         self.version = "1_1"
         self._net = nn.Sequential(
@@ -99,13 +102,14 @@ class SeedBinRegressorUnnormed(nn.Module):
 
     def forward(self, x):
         """Returns tensor of bin_width vectors (centers).
-
+        
         One vector b for every pixel
 
         Args:
-          x:
+          x: 
 
         Returns:
+
         """
         B_centers = self._net(x)
         return B_centers, B_centers
@@ -113,15 +117,16 @@ class SeedBinRegressorUnnormed(nn.Module):
 
 class Projector(nn.Module):
     def __init__(self, in_features, out_features, mlp_dim=128):
-        """Projector MLP.
+    """Projector MLP.
 
-        Args:
-        in_features(int): input channels
-        out_features(int): output channels
-        mlp_dim(int): hidden dimension. Defaults to 128.
+    Args:
+      in_features(int): input channels
+      out_features(int): output channels
+      mlp_dim(int): hidden dimension. Defaults to 128.
 
-        Returns:
-        """
+    Returns:
+
+    """
         super().__init__()
 
         self._net = nn.Sequential(
@@ -134,7 +139,7 @@ class Projector(nn.Module):
         """
 
         Args:
-          x:
+          x: 
 
         Returns:
 
@@ -143,7 +148,7 @@ class Projector(nn.Module):
 
 
 class LinearSplitter(nn.Module):
-    """"""
+    """ """
 
     def __init__(
         self,
@@ -173,8 +178,8 @@ class LinearSplitter(nn.Module):
         b_prev : previous bin widths normed; shape - n, prev_nbins, h, w
 
         Args:
-          x:
-          b_prev:
+          x: 
+          b_prev: 
           prev_b_embedding: (Default value = None)
           interpolate: (Default value = True)
           is_for_query: (Default value = False)

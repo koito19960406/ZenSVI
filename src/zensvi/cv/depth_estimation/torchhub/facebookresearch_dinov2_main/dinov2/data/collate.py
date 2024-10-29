@@ -20,10 +20,10 @@ def collate_data_and_cast(
     """
 
     Args:
-      samples_list:
-      mask_ratio_tuple:
-      mask_probability:
-      dtype:
+      samples_list: 
+      mask_ratio_tuple: 
+      mask_probability: 
+      dtype: 
       n_tokens: (Default value = None)
       mask_generator: (Default value = None)
 

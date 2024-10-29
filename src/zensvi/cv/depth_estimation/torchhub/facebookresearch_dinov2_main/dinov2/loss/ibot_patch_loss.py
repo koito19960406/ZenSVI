@@ -21,9 +21,9 @@ try:
         """
 
         Args:
-          t:
-          s:
-          temp:
+          t: 
+          s: 
+          temp: 
 
         Returns:
 
@@ -41,9 +41,9 @@ except ImportError:
         """
 
         Args:
-          t:
-          s:
-          temp:
+          t: 
+          s: 
+          temp: 
 
         Returns:
 
@@ -52,7 +52,7 @@ except ImportError:
 
 
 class iBOTPatchLoss(nn.Module):
-    """"""
+    """ """
 
     def __init__(self, patch_out_dim, student_temp=0.1, center_momentum=0.9):
         super().__init__()
@@ -69,8 +69,8 @@ class iBOTPatchLoss(nn.Module):
         """
 
         Args:
-          teacher_patch_tokens:
-          teacher_temp:
+          teacher_patch_tokens: 
+          teacher_temp: 
 
         Returns:
 
@@ -94,9 +94,9 @@ class iBOTPatchLoss(nn.Module):
         """
 
         Args:
-          teacher_output:
-          teacher_temp:
-          n_masked_patches_tensor:
+          teacher_output: 
+          teacher_temp: 
+          n_masked_patches_tensor: 
           n_iterations: (Default value = 3)
 
         Returns:
@@ -133,17 +133,18 @@ class iBOTPatchLoss(nn.Module):
 
     def forward(self, student_patch_tokens, teacher_patch_tokens, student_masks_flat):
         """Cross-entropy between softmax outputs of the teacher and student networks.
-
+        
         student_patch_tokens: (B, N, D) tensor
         teacher_patch_tokens: (B, N, D) tensor
         student_masks_flat: (B, N) tensor
 
         Args:
-          student_patch_tokens:
-          teacher_patch_tokens:
-          student_masks_flat:
+          student_patch_tokens: 
+          teacher_patch_tokens: 
+          student_masks_flat: 
 
         Returns:
+
         """
         t = teacher_patch_tokens
         s = student_patch_tokens
@@ -162,9 +163,9 @@ class iBOTPatchLoss(nn.Module):
         """
 
         Args:
-          student_patch_tokens_masked:
-          teacher_patch_tokens_masked:
-          student_masks_flat:
+          student_patch_tokens_masked: 
+          teacher_patch_tokens_masked: 
+          student_masks_flat: 
           n_masked_patches: (Default value = None)
           masks_weight: (Default value = None)
 
@@ -191,7 +192,7 @@ class iBOTPatchLoss(nn.Module):
         """
 
         Args:
-          teacher_patch_tokens:
+          teacher_patch_tokens: 
 
         Returns:
 
@@ -203,7 +204,7 @@ class iBOTPatchLoss(nn.Module):
         """
 
         Args:
-          teacher_patch_tokens:
+          teacher_patch_tokens: 
 
         Returns:
 
@@ -216,7 +217,7 @@ class iBOTPatchLoss(nn.Module):
 
     @torch.no_grad()
     def apply_center_update(self):
-        """"""
+        """ """
         if self.updated is False:
             world_size = dist.get_world_size() if dist.is_initialized() else 1
 
