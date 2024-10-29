@@ -53,7 +53,7 @@ class ToTensor(object):
         """
 
         Args:
-          pic: 
+          pic:
 
         Returns:
 
@@ -132,10 +132,10 @@ def get_ddad_loader(data_dir_root, resize_shape, batch_size=1, **kwargs):
     """
 
     Args:
-      data_dir_root: 
-      resize_shape: 
+      data_dir_root:
+      resize_shape:
       batch_size: (Default value = 1)
-      **kwargs: 
+      **kwargs:
 
     Returns:
 

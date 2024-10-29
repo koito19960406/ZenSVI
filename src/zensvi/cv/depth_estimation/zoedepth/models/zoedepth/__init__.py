@@ -33,7 +33,7 @@ def get_version(v):
     """
 
     Args:
-      v: 
+      v:
 
     Returns:
 

@@ -28,7 +28,7 @@ class MetricLogger(object):
         """
 
         Args:
-          **kwargs: 
+          **kwargs:
 
         Returns:
 
@@ -61,8 +61,8 @@ class MetricLogger(object):
         """
 
         Args:
-          name: 
-          meter: 
+          name:
+          meter:
 
         Returns:
 
@@ -73,9 +73,9 @@ class MetricLogger(object):
         """
 
         Args:
-          iteration: 
-          iter_time: 
-          data_time: 
+          iteration:
+          iter_time:
+          data_time:
 
         Returns:
 
@@ -96,8 +96,8 @@ class MetricLogger(object):
         """
 
         Args:
-          iterable: 
-          print_freq: 
+          iterable:
+          print_freq:
           header: (Default value = None)
           n_iterations: (Default value = None)
           start_iteration: (Default value = 0)
@@ -193,7 +193,7 @@ class SmoothedValue:
         """
 
         Args:
-          value: 
+          value:
           num: (Default value = 1)
 
         Returns:

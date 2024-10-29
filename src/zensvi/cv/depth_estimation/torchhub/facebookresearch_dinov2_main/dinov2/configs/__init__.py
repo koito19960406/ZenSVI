@@ -15,7 +15,7 @@ def load_config(config_name: str):
     Args:
       config_name: str:
       config_name: str:
-      config_name: str: 
+      config_name: str:
 
     Returns:
 
@@ -33,7 +33,7 @@ def load_and_merge_config(config_name: str):
     Args:
       config_name: str:
       config_name: str:
-      config_name: str: 
+      config_name: str:
 
     Returns:
 

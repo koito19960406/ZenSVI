@@ -55,7 +55,7 @@ def _is_pil_image(img):
     """
 
     Args:
-      img: 
+      img:
 
     Returns:
 
@@ -67,7 +67,7 @@ def _is_numpy_image(img):
     """
 
     Args:
-      img: 
+      img:
 
     Returns:
 
@@ -79,8 +79,8 @@ def preprocessing_transforms(mode, **kwargs):
     """
 
     Args:
-      mode: 
-      **kwargs: 
+      mode:
+      **kwargs:
 
     Returns:
 
@@ -90,17 +90,17 @@ def preprocessing_transforms(mode, **kwargs):
 
 class DepthDataLoader(object):
     def __init__(self, config, mode, device="cpu", transform=None, **kwargs):
-    """Data loader for depth datasets.
+        """Data loader for depth datasets.
 
-    Args:
-      config(dict): Config dictionary. Refer to utils/config.py
-      mode(str): "train" or "online_eval"
-      device(str): Device to load the data on. Defaults to 'cpu'.
-      transform(torchvision.transforms): Transform to apply to the data. Defaults to None.
+        Args:
+        config(dict): Config dictionary. Refer to utils/config.py
+        mode(str): "train" or "online_eval"
+        device(str): Device to load the data on. Defaults to 'cpu'.
+        transform(torchvision.transforms): Transform to apply to the data. Defaults to None.
 
-    Returns:
+        Returns:
 
-    """
+        """
 
         self.config = config
 
@@ -195,12 +195,12 @@ def repetitive_roundrobin(*iterables):
     """Cycles through iterables but sample wise first yield first sample from first
     iterable then first sample from second iterable and so on then second sample from
     first iterable then second sample from second iterable and so on.
-    
+
     If one iterable is shorter than the others, it is repeated until all iterables are
     exhausted repetitive_roundrobin('ABC', 'D', 'EF') --> A D E B D F C D E
 
     Args:
-      *iterables: 
+      *iterables:
 
     Returns:
 
@@ -270,7 +270,7 @@ def remove_leading_slash(s):
     """
 
     Args:
-      s: 
+      s:
 
     Returns:
 
@@ -293,7 +293,7 @@ class CachedReader:
         """
 
         Args:
-          fpath: 
+          fpath:
 
         Returns:
 
@@ -315,7 +315,7 @@ class ImReader:
         """
 
         Args:
-          fpath: 
+          fpath:
 
         Returns:
 
@@ -348,7 +348,7 @@ class DataLoadPreprocess(Dataset):
         """
 
         Args:
-          sample: 
+          sample:
 
         Returns:
 
@@ -546,8 +546,8 @@ class DataLoadPreprocess(Dataset):
         """
 
         Args:
-          image: 
-          angle: 
+          image:
+          angle:
           flag: (Default value = Image.BILINEAR)
 
         Returns:
@@ -560,10 +560,10 @@ class DataLoadPreprocess(Dataset):
         """
 
         Args:
-          img: 
-          depth: 
-          height: 
-          width: 
+          img:
+          depth:
+          height:
+          width:
 
         Returns:
 
@@ -583,8 +583,8 @@ class DataLoadPreprocess(Dataset):
         """
 
         Args:
-          img: 
-          depth: 
+          img:
+          depth:
           max_t: (Default value = 20)
 
         Returns:
@@ -610,8 +610,8 @@ class DataLoadPreprocess(Dataset):
         """
 
         Args:
-          image: 
-          depth_gt: 
+          image:
+          depth_gt:
 
         Returns:
 
@@ -634,7 +634,7 @@ class DataLoadPreprocess(Dataset):
         """
 
         Args:
-          image: 
+          image:
 
         Returns:
 
@@ -709,7 +709,7 @@ class ToTensor(object):
         """
 
         Args:
-          pic: 
+          pic:
 
         Returns:
 

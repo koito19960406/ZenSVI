@@ -52,7 +52,7 @@ def get_params_groups_with_decay(model, lr_decay_rate=1.0, patch_embed_lr_mult=1
     """
 
     Args:
-      model: 
+      model:
       lr_decay_rate: (Default value = 1.0)
       patch_embed_lr_mult: (Default value = 1.0)
 
@@ -113,10 +113,10 @@ def fuse_params_groups(all_params_groups, keys=("lr_multiplier", "wd_multiplier"
     """
 
     Args:
-      all_params_groups: 
+      all_params_groups:
       keys: (Default value = ("lr_multiplier")
-      "wd_multiplier": 
-      "is_last_layer"): 
+      "wd_multiplier":
+      "is_last_layer"):
 
     Returns:
 

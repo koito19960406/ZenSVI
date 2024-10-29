@@ -27,7 +27,7 @@ class PlacePulseClassificationModel(nn.Module):
         """
 
         Args:
-          x: 
+          x:
 
         Returns:
 
@@ -49,7 +49,7 @@ class PlacePulseClassificationModel(nn.Module):
         """
 
         Args:
-          probabilities: 
+          probabilities:
 
         Returns:
 

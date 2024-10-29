@@ -40,7 +40,7 @@ class Mlp(nn.Module):
         Args:
           x: Tensor:
           x: Tensor:
-          x: Tensor: 
+          x: Tensor:
 
         Returns:
 

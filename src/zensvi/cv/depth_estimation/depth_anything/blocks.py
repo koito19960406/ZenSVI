@@ -5,8 +5,8 @@ def _make_scratch(in_shape, out_shape, groups=1, expand=False):
     """
 
     Args:
-      in_shape: 
-      out_shape: 
+      in_shape:
+      out_shape:
       groups: (Default value = 1)
       expand: (Default value = False)
 
@@ -190,7 +190,7 @@ class FeatureFusionBlock(nn.Module):
         """Forward pass.
 
         Args:
-          *xs: 
+          *xs:
           size: (Default value = None)
 
         Returns:

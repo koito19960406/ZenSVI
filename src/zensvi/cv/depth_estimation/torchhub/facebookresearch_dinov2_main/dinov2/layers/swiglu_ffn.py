@@ -34,7 +34,7 @@ class SwiGLUFFN(nn.Module):
         Args:
           x: Tensor:
           x: Tensor:
-          x: Tensor: 
+          x: Tensor:
 
         Returns:
 

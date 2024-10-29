@@ -105,9 +105,9 @@ def submit_jobs(task_class, args, name: str):
     """
 
     Args:
-      task_class: 
-      args: 
-      name: str: 
+      task_class:
+      args:
+      name: str:
 
     Returns:
 

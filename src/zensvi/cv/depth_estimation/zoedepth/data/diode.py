@@ -54,7 +54,7 @@ class ToTensor(object):
         """
 
         Args:
-          pic: 
+          pic:
 
         Returns:
 
@@ -130,9 +130,9 @@ def get_diode_loader(data_dir_root, batch_size=1, **kwargs):
     """
 
     Args:
-      data_dir_root: 
+      data_dir_root:
       batch_size: (Default value = 1)
-      **kwargs: 
+      **kwargs:
 
     Returns:
 

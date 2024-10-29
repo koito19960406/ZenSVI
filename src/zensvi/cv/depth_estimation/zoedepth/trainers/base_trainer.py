@@ -44,7 +44,7 @@ def is_rank_zero(args):
     """
 
     Args:
-      args: 
+      args:
 
     Returns:
 
@@ -54,7 +54,7 @@ def is_rank_zero(args):
 
 class BaseTrainer:
     def __init__(self, config, model, train_loader, test_loader=None, device=None):
-    """Base Trainer class for training a model."""
+        """Base Trainer class for training a model."""
 
         self.config = config
         self.metric_criterion = "abs_rel"
@@ -71,8 +71,8 @@ class BaseTrainer:
         """
 
         Args:
-          prediction: 
-          target: 
+          prediction:
+          target:
 
         Returns:
 
@@ -157,8 +157,8 @@ class BaseTrainer:
         """
 
         Args:
-          batch: 
-          train_step: 
+          batch:
+          train_step:
 
         Returns:
 
@@ -169,8 +169,8 @@ class BaseTrainer:
         """
 
         Args:
-          batch: 
-          val_step: 
+          batch:
+          val_step:
 
         Returns:
 
@@ -181,7 +181,7 @@ class BaseTrainer:
         """
 
         Args:
-          losses: 
+          losses:
 
         Returns:
 
@@ -251,7 +251,7 @@ class BaseTrainer:
             """
 
             Args:
-              L: 
+              L:
 
             Returns:
 
@@ -385,7 +385,7 @@ class BaseTrainer:
         """
 
         Args:
-          filename: 
+          filename:
 
         Returns:
 
@@ -431,9 +431,9 @@ class BaseTrainer:
           rgb: Dict[str:
           depth: Dict[str:
           scalar_field: Dict[str:
-          rgb: Dict[str: 
-          depth: Dict[str: 
-          scalar_field: Dict[str: 
+          rgb: Dict[str:
+          depth: Dict[str:
+          scalar_field: Dict[str:
 
         Returns:
 
@@ -459,7 +459,7 @@ class BaseTrainer:
         """
 
         Args:
-          data: 
+          data:
 
         Returns:
 
@@ -476,9 +476,9 @@ class BaseTrainer:
         """
 
         Args:
-          title: 
-          labels: 
-          values: 
+          title:
+          labels:
+          values:
 
         Returns:
 

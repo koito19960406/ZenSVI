@@ -55,8 +55,8 @@ class MaskingGenerator:
         """
 
         Args:
-          mask: 
-          max_mask_patches: 
+          mask:
+          max_mask_patches:
 
         Returns:
 

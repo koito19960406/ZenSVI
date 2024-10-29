@@ -66,7 +66,7 @@ def _get_tarball_path(class_id: str) -> str:
     Args:
       class_id: str:
       class_id: str:
-      class_id: str: 
+      class_id: str:
 
     Returns:
 
@@ -82,8 +82,8 @@ def _make_mmap_tarball(tarballs_root: str, mmap_cache_size: int):
       mmap_cache_size: int:
       tarballs_root: str:
       mmap_cache_size: int:
-      tarballs_root: str: 
-      mmap_cache_size: int: 
+      tarballs_root: str:
+      mmap_cache_size: int:
 
     Returns:
 
@@ -96,7 +96,7 @@ def _make_mmap_tarball(tarballs_root: str, mmap_cache_size: int):
         Args:
           class_id: str:
           class_id: str:
-          class_id: str: 
+          class_id: str:
 
         Returns:
 
@@ -196,7 +196,7 @@ class ImageNet22k(ExtendedVisionDataset):
         Args:
           path: str:
           path: str:
-          path: str: 
+          path: str:
 
         Returns:
 
@@ -272,7 +272,7 @@ class ImageNet22k(ExtendedVisionDataset):
         Args:
           extra_path: str:
           extra_path: str:
-          extra_path: str: 
+          extra_path: str:
 
         Returns:
 
@@ -289,8 +289,8 @@ class ImageNet22k(ExtendedVisionDataset):
           extra_path: str:
           extra_array: np.ndarray:
           extra_path: str:
-          extra_array: np.ndarray: 
-          extra_path: str: 
+          extra_array: np.ndarray:
+          extra_path: str:
 
         Returns:
 
@@ -311,7 +311,7 @@ class ImageNet22k(ExtendedVisionDataset):
         Args:
           class_index: int:
           class_index: int:
-          class_index: int: 
+          class_index: int:
 
         Returns:
 
@@ -324,7 +324,7 @@ class ImageNet22k(ExtendedVisionDataset):
         Args:
           index: int:
           index: int:
-          index: int: 
+          index: int:
 
         Returns:
 
@@ -353,7 +353,7 @@ class ImageNet22k(ExtendedVisionDataset):
         Args:
           index: int:
           index: int:
-          index: int: 
+          index: int:
 
         Returns:
 
@@ -370,7 +370,7 @@ class ImageNet22k(ExtendedVisionDataset):
         Args:
           index: int:
           index: int:
-          index: int: 
+          index: int:
 
         Returns:
 
@@ -393,8 +393,8 @@ class ImageNet22k(ExtendedVisionDataset):
         """
 
         Args:
-          *args: 
-          **kwargs: 
+          *args:
+          **kwargs:
 
         Returns:
 
@@ -440,8 +440,8 @@ class ImageNet22k(ExtendedVisionDataset):
         """
 
         Args:
-          *args: 
-          **kwargs: 
+          *args:
+          **kwargs:
 
         Returns:
 
@@ -466,8 +466,8 @@ class ImageNet22k(ExtendedVisionDataset):
         """
 
         Args:
-          *args: 
-          **kwargs: 
+          *args:
+          **kwargs:
 
         Returns:
 

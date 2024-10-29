@@ -13,8 +13,8 @@ def _detect_edges_single_image(image_path, dir_image_output):
     """
 
     Args:
-      image_path: 
-      dir_image_output: 
+      image_path:
+      dir_image_output:
 
     Returns:
 
@@ -49,7 +49,7 @@ def _detect_blob_single_image(image_path, dir_image_output=None):
     """
 
     Args:
-      image_path: 
+      image_path:
       dir_image_output: (Default value = None)
 
     Returns:
@@ -85,7 +85,7 @@ def _detect_blur_single_image(image_path, dir_image_output=None):
     """
 
     Args:
-      image_path: 
+      image_path:
       dir_image_output: (Default value = None)
 
     Returns:
@@ -108,7 +108,7 @@ def _calculate_hsl_single_image(image_path, dir_image_output=None):
     """
 
     Args:
-      image_path: 
+      image_path:
       dir_image_output: (Default value = None)
 
     Returns:
@@ -136,7 +136,7 @@ def _detect_all_features_single_image(image_path, dir_image_output=None):
     """
 
     Args:
-      image_path: 
+      image_path:
       dir_image_output: (Default value = None)
 
     Returns:
@@ -180,8 +180,8 @@ def get_low_level_features(
       dir_summary_output: Union[str:
       dir_image_output: Union[str:
       dir_summary_output: Union[str:
-      dir_image_output: Union[str: 
-      dir_summary_output: Union[str: 
+      dir_image_output: Union[str:
+      dir_summary_output: Union[str:
 
     Returns:
       None: The function does not return any value but outputs results to the specified directories.

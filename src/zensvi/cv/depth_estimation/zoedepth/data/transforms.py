@@ -192,7 +192,7 @@ class Resize(object):
         """
 
         Args:
-          x: 
+          x:
           min_val: (Default value = 0)
           max_val: (Default value = None)
 
@@ -213,8 +213,8 @@ class Resize(object):
         """
 
         Args:
-          width: 
-          height: 
+          width:
+          height:
 
         Returns:
 
@@ -269,7 +269,7 @@ class Resize(object):
         """
 
         Args:
-          sample: 
+          sample:
 
         Returns:
 
@@ -346,7 +346,7 @@ class ResizeFixed(object):
 
 class Rescale(object):
     """Rescale target values to the interval [0, max_val].
-    
+
     If input is constant, values are set to max_val / 2.
 
     Args:
@@ -403,7 +403,7 @@ class NormalizeImage(object):
 
 class DepthToDisparity(object):
     """Convert depth to disparity.
-    
+
     Removes depth from sample.
 
     Args:
@@ -430,7 +430,7 @@ class DepthToDisparity(object):
 
 class DisparityToDepth(object):
     """Convert disparity to depth.
-    
+
     Removes disparity from sample.
 
     Args:

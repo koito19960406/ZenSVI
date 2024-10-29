@@ -65,7 +65,7 @@ class PatchTransformerEncoder(nn.Module):
         Args:
           sequence_length(int): Sequence length
           embedding_dim(int): Embedding dimension
-          batch_size: 
+          batch_size:
           device: (Default value = "cpu")
 
         Returns:

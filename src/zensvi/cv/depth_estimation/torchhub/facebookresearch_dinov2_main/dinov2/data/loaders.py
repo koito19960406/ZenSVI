@@ -33,7 +33,7 @@ def _make_bool_str(b: bool) -> str:
     Args:
       b: bool:
       b: bool:
-      b: bool: 
+      b: bool:
 
     Returns:
 
@@ -63,7 +63,7 @@ def _make_sample_transform(
         """
 
         Args:
-          sample: 
+          sample:
 
         Returns:
 
@@ -84,7 +84,7 @@ def _parse_dataset_str(dataset_str: str):
     Args:
       dataset_str: str:
       dataset_str: str:
-      dataset_str: str: 
+      dataset_str: str:
 
     Returns:
 
@@ -123,14 +123,14 @@ def make_dataset(
       dataset_str: A dataset string description (e.g. ImageNet:split=TRAIN).
       transform: A transform to apply to images.
       target_transform: A transform to apply to targets.
-      *: 
+      *:
       dataset_str: str:
       transform: Optional[Callable]:  (Default value = None)
       target_transform: Optional[Callable]:  (Default value = None)
       dataset_str: str:
       transform: Optional[Callable]:  (Default value = None)
       target_transform: Optional[Callable]:  (Default value = None)
-      dataset_str: str: 
+      dataset_str: str:
       transform: Optional[Callable]:  (Default value = None)
       target_transform: Optional[Callable]:  (Default value = None)
 
@@ -166,8 +166,8 @@ def _make_sampler(
     """
 
     Args:
-      *: 
-      dataset: 
+      *:
+      dataset:
       type: Optional[SamplerType]:  (Default value = None)
       shuffle: bool:  (Default value = False)
       seed: int:  (Default value = 0)
@@ -272,7 +272,7 @@ def make_data_loader(
       drop_last: Whether the last non-full batch of data should be dropped.
       persistent_workers: maintain the workers Dataset instances alive after a dataset has been consumed once.
       collate_fn: Function that performs batch collation
-      *: 
+      *:
       batch_size: int:
       num_workers: int:
       shuffle: bool:  (Default value = True)
@@ -294,8 +294,8 @@ def make_data_loader(
       drop_last: bool:  (Default value = True)
       persistent_workers: bool:  (Default value = False)
       collate_fn: Optional[Callable[[List[T]]:
-      batch_size: int: 
-      num_workers: int: 
+      batch_size: int:
+      num_workers: int:
       shuffle: bool:  (Default value = True)
       seed: int:  (Default value = 0)
       sampler_type: Optional[SamplerType]:  (Default value = SamplerType.INFINITE)
@@ -303,7 +303,7 @@ def make_data_loader(
       sampler_advance: int:  (Default value = 0)
       drop_last: bool:  (Default value = True)
       persistent_workers: bool:  (Default value = False)
-      collate_fn: Optional[Callable[[List[T]]: 
+      collate_fn: Optional[Callable[[List[T]]:
 
     Returns:
 

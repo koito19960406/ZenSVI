@@ -44,7 +44,7 @@ class DepthModel(nn.Module):
         """
 
         Args:
-          device: 
+          device:
 
         Returns:
 
@@ -56,9 +56,9 @@ class DepthModel(nn.Module):
         """
 
         Args:
-          x: 
-          *args: 
-          **kwargs: 
+          x:
+          *args:
+          **kwargs:
 
         Returns:
 
@@ -71,7 +71,7 @@ class DepthModel(nn.Module):
         Args:
           x: torch.Tensor:
           x: torch.Tensor:
-          x: torch.Tensor: 
+          x: torch.Tensor:
 
         Returns:
           torch.Tensor: output tensor of shape (b, 1, h, w)
@@ -94,7 +94,7 @@ class DepthModel(nn.Module):
         artifacts are sometimes caused by the fact that the model is trained on NYU raw
         dataset which has a black or white border around the image. This augmentation
         pads the input image and crops the prediction back to the original size / view.
-        
+
         Note: This augmentation is not required for the models trained with 'avoid_boundary'=True.
 
         Args:
@@ -109,13 +109,13 @@ class DepthModel(nn.Module):
           fw: float:  (Default value = 3)
           upsampling_mode: str:  (Default value = "bicubic")
           padding_mode: (Default value = "reflect")
-          **kwargs: 
+          **kwargs:
           x: torch.Tensor:
           pad_input: bool:  (Default value = True)
           fh: float:  (Default value = 3)
           fw: float:  (Default value = 3)
           upsampling_mode: str:  (Default value = "bicubic")
-          x: torch.Tensor: 
+          x: torch.Tensor:
           pad_input: bool:  (Default value = True)
           fh: float:  (Default value = 3)
           fw: float:  (Default value = 3)
@@ -162,7 +162,7 @@ class DepthModel(nn.Module):
         Args:
           x(torch.Tensor): input tensor of shape (b, c, h, w)
           pad_input: bool:  (Default value = True)
-          **kwargs: 
+          **kwargs:
           pad_input: bool:  (Default value = True)
           pad_input: bool:  (Default value = True)
 
@@ -184,7 +184,7 @@ class DepthModel(nn.Module):
           pad_input(bool): whether to use padding augmentation. Defaults to True.
           pad_input: bool:  (Default value = True)
           with_flip_aug: bool:  (Default value = True)
-          **kwargs: 
+          **kwargs:
           pad_input: bool:  (Default value = True)
           with_flip_aug: bool:  (Default value = True)
           pad_input: bool:  (Default value = True)
@@ -218,7 +218,7 @@ class DepthModel(nn.Module):
           pad_input: bool:  (Default value = True)
           with_flip_aug: bool:  (Default value = True)
           output_type: str:  (Default value = "numpy")
-          **kwargs: 
+          **kwargs:
           pad_input: bool:  (Default value = True)
           with_flip_aug: bool:  (Default value = True)
           output_type: str:  (Default value = "numpy")

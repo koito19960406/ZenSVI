@@ -108,8 +108,8 @@ def _restrict_print_to_main_process() -> None:
         """
 
         Args:
-          *args: 
-          **kwargs: 
+          *args:
+          **kwargs:
 
         Returns:
 
@@ -178,7 +178,7 @@ def _parse_slurm_node_list(s: str) -> List[str]:
     Args:
       s: str:
       s: str:
-      s: str: 
+      s: str:
 
     Returns:
 
@@ -207,8 +207,8 @@ def _check_env_variable(key: str, new_value: str):
       new_value: str:
       key: str:
       new_value: str:
-      key: str: 
-      new_value: str: 
+      key: str:
+      new_value: str:
 
     Returns:
 
@@ -295,10 +295,10 @@ class _TorchDistributedEnvironment:
         """
 
         Args:
-          *: 
+          *:
           overwrite: bool:
           overwrite: bool:
-          overwrite: bool: 
+          overwrite: bool:
 
         Returns:
 
@@ -334,7 +334,7 @@ def enable(
       set_cuda_current_device: If True, call torch.cuda.set_device() to set the
     current PyTorch CUDA device to the one matching the local rank.
       overwrite: If True, overwrites already set variables. Else fails.
-      *: 
+      *:
       set_cuda_current_device: bool:  (Default value = True)
       overwrite: bool:  (Default value = False)
       allow_nccl_timeout: bool:  (Default value = False)

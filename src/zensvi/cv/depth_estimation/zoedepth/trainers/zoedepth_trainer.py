@@ -48,12 +48,12 @@ class Trainer(BaseTrainer):
 
     def train_on_batch(self, batch, train_step):
         """Expects a batch of images and depth as input batch["image"].shape :
-        
+
         batch_size, c, h, w batch["depth"].shape : batch_size, 1, h, w.
 
         Args:
-          batch: 
-          train_step: 
+          batch:
+          train_step:
 
         Returns:
 
@@ -125,7 +125,7 @@ class Trainer(BaseTrainer):
         """
 
         Args:
-          x: 
+          x:
 
         Returns:
 
@@ -140,7 +140,7 @@ class Trainer(BaseTrainer):
         """
 
         Args:
-          x: 
+          x:
 
         Returns:
 
@@ -192,8 +192,8 @@ class Trainer(BaseTrainer):
         """
 
         Args:
-          batch: 
-          val_step: 
+          batch:
+          val_step:
 
         Returns:
 

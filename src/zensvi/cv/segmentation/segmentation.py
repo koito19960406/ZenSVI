@@ -191,7 +191,7 @@ def _create_mapillary_vistas_label_colormap():
 
 def _get_resized_dimensions(width: int, height: int, max_size: int = 2048) -> Tuple[int, int]:
     """Calculate the new dimensions of an image to maintain aspect ratio.
-    
+
     Returns original dimensions if both are less than max_size.
 
     Args:
@@ -201,8 +201,8 @@ def _get_resized_dimensions(width: int, height: int, max_size: int = 2048) -> Tu
       width: int:
       height: int:
       max_size: int:  (Default value = 2048)
-      width: int: 
-      height: int: 
+      width: int:
+      height: int:
       max_size: int:  (Default value = 2048)
 
     Returns:
@@ -220,14 +220,14 @@ def _get_resized_dimensions(width: int, height: int, max_size: int = 2048) -> Tu
 
 class ImageDataset(Dataset):
     def __init__(self, image_files: List[Path], max_size: int = 2048, rgb: bool = True) -> None:
-    """Initialize the dataset with the path to images, the maximum size for resizing,
-        and color mode.
+        """Initialize the dataset with the path to images, the maximum size for resizing,
+            and color mode.
 
-    Args:
+        Args:
 
-    Returns:
+        Returns:
 
-    """
+        """
         self.image_files = [
             image_file
             for image_file in image_files
@@ -266,11 +266,11 @@ class ImageDataset(Dataset):
         Args:
           data(List[Tuple[str): List of tuples containing image file path, image data, and original image dimensions.
           data: List[Tuple[str:
-          cv2.Mat: 
-          Tuple[int: 
-          int]]]: 
+          cv2.Mat:
+          Tuple[int:
+          int]]]:
           data: List[Tuple[str:
-          data: List[Tuple[str: 
+          data: List[Tuple[str:
 
         Returns:
           Tuple[List[str], List[cv2.Mat], List[Tuple[int, int]]]: Tuple containing lists of image file paths, image data, and original image dimensions.
@@ -282,7 +282,7 @@ class ImageDataset(Dataset):
 
 class Segmenter:
     """A class for performing semantic and panoptic segmentation on images.
-    
+
     The models used are from the Mask2Former (https://huggingface.co/docs/transformers/model_doc/mask2former).
 
     Args:
@@ -311,8 +311,8 @@ class Segmenter:
         """
 
         Args:
-          dataset: 
-          task: 
+          dataset:
+          task:
 
         Returns:
 
@@ -403,7 +403,7 @@ class Segmenter:
         """
 
         Args:
-          dataset: 
+          dataset:
 
         Returns:
 
@@ -418,7 +418,7 @@ class Segmenter:
         """Get the appropriate device for running the model.
 
         Args:
-          device: 
+          device:
 
         Returns:
           torch.device: The device to use for running the model.
@@ -459,10 +459,10 @@ class Segmenter:
         """
 
         Args:
-          input_dict: 
-          dir_output: 
-          value_name: 
-          csv_format: 
+          input_dict:
+          dir_output:
+          value_name:
+          csv_format:
 
         Returns:
 
@@ -632,7 +632,7 @@ class Segmenter:
         """
 
         Args:
-          output: 
+          output:
 
         Returns:
 
@@ -742,7 +742,7 @@ class Segmenter:
     ):
         """Processes a batch of images for segmentation, saves the segmented images and
         summary statistics.
-        
+
         This method handles the processing of images for segmentation, managing input/output directories,
         saving options, and parallel processing settings. The method requires specifying an input directory
         or a path to a single image and supports optional saving of output images and segmentation summaries.
@@ -763,9 +763,9 @@ class Segmenter:
           max_workers: Union
           Defaults: to None
           dir_input: Union[str:
-          Path]: 
+          Path]:
           dir_image_output: Union[str:
-          Path: 
+          Path:
           None]: (Default value = None)
           dir_summary_output: Union[str:
           # "long" or "wide"max_workers: Union[int:
@@ -773,10 +773,10 @@ class Segmenter:
           dir_image_output: Union[str:
           dir_summary_output: Union[str:
           # "long" or "wide"max_workers: Union[int:
-          dir_input: Union[str: 
-          dir_image_output: Union[str: 
-          dir_summary_output: Union[str: 
-          # "long" or "wide"max_workers: Union[int: 
+          dir_input: Union[str:
+          dir_image_output: Union[str:
+          dir_summary_output: Union[str:
+          # "long" or "wide"max_workers: Union[int:
 
         Returns:
           None: The method does not return any value but saves the processed results to specified directories.

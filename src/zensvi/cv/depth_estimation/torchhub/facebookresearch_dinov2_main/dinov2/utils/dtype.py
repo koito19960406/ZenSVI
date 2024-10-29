@@ -34,7 +34,7 @@ def as_torch_dtype(dtype: TypeSpec) -> torch.dtype:
     Args:
       dtype: TypeSpec:
       dtype: TypeSpec:
-      dtype: TypeSpec: 
+      dtype: TypeSpec:
 
     Returns:
 

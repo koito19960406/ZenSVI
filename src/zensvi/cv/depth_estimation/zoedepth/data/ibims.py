@@ -83,9 +83,9 @@ def get_ibims_loader(config, batch_size=1, **kwargs):
     """
 
     Args:
-      config: 
+      config:
       batch_size: (Default value = 1)
-      **kwargs: 
+      **kwargs:
 
     Returns:
 

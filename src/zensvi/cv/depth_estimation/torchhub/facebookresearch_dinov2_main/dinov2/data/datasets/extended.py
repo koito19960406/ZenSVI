@@ -23,7 +23,7 @@ class ExtendedVisionDataset(VisionDataset):
         Args:
           index: int:
           index: int:
-          index: int: 
+          index: int:
 
         Returns:
 
@@ -36,7 +36,7 @@ class ExtendedVisionDataset(VisionDataset):
         Args:
           index: int:
           index: int:
-          index: int: 
+          index: int:
 
         Returns:
 

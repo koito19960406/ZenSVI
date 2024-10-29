@@ -95,7 +95,7 @@ class Resize(object):
         """
 
         Args:
-          x: 
+          x:
           min_val: (Default value = 0)
           max_val: (Default value = None)
 
@@ -116,8 +116,8 @@ class Resize(object):
         """
 
         Args:
-          width: 
-          height: 
+          width:
+          height:
 
         Returns:
 

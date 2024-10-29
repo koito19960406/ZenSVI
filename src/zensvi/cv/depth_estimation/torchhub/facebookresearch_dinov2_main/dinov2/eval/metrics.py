@@ -50,14 +50,14 @@ def build_metric(metric_type: MetricType, *, num_classes: int, ks: Optional[tupl
 
     Args:
       metric_type: MetricType:
-      *: 
+      *:
       num_classes: int:
       ks: Optional[tuple]:  (Default value = None)
       metric_type: MetricType:
       num_classes: int:
       ks: Optional[tuple]:  (Default value = None)
-      metric_type: MetricType: 
-      num_classes: int: 
+      metric_type: MetricType:
+      num_classes: int:
       ks: Optional[tuple]:  (Default value = None)
 
     Returns:
@@ -85,12 +85,12 @@ def build_topk_accuracy_metric(average_type: AccuracyAveraging, num_classes: int
       average_type: AccuracyAveraging:
       num_classes: int:
       ks: tuple:  (Default value = (1)
-      5): 
+      5):
       average_type: AccuracyAveraging:
       num_classes: int:
       ks: tuple:  (Default value = (1)
-      average_type: AccuracyAveraging: 
-      num_classes: int: 
+      average_type: AccuracyAveraging:
+      num_classes: int:
       ks: tuple:  (Default value = (1)
 
     Returns:
@@ -108,10 +108,10 @@ def build_topk_imagenet_real_accuracy_metric(num_classes: int, ks: tuple = (1, 5
     Args:
       num_classes: int:
       ks: tuple:  (Default value = (1)
-      5): 
+      5):
       num_classes: int:
       ks: tuple:  (Default value = (1)
-      num_classes: int: 
+      num_classes: int:
       ks: tuple:  (Default value = (1)
 
     Returns:
@@ -147,8 +147,8 @@ class ImageNetReaLAccuracy(Metric):
           target: Tensor:
           preds: Tensor:
           target: Tensor:
-          preds: Tensor: 
-          target: Tensor: 
+          preds: Tensor:
+          target: Tensor:
 
         Returns:
 

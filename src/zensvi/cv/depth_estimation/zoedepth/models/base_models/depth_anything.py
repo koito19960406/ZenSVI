@@ -49,8 +49,8 @@ def get_activation(name, bank):
     """
 
     Args:
-      name: 
-      bank: 
+      name:
+      bank:
 
     Returns:
 
@@ -60,9 +60,9 @@ def get_activation(name, bank):
         """
 
         Args:
-          model: 
-          input: 
-          output: 
+          model:
+          input:
+          output:
 
         Returns:
 
@@ -126,7 +126,7 @@ class Resize(object):
         """
 
         Args:
-          x: 
+          x:
           min_val: (Default value = 0)
           max_val: (Default value = None)
 
@@ -147,8 +147,8 @@ class Resize(object):
         """
 
         Args:
-          width: 
-          height: 
+          width:
+          height:
 
         Returns:
 
@@ -288,7 +288,7 @@ class DepthAnythingCore(nn.Module):
         """
 
         Args:
-          trainable: 
+          trainable:
 
         Returns:
 
@@ -304,7 +304,7 @@ class DepthAnythingCore(nn.Module):
         """
 
         Args:
-          fetch_features: 
+          fetch_features:
 
         Returns:
 
@@ -342,12 +342,12 @@ class DepthAnythingCore(nn.Module):
         """
 
         Args:
-          x: 
+          x:
           denorm: Default value
           return_rel_depth: Default value
 
         Returns:
-          
+
 
         """
         # print('input to midas:', x.shape)
@@ -400,7 +400,7 @@ class DepthAnythingCore(nn.Module):
         """
 
         Args:
-          midas: 
+          midas:
 
         Returns:
 
@@ -470,7 +470,7 @@ class DepthAnythingCore(nn.Module):
           freeze_bn: (Default value = True)
           force_keep_ar: (Default value = False)
           force_reload: (Default value = False)
-          **kwargs: 
+          **kwargs:
 
         Returns:
 
@@ -503,7 +503,7 @@ class DepthAnythingCore(nn.Module):
         """
 
         Args:
-          config: 
+          config:
 
         Returns:
 

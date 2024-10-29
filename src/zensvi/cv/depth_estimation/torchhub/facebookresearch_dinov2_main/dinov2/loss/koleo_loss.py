@@ -18,7 +18,7 @@ logger = logging.getLogger("dinov2")
 
 class KoLeoLoss(nn.Module):
     """Kozachenko-Leonenko entropic loss regularizer from Sablayrolles et al.
-    
+
     - 2018 - Spreading vectors for similarity search
 
     Args:
@@ -33,11 +33,11 @@ class KoLeoLoss(nn.Module):
 
     def pairwise_NNs_inner(self, x):
         """Pairwise nearest neighbors for L2-normalized vectors.
-        
+
         Uses Torch rather than Faiss to remain on GPU.
 
         Args:
-          x: 
+          x:
 
         Returns:
 

@@ -51,7 +51,7 @@ def get_border_params(
     """
 
     Args:
-      rgb_image: 
+      rgb_image:
       tolerance: (Default value = 0.1)
       cut_off: (Default value = 20)
       value: (Default value = 0)
@@ -69,7 +69,7 @@ def get_border_params(
         """
 
         Args:
-          arr: 
+          arr:
 
         Returns:
 
@@ -80,8 +80,8 @@ def get_border_params(
         """
 
         Args:
-          arr: 
-          total_pixels: 
+          arr:
+          total_pixels:
 
         Returns:
 
@@ -123,9 +123,9 @@ def get_white_border(rgb_image, value=255, **kwargs) -> CropParams:
     """Crops the white border of the RGB.
 
     Args:
-      rgb_image: 
+      rgb_image:
       value: (Default value = 255)
-      **kwargs: 
+      **kwargs:
 
     Returns:
       : Crop parameters.
@@ -147,8 +147,8 @@ def get_black_border(rgb_image, **kwargs) -> CropParams:
 
     Args:
       rgb: RGB image, shape (H, W, 3).
-      rgb_image: 
-      **kwargs: 
+      rgb_image:
+      **kwargs:
 
     Returns:
       : Crop parameters.
@@ -168,8 +168,8 @@ def crop_image(image: np.ndarray, crop_params: CropParams) -> np.ndarray:
       crop_params: CropParams:
       image: np.ndarray:
       crop_params: CropParams:
-      image: np.ndarray: 
-      crop_params: CropParams: 
+      image: np.ndarray:
+      crop_params: CropParams:
 
     Returns:
       : Cropped image.
@@ -188,8 +188,8 @@ def crop_images(*images: np.ndarray, crop_params: CropParams) -> Tuple[np.ndarra
       crop_params: CropParams:
       *images: np.ndarray:
       crop_params: CropParams:
-      *images: np.ndarray: 
-      crop_params: CropParams: 
+      *images: np.ndarray:
+      crop_params: CropParams:
 
     Returns:
       : Cropped images.
@@ -205,13 +205,13 @@ def crop_black_or_white_border(
 
     Args:
       rgb: RGB image, shape (H, W, 3). This image is used to determine the border.
-      rgb_image: 
+      rgb_image:
       *other_images: np.ndarray:
       tolerance: (Default value = 0.1)
       cut_off: (Default value = 20)
       level_diff_threshold: (Default value = 5)
       *other_images: np.ndarray:
-      *other_images: np.ndarray: 
+      *other_images: np.ndarray:
 
     Returns:
       : Cropped RGB and other images.

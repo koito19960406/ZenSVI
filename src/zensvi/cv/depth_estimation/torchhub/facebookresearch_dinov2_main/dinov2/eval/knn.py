@@ -113,7 +113,7 @@ def get_args_parser(
 
 class KnnModule(torch.nn.Module):
     """Gets knn of test features from all processes on a chunk of the train features.
-    
+
     Each rank gets a chunk of the train features as well as a chunk of the test features.
     In `compute_neighbors`, for each rank one after the other, its chunk of test features
     is sent to all devices, partial knns are computed with each chunk of train features
@@ -144,8 +144,8 @@ class KnnModule(torch.nn.Module):
         """
 
         Args:
-          similarity: 
-          train_labels: 
+          similarity:
+          train_labels:
 
         Returns:
 
@@ -158,8 +158,8 @@ class KnnModule(torch.nn.Module):
         """
 
         Args:
-          features_rank: 
-          source_rank: 
+          features_rank:
+          source_rank:
 
         Returns:
 
@@ -182,9 +182,9 @@ class KnnModule(torch.nn.Module):
         """
 
         Args:
-          topk_sims: 
-          neighbors_labels: 
-          target_rank: 
+          topk_sims:
+          neighbors_labels:
+          target_rank:
 
         Returns:
 
@@ -210,7 +210,7 @@ class KnnModule(torch.nn.Module):
         """
 
         Args:
-          features_rank: 
+          features_rank:
 
         Returns:
 
@@ -227,7 +227,7 @@ class KnnModule(torch.nn.Module):
         `self.max_k`
 
         Args:
-          features_rank: 
+          features_rank:
 
         Returns:
 
@@ -256,8 +256,8 @@ class DictKeysModule(torch.nn.Module):
         """
 
         Args:
-          features_dict: 
-          targets: 
+          features_dict:
+          targets:
 
         Returns:
 
@@ -271,13 +271,13 @@ def create_module_dict(*, module, n_per_class_list, n_tries, nb_knn, train_featu
     """
 
     Args:
-      *: 
-      module: 
-      n_per_class_list: 
-      n_tries: 
-      nb_knn: 
-      train_features: 
-      train_labels: 
+      *:
+      module:
+      n_per_class_list:
+      n_tries:
+      nb_knn:
+      train_features:
+      train_labels:
 
     Returns:
 
@@ -312,9 +312,9 @@ def filter_train(mapping, n_per_class, seed):
     """
 
     Args:
-      mapping: 
-      n_per_class: 
-      seed: 
+      mapping:
+      n_per_class:
+      seed:
 
     Returns:
 
@@ -331,7 +331,7 @@ def create_class_indices_mapping(labels):
     """
 
     Args:
-      labels: 
+      labels:
 
     Returns:
 
@@ -348,8 +348,8 @@ class ModuleDictWithForward(torch.nn.ModuleDict):
         """
 
         Args:
-          *args: 
-          **kwargs: 
+          *args:
+          **kwargs:
 
         Returns:
 
@@ -373,15 +373,15 @@ def eval_knn(
     """
 
     Args:
-      model: 
-      train_dataset: 
-      val_dataset: 
-      accuracy_averaging: 
-      nb_knn: 
-      temperature: 
-      batch_size: 
-      num_workers: 
-      gather_on_cpu: 
+      model:
+      train_dataset:
+      val_dataset:
+      accuracy_averaging:
+      nb_knn:
+      temperature:
+      batch_size:
+      num_workers:
+      gather_on_cpu:
       n_per_class_list: (Default value = [-1])
       n_tries: (Default value = 1)
 
@@ -470,14 +470,14 @@ def eval_knn_with_model(
     """
 
     Args:
-      model: 
-      output_dir: 
+      model:
+      output_dir:
       train_dataset_str: (Default value = "ImageNet:split=TRAIN")
       val_dataset_str: (Default value = "ImageNet:split=VAL")
       nb_knn: (Default value = (10)
-      20: 
-      100: 
-      200): 
+      20:
+      100:
+      200):
       temperature: (Default value = 0.07)
       autocast_dtype: (Default value = torch.float)
       accuracy_averaging: (Default value = AccuracyAveraging.MEAN_ACCURACY)
@@ -540,7 +540,7 @@ def main(args):
     """
 
     Args:
-      args: 
+      args:
 
     Returns:
 

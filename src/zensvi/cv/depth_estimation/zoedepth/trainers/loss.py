@@ -34,8 +34,8 @@ def extract_key(prediction, key):
     """
 
     Args:
-      prediction: 
-      key: 
+      prediction:
+      key:
 
     Returns:
 
@@ -58,14 +58,14 @@ class SILogLoss(nn.Module):
         """
 
         Args:
-          input: 
-          target: 
+          input:
+          target:
           mask: Default value
           interpolate: Default value
           return_interpolated: Default value
 
         Returns:
-          
+
 
         """
         input = extract_key(input, KEY_OUTPUT)
@@ -117,7 +117,7 @@ def grad(x):
     """
 
     Args:
-      x: 
+      x:
 
     Returns:
 
@@ -135,7 +135,7 @@ def grad_mask(mask):
     """
 
     Args:
-      mask: 
+      mask:
 
     Returns:
 
@@ -154,14 +154,14 @@ class GradL1Loss(nn.Module):
         """
 
         Args:
-          input: 
-          target: 
+          input:
+          target:
           mask: Default value
           interpolate: Default value
           return_interpolated: Default value
 
         Returns:
-          
+
 
         """
         input = extract_key(input, KEY_OUTPUT)
@@ -194,7 +194,7 @@ class OrdinalRegressionLoss(object):
         """
 
         Args:
-          gt: 
+          gt:
 
         Returns:
 
@@ -264,7 +264,7 @@ class DiscreteNLLLoss(nn.Module):
         """
 
         Args:
-          depth: 
+          depth:
 
         Returns:
 
@@ -284,7 +284,7 @@ class DiscreteNLLLoss(nn.Module):
         depth : NCHW -> N1HW
 
         Args:
-          depth: 
+          depth:
 
         Returns:
 
@@ -295,14 +295,14 @@ class DiscreteNLLLoss(nn.Module):
         """
 
         Args:
-          input: 
-          target: 
+          input:
+          target:
           mask: Default value
           interpolate: Default value
           return_interpolated: Default value
 
         Returns:
-          
+
 
         """
         input = extract_key(input, KEY_OUTPUT)
@@ -341,9 +341,9 @@ def compute_scale_and_shift(prediction, target, mask):
     """
 
     Args:
-      prediction: 
-      target: 
-      mask: 
+      prediction:
+      target:
+      mask:
 
     Returns:
 
@@ -382,14 +382,14 @@ class ScaleAndShiftInvariantLoss(nn.Module):
         """
 
         Args:
-          prediction: 
-          target: 
-          mask: 
+          prediction:
+          target:
+          mask:
           interpolate: Default value
           return_interpolated: Default value
 
         Returns:
-          
+
 
         """
 

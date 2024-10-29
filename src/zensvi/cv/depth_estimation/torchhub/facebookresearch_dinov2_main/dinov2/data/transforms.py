@@ -79,7 +79,7 @@ def make_classification_train_transform(
     """
 
     Args:
-      *: 
+      *:
       crop_size: int:  (Default value = 224)
       interpolation: (Default value = transforms.InterpolationMode.BICUBIC)
       hflip_prob: float:  (Default value = 0.5)
@@ -122,7 +122,7 @@ def make_classification_eval_transform(
     """
 
     Args:
-      *: 
+      *:
       resize_size: int:  (Default value = 256)
       interpolation: (Default value = transforms.InterpolationMode.BICUBIC)
       crop_size: int:  (Default value = 224)

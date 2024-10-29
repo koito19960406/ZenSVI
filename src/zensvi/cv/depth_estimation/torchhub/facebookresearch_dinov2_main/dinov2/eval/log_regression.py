@@ -147,8 +147,8 @@ class LogRegModule(nn.Module):
         """
 
         Args:
-          samples: 
-          targets: 
+          samples:
+          targets:
 
         Returns:
 
@@ -164,8 +164,8 @@ class LogRegModule(nn.Module):
         """
 
         Args:
-          train_features: 
-          train_labels: 
+          train_features:
+          train_labels:
 
         Returns:
 
@@ -183,11 +183,11 @@ def evaluate_model(*, logreg_model, logreg_metric, test_data_loader, device):
     """
 
     Args:
-      *: 
-      logreg_model: 
-      logreg_metric: 
-      test_data_loader: 
-      device: 
+      *:
+      logreg_model:
+      logreg_metric:
+      test_data_loader:
+      device:
 
     Returns:
 
@@ -209,11 +209,11 @@ def train_for_C(
     """
 
     Args:
-      *: 
-      C: 
-      max_iter: 
-      train_features: 
-      train_labels: 
+      *:
+      C:
+      max_iter:
+      train_features:
+      train_labels:
       dtype: (Default value = torch.float64)
       device: (Default value = _CPU_DEVICE)
 
@@ -240,16 +240,16 @@ def train_and_evaluate(
     """
 
     Args:
-      *: 
-      C: 
-      max_iter: 
-      train_features: 
-      train_labels: 
-      logreg_metric: 
-      test_data_loader: 
+      *:
+      C:
+      max_iter:
+      train_features:
+      train_labels:
+      logreg_metric:
+      test_data_loader:
       train_dtype: (Default value = torch.float64)
-      train_features_device: 
-      eval_device: 
+      train_features_device:
+      eval_device:
 
     Returns:
 
@@ -284,12 +284,12 @@ def sweep_C_values(
     """
 
     Args:
-      *: 
-      train_features: 
-      train_labels: 
-      test_data_loader: 
-      metric_type: 
-      num_classes: 
+      *:
+      train_features:
+      train_labels:
+      test_data_loader:
+      metric_type:
+      num_classes:
       train_dtype: (Default value = torch.float64)
       train_features_device: (Default value = _CPU_DEVICE)
       max_train_iters: (Default value = DEFAULT_MAX_ITER)
@@ -366,7 +366,7 @@ def eval_log_regression(
     max_train_iters=DEFAULT_MAX_ITER,
 ):
     """Implements the "standard" process for log regression evaluation:
-    
+
     The value of C is chosen by training on train_dataset and evaluating on
     finetune_dataset. Then, the final model is trained on a concatenation of
     train_dataset and finetune_dataset, and is evaluated on val_dataset. If there is no
@@ -374,14 +374,14 @@ def eval_log_regression(
     10% subset of the train dataset
 
     Args:
-      *: 
-      model: 
-      train_dataset: 
-      val_dataset: 
-      finetune_dataset: 
-      metric_type: 
-      batch_size: 
-      num_workers: 
+      *:
+      model:
+      train_dataset:
+      val_dataset:
+      finetune_dataset:
+      metric_type:
+      batch_size:
+      num_workers:
       finetune_on_val: (Default value = False)
       train_dtype: (Default value = torch.float64)
       train_features_device: (Default value = _CPU_DEVICE)
@@ -511,7 +511,7 @@ def eval_log_regression_with_model(
     """
 
     Args:
-      model: 
+      model:
       train_dataset_str: (Default value = "ImageNet:split=TRAIN")
       val_dataset_str: (Default value = "ImageNet:split=VAL")
       finetune_dataset_str: (Default value = None)
@@ -588,7 +588,7 @@ def main(args):
     """
 
     Args:
-      args: 
+      args:
 
     Returns:
 

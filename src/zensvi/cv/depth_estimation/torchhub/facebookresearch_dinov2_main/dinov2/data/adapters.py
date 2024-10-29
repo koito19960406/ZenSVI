@@ -21,7 +21,7 @@ class DatasetWithEnumeratedTargets(Dataset):
         Args:
           index: int:
           index: int:
-          index: int: 
+          index: int:
 
         Returns:
 
@@ -34,7 +34,7 @@ class DatasetWithEnumeratedTargets(Dataset):
         Args:
           index: int:
           index: int:
-          index: int: 
+          index: int:
 
         Returns:
 

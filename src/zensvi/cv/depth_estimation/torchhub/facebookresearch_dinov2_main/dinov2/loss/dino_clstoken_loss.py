@@ -33,8 +33,8 @@ class DINOLoss(nn.Module):
         """
 
         Args:
-          teacher_output: 
-          teacher_temp: 
+          teacher_output:
+          teacher_temp:
 
         Returns:
 
@@ -48,8 +48,8 @@ class DINOLoss(nn.Module):
         """
 
         Args:
-          teacher_output: 
-          teacher_temp: 
+          teacher_output:
+          teacher_temp:
           n_iterations: (Default value = 3)
 
         Returns:
@@ -86,8 +86,8 @@ class DINOLoss(nn.Module):
         """Cross-entropy between softmax outputs of the teacher and student networks.
 
         Args:
-          student_output_list: 
-          teacher_out_softmaxed_centered_list: 
+          student_output_list:
+          teacher_out_softmaxed_centered_list:
 
         Returns:
 
@@ -106,7 +106,7 @@ class DINOLoss(nn.Module):
         """
 
         Args:
-          teacher_output: 
+          teacher_output:
 
         Returns:
 
@@ -118,7 +118,7 @@ class DINOLoss(nn.Module):
         """
 
         Args:
-          teacher_output: 
+          teacher_output:
 
         Returns:
 

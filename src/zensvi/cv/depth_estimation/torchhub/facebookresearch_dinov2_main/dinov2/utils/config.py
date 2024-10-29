@@ -21,7 +21,7 @@ def apply_scaling_rules_to_cfg(cfg):  # to fix
     """
 
     Args:
-      cfg: 
+      cfg:
 
     Returns:
 
@@ -40,8 +40,8 @@ def write_config(cfg, output_dir, name="config.yaml"):
     """
 
     Args:
-      cfg: 
-      output_dir: 
+      cfg:
+      output_dir:
       name: (Default value = "config.yaml")
 
     Returns:
@@ -58,7 +58,7 @@ def get_cfg_from_args(args):
     """
 
     Args:
-      args: 
+      args:
 
     Returns:
 
@@ -75,7 +75,7 @@ def default_setup(args):
     """
 
     Args:
-      args: 
+      args:
 
     Returns:
 
@@ -97,7 +97,7 @@ def setup(args):
     """Create configs and perform basic setups.
 
     Args:
-      args: 
+      args:
 
     Returns:
 

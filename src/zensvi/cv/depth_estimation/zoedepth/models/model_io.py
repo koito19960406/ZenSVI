@@ -28,14 +28,14 @@ import torch
 def load_state_dict(model, state_dict):
     """Load state_dict into model, handling DataParallel and DistributedDataParallel.
     Also checks for "model" key in state_dict.
-    
+
     DataParallel prefixes state_dict keys with 'module.' when saving. If the model is
     not a DataParallel model but the state_dict is, then prefixes are removed. If the
     model is a DataParallel model but the state_dict is not, then prefixes are added.
 
     Args:
-      model: 
-      state_dict: 
+      model:
+      state_dict:
 
     Returns:
 
@@ -63,8 +63,8 @@ def load_wts(model, checkpoint_path):
     """
 
     Args:
-      model: 
-      checkpoint_path: 
+      model:
+      checkpoint_path:
 
     Returns:
 
@@ -77,9 +77,9 @@ def load_state_dict_from_url(model, url, **kwargs):
     """
 
     Args:
-      model: 
-      url: 
-      **kwargs: 
+      model:
+      url:
+      **kwargs:
 
     Returns:
 
@@ -92,7 +92,7 @@ def load_state_from_resource(model, resource: str):
     """Loads weights to the model from a given resource. A resource can be of following types:
         1. URL. Prefixed with "url::"
                 e.g. url::http(s)://url.resource.com/ckpt.pt
-    
+
         2. Local path. Prefixed with "local::"
                 e.g. local::/path/to/ckpt.pt
 
@@ -101,7 +101,7 @@ def load_state_from_resource(model, resource: str):
       resource(str): resource string
       resource: str:
       resource: str:
-      resource: str: 
+      resource: str:
 
     Returns:
       torch.nn.Module: Model with loaded weights

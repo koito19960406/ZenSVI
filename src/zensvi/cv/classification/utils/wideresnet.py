@@ -19,8 +19,8 @@ def conv3x3(in_planes, out_planes, stride=1):
     """
 
     Args:
-      in_planes: 
-      out_planes: 
+      in_planes:
+      out_planes:
       stride: (Default value = 1)
 
     Returns:
@@ -49,7 +49,7 @@ class BasicBlock(nn.Module):
         """
 
         Args:
-          x: 
+          x:
 
         Returns:
 
@@ -93,7 +93,7 @@ class Bottleneck(nn.Module):
         """
 
         Args:
-          x: 
+          x:
 
         Returns:
 
@@ -151,9 +151,9 @@ class ResNet(nn.Module):
         """
 
         Args:
-          block: 
-          planes: 
-          blocks: 
+          block:
+          planes:
+          blocks:
           stride: (Default value = 1)
 
         Returns:
@@ -184,7 +184,7 @@ class ResNet(nn.Module):
         """
 
         Args:
-          x: 
+          x:
 
         Returns:
 
@@ -211,7 +211,7 @@ def resnet18(pretrained=False, **kwargs):
 
     Args:
       pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
-      **kwargs: 
+      **kwargs:
 
     Returns:
 
@@ -227,7 +227,7 @@ def resnet34(pretrained=False, **kwargs):
 
     Args:
       pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
-      **kwargs: 
+      **kwargs:
 
     Returns:
 
@@ -243,7 +243,7 @@ def resnet50(pretrained=False, **kwargs):
 
     Args:
       pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
-      **kwargs: 
+      **kwargs:
 
     Returns:
 
@@ -259,7 +259,7 @@ def resnet101(pretrained=False, **kwargs):
 
     Args:
       pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
-      **kwargs: 
+      **kwargs:
 
     Returns:
 
@@ -275,7 +275,7 @@ def resnet152(pretrained=False, **kwargs):
 
     Args:
       pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
-      **kwargs: 
+      **kwargs:
 
     Returns:
 

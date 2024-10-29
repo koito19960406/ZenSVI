@@ -23,8 +23,8 @@ def _make_dinov2_model_name(arch_name: str, patch_size: int, num_register_tokens
       arch_name: str:
       patch_size: int:
       num_register_tokens: int:  (Default value = 0)
-      arch_name: str: 
-      patch_size: int: 
+      arch_name: str:
+      patch_size: int:
       num_register_tokens: int:  (Default value = 0)
 
     Returns:
@@ -46,7 +46,7 @@ class CenterPadding(nn.Module):
         """
 
         Args:
-          size: 
+          size:
 
         Returns:
 
@@ -62,7 +62,7 @@ class CenterPadding(nn.Module):
         """
 
         Args:
-          x: 
+          x:
 
         Returns:
 

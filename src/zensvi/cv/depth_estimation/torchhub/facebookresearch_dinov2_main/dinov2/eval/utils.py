@@ -28,7 +28,7 @@ class ModelWithNormalize(torch.nn.Module):
         """
 
         Args:
-          samples: 
+          samples:
 
         Returns:
 
@@ -50,7 +50,7 @@ class ModelWithIntermediateLayers(nn.Module):
         """
 
         Args:
-          images: 
+          images:
 
         Returns:
 
@@ -76,11 +76,11 @@ def evaluate(
 
     Args:
       model: nn.Module:
-      data_loader: 
+      data_loader:
       postprocessors: Dict[str:
-      nn.Module]: 
+      nn.Module]:
       metrics: Dict[str:
-      MetricCollection]: 
+      MetricCollection]:
       device: torch.device:
       criterion: Optional[nn.Module]:  (Default value = None)
       model: nn.Module:
@@ -88,10 +88,10 @@ def evaluate(
       metrics: Dict[str:
       device: torch.device:
       criterion: Optional[nn.Module]:  (Default value = None)
-      model: nn.Module: 
-      postprocessors: Dict[str: 
-      metrics: Dict[str: 
-      device: torch.device: 
+      model: nn.Module:
+      postprocessors: Dict[str:
+      metrics: Dict[str:
+      device: torch.device:
       criterion: Optional[nn.Module]:  (Default value = None)
 
     Returns:
@@ -131,7 +131,7 @@ def all_gather_and_flatten(tensor_rank):
     """
 
     Args:
-      tensor_rank: 
+      tensor_rank:
 
     Returns:
 
@@ -151,10 +151,10 @@ def extract_features(model, dataset, batch_size, num_workers, gather_on_cpu=Fals
     """
 
     Args:
-      model: 
-      dataset: 
-      batch_size: 
-      num_workers: 
+      model:
+      dataset:
+      batch_size:
+      num_workers:
       gather_on_cpu: (Default value = False)
 
     Returns:
@@ -178,9 +178,9 @@ def extract_features_with_dataloader(model, data_loader, sample_count, gather_on
     """
 
     Args:
-      model: 
-      data_loader: 
-      sample_count: 
+      model:
+      data_loader:
+      sample_count:
       gather_on_cpu: (Default value = False)
 
     Returns:

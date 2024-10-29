@@ -24,19 +24,19 @@ from zensvi.download.mapillary.models.exceptions import InvalidOptionError
 class Properties:
     """Representation for the properties in a GeoJSON.
 
-    Args:
-      properties(dict): The properties as the input
+        Args:
+          properties(dict): The properties as the input
 
-    Returns:
-      mapillary.models.geojson.Properties: A class representation of
-      mapillary.models.geojson.Properties: A class representation of
-      mapillary.models.geojson.Properties: A class representation of
-      mapillary.models.geojson.Properties: A class representation of
-      the model
+        Returns:
+          mapillary.models.geojson.Properties: A class representation of
+          mapillary.models.geojson.Properties: A class representation of
+          mapillary.models.geojson.Properties: A class representation of
+          mapillary.models.geojson.Properties: A class representation of
+          the model
 
-    Raises:
-      InvalidOptionError: Raised when the geojson passed is the
-invalid type - not a dict
+        Raises:
+          InvalidOptionError: Raised when the geojson passed is the
+    invalid type - not a dict
 
     """
 
@@ -98,20 +98,20 @@ invalid type - not a dict
 class Coordinates:
     """Representation for the coordinates in a geometry for a FeatureCollection.
 
-    Args:
-      longitude(float): The longitude of the coordinate set
-      latitude(float): The latitude of the coordinate set
+        Args:
+          longitude(float): The longitude of the coordinate set
+          latitude(float): The latitude of the coordinate set
 
-    Returns:
-      mapillary.models.geojson.Coordinates: A class representation of
-      mapillary.models.geojson.Coordinates: A class representation of
-      mapillary.models.geojson.Coordinates: A class representation of
-      mapillary.models.geojson.Coordinates: A class representation of
-      the Coordinates set
+        Returns:
+          mapillary.models.geojson.Coordinates: A class representation of
+          mapillary.models.geojson.Coordinates: A class representation of
+          mapillary.models.geojson.Coordinates: A class representation of
+          mapillary.models.geojson.Coordinates: A class representation of
+          the Coordinates set
 
-    Raises:
-      InvalidOptionError: Raised when invalid data types are passed to
-the coordinate set
+        Raises:
+          InvalidOptionError: Raised when invalid data types are passed to
+    the coordinate set
 
     """
 
@@ -174,19 +174,19 @@ the coordinate set
 class Geometry:
     """Representation for the geometry in a GeoJSON.
 
-    Args:
-      geometry(dict): The geometry as the input
+        Args:
+          geometry(dict): The geometry as the input
 
-    Returns:
-      mapillary.models.geojson.Geometry: A class representation of the
-      mapillary.models.geojson.Geometry: A class representation of the
-      mapillary.models.geojson.Geometry: A class representation of the
-      mapillary.models.geojson.Geometry: A class representation of the
-      model
+        Returns:
+          mapillary.models.geojson.Geometry: A class representation of the
+          mapillary.models.geojson.Geometry: A class representation of the
+          mapillary.models.geojson.Geometry: A class representation of the
+          mapillary.models.geojson.Geometry: A class representation of the
+          model
 
-    Raises:
-      InvalidOptionError: Raised when the geometry passed is the
-invalid type - not a dict
+        Raises:
+          InvalidOptionError: Raised when the geometry passed is the
+    invalid type - not a dict
 
     """
 
@@ -234,19 +234,19 @@ invalid type - not a dict
 class Feature:
     """Representation for a feature in a feature list.
 
-    Args:
-      feature(dict): The GeoJSON as the input
+        Args:
+          feature(dict): The GeoJSON as the input
 
-    Returns:
-      mapillary.models.geojson.Feature: A class representation of the
-      mapillary.models.geojson.Feature: A class representation of the
-      mapillary.models.geojson.Feature: A class representation of the
-      mapillary.models.geojson.Feature: A class representation of the
-      model
+        Returns:
+          mapillary.models.geojson.Feature: A class representation of the
+          mapillary.models.geojson.Feature: A class representation of the
+          mapillary.models.geojson.Feature: A class representation of the
+          mapillary.models.geojson.Feature: A class representation of the
+          model
 
-    Raises:
-      InvalidOptionError: Raised when the geojson passed is the
-invalid type - not a dict
+        Raises:
+          InvalidOptionError: Raised when the geojson passed is the
+    invalid type - not a dict
 
     """
 
@@ -331,48 +331,48 @@ invalid type - not a dict
 class GeoJSON:
     """Representation for a geojson.
 
-    Args:
-      geojson(dict): The GeoJSON as the input
+        Args:
+          geojson(dict): The GeoJSON as the input
 
-    Returns:
-      mapillary.models.geojson.GeoJSON: A class representation of the
-      mapillary.models.geojson.GeoJSON: A class representation of the
-      mapillary.models.geojson.GeoJSON: A class representation of the
-      mapillary.models.geojson.GeoJSON: A class representation of the
-      model
-      Usage: :
+        Returns:
+          mapillary.models.geojson.GeoJSON: A class representation of the
+          mapillary.models.geojson.GeoJSON: A class representation of the
+          mapillary.models.geojson.GeoJSON: A class representation of the
+          mapillary.models.geojson.GeoJSON: A class representation of the
+          model
+          Usage: :
 
-    Raises:
-      InvalidOptionError: Raised when the geojson passed is the
-invalid type - not a dict
+        Raises:
+          InvalidOptionError: Raised when the geojson passed is the
+    invalid type - not a dict
 
-    >>> import mapillary as mly
-        >>> from models.geojson import GeoJSON
-        >>> mly.interface.set_access_token('MLY|XXX')
-        >>> data = mly.interface.get_image_close_to(longitude=31, latitude=31)
-        >>> geojson = GeoJSON(geojson=data)
-        >>> type(geojson)
-        ... <class 'mapillary.models.geojson.GeoJSON'>
-        >>> type(geojson.type)
-        ... <class 'str'>
-        >>> type(geojson.features)
-        ... <class 'list'>
-        >>> type(geojson.features[0])
-        ... <class 'mapillary.models.geojson.Feature'>
-        >>> type(geojson.features[0].type)
-        ... <class 'str'>
-        >>> type(geojson.features[0].geometry)
-        ... <class 'mapillary.models.geojson.Geometry'>
-        >>> type(geojson.features[0].geometry.type)
-        ... <class 'str'>
-        >>> type(geojson.features[0].geometry.coordinates)
-        ... <class 'list'>
-        >>> type(geojson.features[0].properties)
-        ... <class 'mapillary.models.geojson.Properties'>
-        >>> type(geojson.features[0].properties.captured_at)
-        ... <class 'int'>
-        >>> type(geojson.features[0].properties.is_pano)
-        ... <class 'str'>
+        >>> import mapillary as mly
+            >>> from models.geojson import GeoJSON
+            >>> mly.interface.set_access_token('MLY|XXX')
+            >>> data = mly.interface.get_image_close_to(longitude=31, latitude=31)
+            >>> geojson = GeoJSON(geojson=data)
+            >>> type(geojson)
+            ... <class 'mapillary.models.geojson.GeoJSON'>
+            >>> type(geojson.type)
+            ... <class 'str'>
+            >>> type(geojson.features)
+            ... <class 'list'>
+            >>> type(geojson.features[0])
+            ... <class 'mapillary.models.geojson.Feature'>
+            >>> type(geojson.features[0].type)
+            ... <class 'str'>
+            >>> type(geojson.features[0].geometry)
+            ... <class 'mapillary.models.geojson.Geometry'>
+            >>> type(geojson.features[0].geometry.type)
+            ... <class 'str'>
+            >>> type(geojson.features[0].geometry.coordinates)
+            ... <class 'list'>
+            >>> type(geojson.features[0].properties)
+            ... <class 'mapillary.models.geojson.Properties'>
+            >>> type(geojson.features[0].properties.captured_at)
+            ... <class 'int'>
+            >>> type(geojson.features[0].properties.is_pano)
+            ... <class 'str'>
     """
 
     def __init__(self, geojson: dict) -> None:
@@ -439,7 +439,7 @@ invalid type - not a dict
           features(list): A feature list
           features: list:
           features: list:
-          features: list: 
+          features: list:
 
         Returns:
           : None
@@ -459,7 +459,7 @@ invalid type - not a dict
           feature_inputs(dict): A feature as dict
           feature_inputs: dict:
           feature_inputs: dict:
-          feature_inputs: dict: 
+          feature_inputs: dict:
 
         Returns:
           : None

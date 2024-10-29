@@ -200,9 +200,9 @@ class ZoeDepthNK(DepthModel):
           return_final_centers: bool (Default value = False)
           denorm: bool (Default value = False)
           return_probs: bool (Default value = False)
-          kwargs: 
-          kwargs: 
-          **kwargs: 
+          kwargs:
+          kwargs:
+          **kwargs:
 
         Returns:
           dict: Dictionary of outputs with keys:
@@ -281,7 +281,7 @@ class ZoeDepthNK(DepthModel):
         """Learning rate configuration for different layers of the model.
 
         Args:
-          lr: 
+          lr:
 
         Returns:
           list: list of parameters to optimize and their learning rates, in the format required by torch optimizers.
@@ -330,7 +330,7 @@ class ZoeDepthNK(DepthModel):
         for the given bin configuration.
 
         Args:
-          conf_name: 
+          conf_name:
 
         Returns:
 
@@ -348,7 +348,7 @@ class ZoeDepthNK(DepthModel):
         exclusively used for the given bin configuration.
 
         Args:
-          conf_name: 
+          conf_name:
 
         Returns:
 
@@ -361,7 +361,7 @@ class ZoeDepthNK(DepthModel):
         exclusively used for the given bin configuration.
 
         Args:
-          conf_name: 
+          conf_name:
 
         Returns:
 
@@ -394,7 +394,7 @@ class ZoeDepthNK(DepthModel):
           use_pretrained_midas: (Default value = False)
           train_midas: (Default value = False)
           freeze_midas_bn: (Default value = True)
-          **kwargs: 
+          **kwargs:
 
         Returns:
 
@@ -422,7 +422,7 @@ class ZoeDepthNK(DepthModel):
         """
 
         Args:
-          config: 
+          config:
 
         Returns:
 

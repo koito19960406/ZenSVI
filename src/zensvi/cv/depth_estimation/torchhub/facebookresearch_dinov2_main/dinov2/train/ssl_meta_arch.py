@@ -127,7 +127,7 @@ class SSLMetaArch(nn.Module):
         """
 
         Args:
-          inputs: 
+          inputs:
 
         Returns:
 
@@ -138,7 +138,7 @@ class SSLMetaArch(nn.Module):
         """
 
         Args:
-          loss: 
+          loss:
 
         Returns:
 
@@ -152,8 +152,8 @@ class SSLMetaArch(nn.Module):
         """
 
         Args:
-          images: 
-          teacher_temp: 
+          images:
+          teacher_temp:
 
         Returns:
 
@@ -403,7 +403,7 @@ class SSLMetaArch(nn.Module):
         """
 
         Args:
-          m: 
+          m:
 
         Returns:
 
@@ -427,7 +427,7 @@ class SSLMetaArch(nn.Module):
         """
 
         Args:
-          m: 
+          m:
 
         Returns:
 

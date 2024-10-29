@@ -56,7 +56,7 @@ class ImageDataset(Dataset):
         """
 
         Args:
-          data: 
+          data:
 
         Returns:
 
@@ -141,13 +141,13 @@ class Embeddings:
         Args:
           image_path: path to the image
           image_path: Union[List[str]:
-          str]: 
+          str]:
           tensor: bool:  (Default value = None)
           cuda: bool:  (Default value = None)
           image_path: Union[List[str]:
           tensor: bool:  (Default value = None)
           cuda: bool:  (Default value = None)
-          image_path: Union[List[str]: 
+          image_path: Union[List[str]:
           tensor: bool:  (Default value = None)
           cuda: bool:  (Default value = None)
 
@@ -176,7 +176,7 @@ class Embeddings:
 
         Args:
           images_path: Union[List[str]:
-          str]: 
+          str]:
           dir_embeddings_output: str:
           batch_size: int:  (Default value = 100)
           maxWorkers: int:  (Default value = 8)
@@ -184,8 +184,8 @@ class Embeddings:
           dir_embeddings_output: str:
           batch_size: int:  (Default value = 100)
           maxWorkers: int:  (Default value = 8)
-          images_path: Union[List[str]: 
-          dir_embeddings_output: str: 
+          images_path: Union[List[str]:
+          dir_embeddings_output: str:
           batch_size: int:  (Default value = 100)
           maxWorkers: int:  (Default value = 8)
 
@@ -245,7 +245,7 @@ class Embeddings:
             """
 
             Args:
-              image: 
+              image:
 
             Returns:
 
@@ -290,8 +290,8 @@ class Embeddings:
           image_key: str:
           embeddings_dir: str:
           number_of_items: int:  (Default value = 10)
-          image_key: str: 
-          embeddings_dir: str: 
+          image_key: str:
+          embeddings_dir: str:
           number_of_items: int:  (Default value = 10)
 
         Returns:

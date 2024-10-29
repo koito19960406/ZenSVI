@@ -22,7 +22,7 @@ def get_fsdp_wrapper(model_cfg, modules_to_wrap=set()):
     """
 
     Args:
-      model_cfg: 
+      model_cfg:
       modules_to_wrap: (Default value = set())
 
     Returns:
@@ -66,7 +66,7 @@ def is_fsdp(x):
     """
 
     Args:
-      x: 
+      x:
 
     Returns:
 
@@ -78,7 +78,7 @@ def is_sharded_fsdp(x):
     """
 
     Args:
-      x: 
+      x:
 
     Returns:
 
@@ -90,7 +90,7 @@ def free_if_fsdp(x):
     """
 
     Args:
-      x: 
+      x:
 
     Returns:
 
@@ -105,7 +105,7 @@ def get_fsdp_modules(x):
     """
 
     Args:
-      x: 
+      x:
 
     Returns:
 
@@ -117,7 +117,7 @@ def reshard_fsdp_model(x):
     """
 
     Args:
-      x: 
+      x:
 
     Returns:
 
@@ -144,8 +144,8 @@ class FSDPCheckpointer(Checkpointer):
           **kwargs: Any:
           name: str:
           **kwargs: Any:
-          name: str: 
-          **kwargs: Any: 
+          name: str:
+          **kwargs: Any:
 
         Returns:
 
@@ -174,8 +174,8 @@ class FSDPCheckpointer(Checkpointer):
         """
 
         Args:
-          *args: 
-          **kwargs: 
+          *args:
+          **kwargs:
 
         Returns:
 
@@ -223,7 +223,7 @@ class FSDPCheckpointer(Checkpointer):
           last_filename_basename(str): the basename of the last filename.
           last_filename_basename: str:
           last_filename_basename: str:
-          last_filename_basename: str: 
+          last_filename_basename: str:
 
         Returns:
 

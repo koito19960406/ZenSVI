@@ -21,9 +21,9 @@ def load_pretrained_weights(model, pretrained_weights, checkpoint_key):
     """
 
     Args:
-      model: 
-      pretrained_weights: 
-      checkpoint_key: 
+      model:
+      pretrained_weights:
+      checkpoint_key:
 
     Returns:
 
@@ -66,7 +66,7 @@ def get_sha():
         """
 
         Args:
-          command: 
+          command:
 
         Returns:
 
@@ -125,7 +125,7 @@ def has_batchnorms(model):
     """
 
     Args:
-      model: 
+      model:
 
     Returns:
 

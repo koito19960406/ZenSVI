@@ -54,7 +54,7 @@ class EpochSampler(Sampler):
         """
 
         Args:
-          epoch: 
+          epoch:
 
         Returns:
 
@@ -68,7 +68,7 @@ def _get_numpy_dtype(size: int) -> Any:
     Args:
       size: int:
       size: int:
-      size: int: 
+      size: int:
 
     Returns:
 
@@ -82,7 +82,7 @@ def _get_torch_dtype(size: int) -> Any:
     Args:
       size: int:
       size: int:
-      size: int: 
+      size: int:
 
     Returns:
 
@@ -94,13 +94,13 @@ def _generate_randperm_indices(*, size: int, generator: torch.Generator):
     """Generate the indices of a random permutation.
 
     Args:
-      *: 
+      *:
       size: int:
       generator: torch.Generator:
       size: int:
       generator: torch.Generator:
-      size: int: 
-      generator: torch.Generator: 
+      size: int:
+      generator: torch.Generator:
 
     Returns:
 
@@ -175,7 +175,7 @@ def _shuffle_tensor_slice(
     """
 
     Args:
-      *: 
+      *:
       tensor: torch.Tensor:
       start: int:  (Default value = 0)
       step: int:  (Default value = 1)
@@ -184,10 +184,10 @@ def _shuffle_tensor_slice(
       start: int:  (Default value = 0)
       step: int:  (Default value = 1)
       generator: torch.Generator:
-      tensor: torch.Tensor: 
+      tensor: torch.Tensor:
       start: int:  (Default value = 0)
       step: int:  (Default value = 1)
-      generator: torch.Generator: 
+      generator: torch.Generator:
 
     Returns:
 
@@ -216,7 +216,7 @@ def _new_shuffle_tensor_slice(
     """
 
     Args:
-      *: 
+      *:
       tensor: torch.Tensor:
       start: int:  (Default value = 0)
       step: int:  (Default value = 1)
@@ -225,10 +225,10 @@ def _new_shuffle_tensor_slice(
       start: int:  (Default value = 0)
       step: int:  (Default value = 1)
       generator: torch.Generator:
-      tensor: torch.Tensor: 
+      tensor: torch.Tensor:
       start: int:  (Default value = 0)
       step: int:  (Default value = 1)
-      generator: torch.Generator: 
+      generator: torch.Generator:
 
     Returns:
 
@@ -254,9 +254,9 @@ def _make_seed(seed: int, start: int, iter_count: int) -> int:
       seed: int:
       start: int:
       iter_count: int:
-      seed: int: 
-      start: int: 
-      iter_count: int: 
+      seed: int:
+      start: int:
+      iter_count: int:
 
     Returns:
 

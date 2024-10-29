@@ -128,12 +128,12 @@ def get_slurm_executor_parameters(
       nodes: int:
       num_gpus_per_node: int:
       cluster_type: Optional[ClusterType]:  (Default value = None)
-      **kwargs: 
+      **kwargs:
       nodes: int:
       num_gpus_per_node: int:
       cluster_type: Optional[ClusterType]:  (Default value = None)
-      nodes: int: 
-      num_gpus_per_node: int: 
+      nodes: int:
+      num_gpus_per_node: int:
       cluster_type: Optional[ClusterType]:  (Default value = None)
 
     Returns:

@@ -26,7 +26,7 @@ class BaseClassifier(ABC):
         """Get the appropriate device for running the model.
 
         Args:
-          device: 
+          device:
 
         Returns:
           torch.device: The device to use for running the model.
@@ -75,16 +75,16 @@ class BaseClassifier(ABC):
           csv_format(str): csv format for the output,
         defaults to "long". Options are "long" and "wide".
           dir_input: Union[str:
-          Path]: 
+          Path]:
           dir_image_output: Union[str:
-          Path: 
+          Path:
           None]: (Default value = None)
           dir_summary_output: Union[str:
           batch_size: int:  (Default value = 1)
           save_image_options: str:  (Default value = "cam_image blend_image")
           save_format: str:  (Default value = "json csv")
           csv_format: str:  (Default value = "long")
-          # "long" or "wide": 
+          # "long" or "wide":
           dir_input: Union[str:
           dir_image_output: Union[str:
           dir_summary_output: Union[str:
@@ -92,9 +92,9 @@ class BaseClassifier(ABC):
           save_image_options: str:  (Default value = "cam_image blend_image")
           save_format: str:  (Default value = "json csv")
           csv_format: str:  (Default value = "long")
-          dir_input: Union[str: 
-          dir_image_output: Union[str: 
-          dir_summary_output: Union[str: 
+          dir_input: Union[str:
+          dir_image_output: Union[str:
+          dir_summary_output: Union[str:
           batch_size: int:  (Default value = 1)
           save_image_options: str:  (Default value = "cam_image blend_image")
           save_format: str:  (Default value = "json csv")

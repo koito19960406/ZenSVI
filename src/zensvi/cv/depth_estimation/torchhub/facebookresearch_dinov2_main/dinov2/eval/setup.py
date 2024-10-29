@@ -69,7 +69,7 @@ def get_autocast_dtype(config):
     """
 
     Args:
-      config: 
+      config:
 
     Returns:
 
@@ -87,8 +87,8 @@ def build_model_for_eval(config, pretrained_weights):
     """
 
     Args:
-      config: 
-      pretrained_weights: 
+      config:
+      pretrained_weights:
 
     Returns:
 
@@ -104,7 +104,7 @@ def setup_and_build_model(args) -> Tuple[Any, torch.dtype]:
     """
 
     Args:
-      args: 
+      args:
 
     Returns:
 

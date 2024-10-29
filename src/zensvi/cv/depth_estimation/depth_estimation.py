@@ -67,9 +67,9 @@ class ImageDataset(Dataset):
         Args:
           data(List[Tuple[str): List of tuples containing image file path and transformed image tensor.
           data: List[Tuple[str:
-          torch.Tensor]]: 
+          torch.Tensor]]:
           data: List[Tuple[str:
-          data: List[Tuple[str: 
+          data: List[Tuple[str:
 
         Returns:
           Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
@@ -154,10 +154,10 @@ class DepthEstimator:
         """
 
         Args:
-          image_files: 
-          images: 
-          original_sizes: 
-          dir_output: 
+          image_files:
+          images:
+          original_sizes:
+          dir_output:
 
         Returns:
 
@@ -214,7 +214,7 @@ class DepthEstimator:
           max_workers(int): maximum number of workers for
         parallel processing, defaults to 4
           dir_input: Union[str:
-          Path]: 
+          Path]:
           dir_image_output: Union[str:
           batch_size: int:  (Default value = 1)
           max_workers: int:  (Default value = 4)
@@ -222,8 +222,8 @@ class DepthEstimator:
           dir_image_output: Union[str:
           batch_size: int:  (Default value = 1)
           max_workers: int:  (Default value = 4)
-          dir_input: Union[str: 
-          dir_image_output: Union[str: 
+          dir_input: Union[str:
+          dir_image_output: Union[str:
           batch_size: int:  (Default value = 1)
           max_workers: int:  (Default value = 4)
 

@@ -18,7 +18,7 @@ def make_2tuple(x):
     """
 
     Args:
-      x: 
+      x:
 
     Returns:
 
@@ -82,7 +82,7 @@ class PatchEmbed(nn.Module):
         Args:
           x: Tensor:
           x: Tensor:
-          x: Tensor: 
+          x: Tensor:
 
         Returns:
 

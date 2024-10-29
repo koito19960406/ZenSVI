@@ -34,7 +34,7 @@ def configure_mapillary_settings(**kwargs):
 
     Args:
       kwargs: Configuration options
-      **kwargs: 
+      **kwargs:
 
     Returns:
       : None
@@ -56,7 +56,7 @@ def set_access_token(token: str):
     Args:
       token: The access token to set
       token: str:
-      token: str: 
+      token: str:
 
     Returns:
       : None
@@ -95,7 +95,7 @@ def get_image_close_to(latitude=-122.1504711, longitude=37.485073, **kwargs):
       kwargs.org_id(int): The organization id, ID of the organization
     this image (or sets of images) belong to. It can be absent.
     Thus, default is -1 (None)
-      **kwargs: 
+      **kwargs:
 
     Returns:
       dict: GeoJSON
@@ -136,8 +136,8 @@ def get_image_looking_at(
       **filters: dict:
       at: dict:
       **filters: dict:
-      at: dict: 
-      **filters: dict: 
+      at: dict:
+      **filters: dict:
 
     Returns:
       GeoJSON: The GeoJSON response containing relevant features
@@ -154,7 +154,7 @@ def get_image_looking_at(
         filters.image_type (str): Either 'pano', 'flat' or 'all'
         filters.organization_id (str): The organization to retrieve the
             data for
-    
+
         >>> import mapillary as mly
         >>> mly.interface.set_access_token('MLY|XXX')
         >>> data = mly.interface.get_image_looking_at(
@@ -190,13 +190,13 @@ def is_image_being_looked_at(
     at
     Format::
       at: Union[dict:
-      Coordinates: 
-      list]: 
+      Coordinates:
+      list]:
       **filters: dict:
       at: Union[dict:
       **filters: dict:
-      at: Union[dict: 
-      **filters: dict: 
+      at: Union[dict:
+      **filters: dict:
 
     Returns:
       bool: True if the image is looked at, False otherwise
@@ -209,7 +209,7 @@ def is_image_being_looked_at(
                 >>> at_list = [12.954940544167, 48.0537894275]
                 >>> from mapillary.models.geojson import Coordinates
                 >>> at_coord: Coordinates = Coordinates(lng=12.954940544167, lat=48.0537894275)
-    
+
         >>> import mapillary as mly
         >>> mly.interface.set_access_token('MLY|XXX')
         >>> mly.interface.is_image_being_looked_at(
@@ -245,7 +245,7 @@ def get_detections_with_image_id(image_id: int, fields: list = []):
       fields: list:  (Default value = [])
       image_id: int:
       fields: list:  (Default value = [])
-      image_id: int: 
+      image_id: int:
       fields: list:  (Default value = [])
 
     Returns:
@@ -285,7 +285,7 @@ def get_detections_with_map_feature_id(map_feature_id: str, fields: list = None)
       fields: list:  (Default value = None)
       map_feature_id: str:
       fields: list:  (Default value = None)
-      map_feature_id: str: 
+      map_feature_id: str:
       fields: list:  (Default value = None)
 
     Returns:
@@ -322,7 +322,7 @@ def image_thumbnail(image_id: str, resolution: int = 1024, additional_fields: li
       image_id: str:
       resolution: int:  (Default value = 1024)
       additional_fields: list:  (Default value = None)
-      image_id: str: 
+      image_id: str:
       resolution: int:  (Default value = 1024)
       additional_fields: list:  (Default value = None)
 
@@ -355,9 +355,9 @@ def images_in_bbox(bbox: dict, **filters) -> str:
     - sequence_id
     - organization_id
       bbox: dict:
-      **filters: 
+      **filters:
       bbox: dict:
-      bbox: dict: 
+      bbox: dict:
 
     Returns:
       str: Output is a GeoJSON string that represents all the within a
@@ -375,7 +375,7 @@ def images_in_bbox(bbox: dict, **filters) -> str:
                 ... }
         **filters (dict): Different filters that may be applied to the
             output
-    
+
         >>> import mapillary as mly
         >>> mly.interface.set_access_token('MLY|XXX')
         >>> mly.interface.images_in_bbox(
@@ -411,9 +411,9 @@ def sequences_in_bbox(bbox: dict, **filters) -> str:
     - image_type: pano, flat, or all
     - org_id
       bbox: dict:
-      **filters: 
+      **filters:
       bbox: dict:
-      bbox: dict: 
+      bbox: dict:
 
     Returns:
       str: Output is a GeoJSON string that contains all the filtered
@@ -461,7 +461,7 @@ def sequences_in_bbox(bbox: dict, **filters) -> str:
                 ... }
         **filters (dict): Different filters that may be applied to the
             output
-    
+
         >>> import mapillary as mly
         >>> mly.interface.set_access_token('MLY|XXX')
         >>> mly.interface.sequences_in_bbox(
@@ -499,9 +499,9 @@ def map_feature_points_in_bbox(bbox: dict, filter_values: list = None, **filters
       bbox: dict:
       filter_values: list:  (Default value = None)
       **filters: dict:
-      bbox: dict: 
+      bbox: dict:
       filter_values: list:  (Default value = None)
-      **filters: dict: 
+      **filters: dict:
 
     Returns:
       dict: GeoJSON Object
@@ -515,11 +515,11 @@ def map_feature_points_in_bbox(bbox: dict, filter_values: list = None, **filters
                 ... }
         filter_values (list): a list of filter values supported by the
             API
-    
+
                 >>> _ = ['object--support--utility-pole', 'object--street-light']
         **filters (dict): kwarg filters to be applied on the resulted
             GeoJSON
-    
+
         >>> import mapillary as mly
         >>> mly.interface.set_access_token('MLY|XXX')
         >>> mly.interface.map_feature_points_in_bbox(
@@ -558,9 +558,9 @@ def traffic_signs_in_bbox(bbox: dict, filter_values: list = None, **filters: dic
       bbox: dict:
       filter_values: list:  (Default value = None)
       **filters: dict:
-      bbox: dict: 
+      bbox: dict:
       filter_values: list:  (Default value = None)
-      **filters: dict: 
+      **filters: dict:
 
     Returns:
       dict: GeoJSON Object
@@ -574,11 +574,11 @@ def traffic_signs_in_bbox(bbox: dict, filter_values: list = None, **filters: dic
                 ... }
         filter_values (list): a list of filter values supported by the
             API,
-    
+
                 >>> ['regulatory--advisory-maximum-speed-limit--g1', 'regulatory--atvs-permitted--g1']
         **filters (dict): kwarg filters to be applied on the resulted
             GeoJSON
-    
+
         >>> import mapillary as mly
         >>> mly.interface.set_access_token('MLY|XXX')
         >>> mly.interface.traffic_signs_in_bbox(
@@ -639,10 +639,10 @@ def images_in_geojson(
       dir_cache: str:  (Default value = None)
       max_workers: int:  (Default value = 1)
       **filters: dict:
-      geojson: dict: 
+      geojson: dict:
       dir_cache: str:  (Default value = None)
       max_workers: int:  (Default value = 1)
-      **filters: dict: 
+      **filters: dict:
 
     Returns:
       mapillary.models.geojson.GeoJSON: A GeoJSON object
@@ -669,7 +669,7 @@ def images_in_geojson(
 @auth()
 def images_in_shape(shape, **filters: dict):
     """Extracts all images within a shape or polygon.
-    
+
     Format::
 
     Args:
@@ -692,7 +692,7 @@ def images_in_shape(shape, **filters: dict):
     belongs to. It can be absent
       **filters: dict:
       **filters: dict:
-      **filters: dict: 
+      **filters: dict:
 
     Returns:
       mapillary.models.geojson.GeoJSON: A GeoJSON object
@@ -719,7 +719,7 @@ def images_in_shape(shape, **filters: dict):
         ...         }
         ...     ]
         ... }
-    
+
         >>> import mapillary as mly
         >>> import json
         >>> mly.interface.set_access_token('MLY|XXX')
@@ -758,8 +758,8 @@ def map_features_in_geojson(geojson: dict, **filters: dict):
       **filters: dict:
       geojson: dict:
       **filters: dict:
-      geojson: dict: 
-      **filters: dict: 
+      geojson: dict:
+      **filters: dict:
 
     Returns:
       mapillary.models.geojson.GeoJSON: A GeoJSON object
@@ -790,7 +790,7 @@ def map_features_in_geojson(geojson: dict, **filters: dict):
 @auth()
 def map_features_in_shape(shape: dict, **filters: dict):
     """Extracts all map features within a shape/polygon.
-    
+
     Format::
 
     Args:
@@ -817,8 +817,8 @@ def map_features_in_shape(shape: dict, **filters: dict):
       **filters: dict:
       shape: dict:
       **filters: dict:
-      shape: dict: 
-      **filters: dict: 
+      shape: dict:
+      **filters: dict:
 
     Returns:
       mapillary.models.geojson.GeoJSON: A GeoJSON object
@@ -845,7 +845,7 @@ def map_features_in_shape(shape: dict, **filters: dict):
         ...         }
         ...     ]
         ... }
-    
+
         >>> import mapillary as mly
         >>> import json
         >>> mly.interface.set_access_token('MLY|XXX')
@@ -885,7 +885,7 @@ def feature_from_key(key: str, fields: list = []) -> str:
       fields: list:  (Default value = [])
       key: str:
       fields: list:  (Default value = [])
-      key: str: 
+      key: str:
       fields: list:  (Default value = [])
 
     Returns:
@@ -944,7 +944,7 @@ def image_from_key(key: str, fields: list = None) -> str:
       fields: list:  (Default value = None)
       key: str:
       fields: list:  (Default value = None)
-      key: str: 
+      key: str:
       fields: list:  (Default value = None)
 
     Returns:
@@ -997,7 +997,7 @@ def save_locally(
       file_path: str:  (Default value = os.path.dirname(os.path.realpath(__file__)))
       file_name: str:  (Default value = None)
       extension: str:  (Default value = "geojson")
-      geojson_data: str: 
+      geojson_data: str:
       file_path: str:  (Default value = os.path.dirname(os.path.realpath(__file__)))
       file_name: str:  (Default value = None)
       extension: str:  (Default value = "geojson")

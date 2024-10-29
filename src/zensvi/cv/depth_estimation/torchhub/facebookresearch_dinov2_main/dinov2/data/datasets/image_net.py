@@ -56,7 +56,7 @@ class _Split(Enum):
           class_id: Optional[str]:  (Default value = None)
           actual_index: int:
           class_id: Optional[str]:  (Default value = None)
-          actual_index: int: 
+          actual_index: int:
           class_id: Optional[str]:  (Default value = None)
 
         Returns:
@@ -75,7 +75,7 @@ class _Split(Enum):
         Args:
           image_relpath: str:
           image_relpath: str:
-          image_relpath: str: 
+          image_relpath: str:
 
         Returns:
 
@@ -123,7 +123,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           extra_path: str:
           extra_path: str:
-          extra_path: str: 
+          extra_path: str:
 
         Returns:
 
@@ -136,7 +136,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           extra_path: str:
           extra_path: str:
-          extra_path: str: 
+          extra_path: str:
 
         Returns:
 
@@ -152,8 +152,8 @@ class ImageNet(ExtendedVisionDataset):
           extra_path: str:
           extra_array: np.ndarray:
           extra_path: str:
-          extra_array: np.ndarray: 
-          extra_path: str: 
+          extra_array: np.ndarray:
+          extra_path: str:
 
         Returns:
 
@@ -208,7 +208,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           class_index: int:
           class_index: int:
-          class_index: int: 
+          class_index: int:
 
         Returns:
 
@@ -222,7 +222,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           class_index: int:
           class_index: int:
-          class_index: int: 
+          class_index: int:
 
         Returns:
 
@@ -236,7 +236,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           index: int:
           index: int:
-          index: int: 
+          index: int:
 
         Returns:
 
@@ -258,7 +258,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           index: int:
           index: int:
-          index: int: 
+          index: int:
 
         Returns:
 
@@ -278,7 +278,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           index: int:
           index: int:
-          index: int: 
+          index: int:
 
         Returns:
 
@@ -293,7 +293,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           index: int:
           index: int:
-          index: int: 
+          index: int:
 
         Returns:
 
@@ -313,7 +313,7 @@ class ImageNet(ExtendedVisionDataset):
         Args:
           labels_path: str:
           labels_path: str:
-          labels_path: str: 
+          labels_path: str:
 
         Returns:
 

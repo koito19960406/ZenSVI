@@ -41,7 +41,7 @@ class DINOHead(nn.Module):
         """
 
         Args:
-          m: 
+          m:
 
         Returns:
 
@@ -55,7 +55,7 @@ class DINOHead(nn.Module):
         """
 
         Args:
-          x: 
+          x:
 
         Returns:
 
@@ -71,9 +71,9 @@ def _build_mlp(nlayers, in_dim, bottleneck_dim, hidden_dim=None, use_bn=False, b
     """
 
     Args:
-      nlayers: 
-      in_dim: 
-      bottleneck_dim: 
+      nlayers:
+      in_dim:
+      bottleneck_dim:
       hidden_dim: (Default value = None)
       use_bn: (Default value = False)
       bias: (Default value = True)

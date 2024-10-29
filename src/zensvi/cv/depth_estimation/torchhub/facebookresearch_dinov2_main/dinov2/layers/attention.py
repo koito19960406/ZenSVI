@@ -52,7 +52,7 @@ class Attention(nn.Module):
         Args:
           x: Tensor:
           x: Tensor:
-          x: Tensor: 
+          x: Tensor:
 
         Returns:
 
@@ -82,7 +82,7 @@ class MemEffAttention(Attention):
           x: Tensor:
           attn_bias: (Default value = None)
           x: Tensor:
-          x: Tensor: 
+          x: Tensor:
 
         Returns:
 

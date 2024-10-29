@@ -48,9 +48,9 @@ class ImageDataset(Dataset):
         Args:
           data(List[Tuple[str): List of tuples containing image file path and transformed image tensor.
           data: List[Tuple[str:
-          torch.Tensor]]: 
+          torch.Tensor]]:
           data: List[Tuple[str:
-          data: List[Tuple[str: 
+          data: List[Tuple[str:
 
         Returns:
           Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
@@ -101,9 +101,9 @@ class ClassifierWeather(BaseClassifier):
         """
 
         Args:
-          results: 
-          dir_output: 
-          file_name: 
+          results:
+          dir_output:
+          file_name:
           save_format: (Default value = "csv json")
 
         Returns:
@@ -141,12 +141,12 @@ class ClassifierWeather(BaseClassifier):
         defaults to "json csv". Options are "json" and "csv".
         Please add a space between options.
           dir_input: Union[str:
-          Path]: 
+          Path]:
           dir_summary_output: Union[str:
           dir_input: Union[str:
           dir_summary_output: Union[str:
-          dir_input: Union[str: 
-          dir_summary_output: Union[str: 
+          dir_input: Union[str:
+          dir_summary_output: Union[str:
 
         Returns:
 
