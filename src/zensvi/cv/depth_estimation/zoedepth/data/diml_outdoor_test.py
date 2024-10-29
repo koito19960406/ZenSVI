@@ -28,10 +28,11 @@ import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms
 
 
 class ToTensor(object):
+    """"""
+
     def __init__(self):
         # self.normalize = transforms.Normalize(
         #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -46,6 +47,14 @@ class ToTensor(object):
         return {"image": image, "depth": depth, "dataset": "diml_outdoor"}
 
     def to_tensor(self, pic):
+        """
+
+        Args:
+          pic:
+
+        Returns:
+
+        """
 
         if isinstance(pic, np.ndarray):
             img = torch.from_numpy(pic.transpose((2, 0, 1)))
@@ -75,6 +84,8 @@ class ToTensor(object):
 
 
 class DIML_Outdoor(Dataset):
+    """"""
+
     def __init__(self, data_dir_root):
         import glob
 
@@ -103,6 +114,16 @@ class DIML_Outdoor(Dataset):
 
 
 def get_diml_outdoor_loader(data_dir_root, batch_size=1, **kwargs):
+    """
+
+    Args:
+      data_dir_root:
+      batch_size: (Default value = 1)
+      **kwargs:
+
+    Returns:
+
+    """
     dataset = DIML_Outdoor(data_dir_root)
     return DataLoader(dataset, batch_size, **kwargs)
 

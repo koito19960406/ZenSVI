@@ -1,6 +1,8 @@
 import unittest
-from pathlib import Path
+import pandas as pd
+
 from test_base import TestBase
+from zensvi.transform import PointCloudProcessor
 
 
 class TestPointCloudProcessor(TestBase):
@@ -8,7 +10,7 @@ class TestPointCloudProcessor(TestBase):
     def setUpClass(cls):
         super().setUpClass()
         # Define the data directory relative to the script file
-        data_dir = cls.input_dir / 'images'
+        data_dir = cls.input_dir / "images"
 
         # Ensure the directories exist
         assert data_dir.exists(), f"Data directory {data_dir} does not exist"
@@ -18,13 +20,13 @@ class TestPointCloudProcessor(TestBase):
         depth_folder = data_dir / "depth"
 
         # Load the CSV data
-        cls.data = pd.read_csv(cls.input_dir / 'point_cloud_test_df.csv')
+        cls.data = pd.read_csv(cls.input_dir / "point_cloud_test_df.csv")
 
         # Initialize the processor
         cls.processor = PointCloudProcessor(
             image_folder=str(image_folder),
             depth_folder=str(depth_folder),
-            log_path=cls.base_output_dir / 'point_cloud_processor.log'
+            log_path=cls.base_output_dir / "point_cloud_processor.log",
         )
 
     def test_process_multiple_images(self):
@@ -33,7 +35,7 @@ class TestPointCloudProcessor(TestBase):
         self.assertEqual(len(point_clouds), len(self.data))
 
         # Test saving point clouds in PCD format
-        output_dir = self.base_output_dir / 'pcd_files'
+        output_dir = self.base_output_dir / "pcd_files"
         output_dir.mkdir(parents=True, exist_ok=True)
         self.processor.process_multiple_images(self.data, output_dir=output_dir, save_format="pcd")
 

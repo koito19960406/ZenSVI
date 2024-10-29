@@ -1,6 +1,6 @@
 import os
 from collections import namedtuple
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from typing import List, Union
 
 import faiss
@@ -35,6 +35,8 @@ _models_dict = {
 
 
 class ImageDataset(Dataset):
+    """"""
+
     def __init__(self, image_paths, transform=None):
         self.image_paths = image_paths
         self.transform = transform
@@ -51,6 +53,14 @@ class ImageDataset(Dataset):
         return str(image_path), image
 
     def collate_fn(self, data):
+        """
+
+        Args:
+          data:
+
+        Returns:
+
+        """
         image_paths, images = zip(*data)
         # Stack images to create a batch
         images = torch.stack(images)
@@ -59,29 +69,36 @@ class ImageDataset(Dataset):
 
 # create a class for extracting embeddings
 class Embeddings:
+    """"""
+
     def __init__(
         self,
         model_name: str = "resnet-18",
         cuda: bool = False,
         tensor: bool = True,
     ):
-        """
-        Initialize the Embeddings class for extracting image embeddings.
+        """Initialize the Embeddings class for extracting image embeddings.
 
-        This class uses pre-trained models from the Img2Vec package (https://github.com/christiansafka/img2vec)
-        to extract feature vectors from images. These embeddings can be used for various downstream tasks
-        such as image similarity, clustering, or as input to other machine learning models.
+        This class uses pre-trained models from the Img2Vec package (
+        https://github.com/christiansafka/img2vec)
+         to extract feature vectors from images. These embeddings can be used for
+        various downstream tasks such as image similarity, clustering, or as input to
+        other machine learning models.
 
-        The available models include popular architectures like ResNet, AlexNet, VGG, DenseNet, and various
-        EfficientNet variants. Each model is configured to extract features from a specific layer,
-        providing embeddings of different sizes depending on the chosen model.
+        The available models include popular architectures like ResNet, AlexNet, VGG,
+        DenseNet, and various EfficientNet variants. Each model is configured to extract
+        features from a specific layer, providing embeddings of different sizes
+        depending on the chosen model.
 
-        :param model_name: Name of the model to be used for extracting embeddings.
-            Default is 'resnet-18'. Other options include 'alexnet', 'vgg', 'densenet',
-            and 'efficientnet_b0' through 'efficientnet_b7'.
-        :param cuda: Whether to use CUDA for GPU acceleration. Default is False.
-        :param tensor: Whether to return the embedding as a PyTorch tensor. If False,
-            returns a numpy array. Default is True.
+        Args:
+            model_name: Name of the model to be used for extracting
+                embeddings. Default is 'resnet-18'. Other options
+                include 'alexnet', 'vgg', 'densenet', and
+                'efficientnet_b0' through 'efficientnet_b7'.
+            cuda: Whether to use CUDA for GPU acceleration. Default is
+                False.
+            tensor: Whether to return the embedding as a PyTorch tensor.
+                If False, returns a numpy array. Default is True.
         """
         self.model_name = model_name
         self.layer = _models_dict[model_name].layer
@@ -93,8 +110,13 @@ class Embeddings:
 
     def load_image(self, image_path):
         """
-        :param image_path: path to the image
-        :return: image
+
+        Args:
+          image_path: path to the image
+
+        Returns:
+          : image
+
         """
         img = Image.open(image_path)
         img = img.resize((224, 224))
@@ -102,7 +124,12 @@ class Embeddings:
 
     def get_model_and_layer(self):
         """
-        :return: model and layer
+
+        Args:
+
+        Returns:
+          : model and layer
+
         """
         model = models.__dict__[_models_dict[self.model_name].name](pretrained=True)
         layer = getattr(model, self.layer)
@@ -110,8 +137,20 @@ class Embeddings:
 
     def get_image_embedding(self, image_path: Union[List[str], str], tensor: bool = None, cuda: bool = None):
         """
-        :param image_path: path to the image
-        :return: image embedding
+
+        Args:
+          image_path: path to the image
+          image_path: Union[List[str]:
+          str]:
+          tensor: bool:  (Default value = None)
+          cuda: bool:  (Default value = None)
+          image_path: Union[List[str]:
+          tensor: bool:  (Default value = None)
+          cuda: bool:  (Default value = None)
+
+        Returns:
+          : image embedding
+
         """
         if not tensor:
             tensor = self.tensor
@@ -130,6 +169,22 @@ class Embeddings:
         batch_size: int = 100,
         maxWorkers: int = 8,
     ):
+        """
+
+        Args:
+          images_path: Union[List[str]:
+          str]:
+          dir_embeddings_output: str:
+          batch_size: int:  (Default value = 100)
+          maxWorkers: int:  (Default value = 8)
+          images_path: Union[List[str]:
+          dir_embeddings_output: str:
+          batch_size: int:  (Default value = 100)
+          maxWorkers: int:  (Default value = 8)
+
+        Returns:
+
+        """
 
         if isinstance(images_path, str):
             valid_extensions = [
@@ -161,7 +216,6 @@ class Embeddings:
 
         batch_size = min(batch_size, len(image_paths))
 
-        labels = [0] * len(image_paths)
         n_batches = (len(image_paths) + batch_size - 1) // batch_size
         print("Total number of images: ", len(image_paths))
         print("Number of batches: ", n_batches)
@@ -181,6 +235,14 @@ class Embeddings:
         to_pil = ToPILImage()
 
         def process_image(image):
+            """
+
+            Args:
+              image:
+
+            Returns:
+
+            """
             pil_image = to_pil(image)
             return pil_image
 
@@ -212,6 +274,19 @@ class Embeddings:
         return True
 
     def search_similar_images(self, image_key: str, embeddings_dir: str, number_of_items: int = 10):
+        """
+
+        Args:
+          image_key: str:
+          embeddings_dir: str:
+          number_of_items: int:  (Default value = 10)
+          image_key: str:
+          embeddings_dir: str:
+          number_of_items: int:  (Default value = 10)
+
+        Returns:
+
+        """
         embeddings_df = pq.read_table(embeddings_dir).to_pandas()
         embeddings_np_array = np.stack(embeddings_df[embeddings_df.columns[1:]].to_numpy())
         embeddings_layer_size = self.layer_output_size
@@ -221,16 +296,18 @@ class Embeddings:
         name_to_id = {v: k for k, v in id_to_name.items()}
 
         emb_df = embeddings_np_array[name_to_id[image_key]]
-        D, I = index.search(np.expand_dims(emb_df, 0), number_of_items)  # actual search
-        results = list(zip(D[0], [id_to_name[x] for x in I[0]]))
+        D, Index = index.search(np.expand_dims(emb_df, 0), number_of_items)  # actual search
+        results = list(zip(D[0], [id_to_name[x] for x in Index[0]]))
         results = [(i[0], i[1], i[1] + ".png") for i in results]
 
         return results
 
     def get_all_models(self):
-        """Get all the available models
+        """Get all the available models.
 
-        :return: dictionary of available models
-        :rtype: dict
+        Args:
+
+        Returns:
+          dict: dictionary of available models
         """
         return _models_dict

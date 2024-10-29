@@ -1,13 +1,11 @@
 import json
 import os
-import shutil
 import unittest
-from pathlib import Path
+
+from test_base import TestBase
 
 from zensvi.download import MLYDownloader
 from zensvi.download.mapillary import interface
-from zensvi.download import MLYDownloader
-from test_base import TestBase
 
 
 class TestMapillary(TestBase):
@@ -59,13 +57,9 @@ class TestMapillary(TestBase):
             max_workers=200,
         )
         # mly_downloader.download_svi(self.mly_svi_output, input_place_name="Singapore", metadata_only=True)
-        mly_downloader.download_svi(
-            self.mly_svi_output, input_shp_file=self.mly_input_polygon, metadata_only=True
-        )
+        mly_downloader.download_svi(self.mly_svi_output, input_shp_file=self.mly_input_polygon, metadata_only=True)
         # assert True if mly_pids.csv is not empty
-        self.assertTrue(
-            os.path.getsize(os.path.join(self.mly_svi_output, "mly_pids.csv")) > 0
-        )
+        self.assertTrue(os.path.getsize(os.path.join(self.mly_svi_output, "mly_pids.csv")) > 0)
 
     # test multipolygon
     def test_downloader_multipolygon(self):
@@ -74,9 +68,7 @@ class TestMapillary(TestBase):
         #     self.skipTest("Result exists")
         # download images
         mly_downloader = MLYDownloader(self.mly_api_key, max_workers=200)
-        mly_downloader.download_svi(
-            self.mly_svi_output_multipolygon, input_shp_file=self.mly_input_multipolygon
-        )
+        mly_downloader.download_svi(self.mly_svi_output_multipolygon, input_shp_file=self.mly_input_multipolygon)
         # assert True if there are files in the output directory
         self.assertTrue(len(os.listdir(self.mly_svi_output_multipolygon)) > 0)
 
@@ -87,9 +79,7 @@ class TestMapillary(TestBase):
         #     self.skipTest("Result exists")
         # download images
         mly_downloader = MLYDownloader(self.mly_api_key, max_workers=200)
-        mly_downloader.download_svi(
-            self.mly_svi_output_polygon, input_shp_file=self.mly_input_polygon
-        )
+        mly_downloader.download_svi(self.mly_svi_output_polygon, input_shp_file=self.mly_input_polygon)
         # assert True if there are files in the output directory
         self.assertTrue(len(os.listdir(self.mly_svi_output_polygon)) > 0)
 
@@ -119,9 +109,7 @@ class TestMapillary(TestBase):
             self.skipTest("Result exists")
         # download images
         mly_downloader = MLYDownloader(self.mly_api_key, max_workers=200)
-        mly_downloader.download_svi(
-            self.mly_svi_output_buffer, lat = 52.50, lon = 13.42, buffer=1000
-        )
+        mly_downloader.download_svi(self.mly_svi_output_buffer, lat=52.50, lon=13.42, buffer=1000)
         # assert True if there are files in the output directory
         self.assertTrue(len(os.listdir(self.mly_svi_output_buffer)) > 0)
 
@@ -135,7 +123,7 @@ class TestMapillary(TestBase):
         mly_downloader.download_svi(self.mly_svi_output, input_place_name="Tbilisi")
         # assert True if there are files in the output directory
         self.assertTrue(len(os.listdir(self.mly_svi_output)) > 0)
-        
+
 
 if __name__ == "__main__":
     unittest.main()

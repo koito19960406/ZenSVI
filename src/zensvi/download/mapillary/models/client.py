@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.models.client
+"""mapillary.models.client
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 This module contains aims to serve as a generalization for all API requests within the Mapillary
@@ -58,8 +56,7 @@ except ValueError:
 
 
 class Client:
-    """
-    Client setup for API communication.
+    """Client setup for API communication.
 
     All requests for the Mapillary API v4 should go through this class
 
@@ -101,20 +98,20 @@ class Client:
 
     @staticmethod
     def get_token() -> str:
-        """
-        Gets the access token
+        """Gets the access token.
 
-        :return: The access token
+        Returns:
+            The access token
         """
 
         return Client.__access_token
 
     @staticmethod
     def set_token(access_token: str) -> None:
-        """
-        Sets the access token
+        """Sets the access token.
 
-        :param access_token: The access token to be set
+        Args:
+            access_token: The access token to be set
         """
 
         Client.__check_token_validity(access_token)
@@ -122,19 +119,16 @@ class Client:
         Client.__access_token = access_token
 
     def _initiate_request(self, url: str, method: str, params: dict = None):
-        """
-        Private method - For internal use only.
+        """Private method - For internal use only.
         This method is responsible for making tailored API requests to the mapillary API v4.
         It generalizes the requests and ties them to the same session.
 
-        :param url: The request endpoint - required
-        :type url: str
+        Args:
+            url (str): The request endpoint - required
+            method (str): HTTP method to be used - required
+            params (dict): Query parameters to be attached to the
+                request - optional
 
-        :param method: HTTP method to be used - required
-        :type method: str
-
-        :param params: Query parameters to be attached to the request - optional
-        :type params: dict
         """
 
         request = requests.Request(method, url, params=params)
@@ -175,14 +169,12 @@ class Client:
         return res
 
     def get(self, url: str = None, params: dict = {}):
-        """
-        Make GET requests to both mapillary main endpoints
+        """Make GET requests to both mapillary main endpoints.
 
-        :param url: The specific path of the request URL
-        :type url: str
-
-        :param params: Query parameters to be attached to the URL (Dict)
-        :type params: dict
+        Args:
+            url (str): The specific path of the request URL
+            params (dict): Query parameters to be attached to the URL
+                (Dict)
         """
         # Check if an endpoint is specified.
         if url is None:
@@ -199,15 +191,15 @@ class Client:
 
     @staticmethod
     def _pprint_request(prepped_req):
-        """
-        Format::
+        """Format::
 
             Method endpoint: HTTP/version
             Host: host
             Header_key: Header_value
             Body
 
-        :param prepped_req: The prepped request object
+        Args:
+            prepped_req: The prepped request object
 
         Reference::
 
@@ -228,14 +220,14 @@ class Client:
 
     @staticmethod
     def _pprint_response(res):
-        """
-        Format::
+        """Format::
 
             HTTP/version status_code status_text
             Header_key: Header_value
             Body
 
-        :param res: Response object returned from the API request
+        Args:
+            res: Response object returned from the API request
 
         Reference::
 

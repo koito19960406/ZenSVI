@@ -23,19 +23,37 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 
 class AMSDownloader(BaseDownloader):
-    """
-    Amsterdam Street View Downloader class.
+    """Amsterdam Street View Downloader class.
 
-    :param log_path: Path to the log file. Defaults to None.
-    :type log_path: str, optional
+    Args:
+        log_path (str, optional): Path to the log file. Defaults to
+            None.
+        max_workers (int, optional): Number of workers for parallel processing. Defaults to None.
     """
 
-    def __init__(self, log_path=None):
+    def __init__(self, log_path=None, max_workers=None):
         super().__init__(log_path)
+        self._max_workers = max_workers
         if log_path is not None:
             self.logger = Logger(log_path)
         else:
             self.logger = None
+
+    @property
+    def max_workers(self):
+        """Property for the number of workers for parallel processing.
+
+        Returns:
+            int: max_workers
+        """
+        return self._max_workers
+
+    @max_workers.setter
+    def max_workers(self, max_workers):
+        if max_workers is None:
+            self._max_workers = min(32, os.cpu_count() + 4)
+        else:
+            self._max_workers = max_workers
 
     def _set_dirs(self, dir_output):
         self.dir_output = Path(dir_output)
@@ -99,8 +117,8 @@ class AMSDownloader(BaseDownloader):
     def _get_raw_pids(self, lat, lon, buffer):
         """Get raw panorama IDs from the Amsterdam Street View API."""
         url = f"https://api.data.amsterdam.nl/panorama/panoramas/?tags=mission-2022&near={lon},{lat}&radius={buffer}&srid=4326"
-        proxy = random.choice(self.proxies)
-        user_agent = random.choice(self.user_agents)
+        proxy = random.choice(self._user_agents)
+        user_agent = random.choice(self._user_agents)
         headers = {"User-Agent": user_agent["user_agent"]}  # Extract the string from the dictionary
         response = requests.get(url, proxies=proxy, headers=headers)
         data = json.loads(response.content)
@@ -116,8 +134,8 @@ class AMSDownloader(BaseDownloader):
         """Save an image to disk."""
         img_path = os.path.join(self.dir_output, f"{pid}.jpg")
         try:
-            proxy = random.choice(self.proxies)
-            headers = {"User-Agent": random.choice(self.user_agents)["user_agent"]}
+            proxy = random.choice(self._user_agents)
+            headers = {"User-Agent": random.choice(self._user_agents)["user_agent"]}
             image = Image.open(
                 BytesIO(
                     requests.get(
@@ -130,7 +148,7 @@ class AMSDownloader(BaseDownloader):
             if cropped:
                 image = image.crop((0, 0, image.width, image.height // 2))
             image.save(img_path)
-        except Exception as e:
+        except Exception:
             self.logger.log_failed_pids(pid)
 
     def download_svi(
@@ -150,43 +168,49 @@ class AMSDownloader(BaseDownloader):
         metadata_only: bool = False,
         grid: bool = False,
         grid_size: int = 100,
+        max_workers: int = None,
     ):
-        """
-        Download street view images from Amsterdam Street View API using specified parameters.
+        """Download street view images from Amsterdam Street View API using specified
+        parameters.
 
-        :param dir_output: The output directory.
-        :type dir_output: str
-        :param path_pid: The path to the panorama ID file. Defaults to None.
-        :type path_pid: str, optional
-        :param cropped: Whether to crop the images. Defaults to False.
-        :type cropped: bool, optional
-        :param lat: The latitude for the images. Defaults to None.
-        :type lat: float, optional
-        :param lon: The longitude for the images. Defaults to None.
-        :type lon: float, optional
-        :param input_csv_file: The input CSV file. Defaults to "".
-        :type input_csv_file: str, optional
-        :param input_shp_file: The input shapefile. Defaults to "".
-        :type input_shp_file: str, optional
-        :param input_place_name: The input place name. Defaults to "".
-        :type input_place_name: str, optional
-        :param buffer: The buffer size. Defaults to 0.
-        :type buffer: int, optional
-        :param distance: The sampling distance for lines. Defaults to 10.
-        :type distance: int, optional
-        :param start_date: The start date for the panorama IDs. Format is isoformat (YYYY-MM-DD). Defaults to None.
-        :type start_date: str, optional
-        :param end_date: The end date for the panorama IDs. Format is isoformat (YYYY-MM-DD). Defaults to None.
-        :type end_date: str, optional
-        :param metadata_only: Whether to download metadata only. Defaults to False.
-        :type metadata_only: bool, optional
-        :param grid: Grid parameter for the GeoProcessor. Defaults to False.
-        :type grid: bool, optional
-        :param grid_size: Grid size parameter for the GeoProcessor. Defaults to 1.
-        :type grid_size: int, optional
-        :returns: None
+        Args:
+            dir_output (str): The output directory.
+            path_pid (str, optional): The path to the panorama ID file.
+                Defaults to None.
+            cropped (bool, optional): Whether to crop the images.
+                Defaults to False.
+            lat (float, optional): The latitude for the images. Defaults
+                to None.
+            lon (float, optional): The longitude for the images.
+                Defaults to None.
+            input_csv_file (str, optional): The input CSV file. Defaults
+                to "".
+            input_shp_file (str, optional): The input shapefile.
+                Defaults to "".
+            input_place_name (str, optional): The input place name.
+                Defaults to "".
+            buffer (int, optional): The buffer size. Defaults to 0.
+            distance (int, optional): The sampling distance for lines.
+                Defaults to 10.
+            start_date (str, optional): The start date for the panorama
+                IDs. Format is isoformat (YYYY-MM-DD). Defaults to None.
+            end_date (str, optional): The end date for the panorama IDs.
+                Format is isoformat (YYYY- MM-DD). Defaults to None.
+            metadata_only (bool, optional): Whether to download metadata
+                only. Defaults to False.
+            grid (bool, optional): Grid parameter for the GeoProcessor.
+                Defaults to False.
+            grid_size (int, optional): Grid size parameter for the
+                GeoProcessor. Defaults to 1.
+            max_workers (int, optional): Number of workers for parallel processing.
+                If not specified, uses the value set during initialization.
 
-        :raises ValueError: If neither lat and lon, csv file, shapefile, nor place name is provided.
+        Returns:
+            None
+
+        Raises:
+            ValueError: If neither lat and lon, csv file, shapefile, nor
+                place name is provided.
         """
 
         if self.logger is not None:
@@ -207,7 +231,12 @@ class AMSDownloader(BaseDownloader):
                 metadata_only=metadata_only,
                 grid=grid,
                 grid_size=grid_size,
+                max_workers=max_workers,
             )
+
+        # Set max_workers if provided
+        if max_workers is not None:
+            self.max_workers = max_workers
 
         self.grid = grid
         self.grid_size = grid_size
@@ -236,8 +265,8 @@ class AMSDownloader(BaseDownloader):
 
         def process_pid(pid):
             img_url = f"https://api.data.amsterdam.nl/panorama/panoramas/{pid}/"
-            proxy = random.choice(self.proxies)
-            headers = {"User-Agent": random.choice(self.user_agents)["user_agent"]}
+            proxy = random.choice(self._user_agents)
+            headers = {"User-Agent": random.choice(self._user_agents)["user_agent"]}
             response = requests.get(img_url, proxies=proxy, headers=headers)
             data = json.loads(response.content)
             if response.status_code == 200:
@@ -260,7 +289,7 @@ class AMSDownloader(BaseDownloader):
                 return None
 
         results = []
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = [executor.submit(process_pid, row.pano_id) for _, row in pid_df.iterrows()]
             for future in tqdm(
                 as_completed(futures),

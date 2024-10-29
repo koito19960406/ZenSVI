@@ -23,7 +23,7 @@
 # File author: Shariq Farooq Bhat
 
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import Tuple
 
 import numpy as np
 
@@ -31,6 +31,8 @@ import numpy as np
 # dataclass to store the crop parameters
 @dataclass
 class CropParams:
+    """"""
+
     top: int
     bottom: int
     left: int
@@ -46,13 +48,44 @@ def get_border_params(
     channel_axis=-1,
     min_border=5,
 ) -> CropParams:
+    """
+
+    Args:
+      rgb_image:
+      tolerance: (Default value = 0.1)
+      cut_off: (Default value = 20)
+      value: (Default value = 0)
+      level_diff_threshold: (Default value = 5)
+      channel_axis: (Default value = -1)
+      min_border: (Default value = 5)
+
+    Returns:
+
+    """
     gray_image = np.mean(rgb_image, axis=channel_axis)
     h, w = gray_image.shape
 
     def num_value_pixels(arr):
+        """
+
+        Args:
+          arr:
+
+        Returns:
+
+        """
         return np.sum(np.abs(arr - value) < level_diff_threshold)
 
     def is_above_tolerance(arr, total_pixels):
+        """
+
+        Args:
+          arr:
+          total_pixels:
+
+        Returns:
+
+        """
         return (num_value_pixels(arr) / total_pixels) > tolerance
 
     # Crop top border until number of value pixels become below tolerance
@@ -90,9 +123,12 @@ def get_white_border(rgb_image, value=255, **kwargs) -> CropParams:
     """Crops the white border of the RGB.
 
     Args:
-        rgb: RGB image, shape (H, W, 3).
+      rgb_image:
+      value: (Default value = 255)
+      **kwargs:
+
     Returns:
-        Crop parameters.
+      : Crop parameters.
     """
     if value == 255:
         # assert range of values in rgb image is [0, 255]
@@ -109,10 +145,12 @@ def get_black_border(rgb_image, **kwargs) -> CropParams:
     """Crops the black border of the RGB.
 
     Args:
-        rgb: RGB image, shape (H, W, 3).
+      rgb: RGB image, shape (H, W, 3).
+      rgb_image:
+      **kwargs:
 
     Returns:
-        Crop parameters.
+      : Crop parameters.
     """
 
     return get_border_params(rgb_image, value=0, **kwargs)
@@ -122,11 +160,15 @@ def crop_image(image: np.ndarray, crop_params: CropParams) -> np.ndarray:
     """Crops the image according to the crop parameters.
 
     Args:
-        image: RGB or depth image, shape (H, W, 3) or (H, W).
-        crop_params: Crop parameters.
+      image: RGB or depth image, shape (H, W, 3) or (H, W).
+      crop_params: Crop parameters.
+      image: np.ndarray:
+      crop_params: CropParams:
+      image: np.ndarray:
+      crop_params: CropParams:
 
     Returns:
-        Cropped image.
+      : Cropped image.
     """
     return image[crop_params.top : crop_params.bottom, crop_params.left : crop_params.right]
 
@@ -135,11 +177,15 @@ def crop_images(*images: np.ndarray, crop_params: CropParams) -> Tuple[np.ndarra
     """Crops the images according to the crop parameters.
 
     Args:
-        images: RGB or depth images, shape (H, W, 3) or (H, W).
-        crop_params: Crop parameters.
+      images: RGB or depth images, shape (H, W, 3) or (H, W).
+      crop_params: Crop parameters.
+      *images: np.ndarray:
+      crop_params: CropParams:
+      *images: np.ndarray:
+      crop_params: CropParams:
 
     Returns:
-        Cropped images.
+      : Cropped images.
     """
     return tuple(crop_image(image, crop_params) for image in images)
 
@@ -150,10 +196,16 @@ def crop_black_or_white_border(
     """Crops the white and black border of the RGB and depth images.
 
     Args:
-        rgb: RGB image, shape (H, W, 3). This image is used to determine the border.
-        other_images: The other images to crop according to the border of the RGB image.
+      rgb: RGB image, shape (H, W, 3). This image is used to determine the border.
+      rgb_image:
+      *other_images: np.ndarray:
+      tolerance: (Default value = 0.1)
+      cut_off: (Default value = 20)
+      level_diff_threshold: (Default value = 5)
+      *other_images: np.ndarray:
+
     Returns:
-        Cropped RGB and other images.
+      : Cropped RGB and other images.
     """
     # crop black border
     crop_params = get_black_border(

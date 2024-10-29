@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.utils.__init__
+"""mapillary.utils.__init__
 ========================
 
 This package contains all the internal utilities used within the Mapillary python SDK.

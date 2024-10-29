@@ -15,6 +15,8 @@ from torch import Tensor, nn
 
 
 class Mlp(nn.Module):
+    """"""
+
     def __init__(
         self,
         in_features: int,
@@ -33,6 +35,15 @@ class Mlp(nn.Module):
         self.drop = nn.Dropout(drop)
 
     def forward(self, x: Tensor) -> Tensor:
+        """
+
+        Args:
+          x: Tensor:
+          x: Tensor:
+
+        Returns:
+
+        """
         x = self.fc1(x)
         x = self.act(x)
         x = self.drop(x)

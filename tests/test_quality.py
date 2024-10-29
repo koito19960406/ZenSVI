@@ -1,8 +1,7 @@
+import unittest
 import os
-from pathlib import Path
-
-from zensvi.cv import ClassifierQuality
 from test_base import TestBase
+from zensvi.cv import ClassifierQuality
 
 
 class TestClassifierQuality(TestBase):

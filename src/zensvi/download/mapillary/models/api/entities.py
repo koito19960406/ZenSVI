@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.models.api.entities
+"""mapillary.models.api.entities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This module contains the Adapter design for the Entities API of Mapillary API v4.
@@ -37,16 +35,11 @@ from zensvi.download.mapillary.utils.format import detection_features_to_geojson
 # Local imports
 
 
-
-
-
-
-
 class EntityAdapter(object):
-    """
-    Adapter model for dealing with the Entity API, through the DRY principle. The EntityAdapter
-    class can be instantiated in the controller modules, providing an abstraction layer that uses
-    the Client class, endpoints provided by the API v4 under `/config/api/entities.py`.
+    """Adapter model for dealing with the Entity API, through the DRY principle. The
+    EntityAdapter class can be instantiated in the controller modules, providing an
+    abstraction layer that uses the Client class, endpoints provided by the API v4 under
+    `/config/api/entities.py`.
 
     It performs parsing, handling of layers, properties, and fields to make it easier to
     write higher level logic for extracing information, and lets developers to focus only
@@ -67,23 +60,21 @@ class EntityAdapter(object):
     """
 
     def __init__(self):
-        """Initializing EntityAdapter constructor"""
+        """Initializing EntityAdapter constructor."""
 
         # client object to deal with session and requests
         self.client = Client()
 
     def fetch_image(self, image_id: typing.Union[int, str], fields: list = None) -> dict:
-        """
-        Fetches images depending on the image_id and the fields provided
+        """Fetches images depending on the image_id and the fields provided.
 
-        :param image_id: The image_id to extract for
-        :type image_id: int
+        Args:
+            image_id (int): The image_id to extract for
+            fields (list): The fields to extract properties for,
+                defaults to []
 
-        :param fields: The fields to extract properties for, defaults to []
-        :type fields: list
-
-        :return: The fetched GeoJSON
-        :rtype: dict
+        Returns:
+            dict: The fetched GeoJSON
         """
 
         # Getting the results through the client, and return after decoding
@@ -117,17 +108,15 @@ class EntityAdapter(object):
             raise InvalidImageKeyError(image_id)
 
     def fetch_map_feature(self, map_feature_id: typing.Union[int, str], fields: list = None):
-        """
-        Fetches map features depending on the map_feature_id and the fields provided
+        """Fetches map features depending on the map_feature_id and the fields provided.
 
-        :param map_feature_id: The map_feature_id to extract for
-        :type map_feature_id: int
+        Args:
+            map_feature_id (int): The map_feature_id to extract for
+            fields (list): The fields to extract properties for,
+                defaults to []
 
-        :param fields: The fields to extract properties for, defaults to []
-        :type fields: list
-
-        :return: The fetched GeoJSON
-        :rtype: dict
+        Returns:
+            dict: The fetched GeoJSON
         """
 
         # Getting the results through the client, and return after decoding
@@ -151,22 +140,18 @@ class EntityAdapter(object):
         )
 
     def fetch_detections(self, identity: int, id_type: bool = True, fields: list = []):
-        """
-        Fetches detections depending on the id, detections for either map_features or
-        images and the fields provided
+        """Fetches detections depending on the id, detections for either map_features or
+        images and the fields provided.
 
-        :param identity: The id to extract for
-        :type identity: int
+        Args:
+            identity (int): The id to extract for
+            id_type (bool): Either True(id is for image), or False(id is
+                for map_feature), defaults to True
+            fields (list): The fields to extract properties for,
+                defaults to []
 
-        :param id_type: Either True(id is for image), or False(id is for map_feature),
-            defaults to True
-        :type id_type: bool
-
-        :param fields: The fields to extract properties for, defaults to []
-        :type fields: list
-
-        :return: The fetched GeoJSON
-        :rtype: dict
+        Returns:
+            dict: The fetched GeoJSON
         """
 
         # If id_type is True(id is for image)
@@ -207,16 +192,15 @@ class EntityAdapter(object):
         return detection_features_to_geojson(json.loads(self.client.get(url).content.decode("utf-8"))["data"])
 
     def is_image_id(self, identity: int, fields: list = None) -> bool:
-        """Determines whether the given id is an image_id or a map_feature_id
+        """Determines whether the given id is an image_id or a map_feature_id.
 
-        :param identity: The ID given to test
-        :type identity: int
+        Args:
+            identity (int): The ID given to test
+            fields (list): The fields to extract properties for,
+                defaults to []
 
-        :param fields: The fields to extract properties for, defaults to []
-        :type fields: list
-
-        :return: True if id is image, else False
-        :rtype: bool
+        Returns:
+            bool: True if id is image, else False
         """
 
         try:

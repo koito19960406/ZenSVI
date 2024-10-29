@@ -37,6 +37,8 @@ from .base_trainer import BaseTrainer
 
 
 class Trainer(BaseTrainer):
+    """"""
+
     def __init__(self, config, model, train_loader, test_loader=None, device=None):
         super().__init__(config, model, train_loader, test_loader=test_loader, device=device)
         self.device = device
@@ -45,10 +47,15 @@ class Trainer(BaseTrainer):
         self.scaler = amp.GradScaler(enabled=self.config.use_amp)
 
     def train_on_batch(self, batch, train_step):
-        """
-        Expects a batch of images and depth as input
-        batch["image"].shape : batch_size, c, h, w
-        batch["depth"].shape : batch_size, 1, h, w
+        """Expects a batch of images and depth as input batch["image"].shape :
+
+        batch_size, c, h, w batch["depth"].shape : batch_size, 1, h, w.
+
+        Args:
+          batch:
+          train_step:
+
+        Returns:
         """
 
         images, depths_gt = batch["image"].to(self.device), batch["depth"].to(self.device)
@@ -114,6 +121,14 @@ class Trainer(BaseTrainer):
 
     @torch.no_grad()
     def eval_infer(self, x):
+        """
+
+        Args:
+          x:
+
+        Returns:
+
+        """
         with amp.autocast(enabled=self.config.use_amp):
             m = self.model.module if self.config.multigpu else self.model
             pred_depths = m(x)["metric_depth"]
@@ -121,6 +136,14 @@ class Trainer(BaseTrainer):
 
     @torch.no_grad()
     def crop_aware_infer(self, x):
+        """
+
+        Args:
+          x:
+
+        Returns:
+
+        """
         # if we are not avoiding the black border, we can just use the normal inference
         if not self.config.get("avoid_boundary", False):
             return self.eval_infer(x)
@@ -165,6 +188,15 @@ class Trainer(BaseTrainer):
         return pred_depths
 
     def validate_on_batch(self, batch, val_step):
+        """
+
+        Args:
+          batch:
+          val_step:
+
+        Returns:
+
+        """
         images = batch["image"].to(self.device)
         depths_gt = batch["depth"].to(self.device)
         dataset = batch["dataset"][0]

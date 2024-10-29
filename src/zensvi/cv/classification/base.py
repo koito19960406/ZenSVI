@@ -1,7 +1,7 @@
 # abstract class
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Union
 
 import torch
 
@@ -9,20 +9,26 @@ import torch
 class BaseClassifier(ABC):
     """A base class for image classification.
 
-    :param device: The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
-        If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
-    :type device: str, optional
+    Args:
+      device(str): The device that the model should be
+    loaded onto. Options are "cpu", "cuda", or "mps". If `None`,
+    the model tries to use a GPU if available; otherwise, falls
+    back to CPU.
+
+    Returns:
     """
 
     def __init__(self, device=None):
         self.device = self._get_device(device)
 
     def _get_device(self, device) -> torch.device:
-        """
-        Get the appropriate device for running the model.
+        """Get the appropriate device for running the model.
+
+        Args:
+          device:
 
         Returns:
-            torch.device: The device to use for running the model.
+          torch.device: The device to use for running the model.
         """
         if device is not None:
             if device not in ["cpu", "cuda", "mps"]:
@@ -50,19 +56,41 @@ class BaseClassifier(ABC):
     ) -> None:
         """A method to classify images.
 
-        :param dir_input: directory containing input images.
-        :type dir_input: Union[str, Path]
-        :param dir_image_output: directory to save output images, defaults to None
-        :type dir_image_output: Union[str, Path, None], optional
-        :param dir_summary_output: directory to save summary output, defaults to None
-        :type dir_summary_output: Union[str, Path, None], optional
-        :param batch_size: batch size for inference, defaults to 1
-        :type batch_size: int, optional
-        :param save_image_options: save options for images, defaults to "cam_image blend_image". Options are "cam_image" and "blend_image". Please add a space between options.
-        :type save_image_options: str, optional
-        :param save_format: save format for the output, defaults to "json csv". Options are "json" and "csv". Please add a space between options.
-        :type save_format: str, optional
-        :param csv_format: csv format for the output, defaults to "long". Options are "long" and "wide".
-        :type csv_format: str, optional
+        Args:
+          dir_input(Union[str): directory containing input
+        images.
+          dir_image_output(Union[str): directory to save output images, defaults to None
+          dir_summary_output(Union[str): directory to save summary output, defaults to None
+          batch_size(int): batch size for inference,
+        defaults to 1
+          save_image_options(str): save options for images,
+        defaults to "cam_image blend_image". Options are
+        "cam_image" and "blend_image". Please add a space
+        between options.
+          save_format(str): save format for the output,
+        defaults to "json csv". Options are "json" and "csv".
+        Please add a space between options.
+          csv_format(str): csv format for the output,
+        defaults to "long". Options are "long" and "wide".
+          dir_input: Union[str:
+          Path]:
+          dir_image_output: Union[str:
+          Path:
+          None]: (Default value = None)
+          dir_summary_output: Union[str:
+          batch_size: int:  (Default value = 1)
+          save_image_options: str:  (Default value = "cam_image blend_image")
+          save_format: str:  (Default value = "json csv")
+          csv_format: str:  (Default value = "long")
+          # "long" or "wide":
+          dir_input: Union[str:
+          dir_image_output: Union[str:
+          dir_summary_output: Union[str:
+          batch_size: int:  (Default value = 1)
+          save_image_options: str:  (Default value = "cam_image blend_image")
+          save_format: str:  (Default value = "json csv")
+          csv_format: str:  (Default value = "long")
+
+        Returns:
         """
         pass

@@ -7,6 +7,8 @@ from torch.nn import functional as F
 
 
 class PlacePulseClassificationModel(nn.Module):
+    """"""
+
     def __init__(self, lr=0.0001, num_classes=None, **kwargs):
         super().__init__()
         self.resnet50 = models.resnet50(weights=None)
@@ -22,6 +24,14 @@ class PlacePulseClassificationModel(nn.Module):
         self.fc4 = nn.Linear(128, num_classes)
 
     def forward(self, x):
+        """
+
+        Args:
+          x:
+
+        Returns:
+
+        """
         x = self.resnet50(x)  # Features from ResNet50
 
         # Passing through the custom fully connected layers
@@ -36,6 +46,14 @@ class PlacePulseClassificationModel(nn.Module):
         return scores
 
     def calculate_score(self, probabilities):
+        """
+
+        Args:
+          probabilities:
+
+        Returns:
+
+        """
         # Define weights for each class
         weights = torch.tensor([1, 3, 5, 7, 9], device=probabilities.device)
         # weights = torch.tensor([5/6, 15/6, 25/6, 35/6, 45/6, 55/6], device=probabilities.device)

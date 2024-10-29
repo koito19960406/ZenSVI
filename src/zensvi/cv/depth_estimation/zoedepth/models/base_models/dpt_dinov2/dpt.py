@@ -6,6 +6,16 @@ from .blocks import FeatureFusionBlock, _make_scratch
 
 
 def _make_fusion_block(features, use_bn, size=None):
+    """
+
+    Args:
+      features:
+      use_bn:
+      size: (Default value = None)
+
+    Returns:
+
+    """
     return FeatureFusionBlock(
         features,
         nn.ReLU(False),
@@ -18,6 +28,8 @@ def _make_fusion_block(features, use_bn, size=None):
 
 
 class DPTHead(nn.Module):
+    """"""
+
     def __init__(
         self,
         in_channels,
@@ -113,6 +125,16 @@ class DPTHead(nn.Module):
         )
 
     def forward(self, out_features, patch_h, patch_w):
+        """
+
+        Args:
+          out_features:
+          patch_h:
+          patch_w:
+
+        Returns:
+
+        """
         out = []
         for i, x in enumerate(out_features):
             if self.use_clstoken:
@@ -154,6 +176,8 @@ class DPTHead(nn.Module):
 
 
 class DPT_DINOv2(nn.Module):
+    """"""
+
     def __init__(
         self,
         encoder="vitl",
@@ -167,7 +191,6 @@ class DPT_DINOv2(nn.Module):
 
         torch.manual_seed(1)
         # print out the current directory
-        import os
 
         self.pretrained = torch.hub.load(
             "src/zensvi/cv/depth_estimation/torchhub/facebookresearch_dinov2_main",
@@ -181,6 +204,14 @@ class DPT_DINOv2(nn.Module):
         self.depth_head = DPTHead(dim, features, use_bn, out_channels=out_channels, use_clstoken=use_clstoken)
 
     def forward(self, x):
+        """
+
+        Args:
+          x:
+
+        Returns:
+
+        """
         h, w = x.shape[-2:]
 
         features = self.pretrained.get_intermediate_layers(x, 4, return_class_token=True)

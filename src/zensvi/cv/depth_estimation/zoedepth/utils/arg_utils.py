@@ -1,4 +1,12 @@
 def infer_type(x):  # hacky way to infer type from string args
+    """
+
+    Args:
+      x:
+
+    Returns:
+
+    """
     if not isinstance(x, str):
         return x
 
@@ -18,6 +26,14 @@ def infer_type(x):  # hacky way to infer type from string args
 
 
 def parse_unknown(unknown_args):
+    """
+
+    Args:
+      unknown_args:
+
+    Returns:
+
+    """
     clean = []
     for a in unknown_args:
         if "=" in a:

@@ -1,9 +1,10 @@
-import inspect
 import logging
 from pathlib import Path
 
 
 class Logger:
+    """A singleton logger class that handles logging to files."""
+
     _loggers = {}
 
     def __new__(cls, log_file_path, level=logging.INFO):
@@ -15,6 +16,16 @@ class Logger:
 
     @classmethod
     def _initialize_logger(cls, instance, log_file_path, level):
+        """Initialize a new logger instance.
+
+        Args:
+          instance: Logger instance to initialize
+          log_file_path: Path to the log file
+          level: Logging level to use
+
+        Returns:
+          : None
+        """
         instance.logger = logging.getLogger(str(log_file_path))
         if not instance.logger.handlers:
             instance.logger.setLevel(level)
@@ -30,20 +41,59 @@ class Logger:
             instance.logger.addHandler(fh)
 
     def log_info(self, message):
+        """Log an info message.
+
+        Args:
+          message: Message to log
+
+        Returns:
+          : None
+        """
         self.logger.info(message)
 
     def log_error(self, message):
+        """Log an error message.
+
+        Args:
+          message: Message to log
+
+        Returns:
+          : None
+        """
         self.logger.error(message)
 
     def log_warning(self, message):
+        """Log a warning message.
+
+        Args:
+          message: Message to log
+
+        Returns:
+          : None
+        """
         self.logger.warning(message)
 
     def log_debug(self, message):
+        """Log a debug message.
+
+        Args:
+          message: Message to log
+
+        Returns:
+          : None
+        """
         self.logger.debug(message)
 
     def log_args(self, func_name, *args, **kwargs):
-        """
-        Logs the arguments of a function call along with the function's name.
+        """Logs the arguments of a function call along with the function's name.
+
+        Args:
+          func_name: Name of the function being logged
+          *args: Positional arguments passed to the function
+          **kwargs: Keyword arguments passed to the function
+
+        Returns:
+          : None
         """
         formatted_args = []
         for i, arg in enumerate(args):
@@ -55,13 +105,23 @@ class Logger:
         self.log_info(formatted_message)
 
     def log_failed_tiles(self, failed_tile_name):
-        """
-        Logs the failed tiles to a log file.
+        """Logs the failed tiles to a log file.
+
+        Args:
+          failed_tile_name: Name of the tile that failed processing
+
+        Returns:
+          : None
         """
         self.log_error(f"Failed to process tile: {failed_tile_name}")
 
     def log_failed_pids(self, failed_pid):
-        """
-        Logs the failed pids to a log file.
+        """Logs the failed pids to a log file.
+
+        Args:
+          failed_pid: ID of the process that failed
+
+        Returns:
+          : None
         """
         self.log_error(f"Failed to process pid: {failed_pid}")

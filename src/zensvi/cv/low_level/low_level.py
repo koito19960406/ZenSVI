@@ -1,4 +1,3 @@
-import csv
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -11,6 +10,15 @@ from tqdm import tqdm
 
 
 def _detect_edges_single_image(image_path, dir_image_output):
+    """
+
+    Args:
+      image_path:
+      dir_image_output:
+
+    Returns:
+
+    """
     # Load image in grayscale
     image = cv2.imread(str(image_path), 0)
     # get total number of pixels
@@ -38,6 +46,15 @@ def _detect_edges_single_image(image_path, dir_image_output):
 
 
 def _detect_blob_single_image(image_path, dir_image_output=None):
+    """
+
+    Args:
+      image_path:
+      dir_image_output: (Default value = None)
+
+    Returns:
+
+    """
     # Load image
     image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
     # Setup SimpleBlobDetector parameters.
@@ -65,6 +82,15 @@ def _detect_blob_single_image(image_path, dir_image_output=None):
 
 
 def _detect_blur_single_image(image_path, dir_image_output=None):
+    """
+
+    Args:
+      image_path:
+      dir_image_output: (Default value = None)
+
+    Returns:
+
+    """
     # Load image in grayscale
     image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
     # Compute the Laplacian of the image and then the focus
@@ -79,6 +105,15 @@ def _detect_blur_single_image(image_path, dir_image_output=None):
 
 
 def _calculate_hsl_single_image(image_path, dir_image_output=None):
+    """
+
+    Args:
+      image_path:
+      dir_image_output: (Default value = None)
+
+    Returns:
+
+    """
     # Load image
     image = cv2.imread(str(image_path))
     # Convert to HSL color space
@@ -98,6 +133,15 @@ def _calculate_hsl_single_image(image_path, dir_image_output=None):
 
 
 def _detect_all_features_single_image(image_path, dir_image_output=None):
+    """
+
+    Args:
+      image_path:
+      dir_image_output: (Default value = None)
+
+    Returns:
+
+    """
     # Aggregate results from all individual feature detection functions
     features = {"filename_key": image_path.stem}
     features.update(_detect_edges_single_image(image_path, dir_image_output))
@@ -115,29 +159,34 @@ def get_low_level_features(
     save_format="json csv",
     csv_format="long",
 ):
-    """
-    Processes images from the specified input directory or single image file to detect various low-level features,
-    which include edge detection, blob detection, blur detection, and HSL color space analysis. It optionally saves
-    the processed images and a summary of the features detected.
+    """Processes images from the specified input directory or single image file to
+    detect various low-level features, which include edge detection, blob detection,
+    blur detection, and HSL color space analysis. It optionally saves the processed
+    images and a summary of the features detected.
 
-    Parameters:
-        dir_input (Union[str, Path]): The directory containing images or a single image file path from which
-            to extract features.
-        dir_image_output (Union[str, Path], optional): The directory where processed images will be saved.
-            If not provided, images will not be saved. Defaults to None.
-        dir_summary_output (Union[str, Path], optional): The directory where the summary of detected features
-            will be saved in JSON or CSV format. If not provided, summaries will not be saved. Defaults to None.
-        save_format (str, optional): Specifies the formats in which to save the summary of features. Possible
-            values include "json", "csv", or a combination of both. Defaults to "json csv".
-        csv_format (str, optional): Specifies the format of the CSV output. Can be 'long' for long format or
-            'wide' for wide format. Defaults to 'long'.
-
-    Raises:
-        ValueError: If neither `dir_image_output` nor `dir_summary_output` is provided, a ValueError is raised
-            indicating that at least one output directory must be specified.
+    Args:
+      dir_input: Union
+      to: extract features
+      dir_image_output: Union
+      If: not provided
+      dir_summary_output: Union
+      will: be saved in JSON or CSV format
+      save_format: str (Default value = "json csv")
+      values: include
+      csv_format: str (Default value = "long")
+      wide: for wide format
+      dir_image_output: Union[str:
+      Path]: (Default value = None)
+      dir_summary_output: Union[str:
+      dir_image_output: Union[str:
+      dir_summary_output: Union[str:
 
     Returns:
-        None: The function does not return any value but outputs results to the specified directories.
+      None: The function does not return any value but outputs results to the specified directories.
+
+    Raises:
+      ValueError: If neither
+      indicating: that at least one output directory must be specified
     """
     if not dir_image_output and not dir_summary_output:
         raise ValueError("At least one of dir_image_output and dir_summary_output must be provided")

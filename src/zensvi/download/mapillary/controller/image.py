@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.controllers.image
+"""mapillary.controllers.image
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This module implements the image filtering and analysis business logic functionalities of the
@@ -22,7 +20,6 @@ import mercantile
 import shapely
 from geojson import Polygon
 from requests import HTTPError
-from shapely.geometry.multipolygon import MultiPolygon
 from turfpy.measurement import bbox
 from vt2geojson.tools import vt_bytes_to_geojson
 
@@ -50,7 +47,6 @@ from zensvi.download.mapillary.utils.filter import pipeline
 from zensvi.download.mapillary.utils.format import (
     coord_or_list_to_dict,
     feature_to_geojson,
-    geojson_to_polygon,
     merged_features_list_to_geojson,
 )
 from zensvi.download.mapillary.utils.verify import (
@@ -67,38 +63,25 @@ def get_image_close_to_controller(
     latitude: float,
     kwargs: dict,
 ) -> GeoJSON:
-    """
-    Extracting the GeoJSON for the image data near the [longitude, latitude] coordinates
+    """Extracting the GeoJSON for the image data near the [longitude, latitude]
+    coordinates.
 
-    :param kwargs: The kwargs for the filter
-    :type kwargs: dict
+    Args:
+        kwargs (dict): The kwargs for the filter
+        longitude (float): The longitude
+        latitude (float): The latitude
+        kwargs.zoom (int): The zoom level of the tiles to obtain,
+            defaults to 14
+        kwargs.min_captured_at (str): The minimum date to filter till
+        kwargs.max_captured_at (str): The maximum date to filter upto
+        kwargs.image_type (str): Either 'pano', 'flat' or 'all'
+        kwargs.organization_id (str): The organization to retrieve the
+            data for
+        kwargs.radius (float): The radius that the geometry points will
+            lie in
 
-    :param longitude: The longitude
-    :type longitude: float
-
-    :param latitude: The latitude
-    :type latitude: float
-
-    :param kwargs.zoom: The zoom level of the tiles to obtain, defaults to 14
-    :type kwargs.zoom: int
-
-    :param kwargs.min_captured_at: The minimum date to filter till
-    :type kwargs.min_captured_at: str
-
-    :param kwargs.max_captured_at: The maximum date to filter upto
-    :type kwargs.max_captured_at: str
-
-    :param kwargs.image_type: Either 'pano', 'flat' or 'all'
-    :type kwargs.image_type: str
-
-    :param kwargs.organization_id: The organization to retrieve the data for
-    :type kwargs.organization_id: str
-
-    :param kwargs.radius: The radius that the geometry points will lie in
-    :type kwargs.radius: float
-
-    :return: GeoJSON
-    :rtype: dict
+    Returns:
+        dict: GeoJSON
     """
 
     # Checking if a non valid key has been passed to the function If that is the case, throw an
@@ -173,42 +156,29 @@ def get_image_looking_at_controller(
     at: Union[dict, Coordinates, list],
     filters: dict,
 ) -> GeoJSON:
-    """
-    Checks if the image with coordinates 'at' is looked with the given filters.
+    """Checks if the image with coordinates 'at' is looked with the given filters.
 
-    :param filters: Filters to pass the data through
-    :type filters: dict
+    Args:
+        filters (dict): Filters to pass the data through
+        at (dict): The dict of coordinates of the position of the
+            looking at coordinates. Format::
 
-    :param at: The dict of coordinates of the position of the looking at
-        coordinates. Format::
+                >>> {
+                >>>     'lng': 'longitude',
+                >>>     'lat': 'latitude'
+                >>> }
+        filters.zoom (int): The zoom level of the tiles to obtain,
+            defaults to 14
+        filters.min_captured_at (str): The minimum date to filter till
+        filters.max_captured_at (str): The maximum date to filter upto
+        filters.radius (float): The radius that the geometry points will
+            lie in
+        filters.image_type (str): Either 'pano', 'flat' or 'all'
+        filters.organization_id (str): The organization to retrieve the
+            data for
 
-            >>> {
-            >>>     'lng': 'longitude',
-            >>>     'lat': 'latitude'
-            >>> }
-
-    :type at: dict
-
-    :param filters.zoom: The zoom level of the tiles to obtain, defaults to 14
-    :type filters.zoom: int
-
-    :param filters.min_captured_at: The minimum date to filter till
-    :type filters.min_captured_at: str
-
-    :param filters.max_captured_at: The maximum date to filter upto
-    :type filters.max_captured_at: str
-
-    :param filters.radius: The radius that the geometry points will lie in
-    :type filters.radius: float
-
-    :param filters.image_type: Either 'pano', 'flat' or 'all'
-    :type filters.image_type: str
-
-    :param filters.organization_id: The organization to retrieve the data for
-    :type filters.organization_id: str
-
-    :return: GeoJSON
-    :rtype: dict
+    Returns:
+        dict: GeoJSON
     """
 
     # Converting 'at' of type Coordinates|List to dict
@@ -299,43 +269,36 @@ def is_image_being_looked_at_controller(
     at: Union[dict, Coordinates, list],
     filters: dict,
 ) -> bool:
-    """
-    Checks if the image with coordinates 'at' is looked with the given filters.
+    """Checks if the image with coordinates 'at' is looked with the given filters.
 
-    :param at: The dict of coordinates of the position of the looking at coordinates.
+    Args:
+        at (Union[dict, mapillary.models.geojson.Coordinates, list]):
+            The dict of coordinates of the position of the looking at
+            coordinates.
 
-        Format::
+            Format::
 
-            >>> at_dict = {
-            ...     'lng': 'longitude',
-            ...     'lat': 'latitude'
-            ... }
-            >>> at_list = [12.954940544167, 48.0537894275]
-            >>> from mapillary.models.geojson import Coordinates
-            >>> at_coord: Coordinates = Coordinates(lng=12.954940544167, lat=48.0537894275)
+                >>> at_dict = {
+                ...     'lng': 'longitude',
+                ...     'lat': 'latitude'
+                ... }
+                >>> at_list = [12.954940544167, 48.0537894275]
+                >>> from mapillary.models.geojson import Coordinates
+                >>> at_coord: Coordinates = Coordinates(lng=12.954940544167, lat=48.0537894275)
+        filters.zoom: The zoom level of the tiles to obtain, defaults to
+            14
+        filter.zoom (int)
+        filters.min_captured_at (str): The minimum date to filter till
+        filters.max_captured_at (str): The maximum date to filter upto
+        filters.radius (float): The radius that the geometry points will
+            lie in
+        filters.image_type (str): Either 'pano', 'flat' or 'all'
+        filters.organization_id (str): The organization to retrieve the
+            data for
 
-    :type at: Union[dict, mapillary.models.geojson.Coordinates, list]
-
-    :param filters.zoom: The zoom level of the tiles to obtain, defaults to 14
-    :type filter.zoom: int
-
-    :param filters.min_captured_at: The minimum date to filter till
-    :type filters.min_captured_at: str
-
-    :param filters.max_captured_at: The maximum date to filter upto
-    :type filters.max_captured_at: str
-
-    :param filters.radius: The radius that the geometry points will lie in
-    :type filters.radius: float
-
-    :param filters.image_type: Either 'pano', 'flat' or 'all'
-    :type filters.image_type: str
-
-    :param filters.organization_id: The organization to retrieve the data for
-    :type filters.organization_id: str
-
-    :return: True if the image is looked at by the given looker and at coordinates, False otherwise
-    :rtype: bool
+    Returns:
+        bool: True if the image is looked at by the given looker and at
+        coordinates, False otherwise
     """
 
     result: dict = get_image_looking_at_controller(at=at, filters=filters).to_dict()
@@ -344,24 +307,17 @@ def is_image_being_looked_at_controller(
     return len(result["features"]) != 0
 
 
-def get_image_thumbnail_controller(image_id: str, resolution: int, additional_fields=["all"]) -> dict:
-    """
-    This controller holds the business logic for retrieving
-    an image thumbnail with a specific resolution (256, 1024, or 2048)
-    using an image ID/key
+def get_image_thumbnail_controller(image_id: str, resolution: int, additional_fields: list) -> str:
+    """This controller holds the business logic for retrieving an image thumbnail with a
+    specific resolution (256, 1024, or 2048) using an image ID/key.
 
-    :param image_id: Image key as the argument
-    :type image_id: str
+    Args:
+        image_id (str): Image key as the argument
+        resolution (int): Option for the thumbnail size, with available
+            resolutions: 256, 1024, and 2048
 
-    :param resolution: Option for the thumbnail size, with available resolutions:
-        256, 1024, and 2048
-    :type resolution: int
-
-    :param additional_fields: List of additional fields to include in the result
-    :type additional_fields: list
-
-    :return: A dictionary containing the thumbnail URL and additional fields
-    :rtype: dict
+    Returns:
+        str: A URL for the thumbnail
     """
 
     # check if the entered resolution is one of the supported image sizes
@@ -376,59 +332,42 @@ def get_image_thumbnail_controller(image_id: str, resolution: int, additional_fi
     except HTTPError:
         # If given ID is an invalid image ID, let the user know
         raise InvalidImageKeyError(image_id)
-    
+
     return result
 
 
 def get_images_in_bbox_controller(bounding_box: dict, layer: str, zoom: int, filters: dict) -> str:
-    """
-    For getting a complete list of images that lie within a bounding box,
-    that can be filtered via the filters argument
+    """For getting a complete list of images that lie within a bounding box, that can be
+    filtered via the filters argument.
 
-    :param bounding_box: A bounding box representation
-        Example::
+    Args:
+        bounding_box (dict): A bounding box representation Example::
 
-            >>> {
-            ...     'west': 'BOUNDARY_FROM_WEST',
-            ...     'south': 'BOUNDARY_FROM_SOUTH',
-            ...     'east': 'BOUNDARY_FROM_EAST',
-            ...     'north': 'BOUNDARY_FROM_NORTH'
-            ... }
+                >>> {
+                ...     'west': 'BOUNDARY_FROM_WEST',
+                ...     'south': 'BOUNDARY_FROM_SOUTH',
+                ...     'east': 'BOUNDARY_FROM_EAST',
+                ...     'north': 'BOUNDARY_FROM_NORTH'
+                ... }
+        zoom: int
+        layer (str): Either 'image', 'sequence', 'overview'
+        filters (dict): Filters to pass the data through
+        filters.max_captured_at (str): The max date that can be filtered
+            upto
+        filters.min_captured_at (str): The min date that can be filtered
+            from
+        filters.image_type (str): Either 'pano', 'flat' or 'all'
+        filters.compass_angle (float)
+        filters.organization_id (int)
+        filters.sequence_id (str)
 
-    :type bounding_box: dict
+    Raises:
+        InvalidKwargError: Raised when a function is called with the
+            invalid keyword argument(s) that do not belong to the
+            requested API end call
 
-    :param zoom: The zoom level
-    :param zoom: int
-
-    :param layer: Either 'image', 'sequence', 'overview'
-    :type layer: str
-
-    :param filters: Filters to pass the data through
-    :type filters: dict
-
-    :param filters.max_captured_at: The max date that can be filtered upto
-    :type filters.max_captured_at: str
-
-    :param filters.min_captured_at: The min date that can be filtered from
-    :type filters.min_captured_at: str
-
-    :param filters.image_type: Either 'pano', 'flat' or 'all'
-    :type filters.image_type: str
-
-    :param filters.compass_angle:
-    :type filters.compass_angle: float
-
-    :param filters.organization_id:
-    :type filters.organization_id: int
-
-    :param filters.sequence_id:
-    :type filters.sequence_id: str
-
-    :raises InvalidKwargError: Raised when a function is called with the invalid keyword argument(s)
-        that do not belong to the requested API end call
-
-    :return: GeoJSON
-    :rtype: str
+    Returns:
+        str: GeoJSON
 
     Reference,
 
@@ -525,18 +464,15 @@ def get_images_in_bbox_controller(bounding_box: dict, layer: str, zoom: int, fil
 
 
 def get_image_from_key_controller(key: int, fields: list) -> str:
-    """
-    A controller for getting properties of a certain image given the image key and
-    the list of fields/properties to be returned
+    """A controller for getting properties of a certain image given the image key and
+    the list of fields/properties to be returned.
 
-    :param key: The image key
-    :type key: int
+    Args:
+        key (int): The image key
+        fields (list): The list of fields to be returned
 
-    :param fields: The list of fields to be returned
-    :type fields: list
-
-    :return: The requested image properties in GeoJSON format
-    :rtype: str
+    Returns:
+        str: The requested image properties in GeoJSON format
     """
 
     valid_id(identity=key, image=True)
@@ -548,56 +484,44 @@ def get_image_from_key_controller(key: int, fields: list) -> str:
 
 
 def geojson_features_controller(geojson: dict, is_image: bool = True, filters: dict = None, **kwargs) -> GeoJSON:
-    """
-    For extracting images that lie within a GeoJSON and merges the results of the found
+    """For extracting images that lie within a GeoJSON and merges the results of the found
     GeoJSON(s) into a single object - by merging all the features into one feature list.
 
-    :param geojson: The geojson to act as the query extent
-    :type geojson: dict
+    Args:
+        geojson (dict): The geojson to act as the query extent
+        is_image (bool): Is the feature extraction for images? True for
+            images, False for map features Defaults to True
+        filters (dict (kwargs)): Different filters that may be applied
+            to the output, defaults to {}
+        filters.zoom (int): The zoom level to obtain vector tiles for,
+            defaults to 14
+        filters.max_captured_at (str): The max date. Format from 'YYYY',
+            to 'YYYY-MM-DDTHH:MM:SS'
+        filters.min_captured_at (str): The min date. Format from 'YYYY',
+            to 'YYYY-MM-DDTHH:MM:SS'
+        filters.image_type (str): The tile image_type to be obtained,
+            either as 'flat', 'pano' (panoramic), or 'all'. See
+            https://www.mapillary.com/developer/api-documentation/ under
+            'image_type Tiles' for more information
+        filters.compass_angle (int): The compass angle of the image
+        filters.sequence_id (str): ID of the sequence this image belongs
+            to
+        filters.organization_id (str): ID of the organization this image
+            belongs to. It can be absent
+        filters.layer (str): The specified image layer, either
+            'overview', 'sequence', 'image' if is_image is True,
+            defaults to 'image'
+        filters.feature_type (str): The specified map features, either
+            'point' or 'traffic_signs' if is_image is False, defaults to
+            'point'
 
-    :param is_image: Is the feature extraction for images? True for images, False for map features
-        Defaults to True
-    :type is_image: bool
+    Raises:
+        InvalidKwargError: Raised when a function is called with the
+            invalid keyword argument(s) that do not belong to the
+            requested API end call
 
-    :param filters: Different filters that may be applied to the output, defaults to {}
-    :type filters: dict (kwargs)
-
-    :param filters.zoom: The zoom level to obtain vector tiles for, defaults to 14
-    :type filters.zoom: int
-
-    :param filters.max_captured_at: The max date. Format from 'YYYY', to 'YYYY-MM-DDTHH:MM:SS'
-    :type filters.max_captured_at: str
-
-    :param filters.min_captured_at: The min date. Format from 'YYYY', to 'YYYY-MM-DDTHH:MM:SS'
-    :type filters.min_captured_at: str
-
-    :param filters.image_type: The tile image_type to be obtained, either as 'flat', 'pano'
-        (panoramic), or 'all'. See https://www.mapillary.com/developer/api-documentation/ under
-        'image_type Tiles' for more information
-    :type filters.image_type: str
-
-    :param filters.compass_angle: The compass angle of the image
-    :type filters.compass_angle: int
-
-    :param filters.sequence_id: ID of the sequence this image belongs to
-    :type filters.sequence_id: str
-
-    :param filters.organization_id: ID of the organization this image belongs to. It can be absent
-    :type filters.organization_id: str
-
-    :param filters.layer: The specified image layer, either 'overview', 'sequence', 'image'
-        if is_image is True, defaults to 'image'
-    :type filters.layer: str
-
-    :param filters.feature_type: The specified map features, either 'point' or 'traffic_signs'
-        if is_image is False, defaults to 'point'
-    :type filters.feature_type: str
-
-    :raises InvalidKwargError: Raised when a function is called with the invalid keyword argument(s)
-        that do not belong to the requested API end call
-
-    :return: A feature collection as a GeoJSON
-    :rtype: dict
+    Returns:
+        dict: A feature collection as a GeoJSON
     """
 
     # Filter checking
@@ -719,8 +643,7 @@ def geojson_features_controller(geojson: dict, is_image: bool = True, filters: d
 
 
 def shape_features_controller(shape, is_image: bool = True, filters: dict = None) -> GeoJSON:
-    """
-    For extracting images that lie within a shape, merging the results of the found features
+    """For extracting images that lie within a shape, merging the results of the found features
     into a single object - by merging all the features into one list in a feature collection.
 
     The shape format is as follows::
@@ -747,49 +670,40 @@ def shape_features_controller(shape, is_image: bool = True, filters: dict = None
         ...     ]
         ... }
 
-    :param shape: A shape that describes features, formatted as a geojson
-    :type shape: dict
+    Args:
+        shape (dict): A shape that describes features, formatted as a
+            geojson
+        is_image (bool): Is the feature extraction for images? True for
+            images, False for map features Defaults to True
+        filters (dict (kwargs)): Different filters that may be applied
+            to the output, defaults to {}
+        filters.max_captured_at (str): The max date. Format from 'YYYY',
+            to 'YYYY-MM-DDTHH:MM:SS'
+        filters.min_captured_at (str): The min date. Format from 'YYYY',
+            to 'YYYY-MM-DDTHH:MM:SS'
+        filters.image_type (str): The tile image_type to be obtained,
+            either as 'flat', 'pano' (panoramic), or 'all'. See
+            https://www.mapillary.com/developer/api-documentation/ under
+            'image_type Tiles' for more information
+        filters.compass_angle (int): The compass angle of the image
+        filters.sequence_id (str): ID of the sequence this image belongs
+            to
+        filters.organization_id (str): ID of the organization this image
+            belongs to. It can be absent
+        filters.layer (str): The specified image layer, either
+            'overview', 'sequence', 'image' if is_image is True,
+            defaults to 'image'
+        filters.feature_type (str): The specified map features, either
+            'point' or 'traffic_signs' if is_image is False, defaults to
+            'point'
 
-    :param is_image: Is the feature extraction for images? True for images, False for map features
-        Defaults to True
-    :type is_image: bool
+    Raises:
+        InvalidKwargError: Raised when a function is called with the
+            invalid keyword argument(s) that do not belong to the
+            requested API end call
 
-    :param filters: Different filters that may be applied to the output, defaults to {}
-    :type filters: dict (kwargs)
-
-    :param filters.max_captured_at: The max date. Format from 'YYYY', to 'YYYY-MM-DDTHH:MM:SS'
-    :type filters.max_captured_at: str
-
-    :param filters.min_captured_at: The min date. Format from 'YYYY', to 'YYYY-MM-DDTHH:MM:SS'
-    :type filters.min_captured_at: str
-
-    :param filters.image_type: The tile image_type to be obtained, either as 'flat', 'pano'
-        (panoramic), or 'all'. See https://www.mapillary.com/developer/api-documentation/ under
-        'image_type Tiles' for more information
-    :type filters.image_type: str
-
-    :param filters.compass_angle: The compass angle of the image
-    :type filters.compass_angle: int
-
-    :param filters.sequence_id: ID of the sequence this image belongs to
-    :type filters.sequence_id: str
-
-    :param filters.organization_id: ID of the organization this image belongs to. It can be absent
-    :type filters.organization_id: str
-
-    :param filters.layer: The specified image layer, either 'overview', 'sequence', 'image'
-        if is_image is True, defaults to 'image'
-    :type filters.layer: str
-
-    :param filters.feature_type: The specified map features, either 'point' or 'traffic_signs'
-        if is_image is False, defaults to 'point'
-    :type filters.feature_type: str
-
-    :raises InvalidKwargError: Raised when a function is called with the invalid keyword argument(s)
-        that do not belong to the requested API end call
-
-    :return: A feature collection as a GeoJSON
-    :rtype: dict
+    Returns:
+        dict: A feature collection as a GeoJSON
     """
 
     image_bbox_check(filters)

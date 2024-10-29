@@ -29,6 +29,15 @@ except FileNotFoundError:
 def get_requirements(
     path: str = HERE / "requirements.txt",
 ) -> Tuple[List[str], List[str]]:
+    """
+
+    Args:
+      path: str:  (Default value = HERE / "requirements.txt")
+      path: str:  (Default value = HERE / "requirements.txt")
+
+    Returns:
+
+    """
     requirements = []
     extra_indices = []
     with open(path) as f:
@@ -42,6 +51,7 @@ def get_requirements(
 
 
 def get_package_version() -> str:
+    """"""
     with open(HERE / "dinov2/__init__.py") as f:
         result = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", f.read(), re.M)
         if result:

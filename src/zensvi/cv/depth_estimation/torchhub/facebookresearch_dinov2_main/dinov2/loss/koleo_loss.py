@@ -17,16 +17,28 @@ logger = logging.getLogger("dinov2")
 
 
 class KoLeoLoss(nn.Module):
-    """Kozachenko-Leonenko entropic loss regularizer from Sablayrolles et al. - 2018 - Spreading vectors for similarity search"""
+    """Kozachenko-Leonenko entropic loss regularizer from Sablayrolles et al.
+
+    - 2018 - Spreading vectors for similarity search
+
+    Args:
+
+    Returns:
+    """
 
     def __init__(self):
         super().__init__()
         self.pdist = nn.PairwiseDistance(2, eps=1e-8)
 
     def pairwise_NNs_inner(self, x):
-        """
-        Pairwise nearest neighbors for L2-normalized vectors.
+        """Pairwise nearest neighbors for L2-normalized vectors.
+
         Uses Torch rather than Faiss to remain on GPU.
+
+        Args:
+          x:
+
+        Returns:
         """
         # parwise dot products (= inverse distance)
         dots = torch.mm(x, x.t())
@@ -38,8 +50,13 @@ class KoLeoLoss(nn.Module):
 
     def forward(self, student_output, eps=1e-8):
         """
+
         Args:
-            student_output (BxD): backbone output of student
+          student_output(BxD): backbone output of student
+          eps: (Default value = 1e-8)
+
+        Returns:
+
         """
         with torch.cuda.amp.autocast(enabled=False):
             student_output = F.normalize(student_output, eps=eps, p=2, dim=-1)

@@ -32,10 +32,10 @@ def denormalize(x):
     """Reverses the imagenet normalization applied to the input.
 
     Args:
-        x (torch.Tensor - shape(N,3,H,W)): input tensor
+      x(torch.Tensor - shape(N): input tensor
 
     Returns:
-        torch.Tensor - shape(N,3,H,W): Denormalized input
+      N: Denormalized input
     """
     mean = torch.Tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(x.device)
     std = torch.Tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(x.device)
@@ -43,7 +43,27 @@ def denormalize(x):
 
 
 def get_activation(name, bank):
+    """
+
+    Args:
+      name:
+      bank:
+
+    Returns:
+
+    """
+
     def hook(model, input, output):
+        """
+
+        Args:
+          model:
+          input:
+          output:
+
+        Returns:
+
+        """
         bank[name] = output
 
     return hook
@@ -62,6 +82,7 @@ class Resize(object):
         resize_method="lower_bound",
     ):
         """Init.
+
         Args:
             width (int): desired output width
             height (int): desired output height
@@ -99,6 +120,16 @@ class Resize(object):
         self.__resize_method = resize_method
 
     def constrain_to_multiple_of(self, x, min_val=0, max_val=None):
+        """
+
+        Args:
+          x:
+          min_val: (Default value = 0)
+          max_val: (Default value = None)
+
+        Returns:
+
+        """
         y = (np.round(x / self.__multiple_of) * self.__multiple_of).astype(int)
 
         if max_val is not None and y > max_val:
@@ -110,6 +141,15 @@ class Resize(object):
         return y
 
     def get_size(self, width, height):
+        """
+
+        Args:
+          width:
+          height:
+
+        Returns:
+
+        """
         # determine new height and width
         scale_height = self.__height / height
         scale_width = self.__width / width
@@ -162,6 +202,8 @@ class Resize(object):
 
 
 class PrepForMidas(object):
+    """"""
+
     def __init__(
         self,
         resize_mode="minimal",
@@ -190,6 +232,8 @@ class PrepForMidas(object):
 
 
 class MidasCore(nn.Module):
+    """"""
+
     def __init__(
         self,
         midas,
@@ -236,6 +280,14 @@ class MidasCore(nn.Module):
             self.freeze_bn()
 
     def set_trainable(self, trainable):
+        """
+
+        Args:
+          trainable:
+
+        Returns:
+
+        """
         self.trainable = trainable
         if trainable:
             self.unfreeze()
@@ -244,6 +296,14 @@ class MidasCore(nn.Module):
         return self
 
     def set_fetch_features(self, fetch_features):
+        """
+
+        Args:
+          fetch_features:
+
+        Returns:
+
+        """
         self.fetch_features = fetch_features
         if fetch_features:
             if len(self.handles) == 0:
@@ -253,24 +313,38 @@ class MidasCore(nn.Module):
         return self
 
     def freeze(self):
+        """"""
         for p in self.parameters():
             p.requires_grad = False
         self.trainable = False
         return self
 
     def unfreeze(self):
+        """"""
         for p in self.parameters():
             p.requires_grad = True
         self.trainable = True
         return self
 
     def freeze_bn(self):
+        """"""
         for m in self.modules():
             if isinstance(m, nn.BatchNorm2d):
                 m.eval()
         return self
 
     def forward(self, x, denorm=False, return_rel_depth=False):
+        """
+
+        Args:
+          x:
+          denorm: Default value
+          return_rel_depth: Default value
+
+        Returns:
+
+
+        """
         # print('input to midas:', x.shape)
         with torch.no_grad():
             if denorm:
@@ -293,16 +367,26 @@ class MidasCore(nn.Module):
         return out
 
     def get_rel_pos_params(self):
+        """"""
         for name, p in self.core.pretrained.named_parameters():
             if "relative_position" in name:
                 yield p
 
     def get_enc_params_except_rel_pos(self):
+        """"""
         for name, p in self.core.pretrained.named_parameters():
             if "relative_position" not in name:
                 yield p
 
     def freeze_encoder(self, freeze_rel_pos=False):
+        """
+
+        Args:
+          freeze_rel_pos: (Default value = False)
+
+        Returns:
+
+        """
         if freeze_rel_pos:
             for p in self.core.pretrained.parameters():
                 p.requires_grad = False
@@ -312,6 +396,14 @@ class MidasCore(nn.Module):
         return self
 
     def attach_hooks(self, midas):
+        """
+
+        Args:
+          midas:
+
+        Returns:
+
+        """
         if len(self.handles) > 0:
             self.remove_hooks()
         if "out_conv" in self.layer_names:
@@ -334,6 +426,7 @@ class MidasCore(nn.Module):
         return self
 
     def remove_hooks(self):
+        """"""
         for h in self.handles:
             h.remove()
         return self
@@ -342,6 +435,14 @@ class MidasCore(nn.Module):
         self.remove_hooks()
 
     def set_output_channels(self, model_type):
+        """
+
+        Args:
+          model_type:
+
+        Returns:
+
+        """
         self.output_channels = MIDAS_SETTINGS[model_type]
 
     @staticmethod
@@ -355,6 +456,21 @@ class MidasCore(nn.Module):
         force_reload=False,
         **kwargs,
     ):
+        """
+
+        Args:
+          midas_model_type: (Default value = "DPT_BEiT_L_384")
+          train_midas: (Default value = False)
+          use_pretrained_midas: (Default value = True)
+          fetch_features: (Default value = False)
+          freeze_bn: (Default value = True)
+          force_keep_ar: (Default value = False)
+          force_reload: (Default value = False)
+          **kwargs:
+
+        Returns:
+
+        """
         if midas_model_type not in MIDAS_SETTINGS:
             raise ValueError(f"Invalid model type: {midas_model_type}. Must be one of {list(MIDAS_SETTINGS.keys())}")
         if "img_size" in kwargs:
@@ -381,10 +497,26 @@ class MidasCore(nn.Module):
 
     @staticmethod
     def build_from_config(config):
+        """
+
+        Args:
+          config:
+
+        Returns:
+
+        """
         return MidasCore.build(**config)
 
     @staticmethod
     def parse_img_size(config):
+        """
+
+        Args:
+          config:
+
+        Returns:
+
+        """
         assert "img_size" in config
         if isinstance(config["img_size"], str):
             assert "," in config["img_size"], "img_size should be a string with comma separated img_size=H,W"

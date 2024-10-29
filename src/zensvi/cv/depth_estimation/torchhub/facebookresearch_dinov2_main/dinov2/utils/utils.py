@@ -18,6 +18,16 @@ logger = logging.getLogger("dinov2")
 
 
 def load_pretrained_weights(model, pretrained_weights, checkpoint_key):
+    """
+
+    Args:
+      model:
+      pretrained_weights:
+      checkpoint_key:
+
+    Returns:
+
+    """
     if urlparse(pretrained_weights).scheme:  # If it looks like an URL
         state_dict = torch.hub.load_state_dict_from_url(pretrained_weights, map_location="cpu")
     else:
@@ -34,8 +44,12 @@ def load_pretrained_weights(model, pretrained_weights, checkpoint_key):
 
 
 def fix_random_seeds(seed=31):
-    """
-    Fix random seeds.
+    """Fix random seeds.
+
+    Args:
+      seed: (Default value = 31)
+
+    Returns:
     """
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -44,9 +58,18 @@ def fix_random_seeds(seed=31):
 
 
 def get_sha():
+    """"""
     cwd = os.path.dirname(os.path.abspath(__file__))
 
     def _run(command):
+        """
+
+        Args:
+          command:
+
+        Returns:
+
+        """
         return subprocess.check_output(command, cwd=cwd).decode("ascii").strip()
 
     sha = "N/A"
@@ -65,6 +88,8 @@ def get_sha():
 
 
 class CosineScheduler(object):
+    """"""
+
     def __init__(
         self,
         base_value,
@@ -96,6 +121,14 @@ class CosineScheduler(object):
 
 
 def has_batchnorms(model):
+    """
+
+    Args:
+      model:
+
+    Returns:
+
+    """
     bn_types = (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d, nn.SyncBatchNorm)
     for name, module in model.named_modules():
         if isinstance(module, bn_types):

@@ -1,23 +1,21 @@
 import math
-import random
 
 import cv2
 import numpy as np
 import torch
 import torch.nn.functional as F
-from PIL import Image, ImageFilter, ImageOps
-from torchvision import transforms
 
 
 def apply_min_size(sample, size, image_interpolation_method=cv2.INTER_AREA):
     """Rezise the sample to ensure the given size. Keeps aspect ratio.
 
     Args:
-        sample (dict): sample
-        size (tuple): image size
+      sample(dict): sample
+      size(tuple): image size
+      image_interpolation_method: (Default value = cv2.INTER_AREA)
 
     Returns:
-        tuple: new size
+      tuple: new size
     """
     shape = list(sample["disparity"].shape)
 
@@ -93,6 +91,16 @@ class Resize(object):
         self.__image_interpolation_method = image_interpolation_method
 
     def constrain_to_multiple_of(self, x, min_val=0, max_val=None):
+        """
+
+        Args:
+          x:
+          min_val: (Default value = 0)
+          max_val: (Default value = None)
+
+        Returns:
+
+        """
         y = (np.round(x / self.__multiple_of) * self.__multiple_of).astype(int)
 
         if max_val is not None and y > max_val:
@@ -104,6 +112,15 @@ class Resize(object):
         return y
 
     def get_size(self, width, height):
+        """
+
+        Args:
+          width:
+          height:
+
+        Returns:
+
+        """
         # determine new height and width
         scale_height = self.__height / height
         scale_width = self.__width / width

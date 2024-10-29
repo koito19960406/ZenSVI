@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.models.geojson
+"""mapillary.models.geojson
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 This module contains the class implementation for the geojson
@@ -23,31 +21,32 @@ from zensvi.download.mapillary.models.exceptions import InvalidOptionError
 # Local
 
 
-
 class Properties:
-    """
-    Representation for the properties in a GeoJSON
+    """Representation for the properties in a GeoJSON.
 
-    :param properties: The properties as the input
-    :type properties: dict
+    Args:
+      properties(dict): The properties as the input
 
-    :raises InvalidOptionError: Raised when the geojson passed is the invalid type - not a dict
+    Returns:
+      mapillary.models.geojson.Properties: A class representation of
+      mapillary.models.geojson.Properties: A class representation of
+      mapillary.models.geojson.Properties: A class representation of
+      the model
 
-    :return: A class representation of the model
-    :rtype: mapillary.models.geojson.Properties
+    Raises:
+      InvalidOptionError: Raised when the geojson passed is the
+    invalid type - not a dict
     """
 
     def __init__(self, *properties, **kwargs) -> None:
-        """
-        Initializing Properties constructor
+        """Initializing Properties constructor.
 
-        :param properties: Key value pair passed as list
-        :type properties: list
+        Args:
+            *properties (list): Key value pair passed as list
+            **kwargs (dict): The kwargs given to assign as properties
 
-        :param kwargs: The kwargs given to assign as properties
-        :type kwargs: dict
-
-        :return: The object created
+        Returns:
+            The object created
         """
 
         # Validate that the geojson passed is indeed a dictionary
@@ -69,14 +68,14 @@ class Properties:
             setattr(self, key, kwargs[key])
 
     def to_dict(self):
-        """Return the dictionary representation of the Properties"""
+        """"""
 
         attr_representation = [key for key in dir(self) if not key.startswith("__") and key != "to_dict"]
 
         return {key: getattr(self, key) for key in attr_representation}
 
     def __str__(self):
-        """Return the informal string representation of the Properties"""
+        """Return the informal string representation of the Properties."""
 
         attr_representation = [key for key in dir(self) if not key.startswith("__") and key != "to_dict"]
 
@@ -85,7 +84,7 @@ class Properties:
         return f"{attr_key_value_pair}"
 
     def __repr__(self):
-        """Return the formal string representation of the Properties"""
+        """Return the formal string representation of the Properties."""
 
         attr_representation = [key for key in dir(self) if not key.startswith("__") and key != "to_dict"]
 
@@ -95,30 +94,29 @@ class Properties:
 
 
 class Coordinates:
-    """
-    Representation for the coordinates in a geometry for a FeatureCollection
+    """Representation for the coordinates in a geometry for a FeatureCollection.
 
-    :param longitude: The longitude of the coordinate set
-    :type longitude: float
+    Args:
+      longitude(float): The longitude of the coordinate set
+      latitude(float): The latitude of the coordinate set
 
-    :param latitude: The latitude of the coordinate set
-    :type latitude: float
+    Returns:
+      mapillary.models.geojson.Coordinates: A class representation of
+      mapillary.models.geojson.Coordinates: A class representation of
+      mapillary.models.geojson.Coordinates: A class representation of
+      the Coordinates set
 
-    :raises InvalidOptionError: Raised when invalid data types are passed to the coordinate set
-
-    :return: A class representation of the Coordinates set
-    :rtype: mapillary.models.geojson.Coordinates
+    Raises:
+      InvalidOptionError: Raised when invalid data types are passed to
+    the coordinate set
     """
 
     def __init__(self, longitude: float, latitude: float) -> None:
-        """
-        Initializing Coordinates constructor
+        """Initializing Coordinates constructor.
 
-        :param longitude: The longitude of the coordinate set
-        :type longitude: float
-
-        :param latitude: The latitude of the coordinate set
-        :type latitude: float
+        Args:
+            longitude (float): The longitude of the coordinate set
+            latitude (float): The latitude of the coordinate set
         """
 
         # Validate that the longitude passed is indeed a float
@@ -149,45 +147,48 @@ class Coordinates:
         self.latitude = latitude
 
     def to_list(self):
-        """Return the list representation of the Coordinates"""
+        """"""
 
         return [self.longitude, self.latitude]
 
     def to_dict(self):
-        """Return the dictionary representation of the Coordinates"""
+        """"""
 
         return {"lng": self.longitude, "lat": self.latitude}
 
     def __str__(self):
-        """Return the informal string representation of the Coordinates"""
+        """Return the informal string representation of the Coordinates."""
 
         return f"{self.longitude}, {self.latitude}"
 
     def __repr__(self) -> str:
-        """Return the formal string representation of the Coordinates"""
+        """Return the formal string representation of the Coordinates."""
 
         return f"{self.longitude}, {self.latitude}"
 
 
 class Geometry:
-    """
-    Representation for the geometry in a GeoJSON
+    """Representation for the geometry in a GeoJSON.
 
-    :param geometry: The geometry as the input
-    :type geometry: dict
+    Args:
+      geometry(dict): The geometry as the input
 
-    :raises InvalidOptionError: Raised when the geometry passed is the invalid type - not a dict
+    Returns:
+      mapillary.models.geojson.Geometry: A class representation of the
+      mapillary.models.geojson.Geometry: A class representation of the
+      mapillary.models.geojson.Geometry: A class representation of the
+      model
 
-    :return: A class representation of the model
-    :rtype: mapillary.models.geojson.Geometry
+    Raises:
+      InvalidOptionError: Raised when the geometry passed is the
+    invalid type - not a dict
     """
 
     def __init__(self, geometry: dict) -> None:
-        """
-        Initializing Geometry constructor
+        """Initializing Geometry constructor.
 
-        :param geometry: The geometry object for creation
-        :type geometry: dict
+        Args:
+            geometry (dict): The geometry object for creation
         """
 
         # Validate that the geojson passed is indeed a dictionary
@@ -209,39 +210,43 @@ class Geometry:
         self.coordinates: Coordinates = Coordinates(geometry["coordinates"][0], geometry["coordinates"][1])
 
     def to_dict(self):
-        """Return dictionary representation of the geometry"""
+        """"""
 
         return {"type": self.type, "coordinates": self.coordinates.to_list()}
 
     def __str__(self):
-        """Return the informal string representation of the Geometry"""
+        """Return the informal string representation of the Geometry."""
 
         return f"{{'type': {self.type}, 'coordinates': {self.coordinates.to_list()}}}"
 
     def __repr__(self):
-        """Return the formal string representation of the Geometry"""
+        """Return the formal string representation of the Geometry."""
 
         return f"{{'type': {self.type}, 'coordinates': {self.coordinates.to_list()}}}"
 
 
 class Feature:
-    """Representation for a feature in a feature list
+    """Representation for a feature in a feature list.
 
-    :param feature: The GeoJSON as the input
-    :type feature: dict
+    Args:
+      feature(dict): The GeoJSON as the input
 
-    :raises InvalidOptionError: Raised when the geojson passed is the invalid type - not a dict
+    Returns:
+      mapillary.models.geojson.Feature: A class representation of the
+      mapillary.models.geojson.Feature: A class representation of the
+      mapillary.models.geojson.Feature: A class representation of the
+      model
 
-    :return: A class representation of the model
-    :rtype: mapillary.models.geojson.Feature
+    Raises:
+      InvalidOptionError: Raised when the geojson passed is the
+    invalid type - not a dict
     """
 
     def __init__(self, feature: dict) -> None:
-        """
-        Initializing Feature constructor
+        """Initializing Feature constructor.
 
-        :param feature: Feature JSON
-        :type feature: dict
+        Args:
+            feature (dict): Feature JSON
         """
 
         # Validate that the geojson passed is indeed a dictionary
@@ -266,7 +271,7 @@ class Feature:
         self.properties = Properties(feature["properties"])
 
     def to_dict(self) -> dict:
-        """Return the dictionary representation of the Feature"""
+        """"""
 
         return {
             "type": self.type,
@@ -275,14 +280,14 @@ class Feature:
         }
 
     def __str__(self) -> str:
-        """Return the informal string representation of the Feature"""
+        """Return the informal string representation of the Feature."""
 
         return (
             f"{{" f"'type': '{self.type}', " f"'geometry': {self.geometry}, " f"'properties': {self.properties}" f"}}"
         )
 
     def __repr__(self) -> str:
-        """Return the formal string representation of the Feature"""
+        """Return the formal string representation of the Feature."""
 
         return f"{{" f"'type': {self.type}, " f"'geometry': {self.geometry}, " f"'properties': {self.properties}" f"}}"
 
@@ -316,19 +321,23 @@ class Feature:
 
 
 class GeoJSON:
-    """Representation for a geojson
+    """Representation for a geojson.
 
-    :param geojson: The GeoJSON as the input
-    :type geojson: dict
+    Args:
+      geojson(dict): The GeoJSON as the input
 
-    :raises InvalidOptionError: Raised when the geojson passed is the invalid type - not a dict
+    Returns:
+      mapillary.models.geojson.GeoJSON: A class representation of the
+      mapillary.models.geojson.GeoJSON: A class representation of the
+      mapillary.models.geojson.GeoJSON: A class representation of the
+      model
+      Usage: :
 
-    :return: A class representation of the model
-    :rtype: mapillary.models.geojson.GeoJSON
+    Raises:
+      InvalidOptionError: Raised when the geojson passed is the
+    invalid type - not a dict
 
-    Usage::
-
-        >>> import mapillary as mly
+    >>> import mapillary as mly
         >>> from models.geojson import GeoJSON
         >>> mly.interface.set_access_token('MLY|XXX')
         >>> data = mly.interface.get_image_close_to(longitude=31, latitude=31)
@@ -358,7 +367,7 @@ class GeoJSON:
     """
 
     def __init__(self, geojson: dict) -> None:
-        """Initializing GeoJSON constructor"""
+        """Initializing GeoJSON constructor."""
 
         # Validate that the geojson passed is indeed a dictionary
         if isinstance(geojson, dict):
@@ -415,13 +424,15 @@ class GeoJSON:
         self.features_set = set(self.features)
 
     def append_features(self, features: list) -> None:
-        """
-        Given a feature list, append it to the GeoJSON object
+        """Given a feature list, append it to the GeoJSON object.
 
-        :param features: A feature list
-        :type features: list
+        Args:
+          features(list): A feature list
+          features: list:
+          features: list:
 
-        :return: None
+        Returns:
+          : None
         """
 
         # Iterating over features
@@ -431,13 +442,15 @@ class GeoJSON:
             self.append_feature(feature)
 
     def append_feature(self, feature_inputs: dict) -> None:
-        """
-        Given a feature dictionary, append it to the GeoJSON object
+        """Given a feature dictionary, append it to the GeoJSON object.
 
-        :param feature_inputs: A feature as dict
-        :type feature_inputs: dict
+        Args:
+          feature_inputs(dict): A feature as dict
+          feature_inputs: dict:
+          feature_inputs: dict:
 
-        :return: None
+        Returns:
+          : None
         """
 
         # Converting to a feature object
@@ -448,16 +461,18 @@ class GeoJSON:
             self.features_set.add(feature)
 
     def encode(self) -> str:
-        """
-        Serializes the GeoJSON object
+        """Serializes the GeoJSON object.
 
-        :return: Serialized GeoJSON
+        Args:
+
+        Returns:
+          : Serialized GeoJSON
         """
 
         return json.dumps(self.__dict__)
 
     def to_dict(self):
-        """Return the dict format representation of the GeoJSON"""
+        """"""
 
         return {
             "type": self.type,
@@ -465,11 +480,11 @@ class GeoJSON:
         }
 
     def __str__(self):
-        """Return the informal string representation of the GeoJSON"""
+        """Return the informal string representation of the GeoJSON."""
 
         return f"{{'type': '{self.type}', 'features': {self.features}}}"
 
     def __repr__(self):
-        """Return the formal string representation of the GeoJSON"""
+        """Return the formal string representation of the GeoJSON."""
 
         return f"{{'type': '{self.type}', 'features': {self.features}}}"

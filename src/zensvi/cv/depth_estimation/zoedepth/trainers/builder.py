@@ -29,14 +29,14 @@ def get_trainer(config):
     """Builds and returns a trainer based on the config.
 
     Args:
-        config (dict): the config dict (typically constructed using utils.config.get_config)
-            config.trainer (str): the name of the trainer to use. The module named "{config.trainer}_trainer" must exist in trainers root module
-
-    Raises:
-        ValueError: If the specified trainer does not exist under trainers/ folder
+      config(dict): the config dict (typically constructed using utils.config.get_config)
+    config.trainer (str): the name of the trainer to use. The module named "{config.trainer}_trainer" must exist in trainers root module
 
     Returns:
-        Trainer (inherited from zoedepth.trainers.BaseTrainer): The Trainer object
+      inherited from zoedepth.trainers.BaseTrainer: The Trainer object
+
+    Raises:
+      ValueError: If the specified trainer does not exist under trainers/ folder
     """
     assert (
         "trainer" in config and config.trainer is not None and config.trainer != ""

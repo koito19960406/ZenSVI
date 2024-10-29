@@ -1,8 +1,8 @@
-import shutil
 import unittest
-from pathlib import Path
-from zensvi.metadata import MLYMetadata
+
 from test_base import TestBase
+
+from zensvi.metadata import MLYMetadata
 
 
 class TestMLYMetadata(TestBase):

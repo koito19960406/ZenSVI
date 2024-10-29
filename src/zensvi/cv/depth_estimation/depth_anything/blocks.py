@@ -2,6 +2,17 @@ import torch.nn as nn
 
 
 def _make_scratch(in_shape, out_shape, groups=1, expand=False):
+    """
+
+    Args:
+      in_shape:
+      out_shape:
+      groups: (Default value = 1)
+      expand: (Default value = False)
+
+    Returns:
+
+    """
     scratch = nn.Module()
 
     out_shape1 = out_shape
@@ -93,7 +104,7 @@ class ResidualConvUnit(nn.Module):
             groups=self.groups,
         )
 
-        if self.bn == True:
+        if self.bn:
             self.bn1 = nn.BatchNorm2d(features)
             self.bn2 = nn.BatchNorm2d(features)
 
@@ -105,20 +116,20 @@ class ResidualConvUnit(nn.Module):
         """Forward pass.
 
         Args:
-            x (tensor): input
+          x(tensor): input
 
         Returns:
-            tensor: output
+          tensor: output
         """
 
         out = self.activation(x)
         out = self.conv1(out)
-        if self.bn == True:
+        if self.bn:
             out = self.bn1(out)
 
         out = self.activation(out)
         out = self.conv2(out)
-        if self.bn == True:
+        if self.bn:
             out = self.bn2(out)
 
         if self.groups > 1:
@@ -154,7 +165,7 @@ class FeatureFusionBlock(nn.Module):
 
         self.expand = expand
         out_features = features
-        if self.expand == True:
+        if self.expand:
             out_features = features // 2
 
         self.out_conv = nn.Conv2d(
@@ -177,8 +188,12 @@ class FeatureFusionBlock(nn.Module):
     def forward(self, *xs, size=None):
         """Forward pass.
 
+        Args:
+          *xs:
+          size: (Default value = None)
+
         Returns:
-            tensor: output
+          tensor: output
         """
         output = xs[0]
 

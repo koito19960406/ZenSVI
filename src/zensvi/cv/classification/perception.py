@@ -14,6 +14,8 @@ from .utils.place_pulse import PlacePulseClassificationModel
 
 
 class ImageDataset(Dataset):
+    """"""
+
     def __init__(self, image_files: List[Path]):
         self.image_files = [
             image_file
@@ -41,14 +43,16 @@ class ImageDataset(Dataset):
         return str(image_file), img
 
     def collate_fn(self, data: List[Tuple[str, torch.Tensor]]) -> Tuple[List[str], torch.Tensor]:
-        """
-        Custom collate function for the dataset.
+        """Custom collate function for the dataset.
 
         Args:
-            data (List[Tuple[str, torch.Tensor]]): List of tuples containing image file path and transformed image tensor.
+          data(List[Tuple[str): List of tuples containing image file path and transformed image tensor.
+          data: List[Tuple[str:
+          torch.Tensor]]:
+          data: List[Tuple[str:
 
         Returns:
-            Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
+          Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
         """
         image_files, images = zip(*data)
         images = torch.stack(images)  # Stack images to create a batch
@@ -56,14 +60,19 @@ class ImageDataset(Dataset):
 
 
 class ClassifierPerception(BaseClassifier):
-    """
-    A classifier for evaluating the perception of streetscape based on a given study.
+    """A classifier for evaluating the perception of streetscape based on a given study.
 
-    :param device: The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
-        If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
-    :param perception_study: The specific perception study for which the model is trained, including "safer", "livelier", "wealthier", "more beautiful", "more boring", "more depressing". This affects the checkpoint file used.
-    :type device: str, optional
-    :type perception_study: str
+    Args:
+      device(str): The device that the model should be
+    loaded onto. Options are "cpu", "cuda", or "mps". If `None`,
+    the model tries to use a GPU if available; otherwise, falls
+    back to CPU.
+      perception_study(str): The specific perception study for which
+    the model is trained, including "safer", "livelier",
+    "wealthier", "more beautiful", "more boring", "more
+    depressing". This affects the checkpoint file used.
+
+    Returns:
     """
 
     def __init__(self, perception_study, device=None):
@@ -85,6 +94,17 @@ class ClassifierPerception(BaseClassifier):
         self.model.to(self.device)
 
     def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json"):
+        """
+
+        Args:
+          results:
+          dir_output:
+          file_name:
+          save_format: (Default value = "csv json")
+
+        Returns:
+
+        """
         df = pd.DataFrame(results)
         dir_output = Path(dir_output)
         dir_output.mkdir(parents=True, exist_ok=True)
@@ -96,6 +116,15 @@ class ClassifierPerception(BaseClassifier):
             df.to_json(file_path, orient="records")
 
     def load_checkpoint(self, model, checkpoint_path):
+        """
+
+        Args:
+          model:
+          checkpoint_path:
+
+        Returns:
+
+        """
         checkpoint = torch.load(checkpoint_path, map_location=self.device)
         model.load_state_dict(checkpoint)
         return model
@@ -107,17 +136,27 @@ class ClassifierPerception(BaseClassifier):
         batch_size=1,
         save_format="json csv",
     ) -> List[str]:
-        """
-        Classifies images based on human perception of streetscapes from the specified perception study. The output file can be saved in JSON and/or CSV format and will contain the final perception score for each image.
+        """Classifies images based on human perception of streetscapes from the
+        specified perception study. The output file can be saved in JSON and/or CSV
+        format and will contain the final perception score for each image.
 
-        :param dir_input: Directory containing input images.
-        :type dir_input: Union[str, Path]
-        :param dir_summary_output: Directory to save summary output. If None, output is not saved.
-        :type dir_summary_output: Union[str, Path, None]
-        :param batch_size: Batch size for inference, defaults to 1.
-        :type batch_size: int, optional
-        :param save_format: Save format for the output, defaults to "json csv". Options are "json" and "csv". Please add a space between options.
-        :type save_format: str, optional
+        Args:
+          dir_input(Union[str): Directory containing input
+        images.
+          dir_summary_output(Union[str): Directory to
+        save summary output. If None, output is not saved.
+          batch_size(int, optional): Batch size for inference,
+        defaults to 1.
+          save_format(str, optional): Save format for the output,
+        defaults to "json csv". Options are "json" and "csv".
+        Please add a space between options.
+          dir_input: Union[str:
+          Path]:
+          dir_summary_output: Union[str:
+          dir_input: Union[str:
+          dir_summary_output: Union[str:
+
+        Returns:
         """
         # Prepare output directories
         if dir_summary_output:

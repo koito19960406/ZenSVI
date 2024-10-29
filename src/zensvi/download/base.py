@@ -17,8 +17,8 @@ class BaseDownloader(ABC):
     def log_path(self):
         """Property for log_path.
 
-        :return: log_path
-        :rtype: str
+        Returns:
+            str: log_path
         """
         return self._log_path
 
@@ -50,7 +50,7 @@ class BaseDownloader(ABC):
         return UA
 
     def _log_write(self, pids):
-        if self.log_path == None:
+        if self.log_path is None:
             return
         with open(self.log_path, "a+") as fw:
             for pid in pids:
@@ -97,17 +97,18 @@ class BaseDownloader(ABC):
     ):
         """Download street view images.
 
-        :param dir_output: Output directory for downloaded images
-        :param lat: Latitude
-        :param lon: Longitude
-        :param input_csv_file: Input CSV file path
-        :param input_shp_file: Input shapefile path
-        :param input_place_name: Input place name
-        :param id_columns: ID columns
-        :param buffer: Buffer distance
-        :param update_pids: Whether to update PIDs
-        :param start_date: Start date for filtering
-        :param end_date: End date for filtering
-        :param metadata_only: Whether to download metadata only
+        Args:
+            dir_output: Output directory for downloaded images
+            lat: Latitude
+            lon: Longitude
+            input_csv_file: Input CSV file path
+            input_shp_file: Input shapefile path
+            input_place_name: Input place name
+            id_columns: ID columns
+            buffer: Buffer distance
+            update_pids: Whether to update PIDs
+            start_date: Start date for filtering
+            end_date: End date for filtering
+            metadata_only: Whether to download metadata only
         """
         pass

@@ -79,7 +79,8 @@ def _add_colorbar(
     orientation="vertical",
     dark_mode=False,
 ):
-    """Adds a colorbar to the figure based on given parameters, with optional dark mode."""
+    """Adds a colorbar to the figure based on given parameters, with optional dark
+    mode."""
     norm = colors.Normalize(vmin=vmin, vmax=vmax)
     sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
     sm.set_array([])
@@ -112,9 +113,8 @@ def plot_map(
     dark_mode: bool = False,
     **kwargs,
 ) -> Tuple[plt.Figure, plt.Axes]:
-    """
-    Plots a geographic map from data points, with options for line or hexagonal aggregations, coloring by variables,
-    and using different base maps.
+    """Plots a geographic map from data points, with options for line or hexagonal
+    aggregations, coloring by variables, and using different base maps.
 
     Args:
         path_pid (Union[str, Path]): Path to the CSV file containing longitude and latitude and other metadata.

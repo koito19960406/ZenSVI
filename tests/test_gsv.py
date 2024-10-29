@@ -1,8 +1,6 @@
-import math
 import os
 import shutil
 import unittest
-from pathlib import Path
 
 import pandas as pd
 from test_base import TestBase
@@ -16,7 +14,9 @@ class TestStreetViewDownloader(TestBase):
         self.output_dir = self.base_output_dir / "gsv_svi"
         self.ensure_dir(self.output_dir)
         self.gsv_api_key = os.getenv("GSV_API_KEY")
-        self.sv_downloader = GSVDownloader(gsv_api_key=self.gsv_api_key, log_path=self.output_dir / "log.log")
+        self.sv_downloader = GSVDownloader(
+            gsv_api_key=self.gsv_api_key, log_path=self.output_dir / "log.log", max_workers=300
+        )
 
     def tearDown(self):
         # recursively remove the output directory

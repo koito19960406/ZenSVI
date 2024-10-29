@@ -18,15 +18,27 @@ logger = logging.getLogger("dinov2")
 
 
 class ModelWithNormalize(torch.nn.Module):
+    """"""
+
     def __init__(self, model):
         super().__init__()
         self.model = model
 
     def forward(self, samples):
+        """
+
+        Args:
+          samples:
+
+        Returns:
+
+        """
         return nn.functional.normalize(self.model(samples), dim=1, p=2)
 
 
 class ModelWithIntermediateLayers(nn.Module):
+    """"""
+
     def __init__(self, feature_model, n_last_blocks, autocast_ctx):
         super().__init__()
         self.feature_model = feature_model
@@ -35,6 +47,14 @@ class ModelWithIntermediateLayers(nn.Module):
         self.autocast_ctx = autocast_ctx
 
     def forward(self, images):
+        """
+
+        Args:
+          images:
+
+        Returns:
+
+        """
         with torch.inference_mode():
             with self.autocast_ctx():
                 features = self.feature_model.get_intermediate_layers(
@@ -52,6 +72,26 @@ def evaluate(
     device: torch.device,
     criterion: Optional[nn.Module] = None,
 ):
+    """
+
+    Args:
+      model: nn.Module:
+      data_loader:
+      postprocessors: Dict[str:
+      nn.Module]:
+      metrics: Dict[str:
+      MetricCollection]:
+      device: torch.device:
+      criterion: Optional[nn.Module]:  (Default value = None)
+      model: nn.Module:
+      postprocessors: Dict[str:
+      metrics: Dict[str:
+      device: torch.device:
+      criterion: Optional[nn.Module]:  (Default value = None)
+
+    Returns:
+
+    """
     model.eval()
     if criterion is not None:
         criterion.eval()
@@ -83,6 +123,14 @@ def evaluate(
 
 
 def all_gather_and_flatten(tensor_rank):
+    """
+
+    Args:
+      tensor_rank:
+
+    Returns:
+
+    """
     tensor_all_ranks = torch.empty(
         distributed.get_global_size(),
         *tensor_rank.shape,
@@ -95,6 +143,18 @@ def all_gather_and_flatten(tensor_rank):
 
 
 def extract_features(model, dataset, batch_size, num_workers, gather_on_cpu=False):
+    """
+
+    Args:
+      model:
+      dataset:
+      batch_size:
+      num_workers:
+      gather_on_cpu: (Default value = False)
+
+    Returns:
+
+    """
     dataset_with_enumerated_targets = DatasetWithEnumeratedTargets(dataset)
     sample_count = len(dataset_with_enumerated_targets)
     data_loader = make_data_loader(
@@ -110,6 +170,17 @@ def extract_features(model, dataset, batch_size, num_workers, gather_on_cpu=Fals
 
 @torch.inference_mode()
 def extract_features_with_dataloader(model, data_loader, sample_count, gather_on_cpu=False):
+    """
+
+    Args:
+      model:
+      data_loader:
+      sample_count:
+      gather_on_cpu: (Default value = False)
+
+    Returns:
+
+    """
     gather_device = torch.device("cpu") if gather_on_cpu else torch.device("cuda")
     metric_logger = MetricLogger(delimiter="  ")
     features, all_labels = None, None

@@ -1,10 +1,9 @@
-import math
 import os
-import shutil
 import unittest
-from pathlib import Path
+
 import pandas as pd
 from test_base import TestBase
+from zensvi.dowload import AMSDownloader
 
 
 class TestAMSDownloader(TestBase):
@@ -13,7 +12,7 @@ class TestAMSDownloader(TestBase):
         self.output_dir = self.base_output_dir / "ams_svi"
         self.ensure_dir(self.output_dir)
         self.sv_downloader = AMSDownloader(log_path=self.output_dir / "log.log")
-     
+
     def test_download_asv(self):
         self.sv_downloader.download_svi(self.output_dir, lat=52.356768, lon=4.907408, buffer=10)
         self.assertTrue(os.listdir(self.output_dir))
@@ -36,7 +35,6 @@ class TestAMSDownloader(TestBase):
     def test_place_name_download_asv(self):
         self.sv_downloader.download_svi(self.output_dir, input_place_name="Amsterdam Landlust", buffer=10)
         self.assertTrue(os.listdir(self.output_dir))
-
 
 
 if __name__ == "__main__":

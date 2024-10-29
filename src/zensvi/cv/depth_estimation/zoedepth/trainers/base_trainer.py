@@ -41,6 +41,14 @@ from zoedepth.utils.misc import RunningAverageDict, colorize, colors
 
 
 def is_rank_zero(args):
+    """
+
+    Args:
+      args:
+
+    Returns:
+
+    """
     return args.rank == 0
 
 
@@ -60,6 +68,15 @@ class BaseTrainer:
         self.scheduler = self.init_scheduler()
 
     def resize_to_target(self, prediction, target):
+        """
+
+        Args:
+          prediction:
+          target:
+
+        Returns:
+
+        """
         if prediction.shape[2:] != target.shape[-2:]:
             prediction = nn.functional.interpolate(
                 prediction, size=target.shape[-2:], mode="bilinear", align_corners=True
@@ -67,6 +84,15 @@ class BaseTrainer:
         return prediction
 
     def load_ckpt(self, checkpoint_dir="./checkpoints", ckpt_type="best"):
+        """
+
+        Args:
+          checkpoint_dir: (Default value = "./checkpoints")
+          ckpt_type: (Default value = "best")
+
+        Returns:
+
+        """
         import glob
         import os
 
@@ -91,6 +117,7 @@ class BaseTrainer:
         self.model = model
 
     def init_optimizer(self):
+        """"""
         m = self.model.module if self.config.multigpu else self.model
 
         if self.config.same_lr:
@@ -110,7 +137,8 @@ class BaseTrainer:
         return optim.AdamW(params, lr=self.config.lr, weight_decay=self.config.wd)
 
     def init_scheduler(self):
-        lrs = [l["lr"] for l in self.optimizer.param_groups]
+        """"""
+        lrs = [params["lr"] for params in self.optimizer.param_groups]
         return optim.lr_scheduler.OneCycleLR(
             self.optimizer,
             lrs,
@@ -126,29 +154,59 @@ class BaseTrainer:
         )
 
     def train_on_batch(self, batch, train_step):
+        """
+
+        Args:
+          batch:
+          train_step:
+
+        Returns:
+
+        """
         raise NotImplementedError
 
     def validate_on_batch(self, batch, val_step):
+        """
+
+        Args:
+          batch:
+          val_step:
+
+        Returns:
+
+        """
         raise NotImplementedError
 
     def raise_if_nan(self, losses):
+        """
+
+        Args:
+          losses:
+
+        Returns:
+
+        """
         for key, value in losses.items():
             if torch.isnan(value):
                 raise ValueError(f"{key} is NaN, Stopping training")
 
     @property
     def iters_per_epoch(self):
+        """"""
         return len(self.train_loader)
 
     @property
     def total_iters(self):
+        """"""
         return self.config.epochs * self.iters_per_epoch
 
     def should_early_stop(self):
+        """"""
         if self.config.get("early_stop", False) and self.step > self.config.early_stop:
             return True
 
     def train(self):
+        """"""
         print(f"Training {self.config.name}")
         if self.config.uid is None:
             self.config.uid = str(uuid.uuid4()).split("-")[-1]
@@ -179,7 +237,7 @@ class BaseTrainer:
             for i, batch in (
                 tqdm(
                     enumerate(self.train_loader),
-                    desc=f"Prefetching...",
+                    desc="Prefetching...",
                     total=self.iters_per_epoch,
                 )
                 if is_rank_zero(self.config)
@@ -190,6 +248,14 @@ class BaseTrainer:
         losses = {}
 
         def stringify_losses(L):
+            """
+
+            Args:
+              L:
+
+            Returns:
+
+            """
             return "; ".join(
                 map(
                     lambda kv: f"{colors.fg.purple}{kv[0]}{colors.reset}: {round(kv[1].item(),3):.4e}",
@@ -202,7 +268,7 @@ class BaseTrainer:
                 break
 
             self.epoch = epoch
-            ################################# Train loop ##########################################################
+            # Train loop ##########################################################
             if self.should_log:
                 wandb.log({"Epoch": epoch}, step=self.step)
             pbar = (
@@ -237,7 +303,7 @@ class BaseTrainer:
 
                 self.step += 1
 
-                ########################################################################################################
+                # #######################################################################################################
 
                 if self.test_loader:
                     if (self.step % validate_every) == 0:
@@ -245,7 +311,7 @@ class BaseTrainer:
                         if self.should_write:
                             self.save_checkpoint(f"{self.config.experiment_id}_latest.pt")
 
-                        ################################# Validation loop ##################################################
+                        # Validation loop ##################################################
                         # validate on the entire validation set in every process but save only from rank 0, I know, inefficient, but avoids divergence of processes
                         metrics, test_losses = self.validate()
                         # print("Validated: {}".format(metrics))
@@ -271,7 +337,7 @@ class BaseTrainer:
                         # print(f"Validated: {metrics} on device {self.config.rank}")
 
                 # print(f"Finished step {self.step} on device {self.config.rank}")
-                #################################################################################################
+                # ################################################################################################
 
         # Save / validate at the end
         self.step += 1  # log as final point
@@ -279,7 +345,7 @@ class BaseTrainer:
         self.save_checkpoint(f"{self.config.experiment_id}_latest.pt")
         if self.test_loader:
 
-            ################################# Validation loop ##################################################
+            # Validation loop ##################################################
             metrics, test_losses = self.validate()
             # print("Validated: {}".format(metrics))
             if self.should_log:
@@ -296,6 +362,7 @@ class BaseTrainer:
         self.model.train()
 
     def validate(self):
+        """"""
         with torch.no_grad():
             losses_avg = RunningAverageDict()
             metrics_avg = RunningAverageDict()
@@ -315,6 +382,14 @@ class BaseTrainer:
             return metrics_avg.get_value(), losses_avg.get_value()
 
     def save_checkpoint(self, filename):
+        """
+
+        Args:
+          filename:
+
+        Returns:
+
+        """
         if not self.should_write:
             return
         root = self.config.save_dir
@@ -342,6 +417,24 @@ class BaseTrainer:
         min_depth=None,
         max_depth=None,
     ):
+        """
+
+        Args:
+          rgb: Dict[str:
+          list]: (Default value = {})
+          depth: Dict[str:
+          scalar_field: Dict[str:
+          prefix: (Default value = "")
+          scalar_cmap: (Default value = "jet")
+          min_depth: (Default value = None)
+          max_depth: (Default value = None)
+          rgb: Dict[str:
+          depth: Dict[str:
+          scalar_field: Dict[str:
+
+        Returns:
+
+        """
         if not self.should_log:
             return
 
@@ -360,6 +453,14 @@ class BaseTrainer:
         wandb.log(wimages, step=self.step)
 
     def log_line_plot(self, data):
+        """
+
+        Args:
+          data:
+
+        Returns:
+
+        """
         if not self.should_log:
             return
 
@@ -369,6 +470,16 @@ class BaseTrainer:
         plt.close()
 
     def log_bar_plot(self, title, labels, values):
+        """
+
+        Args:
+          title:
+          labels:
+          values:
+
+        Returns:
+
+        """
         if not self.should_log:
             return
 

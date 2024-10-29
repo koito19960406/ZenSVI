@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.controller.rules.verify
+"""mapillary.controller.rules.verify
 =================================
 
 This module implements the verification of the filters or keys passed to each of the controllers
@@ -20,7 +18,8 @@ import re
 # Package Imports
 import requests
 
-from zensvi.download.mapillary.config.api.entities import Entities
+# Remove this import to break the circular dependency
+# from zensvi.download.mapillary.config.api.entities import Entities
 from zensvi.download.mapillary.models.client import Client
 
 # Local Imports
@@ -61,22 +60,21 @@ def bbox_validity_check(bbox):
 
 
 def kwarg_check(kwargs: dict, options: list, callback: str) -> bool:
-    """
-    Checks for keyword arguments amongst the kwarg argument to fall into the options list
+    """Checks for keyword arguments amongst the kwarg argument to fall into the options
+    list.
 
-    :param kwargs: A dictionary that contains the keyword key-value pair arguments
-    :type kwargs: dict
+    Args:
+        kwargs (dict): A dictionary that contains the keyword key-value
+            pair arguments
+        options (list): A list of possible arguments in kwargs
+        callback (str): The function that called 'kwarg_check' in the
+            case of an exception
 
-    :param options: A list of possible arguments in kwargs
-    :type options: list
+    Raises:
+        InvalidOptionError: Invalid option exception
 
-    :param callback: The function that called 'kwarg_check' in the case of an exception
-    :type callback: str
-
-    :raises InvalidOptionError: Invalid option exception
-
-    :return: A boolean, whether the kwargs are appropriate or not
-    :rtype: bool
+    Returns:
+        bool: A boolean, whether the kwargs are appropriate or not
     """
 
     if kwargs is not None:
@@ -108,11 +106,11 @@ def kwarg_check(kwargs: dict, options: list, callback: str) -> bool:
 
 
 def image_check(kwargs) -> bool:
-    """
-    For image entities, check if the arguments provided fall in the right category
+    """For image entities, check if the arguments provided fall in the right category.
 
-    :param kwargs: A dictionary that contains the keyword key-value pair arguments
-    :type kwargs: dict
+    Args:
+        kwargs (dict): A dictionary that contains the keyword key-value
+            pair arguments
     """
 
     # Kwarg argument check
@@ -131,16 +129,17 @@ def image_check(kwargs) -> bool:
 
 
 def resolution_check(resolution: int) -> bool:
-    """
-    Checking for the proper thumbnail size of the argument
+    """Checking for the proper thumbnail size of the argument.
 
-    :param resolution: The image size to fetch for
-    :type resolution: int
+    Args:
+        resolution (int): The image size to fetch for
 
-    :raises InvalidOptionError: Invalid thumbnail size passed raises exception
+    Raises:
+        InvalidOptionError: Invalid thumbnail size passed raises
+            exception
 
-    :return: A check if the size is correct
-    :rtype: bool
+    Returns:
+        bool: A check if the size is correct
     """
 
     if resolution not in [256, 1024, 2048]:
@@ -151,14 +150,13 @@ def resolution_check(resolution: int) -> bool:
 
 
 def image_bbox_check(kwargs: dict) -> dict:
-    """
-    Check if the right arguments have been provided for the image bounding box
+    """Check if the right arguments have been provided for the image bounding box.
 
-    :param kwargs: The dictionary parameters
-    :type kwargs: dict
+    Args:
+        kwargs (dict): The dictionary parameters
 
-    :return: A final dictionary with the kwargs
-    :rtype: dict
+    Returns:
+        dict: A final dictionary with the kwargs
     """
 
     if kwarg_check(
@@ -185,14 +183,13 @@ def image_bbox_check(kwargs: dict) -> dict:
 
 
 def sequence_bbox_check(kwargs: dict) -> dict:
-    """
-    Checking of the sequence bounding box
+    """Checking of the sequence bounding box.
 
-    :param kwargs: The final dictionary with the correct keys
-    :type kwargs: dict
+    Args:
+        kwargs (dict): The final dictionary with the correct keys
 
-    :return: A dictionary with all the options available specifically
-    :rtype: dict
+    Returns:
+        dict: A dictionary with all the options available specifically
     """
 
     if kwarg_check(
@@ -215,14 +212,13 @@ def sequence_bbox_check(kwargs: dict) -> dict:
 
 
 def points_traffic_signs_check(kwargs: dict) -> dict:
-    """
-    Checks for traffic sign arguments
+    """Checks for traffic sign arguments.
 
-    :param kwargs: The parameters to be passed for filtering
-    :type kwargs: dict
+    Args:
+        kwargs (dict): The parameters to be passed for filtering
 
-    :return: A dictionary with all the options available specifically
-    :rtype: dict
+    Returns:
+        dict: A dictionary with all the options available specifically
     """
 
     if kwarg_check(
@@ -237,20 +233,18 @@ def points_traffic_signs_check(kwargs: dict) -> dict:
 
 
 def valid_id(identity: int, image=True) -> None:
-    """
-    Checks if a given id is valid as it is assumed. For example, is a given id expectedly an
-    image_id or not? Is the id expectedly a map_feature_id or not?
+    """Checks if a given id is valid as it is assumed. For example, is a given id
+    expectedly an image_id or not? Is the id expectedly a map_feature_id or not?
 
-    :param identity: The ID passed
-    :type identity: int
+    Args:
+        identity (int): The ID passed
+        image (bool): Is the passed id an image_id?
 
-    :param image: Is the passed id an image_id?
-    :type image: bool
+    Raises:
+        InvalidOptionError: Raised when invalid arguments are passed
 
-    :raises InvalidOptionError: Raised when invalid arguments are passed
-
-    :return: None
-    :rtype: None
+    Returns:
+        None: None
     """
 
     # IF image == False, and error_check == True, this becomes True
@@ -271,20 +265,20 @@ def valid_id(identity: int, image=True) -> None:
 
 
 def is_image_id(identity: int, fields: list = None) -> bool:
-    """
-    Checks if the id is an image_id
+    """Checks if the id is an image_id.
 
-    :param identity: The id to be checked
-    :type identity: int
+    Args:
+        identity (int): The id to be checked
+        fields (list): The fields to be checked
 
-    :param fields: The fields to be checked
-    :type fields: list
-
-    :return: True if the id is an image_id, else False
-    :rtype: bool
+    Returns:
+        bool: True if the id is an image_id, else False
     """
 
     try:
+        # Import Entities here to avoid circular import
+        from zensvi.download.mapillary.config.api.entities import Entities
+
         res = requests.get(
             Entities.get_image(
                 image_id=str(identity),
@@ -299,8 +293,7 @@ def is_image_id(identity: int, fields: list = None) -> bool:
 
 
 def check_file_name_validity(file_name: str) -> bool:
-    """
-    Checks if the file name is valid
+    """Checks if the file name is valid.
 
     Valid file names are,
 
@@ -308,11 +301,11 @@ def check_file_name_validity(file_name: str) -> bool:
     - Without special characters
     - A-Z, a-z, 0-9, _, -
 
-    :param file_name: The file name to be checked
-    :type file_name: str
+    Args:
+        file_name (str): The file name to be checked
 
-    :return: True if the file name is valid, else False
-    :rtype: bool
+    Returns:
+        bool: True if the file name is valid, else False
     """
 
     string_check = re.compile("[@.!#$%^&*()<>?/}{~:]")  # noqa: W605

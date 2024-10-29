@@ -21,6 +21,19 @@ def get_args_parser(
     parents: Optional[List[argparse.ArgumentParser]] = None,
     add_help: bool = True,
 ) -> argparse.ArgumentParser:
+    """
+
+    Args:
+      description: Optional[str]:  (Default value = None)
+      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
+      add_help: bool:  (Default value = True)
+      description: Optional[str]:  (Default value = None)
+      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
+      add_help: bool:  (Default value = True)
+
+    Returns:
+
+    """
     parents = parents or []
     slurm_partition = get_slurm_partition()
     parser = argparse.ArgumentParser(
@@ -76,6 +89,7 @@ def get_args_parser(
 
 
 def get_shared_folder() -> Path:
+    """"""
     user_checkpoint_path = get_user_checkpoint_path()
     if user_checkpoint_path is None:
         raise RuntimeError("Path to user checkpoint cannot be determined")
@@ -85,6 +99,16 @@ def get_shared_folder() -> Path:
 
 
 def submit_jobs(task_class, args, name: str):
+    """
+
+    Args:
+      task_class:
+      args:
+      name: str:
+
+    Returns:
+
+    """
     if not args.output_dir:
         args.output_dir = str(get_shared_folder() / "%j")
 

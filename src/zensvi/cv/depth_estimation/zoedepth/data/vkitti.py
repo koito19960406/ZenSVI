@@ -33,6 +33,8 @@ from torchvision import transforms
 
 
 class ToTensor(object):
+    """"""
+
     def __init__(self):
         self.normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         # self.resize = transforms.Resize((375, 1242))
@@ -49,6 +51,14 @@ class ToTensor(object):
         return {"image": image, "depth": depth, "dataset": "vkitti"}
 
     def to_tensor(self, pic):
+        """
+
+        Args:
+          pic:
+
+        Returns:
+
+        """
 
         if isinstance(pic, np.ndarray):
             img = torch.from_numpy(pic.transpose((2, 0, 1)))
@@ -78,6 +88,8 @@ class ToTensor(object):
 
 
 class VKITTI(Dataset):
+    """"""
+
     def __init__(self, data_dir_root, do_kb_crop=True):
         import glob
 
@@ -128,6 +140,16 @@ class VKITTI(Dataset):
 
 
 def get_vkitti_loader(data_dir_root, batch_size=1, **kwargs):
+    """
+
+    Args:
+      data_dir_root:
+      batch_size: (Default value = 1)
+      **kwargs:
+
+    Returns:
+
+    """
     dataset = VKITTI(data_dir_root)
     return DataLoader(dataset, batch_size, **kwargs)
 

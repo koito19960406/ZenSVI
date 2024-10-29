@@ -32,6 +32,15 @@ logger = logging.getLogger("dinov2")
 
 
 def get_args_parser(add_help: bool = True):
+    """
+
+    Args:
+      add_help: bool:  (Default value = True)
+      add_help: bool:  (Default value = True)
+
+    Returns:
+
+    """
     parser = argparse.ArgumentParser("DINOv2 training", add_help=add_help)
     parser.add_argument("--config-file", default="", metavar="FILE", help="path to config file")
     parser.add_argument(
@@ -63,10 +72,29 @@ For python-based LazyConfig, use "path.key=value".
 
 
 def build_optimizer(cfg, params_groups):
+    """Args:
+      cfg:
+
+    Args:
+      cfg:
+      params_groups:
+
+    Returns:
+
+
+    """
     return torch.optim.AdamW(params_groups, betas=(cfg.optim.adamw_beta1, cfg.optim.adamw_beta2))
 
 
 def build_schedulers(cfg):
+    """
+
+    Args:
+      cfg:
+
+    Returns:
+
+    """
     OFFICIAL_EPOCH_LENGTH = cfg.train.OFFICIAL_EPOCH_LENGTH
     lr = dict(
         base_value=cfg.optim["lr"],
@@ -115,6 +143,17 @@ def build_schedulers(cfg):
 
 
 def apply_optim_scheduler(optimizer, lr, wd, last_layer_lr):
+    """
+
+    Args:
+      optimizer:
+      lr:
+      wd:
+      last_layer_lr:
+
+    Returns:
+
+    """
     for param_group in optimizer.param_groups:
         is_last_layer = param_group["is_last_layer"]
         lr_multiplier = param_group["lr_multiplier"]
@@ -124,6 +163,16 @@ def apply_optim_scheduler(optimizer, lr, wd, last_layer_lr):
 
 
 def do_test(cfg, model, iteration):
+    """
+
+    Args:
+      cfg:
+      model:
+      iteration:
+
+    Returns:
+
+    """
     new_state_dict = model.teacher.state_dict()
 
     if distributed.is_main_process():
@@ -136,6 +185,16 @@ def do_test(cfg, model, iteration):
 
 
 def do_train(cfg, model, resume=False):
+    """
+
+    Args:
+      cfg:
+      model:
+      resume: (Default value = False)
+
+    Returns:
+
+    """
     model.train()
     inputs_dtype = torch.half
     fp16_scaler = model.fp16_scaler  # for mixed precision training
@@ -299,6 +358,14 @@ def do_train(cfg, model, resume=False):
 
 
 def main(args):
+    """
+
+    Args:
+      args:
+
+    Returns:
+
+    """
     cfg = setup(args)
 
     model = SSLMetaArch(cfg).to(torch.device("cuda"))

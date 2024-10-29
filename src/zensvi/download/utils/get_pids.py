@@ -25,11 +25,11 @@ def panoids(lat, lon, proxies):
     resp = _panoids_data(lat, lon, proxies)
 
     # Get all the panorama ids and coordinates
-    pans = re.findall('\[[0-9]+,"(.+?)"\].+?\[\[null,null,(-?[0-9]+.[0-9]+),(-?[0-9]+.[0-9]+)', resp)
+    pans = re.findall(r'\[[0-9]+,"(.+?)"\].+?\[\[null,null,(-?[0-9]+.[0-9]+),(-?[0-9]+.[0-9]+)', resp)
     pans = [{"panoid": p[0], "lat": float(p[1]), "lon": float(p[2])} for p in pans]
 
     # Get all the dates
-    dates = re.findall("([0-9]?[0-9]?[0-9])?,?\[(20[0-9][0-9]),([0-9]+)\]", resp)
+    dates = re.findall(r"([0-9]?[0-9]?[0-9])?,?\[(20[0-9][0-9]),([0-9]+)\]", resp)
     dates = [list(d)[1:] for d in dates]
 
     if len(dates) > 0:

@@ -28,10 +28,11 @@ import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms as T
 
 
 class iBims(Dataset):
+    """"""
+
     def __init__(self, config):
         root_folder = config.ibims_root
         with open(os.path.join(root_folder, "imagelist.txt"), "r") as f:
@@ -79,5 +80,15 @@ class iBims(Dataset):
 
 
 def get_ibims_loader(config, batch_size=1, **kwargs):
+    """
+
+    Args:
+      config:
+      batch_size: (Default value = 1)
+      **kwargs:
+
+    Returns:
+
+    """
     dataloader = DataLoader(iBims(config), batch_size=batch_size, **kwargs)
     return dataloader

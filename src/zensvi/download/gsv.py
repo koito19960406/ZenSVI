@@ -1,11 +1,17 @@
 import datetime
+import glob
 import math
+import os
 import random
+import shutil
 import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from typing import List, Union
 
 import geopandas as gpd
+import numpy as np
+import osmnx as ox
 import pandas as pd
 import requests
 from PIL import Image
@@ -14,15 +20,6 @@ from shapely.geometry import Point
 from streetlevel import streetview
 from tqdm import tqdm
 
-warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
-
-import glob
-import shutil
-from typing import List, Union
-
-import numpy as np
-import osmnx as ox
-
 from zensvi.download.base import BaseDownloader
 from zensvi.download.utils.geoprocess import GeoProcessor
 from zensvi.download.utils.get_pids import panoids
@@ -30,10 +27,11 @@ from zensvi.download.utils.helpers import create_buffer_gdf, standardize_column_
 from zensvi.download.utils.imtool import ImageTool
 from zensvi.utils.log import Logger
 
+warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
+
 
 class GSVDownloader(BaseDownloader):
-    """
-    Google Street View Downloader class.
+    """Google Street View Downloader class.
 
     Args:
         gsv_api_key (str, optional): Google Street View API key. Defaults to None.
@@ -41,6 +39,7 @@ class GSVDownloader(BaseDownloader):
         distance (int, optional): Distance parameter for the GeoProcessor. Defaults to 1.
         grid (bool, optional): Grid parameter for the GeoProcessor. Defaults to False.
         grid_size (int, optional): Grid size parameter for the GeoProcessor. Defaults to 1.
+        max_workers (int, optional): Number of workers for parallel processing. Defaults to None.
 
     Raises:
         Warning: If gsv_api_key is not provided.
@@ -53,9 +52,10 @@ class GSVDownloader(BaseDownloader):
         distance: int = 1,
         grid: bool = False,
         grid_size: int = 1,
+        max_workers: int = None,
     ):
         super().__init__(log_path)
-        if gsv_api_key == None:
+        if gsv_api_key is None:
             warnings.warn("Please provide your Google Street View API key to augment metadata.")
         self._gsv_api_key = gsv_api_key
         # initialize the logger
@@ -66,65 +66,23 @@ class GSVDownloader(BaseDownloader):
         self._distance = distance
         self._grid = grid
         self._grid_size = grid_size
+        self._max_workers = max_workers
 
     @property
-    def gsv_api_key(self) -> str:
-        """
-        Property for the Google Street View API key.
+    def max_workers(self):
+        """Property for the number of workers for parallel processing.
 
         Returns:
-            str: Google Street View API key.
+            int: max_workers
         """
-        return self._gsv_api_key
+        return self._max_workers
 
-    @gsv_api_key.setter
-    def gsv_api_key(self, gsv_api_key: str):
-        """
-        Setter to set the Google Street View API key.
-
-        Args:
-            gsv_api_key (str): Google Street View API key.
-        """
-        self._gsv_api_key = gsv_api_key
-
-    @property
-    def distance(self):
-        """Property for the distance between sampling points.
-
-        :return: distance
-        :rtype: int
-        """
-        return self._distance
-
-    @distance.setter
-    def distance(self, distance):
-        self._distance = distance
-
-    @property
-    def grid(self):
-        """Property for whether to create a grid of sampling points.
-
-        :return: grid
-        :rtype: bool
-        """
-        return self._grid
-
-    @grid.setter
-    def grid(self, grid):
-        self._grid = grid
-
-    @property
-    def grid_size(self):
-        """Property for the size of the grid.
-
-        :return: grid_size
-        :rtype: int
-        """
-        return self._grid_size
-
-    @grid_size.setter
-    def grid_size(self, grid_size):
-        self._grid_size = grid_size
+    @max_workers.setter
+    def max_workers(self, max_workers):
+        if max_workers is None:
+            self._max_workers = min(32, os.cpu_count() + 4)
+        else:
+            self._max_workers = max_workers
 
     def _augment_metadata(self, df):
         if self.cache_pids_augmented.exists():
@@ -190,7 +148,9 @@ class GSVDownloader(BaseDownloader):
         ):
             batch_df = df.iloc[i * batch_size : (i + 1) * batch_size].copy()  # Copy the batch data to a new dataframe
             with ThreadPoolExecutor() as executor:
-                batch_futures = {executor.submit(worker, row, self.proxies): row.Index for row in batch_df.itertuples()}
+                batch_futures = {
+                    executor.submit(worker, row, self._proxies): row.Index for row in batch_df.itertuples()
+                }
                 for future in tqdm(
                     as_completed(batch_futures),
                     total=len(batch_futures),
@@ -269,7 +229,7 @@ class GSVDownloader(BaseDownloader):
             return (
                 lat_lon_id,
                 (input_longitude, input_latitude),
-                get_street_view_info(input_longitude, input_latitude, self.proxies),
+                get_street_view_info(input_longitude, input_latitude, self._proxies),
                 id_dict,
             )
 
@@ -451,7 +411,7 @@ class GSVDownloader(BaseDownloader):
             return pid
 
         if kwargs["lat"] is not None and kwargs["lon"] is not None:
-            pid = panoids(kwargs["lat"], kwargs["lon"], self.proxies)
+            pid = panoids(kwargs["lat"], kwargs["lon"], self._proxies)
             pid = pd.DataFrame(pid)
             # add input_lat and input_lon
             pid["input_latitude"] = kwargs["lat"]
@@ -503,9 +463,9 @@ class GSVDownloader(BaseDownloader):
         # get raw pid
         pid = self._get_raw_pids(**kwargs)
 
-        if kwargs["augment_metadata"] & (self.gsv_api_key != None):
+        if kwargs["augment_metadata"] & (self.gsv_api_key is not None):
             pid = self._augment_metadata(pid)
-        elif kwargs["augment_metadata"] & (self.gsv_api_key == None):
+        elif kwargs["augment_metadata"] & (self.gsv_api_key is None):
             raise ValueError("Please set the gsv api key by calling the gsv_api_key method.")
         pid.to_csv(path_pid, index=False)
         print("The panorama IDs have been saved to {}".format(path_pid))
@@ -621,10 +581,11 @@ class GSVDownloader(BaseDownloader):
         end_date: str = None,
         metadata_only: bool = False,
         download_depth=False,
+        max_workers: int = None,
         **kwargs,
     ) -> None:
-        """
-        Downloads street view images from Google Street View API using specified parameters.
+        """Downloads street view images from Google Street View API using specified
+        parameters.
 
         Args:
             dir_output (str): The output directory.
@@ -645,6 +606,9 @@ class GSVDownloader(BaseDownloader):
             start_date (str, optional): The start date for the panorama IDs. Format is isoformat (YYYY-MM-DD). Defaults to None.
             end_date (str, optional): The end date for the panorama IDs. Format is isoformat (YYYY-MM-DD). Defaults to None.
             metadata_only (bool, optional): Whether to download metadata only. Defaults to False.
+            download_depth (bool, optional): Whether to download depth images. Defaults to False.
+            max_workers (int, optional): Number of workers for parallel processing.
+                If not specified, uses the value set during initialization.
             **kwargs: Additional keyword arguments.
 
         Returns:
@@ -682,16 +646,17 @@ class GSVDownloader(BaseDownloader):
                 start_date=start_date,
                 end_date=end_date,
                 metadata_only=metadata_only,
+                max_workers=max_workers,
                 **kwargs,
             )
         # set necessary directories
         self._set_dirs(dir_output)
 
         # call _get_pids function first if path_pid is None
-        if (path_pid is None) & (self.cache_pids_augmented.exists() == False):
+        if (path_pid is None) & (not self.cache_pids_augmented.exists()):
             print("Getting pids...")
             path_pid = self.dir_output / "gsv_pids.csv"
-            if path_pid.exists() & (update_pids == False):
+            if path_pid.exists() & (not update_pids):
                 print("update_pids is set to False. So the following csv file will be used: {}".format(path_pid))
             else:
                 self._get_pids(
@@ -735,7 +700,7 @@ class GSVDownloader(BaseDownloader):
             panoids_rest = self._check_already(panoids)
 
         if len(panoids_rest) > 0:
-            UAs = random.choices(self.user_agents, k=len(panoids_rest))
+            UAs = random.choices(self._user_agents, k=len(panoids_rest))
             # check zoom level is 0<=zoom<=5
             if zoom < 0 or zoom > 5:
                 raise ValueError("zoom level should be between 0 and 6")
@@ -748,11 +713,12 @@ class GSVDownloader(BaseDownloader):
                 h_tiles,
                 self.panorama_output,
                 UAs,
-                self.proxies,
+                self._proxies,
                 cropped,
                 full,
                 batch_size=batch_size,
                 logger=self.logger,
+                max_workers=self.max_workers,
             )
         else:
             print("All images have been downloaded")

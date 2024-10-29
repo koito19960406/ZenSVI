@@ -18,6 +18,8 @@ logger = logging.getLogger("dinov2")
 
 
 class MetricType(Enum):
+    """"""
+
     MEAN_ACCURACY = "mean_accuracy"
     MEAN_PER_CLASS_ACCURACY = "mean_per_class_accuracy"
     PER_CLASS_ACCURACY = "per_class_accuracy"
@@ -25,6 +27,7 @@ class MetricType(Enum):
 
     @property
     def accuracy_averaging(self):
+        """"""
         return getattr(AccuracyAveraging, self.name, None)
 
     def __str__(self):
@@ -32,6 +35,8 @@ class MetricType(Enum):
 
 
 class AccuracyAveraging(Enum):
+    """"""
+
     MEAN_ACCURACY = "micro"
     MEAN_PER_CLASS_ACCURACY = "macro"
     PER_CLASS_ACCURACY = "none"
@@ -41,6 +46,20 @@ class AccuracyAveraging(Enum):
 
 
 def build_metric(metric_type: MetricType, *, num_classes: int, ks: Optional[tuple] = None):
+    """
+
+    Args:
+      metric_type: MetricType:
+      *:
+      num_classes: int:
+      ks: Optional[tuple]:  (Default value = None)
+      metric_type: MetricType:
+      num_classes: int:
+      ks: Optional[tuple]:  (Default value = None)
+
+    Returns:
+
+    """
     if metric_type.accuracy_averaging is not None:
         return build_topk_accuracy_metric(
             average_type=metric_type.accuracy_averaging,
@@ -57,6 +76,20 @@ def build_metric(metric_type: MetricType, *, num_classes: int, ks: Optional[tupl
 
 
 def build_topk_accuracy_metric(average_type: AccuracyAveraging, num_classes: int, ks: tuple = (1, 5)):
+    """
+
+    Args:
+      average_type: AccuracyAveraging:
+      num_classes: int:
+      ks: tuple:  (Default value = (1)
+      5):
+      average_type: AccuracyAveraging:
+      num_classes: int:
+      ks: tuple:  (Default value = (1)
+
+    Returns:
+
+    """
     metrics: Dict[str, Metric] = {
         f"top-{k}": MulticlassAccuracy(top_k=k, num_classes=int(num_classes), average=average_type.value) for k in ks
     }
@@ -64,11 +97,25 @@ def build_topk_accuracy_metric(average_type: AccuracyAveraging, num_classes: int
 
 
 def build_topk_imagenet_real_accuracy_metric(num_classes: int, ks: tuple = (1, 5)):
+    """
+
+    Args:
+      num_classes: int:
+      ks: tuple:  (Default value = (1)
+      5):
+      num_classes: int:
+      ks: tuple:  (Default value = (1)
+
+    Returns:
+
+    """
     metrics: Dict[str, Metric] = {f"top-{k}": ImageNetReaLAccuracy(top_k=k, num_classes=int(num_classes)) for k in ks}
     return MetricCollection(metrics)
 
 
 class ImageNetReaLAccuracy(Metric):
+    """"""
+
     is_differentiable: bool = False
     higher_is_better: Optional[bool] = None
     full_state_update: bool = False
@@ -85,6 +132,17 @@ class ImageNetReaLAccuracy(Metric):
         self.add_state("tp", [], dist_reduce_fx="cat")
 
     def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
+        """
+
+        Args:
+          preds: Tensor:
+          target: Tensor:
+          preds: Tensor:
+          target: Tensor:
+
+        Returns:
+
+        """
         # preds [B, D]
         # target [B, A]
         # preds_oh [B, D] with 0 and 1
@@ -113,5 +171,6 @@ class ImageNetReaLAccuracy(Metric):
         self.tp.append(tp)  # type: ignore
 
     def compute(self) -> Tensor:
+        """"""
         tp = dim_zero_cat(self.tp)  # type: ignore
         return tp.float().mean()

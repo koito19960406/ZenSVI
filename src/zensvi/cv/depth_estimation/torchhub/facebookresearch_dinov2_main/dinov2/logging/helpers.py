@@ -17,12 +17,22 @@ logger = logging.getLogger("dinov2")
 
 
 class MetricLogger(object):
+    """"""
+
     def __init__(self, delimiter="\t", output_file=None):
         self.meters = defaultdict(SmoothedValue)
         self.delimiter = delimiter
         self.output_file = output_file
 
     def update(self, **kwargs):
+        """
+
+        Args:
+          **kwargs:
+
+        Returns:
+
+        """
         for k, v in kwargs.items():
             if isinstance(v, torch.Tensor):
                 v = v.item()
@@ -43,13 +53,33 @@ class MetricLogger(object):
         return self.delimiter.join(loss_str)
 
     def synchronize_between_processes(self):
+        """"""
         for meter in self.meters.values():
             meter.synchronize_between_processes()
 
     def add_meter(self, name, meter):
+        """
+
+        Args:
+          name:
+          meter:
+
+        Returns:
+
+        """
         self.meters[name] = meter
 
     def dump_in_output_file(self, iteration, iter_time, data_time):
+        """
+
+        Args:
+          iteration:
+          iter_time:
+          data_time:
+
+        Returns:
+
+        """
         if self.output_file is None or not distributed.is_main_process():
             return
         dict_to_dump = dict(
@@ -63,6 +93,18 @@ class MetricLogger(object):
         pass
 
     def log_every(self, iterable, print_freq, header=None, n_iterations=None, start_iteration=0):
+        """
+
+        Args:
+          iterable:
+          print_freq:
+          header: (Default value = None)
+          n_iterations: (Default value = None)
+          start_iteration: (Default value = 0)
+
+        Returns:
+
+        """
         i = start_iteration
         if not header:
             header = ""
@@ -130,8 +172,12 @@ class MetricLogger(object):
 
 
 class SmoothedValue:
-    """Track a series of values and provide access to smoothed values over a
-    window or the global series average.
+    """Track a series of values and provide access to smoothed values over a window or
+    the global series average.
+
+    Args:
+
+    Returns:
     """
 
     def __init__(self, window_size=20, fmt=None):
@@ -143,14 +189,27 @@ class SmoothedValue:
         self.fmt = fmt
 
     def update(self, value, num=1):
+        """
+
+        Args:
+          value:
+          num: (Default value = 1)
+
+        Returns:
+
+        """
         self.deque.append(value)
         self.count += num
         self.total += value * num
 
     def synchronize_between_processes(self):
-        """
-        Distributed synchronization of the metric
+        """Distributed synchronization of the metric
         Warning: does not synchronize the deque!
+
+        Args:
+
+        Returns:
+
         """
         if not distributed.is_enabled():
             return
@@ -163,24 +222,29 @@ class SmoothedValue:
 
     @property
     def median(self):
+        """"""
         d = torch.tensor(list(self.deque))
         return d.median().item()
 
     @property
     def avg(self):
+        """"""
         d = torch.tensor(list(self.deque), dtype=torch.float32)
         return d.mean().item()
 
     @property
     def global_avg(self):
+        """"""
         return self.total / self.count
 
     @property
     def max(self):
+        """"""
         return max(self.deque)
 
     @property
     def value(self):
+        """"""
         return self.deque[-1]
 
     def __str__(self):

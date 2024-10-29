@@ -30,6 +30,8 @@ logger = logging.getLogger("dinov2")
 
 
 class SSLMetaArch(nn.Module):
+    """"""
+
     def __init__(self, cfg):
         super().__init__()
         self.cfg = cfg
@@ -122,15 +124,40 @@ class SSLMetaArch(nn.Module):
         logger.info(f"Student and Teacher are built: they are both {cfg.student.arch} network.")
 
     def forward(self, inputs):
+        """
+
+        Args:
+          inputs:
+
+        Returns:
+
+        """
         raise NotImplementedError
 
     def backprop_loss(self, loss):
+        """
+
+        Args:
+          loss:
+
+        Returns:
+
+        """
         if self.fp16_scaler is not None:
             self.fp16_scaler.scale(loss).backward()
         else:
             loss.backward()
 
     def forward_backward(self, images, teacher_temp):
+        """
+
+        Args:
+          images:
+          teacher_temp:
+
+        Returns:
+
+        """
         n_global_crops = 2
         assert n_global_crops == 2
         n_local_crops = self.cfg.crops.local_crops_number
@@ -157,6 +184,7 @@ class SSLMetaArch(nn.Module):
         # teacher output
         @torch.no_grad()
         def get_teacher_output():
+            """"""
             x, n_global_crops_teacher = global_crops, n_global_crops
             teacher_backbone_output_dict = self.teacher.backbone(x, is_training=True)
             teacher_cls_tokens = teacher_backbone_output_dict["x_norm_clstoken"]
@@ -363,6 +391,7 @@ class SSLMetaArch(nn.Module):
         return loss_dict
 
     def fsdp_synchronize_streams(self):
+        """"""
         if self.need_to_synchronize_fsdp_streams:
             torch.cuda.synchronize()
             self.student.dino_head._streams = self.teacher.dino_head._streams = self.student.backbone._streams = (
@@ -371,6 +400,14 @@ class SSLMetaArch(nn.Module):
             self.need_to_synchronize_fsdp_streams = False
 
     def update_teacher(self, m):
+        """
+
+        Args:
+          m:
+
+        Returns:
+
+        """
         student_param_list = []
         teacher_param_list = []
         with torch.no_grad():
@@ -382,10 +419,19 @@ class SSLMetaArch(nn.Module):
             torch._foreach_add_(teacher_param_list, student_param_list, alpha=1 - m)
 
     def train(self):
+        """"""
         super().train()
         self.teacher.eval()
 
     def get_maybe_fused_params_for_submodel(self, m):
+        """
+
+        Args:
+          m:
+
+        Returns:
+
+        """
         params_groups = get_params_groups_with_decay(
             model=m,
             lr_decay_rate=self.cfg.optim.layerwise_decay,
@@ -399,12 +445,14 @@ class SSLMetaArch(nn.Module):
         return fused_params_groups
 
     def get_params_groups(self):
+        """"""
         all_params_groups = []
         for m in self.student.values():
             all_params_groups += self.get_maybe_fused_params_for_submodel(m)
         return all_params_groups
 
     def prepare_for_distributed_training(self):
+        """"""
         logger.info("DISTRIBUTED FSDP -- preparing model for distributed training")
         if has_batchnorms(self.student):
             raise NotImplementedError

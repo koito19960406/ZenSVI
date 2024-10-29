@@ -13,6 +13,18 @@ from torch import nn
 
 
 def drop_path(x, drop_prob: float = 0.0, training: bool = False):
+    """
+
+    Args:
+      x:
+      drop_prob: float:  (Default value = 0.0)
+      training: bool:  (Default value = False)
+      drop_prob: float:  (Default value = 0.0)
+      training: bool:  (Default value = False)
+
+    Returns:
+
+    """
     if drop_prob == 0.0 or not training:
         return x
     keep_prob = 1 - drop_prob
@@ -25,11 +37,25 @@ def drop_path(x, drop_prob: float = 0.0, training: bool = False):
 
 
 class DropPath(nn.Module):
-    """Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks)."""
+    """Drop paths (Stochastic Depth) per sample (when applied in main path of residual
+    blocks).
+
+    Args:
+
+    Returns:
+    """
 
     def __init__(self, drop_prob=None):
         super(DropPath, self).__init__()
         self.drop_prob = drop_prob
 
     def forward(self, x):
+        """
+
+        Args:
+          x:
+
+        Returns:
+
+        """
         return drop_path(x, self.drop_prob, self.training)

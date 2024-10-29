@@ -11,6 +11,8 @@ from torch import Tensor, nn
 
 
 class SwiGLUFFN(nn.Module):
+    """"""
+
     def __init__(
         self,
         in_features: int,
@@ -27,6 +29,15 @@ class SwiGLUFFN(nn.Module):
         self.w3 = nn.Linear(hidden_features, out_features, bias=bias)
 
     def forward(self, x: Tensor) -> Tensor:
+        """
+
+        Args:
+          x: Tensor:
+          x: Tensor:
+
+        Returns:
+
+        """
         x12 = self.w12(x)
         x1, x2 = x12.chunk(2, dim=-1)
         hidden = F.silu(x1) * x2
@@ -43,6 +54,8 @@ except ImportError:
 
 
 class SwiGLUFFNFused(SwiGLU):
+    """"""
+
     def __init__(
         self,
         in_features: int,

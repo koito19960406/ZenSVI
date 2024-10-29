@@ -55,11 +55,12 @@ def apply_min_size(sample, size, image_interpolation_method=cv2.INTER_AREA):
     """Rezise the sample to ensure the given size. Keeps aspect ratio.
 
     Args:
-        sample (dict): sample
-        size (tuple): image size
+      sample(dict): sample
+      size(tuple): image size
+      image_interpolation_method: (Default value = cv2.INTER_AREA)
 
     Returns:
-        tuple: new size
+      tuple: new size
     """
     shape = list(sample["disparity"].shape)
 
@@ -187,6 +188,16 @@ class Resize(object):
         self.__letter_box = letter_box
 
     def constrain_to_multiple_of(self, x, min_val=0, max_val=None):
+        """
+
+        Args:
+          x:
+          min_val: (Default value = 0)
+          max_val: (Default value = None)
+
+        Returns:
+
+        """
         y = (np.round(x / self.__multiple_of) * self.__multiple_of).astype(int)
 
         if max_val is not None and y > max_val:
@@ -198,6 +209,15 @@ class Resize(object):
         return y
 
     def get_size(self, width, height):
+        """
+
+        Args:
+          width:
+          height:
+
+        Returns:
+
+        """
         # determine new height and width
         scale_height = self.__height / height
         scale_width = self.__width / width
@@ -245,6 +265,14 @@ class Resize(object):
         return (new_width, new_height)
 
     def make_letter_box(self, sample):
+        """
+
+        Args:
+          sample:
+
+        Returns:
+
+        """
         top = bottom = (self.__height - sample.shape[0]) // 2
         left = right = (self.__width - sample.shape[1]) // 2
         sample = cv2.copyMakeBorder(sample, top, bottom, left, right, cv2.BORDER_CONSTANT, None, 0)
@@ -295,6 +323,8 @@ class Resize(object):
 
 
 class ResizeFixed(object):
+    """"""
+
     def __init__(self, size):
         self.__size = size
 
@@ -315,7 +345,12 @@ class ResizeFixed(object):
 
 class Rescale(object):
     """Rescale target values to the interval [0, max_val].
+
     If input is constant, values are set to max_val / 2.
+
+    Args:
+
+    Returns:
     """
 
     def __init__(self, max_val=1.0, use_mask=True):
@@ -365,7 +400,14 @@ class NormalizeImage(object):
 
 
 class DepthToDisparity(object):
-    """Convert depth to disparity. Removes depth from sample."""
+    """Convert depth to disparity.
+
+    Removes depth from sample.
+
+    Args:
+
+    Returns:
+    """
 
     def __init__(self, eps=1e-4):
         self.__eps = eps
@@ -384,7 +426,14 @@ class DepthToDisparity(object):
 
 
 class DisparityToDepth(object):
-    """Convert disparity to depth. Removes disparity from sample."""
+    """Convert disparity to depth.
+
+    Removes disparity from sample.
+
+    Args:
+
+    Returns:
+    """
 
     def __init__(self, eps=1e-4):
         self.__eps = eps

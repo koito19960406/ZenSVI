@@ -6,7 +6,6 @@ import geopandas as gpd
 import h3
 import numpy as np
 import osmnx as ox
-import pandas as pd
 import polars as pl
 import pytz
 from astral import LocationInfo, sun
@@ -16,8 +15,8 @@ from shapely.wkb import loads as wkb_loads
 from timezonefinder import TimezoneFinder
 from tqdm.auto import tqdm
 
-
 from zensvi.utils.log import Logger
+
 
 def _calculate_angle(line):
     if len(line) > 1:
@@ -199,11 +198,30 @@ def _datetime_to_season(local_datetime, lat):
 class MLYMetadata:
     """A class to compute metadata for the MLY dataset.
 
-    :param path_input: path to the input CSV file (e.g., "mly_pids.csv"). The CSV file should contain the following columns: "id", "lat", "lon", "captured_at", "compass_angle", "creator_id", "sequence_id", "organization_id", "is_pano".
-    :type path_input: Union[str, Path]
+    Args:
+        path_input (Union[str, Path]): path to the input CSV file (e.g.,
+            "mly_pids.csv"). The CSV file should contain the following
+            columns: "id", "lat", "lon", "captured_at", "compass_angle",
+            "creator_id", "sequence_id", "organization_id", "is_pano".
     """
 
     def __init__(self, path_input: Union[str, Path], log_path: Union[str, Path] = None):
+        """Initialize the MLYMetadata class.
+
+        Args:
+            path_input (Union[str, Path]): Path to the input CSV file containing MLY data.
+            log_path (Union[str, Path], optional): Path to the log file. Defaults to None.
+
+        Raises:
+            ValueError: If the input CSV file does not contain required columns.
+
+        This method initializes the MLYMetadata class by:
+        1. Setting up logging if a log path is provided.
+        2. Reading the input CSV file.
+        3. Fetching the street network data for the area covered by the input data.
+        4. Calculating street segment angles.
+        5. Setting up dictionaries of metadata computation functions for image and grid/street levels.
+        """
         self._tf_instance = TimezoneFinder()
         self.path_input = Path(path_input)
         if log_path is not None:
@@ -802,22 +820,35 @@ class MLYMetadata:
         path_output: Union[str, Path] = None,
         max_distance: int = 50,
     ):
-        """
-        Compute metadata for the dataset.
+        """Compute metadata for the dataset.
 
-        :param unit: The unit of analysis. Defaults to "image".
-        :type unit: str
-        :param grid_resolution: The resolution of the H3 grid. Defaults to 7.
-        :type grid_resolution: int
-        :param indicator_list: List of indicators to compute metadata for. Use space-separated string of indicators or "all". Options for image-level metadata: "year", "month", "day", "hour", "day_of_week", "relative_angle", "h3_id", "speed_kmh". Options for grid-level metadata: "coverage", "count", "days_elapsed", "most_recent_date", "oldest_date", "number_of_years", "number_of_months", "number_of_days", "number_of_hours", "number_of_days_of_week", "number_of_daytime", "number_of_nighttime", "number_of_spring", "number_of_summer", "number_of_autumn", "number_of_winter", "average_compass_angle", "average_relative_angle", "average_is_pano", "number_of_users", "number_of_sequences", "number_of_organizations", "average_speed_kmh". Defaults to "all".
-        :type indicator_list: str
-        :param path_output: Path to save the output metadata. Defaults to None.
-        :type path_output: Union[str, Path]
-        :param max_distance: The maximum distance to search for the nearest street segment. Defaults to 50.
-        :type max_distance: int
+        Args:
+            unit (str): The unit of analysis. Defaults to "image".
+            grid_resolution (int): The resolution of the H3 grid.
+                Defaults to 7.
+            indicator_list (str): List of indicators to compute metadata
+                for. Use space- separated string of indicators or "all".
+                Options for image-level metadata: "year", "month",
+                "day", "hour", "day_of_week", "relative_angle", "h3_id",
+                "speed_kmh". Options for grid-level metadata:
+                "coverage", "count", "days_elapsed", "most_recent_date",
+                "oldest_date", "number_of_years", "number_of_months",
+                "number_of_days", "number_of_hours",
+                "number_of_days_of_week", "number_of_daytime",
+                "number_of_nighttime", "number_of_spring",
+                "number_of_summer", "number_of_autumn",
+                "number_of_winter", "average_compass_angle",
+                "average_relative_angle", "average_is_pano",
+                "number_of_users", "number_of_sequences",
+                "number_of_organizations", "average_speed_kmh". Defaults
+                to "all".
+            path_output (Union[str, Path]): Path to save the output
+                metadata. Defaults to None.
+            max_distance (int): The maximum distance to search for the
+                nearest street segment. Defaults to 50.
 
-        :return: A DataFrame containing the computed metadata.
-        :rtype: pd.DataFrame
+        Returns:
+            pd.DataFrame: A DataFrame containing the computed metadata.
         """
         if self.logger is not None:
             # record the arguments

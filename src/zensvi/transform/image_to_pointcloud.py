@@ -1,6 +1,6 @@
 import copy
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Union
 
 import numpy as np
 import open3d as o3d
@@ -12,24 +12,21 @@ from zensvi.utils.log import Logger
 
 
 class PointCloudProcessor:
-    """
-    A class for processing images and depth maps to generate point clouds.
+    """A class for processing images and depth maps to generate point clouds.
 
-    This class provides functionality to load image and depth data, convert them
-    into 3D point clouds, and perform various operations on the resulting point clouds.
-    It supports batch processing of multiple images and offers options for scaling
-    and depth normalization.
+    This class provides functionality to load image and depth data, convert them into 3D
+    point clouds, and perform various operations on the resulting point clouds. It
+    supports batch processing of multiple images and offers options for scaling and
+    depth normalization.
 
-    :param image_folder: Path to the folder containing color images.
-    :type image_folder: Path
-    :param depth_folder: Path to the folder containing depth images.
-    :type depth_folder: Path
-    :param output_coordinate_scale: Scaling factor for the output coordinates.
-    :type output_coordinate_scale: float
-    :param depth_max: Maximum depth value for normalization.
-    :type depth_max: float
-    :param logger: Optional logger for tracking operations and errors.
-    :type logger: Logger
+    Args:
+        image_folder (Path): Path to the folder containing color images.
+        depth_folder (Path): Path to the folder containing depth images.
+        output_coordinate_scale (float): Scaling factor for the output
+            coordinates.
+        depth_max (float): Maximum depth value for normalization.
+        logger (Logger): Optional logger for tracking operations and
+            errors.
     """
 
     def __init__(
@@ -58,8 +55,8 @@ class PointCloudProcessor:
             raise FileNotFoundError(f"Depth folder {self.depth_folder} does not exist")
 
     def _load_images(self, data):
-        """
-        Preloads all images specified in the data DataFrame to optimize the point cloud generation process.
+        """Preloads all images specified in the data DataFrame to optimize the point
+        cloud generation process.
 
         Args:
             data (DataFrame): DataFrame containing image ids for processing.
@@ -83,8 +80,7 @@ class PointCloudProcessor:
         return images
 
     def convert_to_point_cloud(self, depth_img, color_img, depth_max):
-        """
-        Converts a single depth and color image pair to a point cloud.
+        """Converts a single depth and color image pair to a point cloud.
 
         Args:
             depth_img (np.ndarray): The depth image.
@@ -130,8 +126,8 @@ class PointCloudProcessor:
         return pcd
 
     def transform_point_cloud(self, pcd, origin_x, origin_y, angle, box_extent, box_center):
-        """
-        Transforms the point cloud by translating, rotating, and cropping based on given parameters.
+        """Transforms the point cloud by translating, rotating, and cropping based on
+        given parameters.
 
         Args:
             pcd (o3d.geometry.PointCloud): The point cloud to transform.
@@ -166,8 +162,7 @@ class PointCloudProcessor:
         return pcd_mv
 
     def save_point_cloud_csv(self, pcd, output_path):
-        """
-        Saves the point cloud in CSV format.
+        """Saves the point cloud in CSV format.
 
         Args:
             pcd (o3d.geometry.PointCloud): The point cloud to save.
@@ -179,8 +174,7 @@ class PointCloudProcessor:
         df.to_csv(output_path, index=False)
 
     def save_point_cloud_numpy(self, pcd, output_path):
-        """
-        Saves the point cloud as a NumPy array.
+        """Saves the point cloud as a NumPy array.
 
         Args:
             pcd (o3d.geometry.PointCloud): The point cloud to save.
@@ -191,8 +185,8 @@ class PointCloudProcessor:
         np.savez(output_path, points=points, colors=colors)
 
     def process_multiple_images(self, data, output_dir=None, save_format="pcd"):
-        """
-        Generates a point cloud for each entry in the data based on pre-loaded depth and color images.
+        """Generates a point cloud for each entry in the data based on pre-loaded depth
+        and color images.
 
         Args:
             data (DataFrame): DataFrame containing image ids, coordinates, and headings.
@@ -233,8 +227,7 @@ class PointCloudProcessor:
             return pcd_list
 
     def visualize_point_cloud(self, pcd):
-        """
-        Visualizes a point cloud using Plotly.
+        """Visualizes a point cloud using Plotly.
 
         Args:
             pcd (o3d.geometry.PointCloud): The point cloud object to visualize.

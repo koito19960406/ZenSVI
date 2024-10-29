@@ -13,6 +13,8 @@ from torch import Tensor, nn
 
 
 class LayerScale(nn.Module):
+    """"""
+
     def __init__(
         self,
         dim: int,
@@ -24,4 +26,13 @@ class LayerScale(nn.Module):
         self.gamma = nn.Parameter(init_values * torch.ones(dim))
 
     def forward(self, x: Tensor) -> Tensor:
+        """
+
+        Args:
+          x: Tensor:
+          x: Tensor:
+
+        Returns:
+
+        """
         return x.mul_(self.gamma) if self.inplace else x * self.gamma

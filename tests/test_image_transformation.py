@@ -2,8 +2,10 @@ import shutil
 import unittest
 from pathlib import Path
 
-from zensvi.transform import ImageTransformer
 from test_base import TestBase
+
+from zensvi.transform import ImageTransformer
+
 
 class TestImageTransformer(TestBase):
     @classmethod

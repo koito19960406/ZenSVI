@@ -18,6 +18,8 @@ logger = logging.getLogger("dinov2")
 
 
 class SamplerType(Enum):
+    """"""
+
     DISTRIBUTED = 0
     EPOCH = 1
     INFINITE = 2
@@ -26,6 +28,15 @@ class SamplerType(Enum):
 
 
 def _make_bool_str(b: bool) -> str:
+    """
+
+    Args:
+      b: bool:
+      b: bool:
+
+    Returns:
+
+    """
     return "yes" if b else "no"
 
 
@@ -33,7 +44,27 @@ def _make_sample_transform(
     image_transform: Optional[Callable] = None,
     target_transform: Optional[Callable] = None,
 ):
+    """
+
+    Args:
+      image_transform: Optional[Callable]:  (Default value = None)
+      target_transform: Optional[Callable]:  (Default value = None)
+      image_transform: Optional[Callable]:  (Default value = None)
+      target_transform: Optional[Callable]:  (Default value = None)
+
+    Returns:
+
+    """
+
     def transform(sample):
+        """
+
+        Args:
+          sample:
+
+        Returns:
+
+        """
         image, target = sample
         if image_transform is not None:
             image = image_transform(image)
@@ -45,6 +76,15 @@ def _make_sample_transform(
 
 
 def _parse_dataset_str(dataset_str: str):
+    """
+
+    Args:
+      dataset_str: str:
+      dataset_str: str:
+
+    Returns:
+
+    """
     tokens = dataset_str.split(":")
 
     name = tokens[0]
@@ -73,16 +113,22 @@ def make_dataset(
     transform: Optional[Callable] = None,
     target_transform: Optional[Callable] = None,
 ):
-    """
-    Creates a dataset with the specified parameters.
+    """Creates a dataset with the specified parameters.
 
     Args:
-        dataset_str: A dataset string description (e.g. ImageNet:split=TRAIN).
-        transform: A transform to apply to images.
-        target_transform: A transform to apply to targets.
+      dataset_str: A dataset string description (e.g. ImageNet:split=TRAIN).
+      transform: A transform to apply to images.
+      target_transform: A transform to apply to targets.
+      *:
+      dataset_str: str:
+      transform: Optional[Callable]:  (Default value = None)
+      target_transform: Optional[Callable]:  (Default value = None)
+      dataset_str: str:
+      transform: Optional[Callable]:  (Default value = None)
+      target_transform: Optional[Callable]:  (Default value = None)
 
     Returns:
-        The created dataset.
+      : The created dataset.
     """
     logger.info(f'using dataset: "{dataset_str}"')
 
@@ -109,6 +155,25 @@ def _make_sampler(
     size: int = -1,
     advance: int = 0,
 ) -> Optional[Sampler]:
+    """
+
+    Args:
+      *:
+      dataset:
+      type: Optional[SamplerType]:  (Default value = None)
+      shuffle: bool:  (Default value = False)
+      seed: int:  (Default value = 0)
+      size: int:  (Default value = -1)
+      advance: int:  (Default value = 0)
+      type: Optional[SamplerType]:  (Default value = None)
+      shuffle: bool:  (Default value = False)
+      seed: int:  (Default value = 0)
+      size: int:  (Default value = -1)
+      advance: int:  (Default value = 0)
+
+    Returns:
+
+    """
     sample_count = len(dataset)
 
     if type == SamplerType.INFINITE:
@@ -180,21 +245,44 @@ def make_data_loader(
     persistent_workers: bool = False,
     collate_fn: Optional[Callable[[List[T]], Any]] = None,
 ):
-    """
-    Creates a data loader with the specified parameters.
+    """Creates a data loader with the specified parameters.
 
     Args:
-        dataset: A dataset (third party, LaViDa or WebDataset).
-        batch_size: The size of batches to generate.
-        num_workers: The number of workers to use.
-        shuffle: Whether to shuffle samples.
-        seed: The random seed to use.
-        sampler_type: Which sampler to use: EPOCH, INFINITE, SHARDED_INFINITE, SHARDED_INFINITE_NEW, DISTRIBUTED or None.
-        sampler_size: The number of images per epoch (when applicable) or -1 for the entire dataset.
-        sampler_advance: How many samples to skip (when applicable).
-        drop_last: Whether the last non-full batch of data should be dropped.
-        persistent_workers: maintain the workers Dataset instances alive after a dataset has been consumed once.
-        collate_fn: Function that performs batch collation
+      dataset: A dataset (third party, LaViDa or WebDataset).
+      batch_size: The size of batches to generate.
+      num_workers: The number of workers to use.
+      shuffle: Whether to shuffle samples.
+      seed: The random seed to use.
+      sampler_type: Which sampler to use: EPOCH, INFINITE, SHARDED_INFINITE, SHARDED_INFINITE_NEW, DISTRIBUTED or None.
+      sampler_size: The number of images per epoch (when applicable) or -1 for the entire dataset.
+      sampler_advance: How many samples to skip (when applicable).
+      drop_last: Whether the last non-full batch of data should be dropped.
+      persistent_workers: maintain the workers Dataset instances alive after a dataset has been consumed once.
+      collate_fn: Function that performs batch collation
+      *:
+      batch_size: int:
+      num_workers: int:
+      shuffle: bool:  (Default value = True)
+      seed: int:  (Default value = 0)
+      sampler_type: Optional[SamplerType]:  (Default value = SamplerType.INFINITE)
+      sampler_size: int:  (Default value = -1)
+      sampler_advance: int:  (Default value = 0)
+      drop_last: bool:  (Default value = True)
+      persistent_workers: bool:  (Default value = False)
+      collate_fn: Optional[Callable[[List[T]]:
+      Any]]: (Default value = None)
+      batch_size: int:
+      num_workers: int:
+      shuffle: bool:  (Default value = True)
+      seed: int:  (Default value = 0)
+      sampler_type: Optional[SamplerType]:  (Default value = SamplerType.INFINITE)
+      sampler_size: int:  (Default value = -1)
+      sampler_advance: int:  (Default value = 0)
+      drop_last: bool:  (Default value = True)
+      persistent_workers: bool:  (Default value = False)
+      collate_fn: Optional[Callable[[List[T]]:
+
+    Returns:
     """
 
     sampler = _make_sampler(

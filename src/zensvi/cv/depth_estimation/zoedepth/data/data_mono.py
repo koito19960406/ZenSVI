@@ -33,7 +33,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.utils.data.distributed
-from PIL import Image, ImageOps
+from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from zoedepth.utils.config import change_dataset
@@ -45,34 +45,60 @@ from .diml_outdoor_test import get_diml_outdoor_loader
 from .diode import get_diode_loader
 from .hypersim import get_hypersim_loader
 from .ibims import get_ibims_loader
-from .preprocess import CropParams, get_black_border, get_white_border
+from .preprocess import get_white_border
 from .sun_rgbd_loader import get_sunrgbd_loader
 from .vkitti import get_vkitti_loader
 from .vkitti2 import get_vkitti2_loader
 
 
 def _is_pil_image(img):
+    """
+
+    Args:
+      img:
+
+    Returns:
+
+    """
     return isinstance(img, Image.Image)
 
 
 def _is_numpy_image(img):
+    """
+
+    Args:
+      img:
+
+    Returns:
+
+    """
     return isinstance(img, np.ndarray) and (img.ndim in {2, 3})
 
 
 def preprocessing_transforms(mode, **kwargs):
+    """
+
+    Args:
+      mode:
+      **kwargs:
+
+    Returns:
+
+    """
     return transforms.Compose([ToTensor(mode=mode, **kwargs)])
 
 
 class DepthDataLoader(object):
     def __init__(self, config, mode, device="cpu", transform=None, **kwargs):
-        """
-        Data loader for depth datasets
+        """Data loader for depth datasets.
 
         Args:
-            config (dict): Config dictionary. Refer to utils/config.py
-            mode (str): "train" or "online_eval"
-            device (str, optional): Device to load the data on. Defaults to 'cpu'.
-            transform (torchvision.transforms, optional): Transform to apply to the data. Defaults to None.
+        config(dict): Config dictionary. Refer to utils/config.py
+        mode(str): "train" or "online_eval"
+        device(str): Device to load the data on. Defaults to 'cpu'.
+        transform(torchvision.transforms): Transform to apply to the data. Defaults to None.
+
+        Returns:
         """
 
         self.config = config
@@ -165,13 +191,17 @@ class DepthDataLoader(object):
 
 
 def repetitive_roundrobin(*iterables):
-    """
-    cycles through iterables but sample wise
-    first yield first sample from first iterable then first sample from second iterable and so on
-    then second sample from first iterable then second sample from second iterable and so on
+    """Cycles through iterables but sample wise first yield first sample from first
+    iterable then first sample from second iterable and so on then second sample from
+    first iterable then second sample from second iterable and so on.
 
-    If one iterable is shorter than the others, it is repeated until all iterables are exhausted
-    repetitive_roundrobin('ABC', 'D', 'EF') --> A D E B D F C D E
+    If one iterable is shorter than the others, it is repeated until all iterables are
+    exhausted repetitive_roundrobin('ABC', 'D', 'EF') --> A D E B D F C D E
+
+    Args:
+      *iterables:
+
+    Returns:
     """
     # Repetitive roundrobin
     iterables_ = [iter(it) for it in iterables]
@@ -188,6 +218,8 @@ def repetitive_roundrobin(*iterables):
 
 
 class RepetitiveRoundRobinDataLoader(object):
+    """"""
+
     def __init__(self, *dataloaders):
         self.dataloaders = dataloaders
 
@@ -200,6 +232,8 @@ class RepetitiveRoundRobinDataLoader(object):
 
 
 class MixedNYUKITTI(object):
+    """"""
+
     def __init__(self, config, mode, device="cpu", **kwargs):
         config = edict(config)
         config.workers = config.workers // 2
@@ -231,12 +265,22 @@ class MixedNYUKITTI(object):
 
 
 def remove_leading_slash(s):
+    """
+
+    Args:
+      s:
+
+    Returns:
+
+    """
     if s[0] == "/" or s[0] == "\\":
         return s[1:]
     return s
 
 
 class CachedReader:
+    """"""
+
     def __init__(self, shared_dict=None):
         if shared_dict:
             self._cache = shared_dict
@@ -244,6 +288,14 @@ class CachedReader:
             self._cache = {}
 
     def open(self, fpath):
+        """
+
+        Args:
+          fpath:
+
+        Returns:
+
+        """
         im = self._cache.get(fpath, None)
         if im is None:
             im = self._cache[fpath] = Image.open(fpath)
@@ -251,15 +303,27 @@ class CachedReader:
 
 
 class ImReader:
+    """"""
+
     def __init__(self):
         pass
 
     # @cache
     def open(self, fpath):
+        """
+
+        Args:
+          fpath:
+
+        Returns:
+
+        """
         return Image.open(fpath)
 
 
 class DataLoadPreprocess(Dataset):
+    """"""
+
     def __init__(self, config, mode, transform=None, is_for_online_eval=False, **kwargs):
         self.config = config
         if mode == "online_eval":
@@ -279,6 +343,14 @@ class DataLoadPreprocess(Dataset):
             self.reader = ImReader()
 
     def postprocess(self, sample):
+        """
+
+        Args:
+          sample:
+
+        Returns:
+
+        """
         return sample
 
     def __getitem__(self, idx):
@@ -469,10 +541,31 @@ class DataLoadPreprocess(Dataset):
         return sample
 
     def rotate_image(self, image, angle, flag=Image.BILINEAR):
+        """
+
+        Args:
+          image:
+          angle:
+          flag: (Default value = Image.BILINEAR)
+
+        Returns:
+
+        """
         result = image.rotate(angle, resample=flag)
         return result
 
     def random_crop(self, img, depth, height, width):
+        """
+
+        Args:
+          img:
+          depth:
+          height:
+          width:
+
+        Returns:
+
+        """
         assert img.shape[0] >= height
         assert img.shape[1] >= width
         assert img.shape[0] == depth.shape[0]
@@ -485,6 +578,16 @@ class DataLoadPreprocess(Dataset):
         return img, depth
 
     def random_translate(self, img, depth, max_t=20):
+        """
+
+        Args:
+          img:
+          depth:
+          max_t: (Default value = 20)
+
+        Returns:
+
+        """
         assert img.shape[0] == depth.shape[0]
         assert img.shape[1] == depth.shape[1]
         p = self.config.translate_prob
@@ -502,6 +605,15 @@ class DataLoadPreprocess(Dataset):
         return img, depth
 
     def train_preprocess(self, image, depth_gt):
+        """
+
+        Args:
+          image:
+          depth_gt:
+
+        Returns:
+
+        """
         if self.config.aug:
             # Random flipping
             do_flip = random.random()
@@ -517,6 +629,14 @@ class DataLoadPreprocess(Dataset):
         return image, depth_gt
 
     def augment_image(self, image):
+        """
+
+        Args:
+          image:
+
+        Returns:
+
+        """
         # gamma augmentation
         gamma = random.uniform(0.9, 1.1)
         image_aug = image**gamma
@@ -542,6 +662,8 @@ class DataLoadPreprocess(Dataset):
 
 
 class ToTensor(object):
+    """"""
+
     def __init__(self, mode, do_normalize=False, size=None):
         self.mode = mode
         self.normalize = (
@@ -582,6 +704,14 @@ class ToTensor(object):
             }
 
     def to_tensor(self, pic):
+        """
+
+        Args:
+          pic:
+
+        Returns:
+
+        """
         if not (_is_pil_image(pic) or _is_numpy_image(pic)):
             raise TypeError("pic should be PIL Image or ndarray. Got {}".format(type(pic)))
 

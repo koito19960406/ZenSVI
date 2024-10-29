@@ -1,5 +1,6 @@
 import datetime
-import json
+import glob
+import logging
 import os
 import random
 import warnings
@@ -7,48 +8,54 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import geopandas as gpd
+import osmnx as ox
 import pandas as pd
 import requests
-from shapely.errors import ShapelyDeprecationWarning
-from shapely.geometry import Point
-from tqdm import tqdm
-
-warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
-
-import glob
-
-# set logging level to warning
-import logging
-import shutil
-
-import numpy as np
-import osmnx as ox
 from PIL import Image
+from shapely.errors import ShapelyDeprecationWarning
+from tqdm import tqdm
 
 import zensvi.download.kartaview.download_functions as kv
 from zensvi.download.base import BaseDownloader
-from zensvi.download.utils.geoprocess import GeoProcessor
 from zensvi.download.utils.helpers import check_and_buffer, standardize_column_names
 from zensvi.utils.log import Logger
 
+warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 logging.getLogger("mapillary.utils.client").setLevel(logging.WARNING)
 
 
 class KVDownloader(BaseDownloader):
-    """
-    KartaView Downloader class.
+    """KartaView Downloader class.
 
     Args:
         log_path (str, optional): Path to the log file. Defaults to None.
+        max_workers (int, optional): Number of workers for parallel processing. Defaults to None.
     """
 
-    def __init__(self, log_path=None):
+    def __init__(self, log_path=None, max_workers=None):
         super().__init__(log_path)
+        self._max_workers = max_workers
         # initialize the logger
         if log_path is not None:
             self.logger = Logger(log_path)
         else:
             self.logger = None
+
+    @property
+    def max_workers(self):
+        """Property for the number of workers for parallel processing.
+
+        Returns:
+            int: max_workers
+        """
+        return self._max_workers
+
+    @max_workers.setter
+    def max_workers(self, max_workers):
+        if max_workers is None:
+            self._max_workers = min(32, os.cpu_count() + 4)
+        else:
+            self._max_workers = max_workers
 
     def _read_pids(self, path_pid):
         pid_df = pd.read_csv(path_pid)
@@ -190,8 +197,8 @@ class KVDownloader(BaseDownloader):
 
         def worker(row, output_dir, cropped):
             url, panoid = row.url, row.id
-            user_agent = random.choice(self.user_agents)
-            proxy = random.choice(self.proxies)
+            user_agent = random.choice(self._user_agents)
+            proxy = random.choice(self._proxies)
 
             image_name = f"{panoid}.png"  # Use id for file name
             image_path = output_dir / image_name
@@ -230,7 +237,7 @@ class KVDownloader(BaseDownloader):
             batch_out_path = self.panorama_output / f"batch_{i+1}"
             batch_out_path.mkdir(exist_ok=True)
 
-            with ThreadPoolExecutor() as executor:
+            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
                 batch_futures = {
                     executor.submit(worker, row, batch_out_path, cropped): row.id
                     for row in urls_df.iloc[
@@ -263,9 +270,9 @@ class KVDownloader(BaseDownloader):
         start_date=None,
         end_date=None,
         metadata_only=False,
+        max_workers=None,
     ):
-        """
-        Downloads street view images from KartaView using specified parameters.
+        """Downloads street view images from KartaView using specified parameters.
 
         Args:
             dir_output (str): Directory where output files and images will be stored.
@@ -282,6 +289,7 @@ class KVDownloader(BaseDownloader):
             start_date (str, optional): Start date (YYYY-MM-DD) to filter images by capture date.
             end_date (str, optional): End date (YYYY-MM-DD) to filter images by capture date.
             metadata_only (bool, optional): If True, skips downloading images and only fetches metadata. Defaults to False.
+            max_workers (int, optional): Number of workers for parallel processing. If None, it will be set to min(32, os.cpu_count() + 4).
 
         Returns:
             None: This method does not return a value but will save files directly to the specified output directory.
@@ -311,7 +319,11 @@ class KVDownloader(BaseDownloader):
                 start_date=start_date,
                 end_date=end_date,
                 metadata_only=metadata_only,
+                max_workers=max_workers,
             )
+        # Set max_workers
+        self.max_workers = max_workers
+
         # set necessary directories
         self._set_dirs(dir_output)
 
@@ -319,7 +331,7 @@ class KVDownloader(BaseDownloader):
         if path_pid is None:
             print("Getting pids...")
             path_pid = self.dir_output / "kv_pids.csv"
-            if path_pid.exists() & (update_pids == False):
+            if path_pid.exists() & (not update_pids):
                 print("update_pids is set to False. So the following csv file will be used: {}".format(path_pid))
             else:
                 self._get_pids(

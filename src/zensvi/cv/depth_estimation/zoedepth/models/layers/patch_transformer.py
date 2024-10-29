@@ -27,6 +27,8 @@ import torch.nn as nn
 
 
 class PatchTransformerEncoder(nn.Module):
+    """"""
+
     def __init__(
         self,
         in_channels,
@@ -35,7 +37,7 @@ class PatchTransformerEncoder(nn.Module):
         num_heads=4,
         use_class_token=False,
     ):
-        """ViT-like transformer block
+        """ViT-like transformer block.
 
         Args:
             in_channels (int): Input channels
@@ -58,14 +60,16 @@ class PatchTransformerEncoder(nn.Module):
         )
 
     def positional_encoding_1d(self, sequence_length, batch_size, embedding_dim, device="cpu"):
-        """Generate positional encodings
+        """Generate positional encodings.
 
         Args:
-            sequence_length (int): Sequence length
-            embedding_dim (int): Embedding dimension
+          sequence_length(int): Sequence length
+          embedding_dim(int): Embedding dimension
+          batch_size:
+          device: (Default value = "cpu")
 
         Returns:
-            torch.Tensor SBE: Positional encodings
+          torch.Tensor SBE: Positional encodings
         """
         position = torch.arange(0, sequence_length, dtype=torch.float32, device=device).unsqueeze(1)
         index = torch.arange(0, embedding_dim, 2, dtype=torch.float32, device=device).unsqueeze(0)
@@ -76,13 +80,13 @@ class PatchTransformerEncoder(nn.Module):
         return pos_encoding
 
     def forward(self, x):
-        """Forward pass
+        """Forward pass.
 
         Args:
-            x (torch.Tensor - NCHW): Input feature tensor
+          x(torch.Tensor - NCHW): Input feature tensor
 
         Returns:
-            torch.Tensor - SNE: Transformer output embeddings. S - sequence length (=HW/patch_size^2), N - batch size, E - embedding dim
+          torch.Tensor - SNE: Transformer output embeddings. S - sequence length (=HW/patch_size^2), N - batch size, E - embedding dim
         """
         embeddings = self.embedding_convPxP(x).flatten(2)  # .shape = n,c,s = n, embedding_dim, s
         if self.use_class_token:

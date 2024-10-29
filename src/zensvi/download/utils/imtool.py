@@ -14,14 +14,11 @@ class ImageTool:
 
     @staticmethod
     def concat_horizontally(im1, im2):
-        """
-        Description of concat_horizontally
-        Horizontally concatenates two images
+        """Description of concat_horizontally Horizontally concatenates two images.
 
         Args:
             im1 (undefined): first PIL image
             im2 (undefined): second PIL image
-
         """
         dst = Image.new("RGB", (im1.width + im2.width, im1.height))
         dst.paste(im1, (0, 0))
@@ -30,14 +27,11 @@ class ImageTool:
 
     @staticmethod
     def concat_vertically(im1, im2):
-        """
-        Description of concat_vertically
-        Vertically concatenates two images
+        """Description of concat_vertically Vertically concatenates two images.
 
         Args:
             im1 (undefined): first PIL image
             im2 (undefined): second PIL image
-
         """
         dst = Image.new("RGB", (im1.width, im1.height + im2.height))
         dst.paste(im1, (0, 0))
@@ -46,8 +40,7 @@ class ImageTool:
 
     @staticmethod
     def fetch_image_with_proxy(pano_id, zoom, x, y, ua, proxies):
-        """
-        Fetches an image using a proxy.
+        """Fetches an image using a proxy.
 
         Args:
             pano_id (str): GSV panorama id
@@ -73,9 +66,9 @@ class ImageTool:
 
     @staticmethod
     def is_bottom_black(image, row_count=3, intensity_threshold=10):
-        """
-        Check if the bottom 'row_count' rows of the image are near black, with a given intensity threshold.
-        This method uses linear computation instead of nested loops for faster execution.
+        """Check if the bottom 'row_count' rows of the image are near black, with a
+        given intensity threshold. This method uses linear computation instead of nested
+        loops for faster execution.
 
         Args:
             image (PIL.Image): The image to check.
@@ -92,8 +85,7 @@ class ImageTool:
 
     @staticmethod
     def process_image(image, zoom):
-        """
-        Crop and resize the image based on zoom level if the bottom is black.
+        """Crop and resize the image based on zoom level if the bottom is black.
 
         Args:
             image (PIL.Image): The image to process.
@@ -128,8 +120,7 @@ class ImageTool:
         cropped=False,
         full=True,
     ):
-        """
-        Description of get_and_save_image
+        """Description of get_and_save_image.
 
         Downloads an image tile by tile and composes them together.
 
@@ -142,7 +133,6 @@ class ImageTool:
             out_path (undefined): output path
             cropped=False (undefined): set True if the image split horizontally in half is needed
             full=True (undefined): set to True if the full image is needed
-
         """
         for x in range(horizontal_tiles):
             for y in range(vertical_tiles):
@@ -187,9 +177,9 @@ class ImageTool:
         full,
         batch_size=1000,
         logger=None,
+        max_workers=None,
     ):
-        """
-        Description of dwl_multiple
+        """Description of dwl_multiple.
 
         Calls the get_and_save_image function using multiple threads.
 
@@ -216,18 +206,22 @@ class ImageTool:
 
         num_batches = (len(panoids) + batch_size - 1) // batch_size
 
-        for counter, i in tqdm(
-            enumerate(range(start_batch_number, start_batch_number + num_batches)),
-            desc=f"Downloading images by batch size {min(batch_size, len(panoids))}",
+        for i in tqdm(
+            range(num_batches),
+            desc=f"Processing outer batches of size {min(batch_size, len(panoids))}",
         ):
             # Create a new sub-folder for each batch
-            batch_out_path = os.path.join(out_path, f"batch_{i+1}")
+            batch_out_path = os.path.join(out_path, f"batch_{start_batch_number + i + 1}")
             os.makedirs(batch_out_path, exist_ok=True)
 
-            with ThreadPoolExecutor(max_workers=min(len(uas), batch_size)) as executor:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 jobs = []
-                batch_panoids = panoids[counter * batch_size : (counter + 1) * batch_size]
-                batch_uas = uas[counter * batch_size : (counter + 1) * batch_size]
+                batch_panoids = panoids[
+                    start_batch_number * batch_size + i * batch_size : (start_batch_number + i + 1) * batch_size
+                ]
+                batch_uas = uas[
+                    start_batch_number * batch_size + i * batch_size : (start_batch_number + i + 1) * batch_size
+                ]
                 for pano, ua in zip(batch_panoids, batch_uas):
                     kw = {
                         "pano_id": pano,
@@ -246,7 +240,7 @@ class ImageTool:
                 for job in tqdm(
                     as_completed(jobs),
                     total=len(jobs),
-                    desc=f"Downloading images for batch #{i+1}",
+                    desc=f"Downloading images for batch #{start_batch_number + i + 1}",
                 ):
                     try:
                         job.result()

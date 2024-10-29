@@ -22,7 +22,6 @@
 
 # File author: Shariq Farooq Bhat
 
-import os
 
 import numpy as np
 import torch
@@ -32,6 +31,8 @@ from torchvision import transforms
 
 
 class ToTensor(object):
+    """"""
+
     def __init__(self, resize_shape):
         # self.normalize = transforms.Normalize(
         #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -49,6 +50,14 @@ class ToTensor(object):
         return {"image": image, "depth": depth, "dataset": "ddad"}
 
     def to_tensor(self, pic):
+        """
+
+        Args:
+          pic:
+
+        Returns:
+
+        """
 
         if isinstance(pic, np.ndarray):
             img = torch.from_numpy(pic.transpose((2, 0, 1)))
@@ -79,8 +88,9 @@ class ToTensor(object):
 
 
 class DDAD(Dataset):
+    """"""
+
     def __init__(self, data_dir_root, resize_shape):
-        import glob
 
         # image paths are of the form <data_dir_root>/{outleft, depthmap}/*.png
         # self.image_files = glob.glob(os.path.join(data_dir_root, '*.png'))
@@ -119,5 +129,16 @@ class DDAD(Dataset):
 
 
 def get_ddad_loader(data_dir_root, resize_shape, batch_size=1, **kwargs):
+    """
+
+    Args:
+      data_dir_root:
+      resize_shape:
+      batch_size: (Default value = 1)
+      **kwargs:
+
+    Returns:
+
+    """
     dataset = DDAD(data_dir_root, resize_shape)
     return DataLoader(dataset, batch_size, **kwargs)

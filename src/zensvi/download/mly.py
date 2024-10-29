@@ -1,41 +1,33 @@
 import datetime
+import glob
 import json
+import logging
 import os
 import random
+import shutil
 import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import geopandas as gpd
+import osmnx as ox
 import pandas as pd
 import requests
+from PIL import Image
 from shapely.errors import ShapelyDeprecationWarning
 from tqdm import tqdm
 
-warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
-
-import glob
-
-# set logging level to warning
-import logging
-import shutil
-
-import numpy as np
-import osmnx as ox
-from PIL import Image
-
 import zensvi.download.mapillary.interface as mly
 from zensvi.download.base import BaseDownloader
-from zensvi.download.utils.geoprocess import GeoProcessor
 from zensvi.download.utils.helpers import check_and_buffer, standardize_column_names
 from zensvi.utils.log import Logger
 
+warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 logging.getLogger("mapillary.utils.client").setLevel(logging.WARNING)
 
 
 class MLYDownloader(BaseDownloader):
-    """
-    Mapillary Downloader class.
+    """Mapillary Downloader class.
 
     Args:
         mly_api_key (str, optional): Mapillary API key. Defaults to None.
@@ -58,8 +50,8 @@ class MLYDownloader(BaseDownloader):
     def mly_api_key(self):
         """Property for Mapillary API key.
 
-        :return: mly_api_key
-        :rtype: str
+        Returns:
+            str: mly_api_key
         """
         return self._mly_api_key
 
@@ -71,8 +63,8 @@ class MLYDownloader(BaseDownloader):
     def max_workers(self):
         """Property for the number of workers for parallel processing.
 
-        :return: max_workers
-        :rtype: int
+        Returns:
+            int: max_workers
         """
         return self._max_workers
 
@@ -246,11 +238,11 @@ class MLYDownloader(BaseDownloader):
             "lon",
             "lat",
         ]
-        
+
         # Add organization_id to columns_to_keep if it exists in the DataFrame
         if "organization_id" in pid.columns:
             columns_to_keep.append("organization_id")
-        
+
         pid = pid[columns_to_keep]
 
         pid.to_csv(path_pid, index=False)
@@ -330,10 +322,12 @@ class MLYDownloader(BaseDownloader):
                         continue
 
             if len(results) > 0:
-                df = pd.DataFrame.from_dict(results, orient="index").reset_index(drop=True).rename(
-                    columns={f"thumb_{resolution}_url": "url"}
+                df = (
+                    pd.DataFrame.from_dict(results, orient="index")
+                    .reset_index(drop=True)
+                    .rename(columns={f"thumb_{resolution}_url": "url"})
                 )
-                df = df[['id'] + [col for col in df.columns if col != 'id']]
+                df = df[["id"] + [col for col in df.columns if col != "id"]]
                 df.to_csv(
                     f"{dir_cache_urls}/checkpoint_batch_{checkpoint_start_index+i+1}.csv",
                     index=False,
@@ -361,8 +355,8 @@ class MLYDownloader(BaseDownloader):
         urls_df = pd.read_csv(self.pids_url)
         urls_df["id"] = urls_df["id"].astype("int64")
         # merge pid_df and urls_df, keeping only one instance of duplicated columns
-        urls_df = urls_df.merge(pid_df, on="id", how="left", suffixes=('', '_drop'))
-        urls_df = urls_df.loc[:, ~urls_df.columns.str.endswith('_drop')]
+        urls_df = urls_df.merge(pid_df, on="id", how="left", suffixes=("", "_drop"))
+        urls_df = urls_df.loc[:, ~urls_df.columns.str.endswith("_drop")]
         # filter out the rows by date
         urls_df = self._filter_pids_date(urls_df, start_date, end_date)
 
@@ -371,8 +365,8 @@ class MLYDownloader(BaseDownloader):
 
         def worker(row, output_dir, cropped):
             url, panoid = row.url, row.id
-            user_agent = random.choice(self.user_agents)
-            proxy = random.choice(self.proxies)
+            user_agent = random.choice(self._user_agents)
+            proxy = random.choice(self._proxies)
 
             image_name = f"{panoid}.png"  # Use id for file name
             image_path = output_dir / image_name
@@ -444,11 +438,10 @@ class MLYDownloader(BaseDownloader):
         end_date=None,
         metadata_only=False,
         use_cache=True,
-        additional_fields=["all"], 
+        additional_fields=["all"],
         **kwargs,
     ):
-        """
-        Downloads street view images from Mapillary using specified parameters.
+        """Downloads street view images from Mapillary using specified parameters.
 
         Args:
             dir_output (str): Directory where output files and images will be stored.
@@ -532,7 +525,7 @@ class MLYDownloader(BaseDownloader):
         if path_pid is None:
             print("Getting pids...")
             path_pid = self.dir_output / "mly_pids.csv"
-            if path_pid.exists() & (update_pids == False):
+            if path_pid.exists() & (not update_pids):
                 print("update_pids is set to False. So the following csv file will be used: {}".format(path_pid))
             else:
                 self._get_pids(
@@ -584,5 +577,3 @@ class MLYDownloader(BaseDownloader):
         if self.dir_cache.exists():
             shutil.rmtree(self.dir_cache)
             print("The cache directory has been deleted")
-
-

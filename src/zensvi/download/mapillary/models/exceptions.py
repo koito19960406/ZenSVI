@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.models.exceptions
+"""mapillary.models.exceptions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This module contains the set of Mapillary Exceptions used internally.
@@ -18,18 +16,17 @@ import typing
 
 
 class MapillaryException(Exception):
-    """Base class for exceptions in this module"""
+    """Base class for exceptions in this module."""
 
     pass
 
 
 class InvalidBBoxError(MapillaryException):
-    """
-    Raised when an invalid coordinates for bounding box are entered
-    to access Mapillary's API.
+    """Raised when an invalid coordinates for bounding box are entered to access
+    Mapillary's API.
 
-    :var message: The error message returned
-    :type message: str
+    Attributes:
+        message (str): The error message returned
     """
 
     def __init__(self, message: str):
@@ -43,40 +40,33 @@ class InvalidBBoxError(MapillaryException):
 
 
 class InvalidTokenError(MapillaryException):
-    """
-    Raised when an invalid token is given
-    to access Mapillary's API, primarily used in mapillary.set_access_token
+    """Raised when an invalid token is given to access Mapillary's API, primarily used
+    in mapillary.set_access_token.
 
-    :var message: The error message returned
-    :type message: str
+    Attributes:
+        message (str  :var error_type: The type of error that occurred):
+            The error message returned :type message: str
+        error_type (str :var code: The error code returned, most likely 190, "Access token has expired". See https://developers.facebook.com/docs/graph-api/using- graph-api/error-handling/ for more information):
+            The type of error that occurred :type error_type: str
+        code (str  :var fbtrace_id: A unique ID to track the issue/exception):
+            The error code returned, most likely 190, "Access token has
+            expired".
 
-    :var error_type: The type of error that occurred
-    :type error_type: str
+    See
+    https://developers.facebook.com/docs/graph-api/using-graph-api/error-handling/
 
-    :var code: The error code returned, most likely 190, "Access token has expired".
-        See https://developers.facebook.com/docs/graph-api/using-graph-api/error-handling/
-        for more information
-    :type code: str
-
-    :var fbtrace_id: A unique ID to track the issue/exception
-    :type fbtrace_id: str
+    Args:
+        fbtrace_id (str)
     """
 
     def __init__(self, message: str, error_type: str, code: str, fbtrace_id: str):
-        """
-        Initializing InvalidTokenError constructor
+        """Initializing InvalidTokenError constructor.
 
-        :param message: Error message
-        :type message: str
-
-        :param error_type: Type of error
-        :type error_type: str
-
-        :param code: The error code
-        :type code: str
-
-        :param fbtrace_id: the FBTrace_ID
-        :type fbtrace_id: str
+        Args:
+            message (str): Error message
+            error_type (str): Type of error
+            code (str): The error code
+            fbtrace_id (str): the FBTrace_ID
         """
 
         self.message = message
@@ -97,20 +87,19 @@ class InvalidTokenError(MapillaryException):
 
 
 class AuthError(MapillaryException):
-    """
-    Raised when a function is called without having the access token set in
-    set_access_token to access Mapillary's API, primarily used in mapillary.set_access_token
+    """Raised when a function is called without having the access token set in
+    set_access_token to access Mapillary's API, primarily used in
+    mapillary.set_access_token.
 
-    :var message: The error message returned
-    :type message: str
+    Attributes:
+        message (str): The error message returned
     """
 
     def __init__(self, message: str):
-        """
-        Initializing AuthError constructor
+        """Initializing AuthError constructor.
 
-        :param message: Error message
-        :type message: str
+        Args:
+            message (str): Error message
         """
 
         self.message = message
@@ -123,21 +112,20 @@ class AuthError(MapillaryException):
 
 
 class InvalidImageResolutionError(MapillaryException):
-    """
-    Raised when trying to retrieve an image thumbnail with an invalid resolution/size.
+    """Raised when trying to retrieve an image thumbnail with an invalid
+    resolution/size.
 
     Primarily used with mapillary.image_thumbnail
 
-    :var resolution: Image size entered by the user
-    :type resolution: int
+    Attributes:
+        resolution (int): Image size entered by the user
     """
 
     def __init__(self, resolution: int) -> None:
-        """
-        Initialize InvalidImageResolutionError constructor
+        """Initialize InvalidImageResolutionError constructor.
 
-        :param resolution: Image resolution
-        :type resolution: int
+        Args:
+            resolution (int): Image resolution
         """
 
         self._resolution = resolution
@@ -153,20 +141,21 @@ Hint: Supported image sizes are: 256, 1024, and 2048
 
 
 class InvalidImageKeyError(MapillaryException):
-    """
-    Raised when trying to retrieve an image thumbnail with an invalid image ID/key.
-    Primarily used with mapillary.image_thumbnail
+    """Raised when trying to retrieve an image thumbnail with an invalid image ID/key.
+    Primarily used with mapillary.image_thumbnail.
 
-    :var image_id: Image ID/key entered by the user
-    :param image_id: int
+    Attributes:
+        image_id: Image ID/key entered by the user
+
+    Args:
+        image_id: int
     """
 
     def __init__(self, image_id: typing.Union[int, str]) -> None:
-        """
-        Initializing InvalidImageKeyError constructor
+        """Initializing InvalidImageKeyError constructor.
 
-        :param image_id: The image id
-        :type image_id: int|str
+        Args:
+            image_id (int|str): The image id
         """
 
         self._image_id = image_id
@@ -179,21 +168,17 @@ class InvalidImageKeyError(MapillaryException):
 
 
 class InvalidKwargError(MapillaryException):
-    """
-    Raised when a function is called with the invalid keyword argument(s) that do not belong to the
-    requested API end call
+    """Raised when a function is called with the invalid keyword argument(s) that do not
+    belong to the requested API end call.
 
-    :var func: The function that was called
-    :type func: str
+    Attributes:
+        func (str  :var key: The key that was passed): The function that
+            was called
 
-    :var key: The key that was passed
-    :type key: str
-
-    :var value: The value along with that key
-    :type value: str
-
-    :var options: List of possible keys that can be passed
-    :type options: list
+    Args:
+        key (str  :var value: The value along with that key)
+        value (str  :var options: List of possible keys that can be passed)
+        options (list)
     """
 
     def __init__(
@@ -203,20 +188,13 @@ class InvalidKwargError(MapillaryException):
         value: str,
         options: list,
     ):
-        """
-        Initializing InvalidKwargError constructor
+        """Initializing InvalidKwargError constructor.
 
-        :param func: The function that was called
-        :type func: str
-
-        :param key: The key that was passed
-        :type key: str
-
-        :param value: The value along with that key
-        :type value: str
-
-        :param options: List of possible keys that can be passed
-        :type options: list
+        Args:
+            func (str): The function that was called
+            key (str): The key that was passed
+            value (str): The value along with that key
+            options (list): List of possible keys that can be passed
         """
 
         self.func = func
@@ -242,17 +220,15 @@ class InvalidKwargError(MapillaryException):
 
 
 class InvalidOptionError(MapillaryException):
-    """
-    Out of bound zoom error
+    """Out of bound zoom error.
 
-    :var param: The invalid param passed
-    :type param: str
+    Attributes:
+        param (str  :var value: The invalid value passed): The invalid
+            param passed
 
-    :var value: The invalid value passed
-    :type value: any
-
-    :var options: The possible list of zoom values
-    :type options: list
+    Args:
+        value (any  :var options: The possible list of zoom values)
+        options (list)
     """
 
     def __init__(
@@ -261,17 +237,12 @@ class InvalidOptionError(MapillaryException):
         value: any,
         options: list,
     ):
-        """
-        Initializing InvalidOptionError constructor
+        """Initializing InvalidOptionError constructor.
 
-        :param param: The invalid param passed
-        :type param: str
-
-        :param value: The invalid value passed
-        :type value: any
-
-        :param options: The possible list of zoom values
-        :type options: list
+        Args:
+            param (str): The invalid param passed
+            value (any): The invalid value passed
+            options (list): The possible list of zoom values
         """
 
         self.param = param
@@ -292,14 +263,14 @@ class InvalidOptionError(MapillaryException):
 
 
 class InvalidFieldError(MapillaryException):
-    """
-    Raised when an API endpoint is passed invalid field elements
+    """Raised when an API endpoint is passed invalid field elements.
 
-    :var endpoint: The API endpoint that was targeted
-    :type endpoint: str
+    Attributes:
+        endpoint (str  :var field: The invalid field that was passed):
+            The API endpoint that was targeted
 
-    :var field: The invalid field that was passed
-    :type field: list
+    Args:
+        field (list)
     """
 
     def __init__(
@@ -307,14 +278,11 @@ class InvalidFieldError(MapillaryException):
         endpoint: str,
         field: list,
     ):
-        """
-        Initializing InvalidFieldError constructor
+        """Initializing InvalidFieldError constructor.
 
-        :param endpoint: The API endpoint that was targeted
-        :type endpoint: str
-
-        :param field: The invalid field that was passed
-        :type field: list
+        Args:
+            endpoint (str): The API endpoint that was targeted
+            field (list): The invalid field that was passed
         """
 
         self.endpoint = endpoint
@@ -328,9 +296,7 @@ class InvalidFieldError(MapillaryException):
 
 
 class LiteralEnforcementException(MapillaryException):
-    """
-    Raised when literals passed do not correspond to options
-    """
+    """Raised when literals passed do not correspond to options."""
 
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
@@ -348,9 +314,7 @@ class LiteralEnforcementException(MapillaryException):
 
 
 class InvalidNumberOfArguments(MapillaryException):
-    """
-    Raised when an inappropriate number of parameters are passed to a function
-    """
+    """Raised when an inappropriate number of parameters are passed to a function."""
 
     def __init__(
         self,

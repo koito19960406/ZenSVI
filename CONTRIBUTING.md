@@ -101,22 +101,42 @@ Please note that the `zensvi` project is released with a [Code of Conduct](CONDU
 
 ## Docstring Style
 
-We use Sphinx-style docstrings for this project. Please ensure all functions, classes, and modules have proper docstrings. Here's an example:
+We use Google-style docstrings for this project. Please ensure all functions, classes, and modules have proper docstrings. Here's an example:
 
 ```python
-def function_name(param1, param2):
-"""
-Short description of the function.
-Longer description of the function if necessary.
-:param param1: Description of param1.
-:type param1: type
-:param param2: Description of param2.
-:type param2: type
-:returns: Description of the return value.
-:rtype: return_type
-:raises ExceptionType: When and why this exception is raised.
-"""
-# Function body
+def function_name(param1: type, param2: type) -> return_type:
+    """Short description of the function.
+
+    Longer description of the function if necessary.
+
+    Args:
+        param1: Description of param1.
+        param2: Description of param2.
+
+    Returns:
+        Description of the return value.
+
+    Raises:
+        ExceptionType: When and why this exception is raised.
+    """
+    # Function body
 ```
 
-We use `pydocstyle` to check docstring formatting. Make sure to run it before submitting your code.
+To help maintain consistent docstring formatting, please use the following tools:
+
+1. Use `docformatter` to format docstrings:
+   ```
+   docformatter --in-place --wrap-summaries 88 --wrap-descriptions 88 -r src
+   ```
+
+2. Use `docconvert` to convert docstrings to Google style:
+   ```
+   docconvert -i guess -o google --in-place -v src
+   ```
+
+3. Use `pydocstyle` to check docstring formatting:
+   ```
+   pydocstyle src
+   ```
+
+Make sure to run these tools before submitting your code. This will help ensure consistent and well-formatted docstrings throughout the project.

@@ -11,8 +11,8 @@ from zensvi.utils.log import Logger
 
 
 def _xyz2lonlat(xyz):
-    """
-    Converts 3D Cartesian coordinates (x, y, z) to geographic coordinates (longitude, latitude).
+    """Converts 3D Cartesian coordinates (x, y, z) to geographic coordinates (longitude,
+    latitude).
 
     Args:
         xyz (np.ndarray): An array of shape (..., 3) containing 3D Cartesian coordinates.
@@ -38,8 +38,8 @@ def _xyz2lonlat(xyz):
 
 
 def _lonlat2XY(lonlat, shape):
-    """
-    Converts geographic coordinates (longitude, latitude) to pixel coordinates (X, Y) based on an image shape.
+    """Converts geographic coordinates (longitude, latitude) to pixel coordinates (X, Y)
+    based on an image shape.
 
     Args:
         lonlat (np.ndarray): An array of shape (..., 2) containing longitude and latitude coordinates.
@@ -57,8 +57,8 @@ def _lonlat2XY(lonlat, shape):
 
 
 class ImageTransformer:
-    """
-    Transforms images by applying various projections such as fisheye and perspective adjustments.
+    """Transforms images by applying various projections such as fisheye and perspective
+    adjustments.
 
     Args:
         dir_input (Union[str, Path]): Input directory containing images.
@@ -95,8 +95,8 @@ class ImageTransformer:
     def dir_input(self):
         """Property for the input directory.
 
-        :return: dir_input
-        :rtype: Path
+        Returns:
+            Path: dir_input
         """
         return self._dir_input
 
@@ -112,8 +112,8 @@ class ImageTransformer:
     def dir_output(self):
         """Property for the output directory.
 
-        :return: dir_output
-        :rtype: Path
+        Returns:
+            Path: dir_output
         """
         return self._dir_output
 
@@ -126,8 +126,7 @@ class ImageTransformer:
         self._dir_output = value
 
     def perspective(self, img, FOV, THETA, PHI, height, width):
-        """
-        Transforms an image to simulate a perspective view from specific angles.
+        """Transforms an image to simulate a perspective view from specific angles.
 
         Args:
             img (np.ndarray): Source image to transform.
@@ -173,8 +172,7 @@ class ImageTransformer:
         return persp
 
     def equidistant_fisheye(self, img):
-        """
-        Transforms an image to an equidistant fisheye projection.
+        """Transforms an image to an equidistant fisheye projection.
 
         Args:
             img (np.ndarray): Source image to transform.
@@ -204,8 +202,7 @@ class ImageTransformer:
         return new_img
 
     def orthographic_fisheye(self, img):
-        """
-        Transforms an image to an orthographic fisheye projection.
+        """Transforms an image to an orthographic fisheye projection.
 
         Args:
             img (np.ndarray): Source image to transform.
@@ -234,8 +231,7 @@ class ImageTransformer:
         return new_img
 
     def stereographic_fisheye(self, img):
-        """
-        Transforms an image to a stereographic fisheye projection.
+        """Transforms an image to a stereographic fisheye projection.
 
         Args:
             img (np.ndarray): Source image to transform.
@@ -273,8 +269,7 @@ class ImageTransformer:
         return new_img
 
     def equisolid_fisheye(self, img):
-        """
-        Transforms an image to an equisolid fisheye projection.
+        """Transforms an image to an equisolid fisheye projection.
 
         Args:
             img (np.ndarray): Source image to transform.
@@ -312,8 +307,8 @@ class ImageTransformer:
         show_size: Union[int, float] = 100,
         use_upper_half: bool = False,
     ):
-        """
-        Applies specified transformations to all images in the input directory and saves them in the output directory.
+        """Applies specified transformations to all images in the input directory and
+        saves them in the output directory.
 
         Args:
             style_list (str): Space-separated list of transformation styles to apply. Valid styles include 'perspective',

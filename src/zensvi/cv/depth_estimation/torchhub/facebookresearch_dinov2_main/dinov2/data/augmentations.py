@@ -14,6 +14,8 @@ logger = logging.getLogger("dinov2")
 
 
 class DataAugmentationDINO(object):
+    """"""
+
     def __init__(
         self,
         global_crops_scale,

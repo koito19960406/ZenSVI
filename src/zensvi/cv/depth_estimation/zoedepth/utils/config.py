@@ -247,7 +247,25 @@ COMMON_TRAINING_CONFIG = {
 
 
 def flatten(config, except_keys=("bin_conf")):
+    """
+
+    Args:
+      config:
+      except_keys: (Default value = ("bin_conf"))
+
+    Returns:
+
+    """
+
     def recurse(inp):
+        """
+
+        Args:
+          inp:
+
+        Returns:
+
+        """
         if isinstance(inp, dict):
             for key, value in inp.items():
                 if key in except_keys:
@@ -262,15 +280,14 @@ def flatten(config, except_keys=("bin_conf")):
 
 def split_combined_args(kwargs):
     """Splits the arguments that are combined with '__' into multiple arguments.
-       Combined arguments should have equal number of keys and values.
-       Keys are separated by '__' and Values are separated with ';'.
-       For example, '__n_bins__lr=256;0.001'
+    Combined arguments should have equal number of keys and values. Keys are separated
+    by '__' and Values are separated with ';'. For example, '__n_bins__lr=256;0.001'.
 
     Args:
-        kwargs (dict): key-value pairs of arguments where key-value is optionally combined according to the above format.
+      kwargs(dict): key-value pairs of arguments where key-value is optionally combined according to the above format.
 
     Returns:
-        dict: Parsed dict with the combined arguments split into individual key-value pairs.
+      dict: Parsed dict with the combined arguments split into individual key-value pairs.
     """
     new_kwargs = dict(kwargs)
     for key, value in kwargs.items():
@@ -286,8 +303,16 @@ def split_combined_args(kwargs):
 
 
 def parse_list(config, key, dtype=int):
-    """Parse a list of values for the key if the value is a string. The values are separated by a comma.
-    Modifies the config in place.
+    """Parse a list of values for the key if the value is a string.
+
+    The values are separated by a comma. Modifies the config in place.
+
+    Args:
+      config:
+      key:
+      dtype: (Default value = int)
+
+    Returns:
     """
     if key in config:
         if isinstance(config[key], str):
@@ -301,11 +326,11 @@ def get_model_config(model_name, model_version=None):
     """Find and parse the .json config file for the model.
 
     Args:
-        model_name (str): name of the model. The config file should be named config_{model_name}[_{model_version}].json under the models/{model_name} directory.
-        model_version (str, optional): Specific config version. If specified config_{model_name}_{model_version}.json is searched for and used. Otherwise config_{model_name}.json is used. Defaults to None.
+      model_name(str): name of the model. The config file should be named config_{model_name}[_{model_version}].json under the models/{model_name} directory.
+      model_version(str, optional): Specific config version. If specified config_{model_name}_{model_version}.json is searched for and used. Otherwise config_{model_name}.json is used. Defaults to None.
 
     Returns:
-        easydict: the config dictionary for the model.
+      easydict: the config dictionary for the model.
     """
     config_fname = (
         f"config_{model_name}_{model_version}.json" if model_version is not None else f"config_{model_name}.json"
@@ -328,6 +353,18 @@ def get_model_config(model_name, model_version=None):
 
 
 def update_model_config(config, mode, model_name, model_version=None, strict=False):
+    """
+
+    Args:
+      config:
+      mode:
+      model_name:
+      model_version: (Default value = None)
+      strict: (Default value = False)
+
+    Returns:
+
+    """
     model_config = get_model_config(model_name, model_version)
     if model_config is not None:
         config = {**config, **flatten({**model_config.model, **model_config[mode]})}
@@ -337,6 +374,16 @@ def update_model_config(config, mode, model_name, model_version=None, strict=Fal
 
 
 def check_choices(name, value, choices):
+    """
+
+    Args:
+      name:
+      value:
+      choices:
+
+    Returns:
+
+    """
     # return  # No checks in dev branch
     if value not in choices:
         raise ValueError(f"{name} {value} not in supported choices {choices}")
@@ -358,20 +405,22 @@ def get_config(model_name, mode="train", dataset=None, **overwrite_kwargs):
     """Main entry point to get the config for the model.
 
     Args:
-        model_name (str): name of the desired model.
-        mode (str, optional): "train" or "infer". Defaults to 'train'.
-        dataset (str, optional): If specified, the corresponding dataset configuration is loaded as well. Defaults to None.
-
+      model_name(str): name of the desired model.
+      mode(str, optional): "train" or "infer". Defaults to 'train'.
+      dataset(str, optional): If specified, the corresponding dataset configuration is loaded as well. Defaults to None.
     Keyword Args: key-value pairs of arguments to overwrite the default config.
-
     The order of precedence for overwriting the config is (Higher precedence first):
-        # 1. overwrite_kwargs
-        # 2. "config_version": Config file version if specified in overwrite_kwargs. The corresponding config loaded is config_{model_name}_{config_version}.json
-        # 3. "version_name": Default Model version specific config specified in overwrite_kwargs. The corresponding config loaded is config_{model_name}_{version_name}.json
-        # 4. common_config: Default config for all models specified in COMMON_CONFIG
+      dataset(str, optional): If specified, the corresponding dataset configuration is loaded as well. Defaults to None.
+    Keyword Args: key-value pairs of arguments to overwrite the default config.
+    The order of precedence for overwriting the config is (Higher precedence first):
+    # 1. overwrite_kwargs
+      # 2. "config_version": Config file version if specified in overwrite_kwargs. The corresponding config loaded is config_{model_name}_{config_version}.json
+      # 3. "version_name": Default Model version specific config specified in overwrite_kwargs. The corresponding config loaded is config_{model_name}_{version_name}.json
+      # 4. common_config: Default config for all models specified in COMMON_CONFIG
+      **overwrite_kwargs:
 
     Returns:
-        easydict: The config dictionary for the model.
+      easydict: The config dictionary for the model.
     """
 
     check_choices("Model", model_name, ["zoedepth", "zoedepth_nk"])
@@ -436,5 +485,14 @@ def get_config(model_name, mode="train", dataset=None, **overwrite_kwargs):
 
 
 def change_dataset(config, new_dataset):
+    """
+
+    Args:
+      config:
+      new_dataset:
+
+    Returns:
+
+    """
     config.update(DATASETS_CONFIG[new_dataset])
     return config

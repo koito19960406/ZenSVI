@@ -1,10 +1,11 @@
 import os
-import shutil
 import unittest
 from pathlib import Path
 
-from zensvi.cv import DepthEstimator
 from test_base import TestBase
+
+from zensvi.cv import DepthEstimator
+
 
 class TestDepthEstimator(TestBase):
     @classmethod

@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.config.api.vector_tiles
+"""mapillary.config.api.vector_tiles
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This module contains the class implementation of the VectorTile functionalities for the Vector Tile
@@ -16,11 +14,12 @@ For more information, please check out https://www.mapillary.com/developer/api-d
 
 
 class VectorTiles:
-    """
-    Vector tiles provide an easy way to visualize vast amounts of data. Mapillary APIs are heavily
-    based on vector tiles to provide the developers with flexibility to programmatically interact
-    with the data they contain in custom ways. Vector tiles support filtering and querying rendered
-    features. Mapillary vector tiles follow the Mapbox Tile Specification,
+    """Vector tiles provide an easy way to visualize vast amounts of data.
+
+    Mapillary APIs are heavily based on vector tiles to provide the developers with
+    flexibility to programmatically interact with the data they contain in custom ways.
+    Vector tiles support filtering and querying rendered features. Mapillary vector
+    tiles follow the Mapbox Tile Specification,
     https://docs.mapbox.com/vector-tiles/specification/
     """
 
@@ -30,9 +29,8 @@ class VectorTiles:
         y: float,
         z: float,
     ) -> str:
-        """
-        Contain positions of images and sequences with original
-        geometries (not computed) for the layer 'overview'
+        """Contain positions of images and sequences with original geometries (not
+        computed) for the layer 'overview'.
 
         This layer offers,
 
@@ -56,9 +54,8 @@ class VectorTiles:
         y: float,
         z: float,
     ) -> str:
-        """
-        Contain positions of images and sequences with original geometries (not computed) for the
-        layer 'sequence'
+        """Contain positions of images and sequences with original geometries (not
+        computed) for the layer 'sequence'.
 
         This layer offers,
 
@@ -83,9 +80,8 @@ class VectorTiles:
         y: float,
         z: float,
     ) -> str:
-        """
-        Contain positions of images and sequences with original geometries (not computed) for the
-        layer 'image'
+        """Contain positions of images and sequences with original geometries (not
+        computed) for the layer 'image'.
 
         This layer offers,
 
@@ -111,9 +107,8 @@ class VectorTiles:
         y: float,
         z: float,
     ) -> str:
-        """
-        Contain positions of images and sequences with original geometries
-        (computed) for the layer 'overview'
+        """Contain positions of images and sequences with original geometries (computed)
+        for the layer 'overview'.
 
         This layer offers,
 
@@ -137,9 +132,8 @@ class VectorTiles:
         y: float,
         z: float,
     ) -> str:
-        """
-        Contain positions of images and sequences with original geometries (computed) for the
-        layer 'sequence'
+        """Contain positions of images and sequences with original geometries (computed)
+        for the layer 'sequence'.
 
         This layer offers,
 
@@ -164,9 +158,8 @@ class VectorTiles:
         y: float,
         z: float,
     ) -> str:
-        """
-        Contain positions of images and sequences with original geometries (computed) for the
-        layer 'image'
+        """Contain positions of images and sequences with original geometries (computed)
+        for the layer 'image'.
 
         This layer offers,
 
@@ -192,9 +185,8 @@ class VectorTiles:
         y: float,
         z: float,
     ) -> str:
-        """
-        These tiles represent positions of map features which are detected on the Mapillary platform
-        and are not traffic signs.
+        """These tiles represent positions of map features which are detected on the
+        Mapillary platform and are not traffic signs.
 
         This layer offers,
 
@@ -220,9 +212,8 @@ class VectorTiles:
         y: float,
         z: float,
     ) -> str:
-        """
-        These tiles represent positions of map features which are detected on the Mapillary
-        platform and are traffic signs.
+        """These tiles represent positions of map features which are detected on the
+        Mapillary platform and are traffic signs.
 
         The tile metadata is exactly the same as Map feature tiles, points, except that the
         layer name is traffic_sign.

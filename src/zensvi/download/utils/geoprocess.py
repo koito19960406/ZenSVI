@@ -1,16 +1,15 @@
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+
 import geopandas as gpd
-import geopy.distance
+import networkx
+import numpy as np
 import osmnx as ox
 import pandas as pd
+from pyproj import Transformer
 from shapely.geometry import Point
 from tqdm.auto import tqdm
 
 tqdm.pandas()
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
-
-import networkx
-import numpy as np
-from pyproj import Transformer
 
 
 class GeoProcessor:
@@ -53,7 +52,6 @@ class GeoProcessor:
         result_gdf = pd.concat(gdf_list)
         return result_gdf
 
-    # Define other processing functions (process_point, process_multipoint, etc.) as class methods here
     def process_point(self, gdf):
         gdf["longitude"] = gdf.geometry.x
         gdf["latitude"] = gdf.geometry.y
@@ -103,8 +101,8 @@ class GeoProcessor:
         return edges_utm["sample_points"].tolist(), utm_crs
 
     def create_point_grid(self, polygon, grid_size, crs="EPSG:4326"):
-        """
-        Create a point grid within the bounding box of the input GeoDataFrame with the given grid size in meters.
+        """Create a point grid within the bounding box of the input GeoDataFrame with
+        the given grid size in meters.
 
         Args:
             polygon (geopandas.GeoDataFrame): The input GeoDataFrame to get the bounding box from.
@@ -152,7 +150,7 @@ class GeoProcessor:
             with ProcessPoolExecutor() as executor:
                 batch_futures = {}
                 for geom in gdf.geometry.iloc[i * batch_size : (i + 1) * batch_size]:
-                    if self.grid == False:
+                    if not self.grid:
                         future = executor.submit(self.get_street_points, geom)
                     else:
                         future = executor.submit(self.create_point_grid, geom, self.grid_size)

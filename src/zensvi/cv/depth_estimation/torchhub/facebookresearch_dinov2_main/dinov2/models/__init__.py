@@ -12,6 +12,16 @@ logger = logging.getLogger("dinov2")
 
 
 def build_model(args, only_teacher=False, img_size=224):
+    """
+
+    Args:
+      args:
+      only_teacher:  (Default value = False)
+      img_size:  (Default value = 224)
+
+    Returns:
+
+    """
     args.arch = args.arch.removesuffix("_memeff")
     if "vit" in args.arch:
         vit_kwargs = dict(
@@ -37,4 +47,13 @@ def build_model(args, only_teacher=False, img_size=224):
 
 
 def build_model_from_cfg(cfg, only_teacher=False):
+    """
+
+    Args:
+      cfg:
+      only_teacher: (Default value = False)
+
+    Returns:
+
+    """
     return build_model(cfg.student, only_teacher=only_teacher, img_size=cfg.crops.global_crops_size)

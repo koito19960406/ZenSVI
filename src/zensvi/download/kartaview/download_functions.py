@@ -123,7 +123,7 @@ def get_points_in_shape(shape):
             if not points_all.empty:
                 nSeqs = points_all["sequenceId"].nunique()
             print(
-                f"Download complete, collected",
+                "Download complete, collected",
                 nSeqs,
                 "sequences",
                 len(points_all),

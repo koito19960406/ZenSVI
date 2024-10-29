@@ -12,12 +12,27 @@ _DINOV2_BASE_URL = "https://dl.fbaipublicfiles.com/dinov2"
 
 
 def _make_dinov2_model_name(arch_name: str, patch_size: int, num_register_tokens: int = 0) -> str:
+    """
+
+    Args:
+      arch_name: str:
+      patch_size: int:
+      num_register_tokens: int:  (Default value = 0)
+      arch_name: str:
+      patch_size: int:
+      num_register_tokens: int:  (Default value = 0)
+
+    Returns:
+
+    """
     compact_arch_name = arch_name.replace("_", "")[:4]
     registers_suffix = f"_reg{num_register_tokens}" if num_register_tokens else ""
     return f"dinov2_{compact_arch_name}{patch_size}{registers_suffix}"
 
 
 class Weights(Enum):
+    """"""
+
     LVD142M = "LVD142M"
 
 
@@ -36,6 +51,38 @@ def _make_dinov2_model(
     weights: Union[Weights, str] = Weights.LVD142M,
     **kwargs,
 ):
+    """
+
+    Args:
+      *:
+      arch_name: str:  (Default value = "vit_large")
+      img_size: int:  (Default value = 518)
+      patch_size: int:  (Default value = 14)
+      init_values: float:  (Default value = 1.0)
+      ffn_layer: str:  (Default value = "mlp")
+      block_chunks: int:  (Default value = 0)
+      num_register_tokens: int:  (Default value = 0)
+      interpolate_antialias: bool:  (Default value = False)
+      interpolate_offset: float:  (Default value = 0.1)
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+      str]: (Default value = Weights.LVD142M)
+      **kwargs:
+      arch_name: str:  (Default value = "vit_large")
+      img_size: int:  (Default value = 518)
+      patch_size: int:  (Default value = 14)
+      init_values: float:  (Default value = 1.0)
+      ffn_layer: str:  (Default value = "mlp")
+      block_chunks: int:  (Default value = 0)
+      num_register_tokens: int:  (Default value = 0)
+      interpolate_antialias: bool:  (Default value = False)
+      interpolate_offset: float:  (Default value = 0.1)
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+
+    Returns:
+
+    """
     import vision_transformer as vits
 
     if isinstance(weights, str):
@@ -68,29 +115,69 @@ def _make_dinov2_model(
 
 
 def dinov2_vits14(*, pretrained: bool = True, weights: Union[Weights, str] = Weights.LVD142M, **kwargs):
-    """
-    DINOv2 ViT-S/14 model (optionally) pretrained on the LVD-142M dataset.
+    """DINOv2 ViT-S/14 model (optionally) pretrained on the LVD-142M dataset.
+
+    Args:
+      *:
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+      str]: (Default value = Weights.LVD142M)
+      **kwargs:
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+
+    Returns:
     """
     return _make_dinov2_model(arch_name="vit_small", pretrained=pretrained, weights=weights, **kwargs)
 
 
 def dinov2_vitb14(*, pretrained: bool = True, weights: Union[Weights, str] = Weights.LVD142M, **kwargs):
-    """
-    DINOv2 ViT-B/14 model (optionally) pretrained on the LVD-142M dataset.
+    """DINOv2 ViT-B/14 model (optionally) pretrained on the LVD-142M dataset.
+
+    Args:
+      *:
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+      str]: (Default value = Weights.LVD142M)
+      **kwargs:
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+
+    Returns:
     """
     return _make_dinov2_model(arch_name="vit_base", pretrained=pretrained, weights=weights, **kwargs)
 
 
 def dinov2_vitl14(*, pretrained: bool = True, weights: Union[Weights, str] = Weights.LVD142M, **kwargs):
-    """
-    DINOv2 ViT-L/14 model (optionally) pretrained on the LVD-142M dataset.
+    """DINOv2 ViT-L/14 model (optionally) pretrained on the LVD-142M dataset.
+
+    Args:
+      *:
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+      str]: (Default value = Weights.LVD142M)
+      **kwargs:
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+
+    Returns:
     """
     return _make_dinov2_model(arch_name="vit_large", pretrained=pretrained, weights=weights, **kwargs)
 
 
 def dinov2_vitg14(*, pretrained: bool = True, weights: Union[Weights, str] = Weights.LVD142M, **kwargs):
-    """
-    DINOv2 ViT-g/14 model (optionally) pretrained on the LVD-142M dataset.
+    """DINOv2 ViT-g/14 model (optionally) pretrained on the LVD-142M dataset.
+
+    Args:
+      *:
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+      str]: (Default value = Weights.LVD142M)
+      **kwargs:
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+
+    Returns:
     """
     return _make_dinov2_model(
         arch_name="vit_giant2",
@@ -102,8 +189,19 @@ def dinov2_vitg14(*, pretrained: bool = True, weights: Union[Weights, str] = Wei
 
 
 def dinov2_vits14_reg(*, pretrained: bool = True, weights: Union[Weights, str] = Weights.LVD142M, **kwargs):
-    """
-    DINOv2 ViT-S/14 model with registers (optionally) pretrained on the LVD-142M dataset.
+    """DINOv2 ViT-S/14 model with registers (optionally) pretrained on the LVD-142M
+    dataset.
+
+    Args:
+      *:
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+      str]: (Default value = Weights.LVD142M)
+      **kwargs:
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+
+    Returns:
     """
     return _make_dinov2_model(
         arch_name="vit_small",
@@ -117,8 +215,19 @@ def dinov2_vits14_reg(*, pretrained: bool = True, weights: Union[Weights, str] =
 
 
 def dinov2_vitb14_reg(*, pretrained: bool = True, weights: Union[Weights, str] = Weights.LVD142M, **kwargs):
-    """
-    DINOv2 ViT-B/14 model with registers (optionally) pretrained on the LVD-142M dataset.
+    """DINOv2 ViT-B/14 model with registers (optionally) pretrained on the LVD-142M
+    dataset.
+
+    Args:
+      *:
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+      str]: (Default value = Weights.LVD142M)
+      **kwargs:
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+
+    Returns:
     """
     return _make_dinov2_model(
         arch_name="vit_base",
@@ -132,8 +241,19 @@ def dinov2_vitb14_reg(*, pretrained: bool = True, weights: Union[Weights, str] =
 
 
 def dinov2_vitl14_reg(*, pretrained: bool = True, weights: Union[Weights, str] = Weights.LVD142M, **kwargs):
-    """
-    DINOv2 ViT-L/14 model with registers (optionally) pretrained on the LVD-142M dataset.
+    """DINOv2 ViT-L/14 model with registers (optionally) pretrained on the LVD-142M
+    dataset.
+
+    Args:
+      *:
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+      str]: (Default value = Weights.LVD142M)
+      **kwargs:
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+
+    Returns:
     """
     return _make_dinov2_model(
         arch_name="vit_large",
@@ -147,8 +267,19 @@ def dinov2_vitl14_reg(*, pretrained: bool = True, weights: Union[Weights, str] =
 
 
 def dinov2_vitg14_reg(*, pretrained: bool = True, weights: Union[Weights, str] = Weights.LVD142M, **kwargs):
-    """
-    DINOv2 ViT-g/14 model with registers (optionally) pretrained on the LVD-142M dataset.
+    """DINOv2 ViT-g/14 model with registers (optionally) pretrained on the LVD-142M
+    dataset.
+
+    Args:
+      *:
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+      str]: (Default value = Weights.LVD142M)
+      **kwargs:
+      pretrained: bool:  (Default value = True)
+      weights: Union[Weights:
+
+    Returns:
     """
     return _make_dinov2_model(
         arch_name="vit_giant2",

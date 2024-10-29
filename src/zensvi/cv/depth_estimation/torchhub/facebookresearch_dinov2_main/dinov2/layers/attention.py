@@ -16,7 +16,7 @@ logger = logging.getLogger("dinov2")
 
 
 try:
-    from xformers.ops import fmha, memory_efficient_attention, unbind
+    from xformers.ops import memory_efficient_attention, unbind
 
     XFORMERS_AVAILABLE = True
 except ImportError:
@@ -25,6 +25,8 @@ except ImportError:
 
 
 class Attention(nn.Module):
+    """"""
+
     def __init__(
         self,
         dim: int,
@@ -45,6 +47,15 @@ class Attention(nn.Module):
         self.proj_drop = nn.Dropout(proj_drop)
 
     def forward(self, x: Tensor) -> Tensor:
+        """
+
+        Args:
+          x: Tensor:
+          x: Tensor:
+
+        Returns:
+
+        """
         B, N, C = x.shape
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
 
@@ -61,7 +72,19 @@ class Attention(nn.Module):
 
 
 class MemEffAttention(Attention):
+    """"""
+
     def forward(self, x: Tensor, attn_bias=None) -> Tensor:
+        """
+
+        Args:
+          x: Tensor:
+          attn_bias: (Default value = None)
+          x: Tensor:
+
+        Returns:
+
+        """
         if not XFORMERS_AVAILABLE:
             assert attn_bias is None, "xFormers is required for nested tensors usage"
             return super().forward(x)

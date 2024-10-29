@@ -1,9 +1,10 @@
 import os
-import shutil
 from pathlib import Path
+import unittest
+
+from test_base import TestBase
 
 from zensvi.cv import ClassifierWeather
-from test_base import TestBase
 
 
 class TestClassifierWeather(TestBase):

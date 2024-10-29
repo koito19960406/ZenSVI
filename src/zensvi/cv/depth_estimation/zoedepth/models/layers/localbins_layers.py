@@ -28,14 +28,17 @@ import torch.nn as nn
 
 class SeedBinRegressor(nn.Module):
     def __init__(self, in_features, n_bins=16, mlp_dim=256, min_depth=1e-3, max_depth=10):
-        """Bin center regressor network. Bin centers are bounded on (min_depth, max_depth) interval.
+        """Bin center regressor network. Bin centers are bounded on (min_depth, max_depth)
+        interval.
 
         Args:
-            in_features (int): input channels
-            n_bins (int, optional): Number of bin centers. Defaults to 16.
-            mlp_dim (int, optional): Hidden dimension. Defaults to 256.
-            min_depth (float, optional): Min depth value. Defaults to 1e-3.
-            max_depth (float, optional): Max depth value. Defaults to 10.
+        in_features(int): input channels
+        n_bins(int): Number of bin centers. Defaults to 16.
+        mlp_dim(int): Hidden dimension. Defaults to 256.
+        min_depth(float): Min depth value. Defaults to 1e-3.
+        max_depth(float): Max depth value. Defaults to 10.
+
+        Returns:
         """
         super().__init__()
         self.version = "1_1"
@@ -50,8 +53,14 @@ class SeedBinRegressor(nn.Module):
         )
 
     def forward(self, x):
-        """
-        Returns tensor of bin_width vectors (centers). One vector b for every pixel
+        """Returns tensor of bin_width vectors (centers).
+
+        One vector b for every pixel
+
+        Args:
+          x:
+
+        Returns:
         """
         B = self._net(x)
         eps = 1e-3
@@ -68,14 +77,16 @@ class SeedBinRegressor(nn.Module):
 
 class SeedBinRegressorUnnormed(nn.Module):
     def __init__(self, in_features, n_bins=16, mlp_dim=256, min_depth=1e-3, max_depth=10):
-        """Bin center regressor network. Bin centers are unbounded
+        """Bin center regressor network. Bin centers are unbounded.
 
         Args:
-            in_features (int): input channels
-            n_bins (int, optional): Number of bin centers. Defaults to 16.
-            mlp_dim (int, optional): Hidden dimension. Defaults to 256.
-            min_depth (float, optional): Not used. (for compatibility with SeedBinRegressor)
-            max_depth (float, optional): Not used. (for compatibility with SeedBinRegressor)
+        in_features(int): input channels
+        n_bins(int): Number of bin centers. Defaults to 16.
+        mlp_dim(int): Hidden dimension. Defaults to 256.
+        min_depth(float): Not used. (for compatibility with SeedBinRegressor)
+        max_depth(float): Not used. (for compatibility with SeedBinRegressor)
+
+        Returns:
         """
         super().__init__()
         self.version = "1_1"
@@ -87,8 +98,14 @@ class SeedBinRegressorUnnormed(nn.Module):
         )
 
     def forward(self, x):
-        """
-        Returns tensor of bin_width vectors (centers). One vector b for every pixel
+        """Returns tensor of bin_width vectors (centers).
+
+        One vector b for every pixel
+
+        Args:
+          x:
+
+        Returns:
         """
         B_centers = self._net(x)
         return B_centers, B_centers
@@ -96,12 +113,14 @@ class SeedBinRegressorUnnormed(nn.Module):
 
 class Projector(nn.Module):
     def __init__(self, in_features, out_features, mlp_dim=128):
-        """Projector MLP
+        """Projector MLP.
 
         Args:
-            in_features (int): input channels
-            out_features (int): output channels
-            mlp_dim (int, optional): hidden dimension. Defaults to 128.
+        in_features(int): input channels
+        out_features(int): output channels
+        mlp_dim(int): hidden dimension. Defaults to 128.
+
+        Returns:
         """
         super().__init__()
 
@@ -112,10 +131,20 @@ class Projector(nn.Module):
         )
 
     def forward(self, x):
+        """
+
+        Args:
+          x:
+
+        Returns:
+
+        """
         return self._net(x)
 
 
 class LinearSplitter(nn.Module):
+    """"""
+
     def __init__(
         self,
         in_features,
@@ -140,9 +169,18 @@ class LinearSplitter(nn.Module):
         )
 
     def forward(self, x, b_prev, prev_b_embedding=None, interpolate=True, is_for_query=False):
-        """
-        x : feature block; shape - n, c, h, w
+        """x : feature block; shape - n, c, h, w
         b_prev : previous bin widths normed; shape - n, prev_nbins, h, w
+
+        Args:
+          x:
+          b_prev:
+          prev_b_embedding: (Default value = None)
+          interpolate: (Default value = True)
+          is_for_query: (Default value = False)
+
+        Returns:
+
         """
         if prev_b_embedding is not None:
             if interpolate:

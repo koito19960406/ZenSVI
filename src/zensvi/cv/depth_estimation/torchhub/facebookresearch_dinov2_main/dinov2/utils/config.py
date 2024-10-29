@@ -18,6 +18,14 @@ logger = logging.getLogger("dinov2")
 
 
 def apply_scaling_rules_to_cfg(cfg):  # to fix
+    """
+
+    Args:
+      cfg:
+
+    Returns:
+
+    """
     if cfg.optim.scaling_rule == "sqrt_wrt_1024":
         base_lr = cfg.optim.base_lr
         cfg.optim.lr = base_lr
@@ -29,6 +37,16 @@ def apply_scaling_rules_to_cfg(cfg):  # to fix
 
 
 def write_config(cfg, output_dir, name="config.yaml"):
+    """
+
+    Args:
+      cfg:
+      output_dir:
+      name: (Default value = "config.yaml")
+
+    Returns:
+
+    """
     logger.info(OmegaConf.to_yaml(cfg))
     saved_cfg_path = os.path.join(output_dir, name)
     with open(saved_cfg_path, "w") as f:
@@ -37,6 +55,14 @@ def write_config(cfg, output_dir, name="config.yaml"):
 
 
 def get_cfg_from_args(args):
+    """
+
+    Args:
+      args:
+
+    Returns:
+
+    """
     args.output_dir = os.path.abspath(args.output_dir)
     args.opts += [f"train.output_dir={args.output_dir}"]
     default_cfg = OmegaConf.create(dinov2_default_config)
@@ -46,6 +72,14 @@ def get_cfg_from_args(args):
 
 
 def default_setup(args):
+    """
+
+    Args:
+      args:
+
+    Returns:
+
+    """
     distributed.enable(overwrite=True)
     seed = getattr(args, "seed", 0)
     rank = distributed.get_global_rank()
@@ -60,8 +94,12 @@ def default_setup(args):
 
 
 def setup(args):
-    """
-    Create configs and perform basic setups.
+    """Create configs and perform basic setups.
+
+    Args:
+      args:
+
+    Returns:
     """
     cfg = get_cfg_from_args(args)
     os.makedirs(args.output_dir, exist_ok=True)

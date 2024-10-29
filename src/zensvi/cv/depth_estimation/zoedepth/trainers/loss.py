@@ -26,12 +26,20 @@ import numpy as np
 import torch
 import torch.cuda.amp as amp
 import torch.nn as nn
-import torch.nn.functional as F
 
 KEY_OUTPUT = "metric_depth"
 
 
 def extract_key(prediction, key):
+    """
+
+    Args:
+      prediction:
+      key:
+
+    Returns:
+
+    """
     if isinstance(prediction, dict):
         return prediction[key]
     return prediction
@@ -47,6 +55,19 @@ class SILogLoss(nn.Module):
         self.beta = beta
 
     def forward(self, input, target, mask=None, interpolate=True, return_interpolated=False):
+        """
+
+        Args:
+          input:
+          target:
+          mask: Default value
+          interpolate: Default value
+          return_interpolated: Default value
+
+        Returns:
+
+
+        """
         input = extract_key(input, KEY_OUTPUT)
         if input.shape[-1] != target.shape[-1] and interpolate:
             input = nn.functional.interpolate(input, target.shape[-2:], mode="bilinear", align_corners=True)
@@ -93,6 +114,14 @@ class SILogLoss(nn.Module):
 
 
 def grad(x):
+    """
+
+    Args:
+      x:
+
+    Returns:
+
+    """
     # x.shape : n, c, h, w
     diff_x = x[..., 1:, 1:] - x[..., 1:, :-1]
     diff_y = x[..., 1:, 1:] - x[..., :-1, 1:]
@@ -103,17 +132,38 @@ def grad(x):
 
 
 def grad_mask(mask):
+    """
+
+    Args:
+      mask:
+
+    Returns:
+
+    """
     return mask[..., 1:, 1:] & mask[..., 1:, :-1] & mask[..., :-1, 1:]
 
 
 class GradL1Loss(nn.Module):
-    """Gradient loss"""
+    """Gradient loss."""
 
     def __init__(self):
         super(GradL1Loss, self).__init__()
         self.name = "GradL1"
 
     def forward(self, input, target, mask=None, interpolate=True, return_interpolated=False):
+        """
+
+        Args:
+          input:
+          target:
+          mask: Default value
+          interpolate: Default value
+          return_interpolated: Default value
+
+        Returns:
+
+
+        """
         input = extract_key(input, KEY_OUTPUT)
         if input.shape[-1] != target.shape[-1] and interpolate:
             input = nn.functional.interpolate(input, target.shape[-2:], mode="bilinear", align_corners=True)
@@ -133,6 +183,7 @@ class GradL1Loss(nn.Module):
 
 
 class OrdinalRegressionLoss(object):
+    """"""
 
     def __init__(self, ord_num, beta, discretization="SID"):
         self.ord_num = ord_num
@@ -140,6 +191,14 @@ class OrdinalRegressionLoss(object):
         self.discretization = discretization
 
     def _create_ord_label(self, gt):
+        """
+
+        Args:
+          gt:
+
+        Returns:
+
+        """
         N, one, H, W = gt.shape
         # print("gt shape:", gt.shape)
 
@@ -168,9 +227,13 @@ class OrdinalRegressionLoss(object):
 
     def __call__(self, prob, gt):
         """
-        :param prob: ordinal regression probability, N x 2*Ord Num x H x W, torch.Tensor
-        :param gt: depth ground truth, NXHxW, torch.Tensor
-        :return: loss: loss value, torch.float
+        Args:
+            prob: ordinal regression probability, N x 2*Ord Num x H x W,
+                torch.Tensor
+            gt: depth ground truth, NXHxW, torch.Tensor
+
+        Returns:
+            loss: loss value, torch.float
         """
         # N, C, H, W = prob.shape
         valid_mask = gt > 0.0
@@ -182,7 +245,7 @@ class OrdinalRegressionLoss(object):
 
 
 class DiscreteNLLLoss(nn.Module):
-    """Cross entropy loss"""
+    """Cross entropy loss."""
 
     def __init__(self, min_depth=1e-3, max_depth=10, depth_bins=64):
         super(DiscreteNLLLoss, self).__init__()
@@ -198,6 +261,14 @@ class DiscreteNLLLoss(nn.Module):
         self.beta = max_depth + self.zeta
 
     def quantize_depth(self, depth):
+        """
+
+        Args:
+          depth:
+
+        Returns:
+
+        """
         # depth : N1HW
         # output : NCHW
 
@@ -209,13 +280,31 @@ class DiscreteNLLLoss(nn.Module):
         return depth
 
     def _dequantize_depth(self, depth):
-        """
-        Inverse of quantization
+        """Inverse of quantization
         depth : NCHW -> N1HW
+
+        Args:
+          depth:
+
+        Returns:
+
         """
         # Get the center of the bin
 
     def forward(self, input, target, mask=None, interpolate=True, return_interpolated=False):
+        """
+
+        Args:
+          input:
+          target:
+          mask: Default value
+          interpolate: Default value
+          return_interpolated: Default value
+
+        Returns:
+
+
+        """
         input = extract_key(input, KEY_OUTPUT)
         # assert torch.all(input <= 0), "Input should be negative"
 
@@ -249,6 +338,16 @@ class DiscreteNLLLoss(nn.Module):
 
 
 def compute_scale_and_shift(prediction, target, mask):
+    """
+
+    Args:
+      prediction:
+      target:
+      mask:
+
+    Returns:
+
+    """
     # system matrix: A = [[a_00, a_01], [a_10, a_11]]
     a_00 = torch.sum(mask * prediction * prediction, (1, 2))
     a_01 = torch.sum(mask * prediction, (1, 2))
@@ -273,11 +372,26 @@ def compute_scale_and_shift(prediction, target, mask):
 
 
 class ScaleAndShiftInvariantLoss(nn.Module):
+    """"""
+
     def __init__(self):
         super().__init__()
         self.name = "SSILoss"
 
     def forward(self, prediction, target, mask, interpolate=True, return_interpolated=False):
+        """
+
+        Args:
+          prediction:
+          target:
+          mask:
+          interpolate: Default value
+          return_interpolated: Default value
+
+        Returns:
+
+
+        """
 
         if prediction.shape[-1] != target.shape[-1] and interpolate:
             prediction = nn.functional.interpolate(prediction, target.shape[-2:], mode="bilinear", align_corners=True)

@@ -11,6 +11,8 @@ from torch.nn.utils import weight_norm
 
 
 class DINOHead(nn.Module):
+    """"""
+
     def __init__(
         self,
         in_dim,
@@ -36,12 +38,28 @@ class DINOHead(nn.Module):
         self.last_layer.weight_g.data.fill_(1)
 
     def _init_weights(self, m):
+        """
+
+        Args:
+          m:
+
+        Returns:
+
+        """
         if isinstance(m, nn.Linear):
             trunc_normal_(m.weight, std=0.02)
             if isinstance(m, nn.Linear) and m.bias is not None:
                 nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
+        """
+
+        Args:
+          x:
+
+        Returns:
+
+        """
         x = self.mlp(x)
         eps = 1e-6 if x.dtype == torch.float16 else 1e-12
         x = nn.functional.normalize(x, dim=-1, p=2, eps=eps)
@@ -50,6 +68,19 @@ class DINOHead(nn.Module):
 
 
 def _build_mlp(nlayers, in_dim, bottleneck_dim, hidden_dim=None, use_bn=False, bias=True):
+    """
+
+    Args:
+      nlayers:
+      in_dim:
+      bottleneck_dim:
+      hidden_dim: (Default value = None)
+      use_bn: (Default value = False)
+      bias: (Default value = True)
+
+    Returns:
+
+    """
     if nlayers == 1:
         return nn.Linear(in_dim, bottleneck_dim, bias=bias)
     else:

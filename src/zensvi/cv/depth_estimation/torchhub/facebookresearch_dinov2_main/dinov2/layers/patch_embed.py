@@ -15,6 +15,14 @@ from torch import Tensor
 
 
 def make_2tuple(x):
+    """
+
+    Args:
+      x:
+
+    Returns:
+
+    """
     if isinstance(x, tuple):
         assert len(x) == 2
         return x
@@ -24,15 +32,17 @@ def make_2tuple(x):
 
 
 class PatchEmbed(nn.Module):
-    """
-    2D image to patch embedding: (B,C,H,W) -> (B,N,D)
+    """2D image to patch embedding: (B,C,H,W) -> (B,N,D)
 
     Args:
-        img_size: Image size.
-        patch_size: Patch token size.
-        in_chans: Number of input image channels.
-        embed_dim: Number of linear projection output channels.
-        norm_layer: Normalization layer.
+      img_size: Image size.
+      patch_size: Patch token size.
+      in_chans: Number of input image channels.
+      embed_dim: Number of linear projection output channels.
+      norm_layer: Normalization layer.
+
+    Returns:
+
     """
 
     def __init__(
@@ -67,6 +77,15 @@ class PatchEmbed(nn.Module):
         self.norm = norm_layer(embed_dim) if norm_layer else nn.Identity()
 
     def forward(self, x: Tensor) -> Tensor:
+        """
+
+        Args:
+          x: Tensor:
+          x: Tensor:
+
+        Returns:
+
+        """
         _, _, H, W = x.shape
         patch_H, patch_W = self.patch_size
 
@@ -82,6 +101,7 @@ class PatchEmbed(nn.Module):
         return x
 
     def flops(self) -> float:
+        """"""
         Ho, Wo = self.patches_resolution
         flops = Ho * Wo * self.embed_dim * self.in_chans * (self.patch_size[0] * self.patch_size[1])
         if self.norm is not None:

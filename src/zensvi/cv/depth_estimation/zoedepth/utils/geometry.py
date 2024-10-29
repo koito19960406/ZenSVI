@@ -26,9 +26,15 @@ import numpy as np
 
 
 def get_intrinsics(H, W):
-    """
-    Intrinsics for a pinhole camera model.
+    """Intrinsics for a pinhole camera model.
+
     Assume fov of 55 degrees and central principal point.
+
+    Args:
+      H:
+      W:
+
+    Returns:
     """
     f = 0.5 * W / np.tan(0.5 * 55 * np.pi / 180.0)
     cx = 0.5 * W
@@ -37,6 +43,16 @@ def get_intrinsics(H, W):
 
 
 def depth_to_points(depth, R=None, t=None):
+    """
+
+    Args:
+      depth:
+      R: (Default value = None)
+      t: (Default value = None)
+
+    Returns:
+
+    """
 
     K = get_intrinsics(depth.shape[1], depth.shape[2])
     Kinv = np.linalg.inv(K)
@@ -73,16 +89,19 @@ def depth_to_points(depth, R=None, t=None):
 
 
 def create_triangles(h, w, mask=None):
-    """
-    Reference: https://github.com/google-research/google-research/blob/e96197de06613f1b027d20328e06d69829fa5a89/infinite_nature/render_utils.py#L68
+    """Reference: https://github.com/google-research/google-research/blob/e96197de06613f1b027d20328e06d69829fa5a89/infinite_nature/render_utils.py#L68
     Creates mesh triangle indices from a given pixel grid size.
         This function is not and need not be differentiable as triangle indices are
         fixed.
+
     Args:
-    h: (int) denoting the height of the image.
-    w: (int) denoting the width of the image.
+      h: (int) denoting the height of the image.
+      w:
+      mask: (Default value = None)
+
     Returns:
-    triangles: 2D numpy array of indices (int) with shape (2(W-1)(H-1) x 3)
+      triangles: 2D numpy array of indices (int) with shape (2(W-1)(H-1) x 3)
+
     """
     x, y = np.meshgrid(range(w - 1), range(h - 1))
     tl = y * w + x

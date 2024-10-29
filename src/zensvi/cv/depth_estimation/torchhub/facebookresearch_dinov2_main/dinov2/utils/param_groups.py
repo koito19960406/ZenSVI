@@ -17,14 +17,17 @@ def get_vit_lr_decay_rate(
     force_is_backbone=False,
     chunked_blocks=False,
 ):
-    """
-    Calculate lr decay rate for different ViT blocks.
+    """Calculate lr decay rate for different ViT blocks.
+
     Args:
-        name (string): parameter name.
-        lr_decay_rate (float): base lr decay rate.
-        num_layers (int): number of ViT blocks.
+      name(string): parameter name.
+      lr_decay_rate(float, optional): base lr decay rate. (Default value = 1.0)
+      num_layers: (Default value = 12)
+      force_is_backbone: (Default value = False)
+      chunked_blocks: (Default value = False)
+
     Returns:
-        lr decay rate for the given parameter.
+      : lr decay rate for the given parameter.
     """
     layer_id = num_layers + 1
     if name.startswith("backbone") or force_is_backbone:
@@ -45,6 +48,16 @@ def get_vit_lr_decay_rate(
 
 
 def get_params_groups_with_decay(model, lr_decay_rate=1.0, patch_embed_lr_mult=1.0):
+    """
+
+    Args:
+      model:
+      lr_decay_rate: (Default value = 1.0)
+      patch_embed_lr_mult: (Default value = 1.0)
+
+    Returns:
+
+    """
     chunked_blocks = False
     if hasattr(model, "n_blocks"):
         logger.info("chunked fsdp")
@@ -96,6 +109,17 @@ def get_params_groups_with_decay(model, lr_decay_rate=1.0, patch_embed_lr_mult=1
 
 
 def fuse_params_groups(all_params_groups, keys=("lr_multiplier", "wd_multiplier", "is_last_layer")):
+    """
+
+    Args:
+      all_params_groups:
+      keys: (Default value = ("lr_multiplier")
+      "wd_multiplier":
+      "is_last_layer"):
+
+    Returns:
+
+    """
     fused_params_groups = defaultdict(lambda: {"params": []})
     for d in all_params_groups:
         identifier = ""

@@ -12,7 +12,14 @@ from typing import Optional
 
 import dinov2.distributed as distributed
 
-from .helpers import MetricLogger, SmoothedValue
+from .helpers import MetricLogger, SmoothedValue  # noqa: F401
+
+__all__ = [
+    "MetricLogger",
+    "SmoothedValue",
+    "setup_logging",
+    "_configure_logger"
+]
 
 
 # So that calling _configure_logger multiple times won't add many handlers
@@ -23,20 +30,26 @@ def _configure_logger(
     level: int = logging.DEBUG,
     output: Optional[str] = None,
 ):
-    """
-    Configure a logger.
+    """Configure a logger.
 
     Adapted from Detectron2.
 
     Args:
-        name: The name of the logger to configure.
-        level: The logging level to use.
-        output: A file name or a directory to save log. If None, will not save log file.
-            If ends with ".txt" or ".log", assumed to be a file name.
-            Otherwise, logs will be saved to `output/log.txt`.
+      name: The name of the logger to configure.
+      level: The logging level to use.
+      output: A file name or a directory to save log. If None, will not save log file.
+    If ends with ".txt" or ".log", assumed to be a file name.
+    Otherwise, logs will be saved to `output/log.txt`.
+      name: Optional[str]:  (Default value = None)
+      *:
+      level: int:  (Default value = logging.DEBUG)
+      output: Optional[str]:  (Default value = None)
+      name: Optional[str]:  (Default value = None)
+      level: int:  (Default value = logging.DEBUG)
+      output: Optional[str]:  (Default value = None)
 
     Returns:
-        The configured logger.
+      : The configured logger.
     """
 
     logger = logging.getLogger(name)
@@ -88,17 +101,27 @@ def setup_logging(
     level: int = logging.DEBUG,
     capture_warnings: bool = True,
 ) -> None:
-    """
-    Setup logging.
+    """Setup logging.
 
     Args:
-        output: A file name or a directory to save log files. If None, log
-            files will not be saved. If output ends with ".txt" or ".log", it
-            is assumed to be a file name.
-            Otherwise, logs will be saved to `output/log.txt`.
-        name: The name of the logger to configure, by default the root logger.
-        level: The logging level to use.
-        capture_warnings: Whether warnings should be captured as logs.
+      output: A file name or a directory to save log files. If None, log
+    files will not be saved. If output ends with ".txt" or ".log", it
+    is assumed to be a file name.
+    Otherwise, logs will be saved to `output/log.txt`.
+      name: The name of the logger to configure, by default the root logger.
+      level: The logging level to use.
+      capture_warnings: Whether warnings should be captured as logs.
+      output: Optional[str]:  (Default value = None)
+      *:
+      name: Optional[str]:  (Default value = None)
+      level: int:  (Default value = logging.DEBUG)
+      capture_warnings: bool:  (Default value = True)
+      output: Optional[str]:  (Default value = None)
+      name: Optional[str]:  (Default value = None)
+      level: int:  (Default value = logging.DEBUG)
+      capture_warnings: bool:  (Default value = True)
+
+    Returns:
     """
     logging.captureWarnings(capture_warnings)
     _configure_logger(name, level=level, output=output)

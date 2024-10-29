@@ -16,11 +16,23 @@ model_urls = {
 
 
 def conv3x3(in_planes, out_planes, stride=1):
+    """
+
+    Args:
+      in_planes:
+      out_planes:
+      stride: (Default value = 1)
+
+    Returns:
+
+    """
     "3x3 convolution with padding"
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False)
 
 
 class BasicBlock(nn.Module):
+    """"""
+
     expansion = 1
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
@@ -34,6 +46,14 @@ class BasicBlock(nn.Module):
         self.stride = stride
 
     def forward(self, x):
+        """
+
+        Args:
+          x:
+
+        Returns:
+
+        """
         residual = x
 
         out = self.conv1(x)
@@ -53,6 +73,8 @@ class BasicBlock(nn.Module):
 
 
 class Bottleneck(nn.Module):
+    """"""
+
     expansion = 4
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
@@ -68,6 +90,14 @@ class Bottleneck(nn.Module):
         self.stride = stride
 
     def forward(self, x):
+        """
+
+        Args:
+          x:
+
+        Returns:
+
+        """
         residual = x
 
         out = self.conv1(x)
@@ -91,6 +121,7 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
+    """"""
 
     def __init__(self, block, layers, num_classes=1000):
         self.inplanes = 64
@@ -117,6 +148,17 @@ class ResNet(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
     def _make_layer(self, block, planes, blocks, stride=1):
+        """
+
+        Args:
+          block:
+          planes:
+          blocks:
+          stride: (Default value = 1)
+
+        Returns:
+
+        """
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
@@ -139,6 +181,14 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        """
+
+        Args:
+          x:
+
+        Returns:
+
+        """
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -160,7 +210,10 @@ def resnet18(pretrained=False, **kwargs):
     """Constructs a ResNet-18 model.
 
     Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+      pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
+      **kwargs:
+
+    Returns:
     """
     model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
     if pretrained:
@@ -172,7 +225,10 @@ def resnet34(pretrained=False, **kwargs):
     """Constructs a ResNet-34 model.
 
     Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+      pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
+      **kwargs:
+
+    Returns:
     """
     model = ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
     if pretrained:
@@ -184,7 +240,10 @@ def resnet50(pretrained=False, **kwargs):
     """Constructs a ResNet-50 model.
 
     Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+      pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
+      **kwargs:
+
+    Returns:
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
@@ -196,7 +255,10 @@ def resnet101(pretrained=False, **kwargs):
     """Constructs a ResNet-101 model.
 
     Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+      pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
+      **kwargs:
+
+    Returns:
     """
     model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
     if pretrained:
@@ -208,7 +270,10 @@ def resnet152(pretrained=False, **kwargs):
     """Constructs a ResNet-152 model.
 
     Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+      pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
+      **kwargs:
+
+    Returns:
     """
     model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
     if pretrained:

@@ -34,6 +34,14 @@ from torchvision import transforms
 
 
 def hypersim_distance_to_depth(npyDistance):
+    """
+
+    Args:
+      npyDistance:
+
+    Returns:
+
+    """
     intWidth, intHeight, fltFocal = 1024, 768, 886.81
 
     npyImageplaneX = (
@@ -56,6 +64,8 @@ def hypersim_distance_to_depth(npyDistance):
 
 
 class ToTensor(object):
+    """"""
+
     def __init__(self):
         # self.normalize = transforms.Normalize(
         #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -73,6 +83,14 @@ class ToTensor(object):
         return {"image": image, "depth": depth, "dataset": "hypersim"}
 
     def to_tensor(self, pic):
+        """
+
+        Args:
+          pic:
+
+        Returns:
+
+        """
 
         if isinstance(pic, np.ndarray):
             img = torch.from_numpy(pic.transpose((2, 0, 1)))
@@ -102,6 +120,8 @@ class ToTensor(object):
 
 
 class HyperSim(Dataset):
+    """"""
+
     def __init__(self, data_dir_root):
         # image paths are of the form <data_dir_root>/<scene>/images/scene_cam_#_final_preview/*.tonemap.jpg
         # depth paths are of the form <data_dir_root>/<scene>/images/scene_cam_#_final_preview/*.depth_meters.hdf5
@@ -148,5 +168,15 @@ class HyperSim(Dataset):
 
 
 def get_hypersim_loader(data_dir_root, batch_size=1, **kwargs):
+    """
+
+    Args:
+      data_dir_root:
+      batch_size: (Default value = 1)
+      **kwargs:
+
+    Returns:
+
+    """
     dataset = HyperSim(data_dir_root)
     return DataLoader(dataset, batch_size, **kwargs)

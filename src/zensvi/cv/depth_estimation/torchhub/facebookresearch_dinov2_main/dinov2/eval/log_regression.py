@@ -39,6 +39,19 @@ def get_args_parser(
     parents: Optional[List[argparse.ArgumentParser]] = None,
     add_help: bool = True,
 ):
+    """
+
+    Args:
+      description: Optional[str]:  (Default value = None)
+      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
+      add_help: bool:  (Default value = True)
+      description: Optional[str]:  (Default value = None)
+      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
+      add_help: bool:  (Default value = True)
+
+    Returns:
+
+    """
     parents = parents or []
     setup_args_parser = get_setup_args_parser(parents=parents, add_help=False)
     parents = [setup_args_parser]
@@ -106,6 +119,8 @@ def get_args_parser(
 
 
 class LogRegModule(nn.Module):
+    """"""
+
     def __init__(
         self,
         C,
@@ -126,6 +141,15 @@ class LogRegModule(nn.Module):
         )
 
     def forward(self, samples, targets):
+        """
+
+        Args:
+          samples:
+          targets:
+
+        Returns:
+
+        """
         samples_device = samples.device
         samples = samples.to(dtype=self.dtype, device=self.device)
         if self.device == _CPU_DEVICE:
@@ -134,6 +158,15 @@ class LogRegModule(nn.Module):
         return {"preds": torch.from_numpy(probas).to(samples_device), "target": targets}
 
     def fit(self, train_features, train_labels):
+        """
+
+        Args:
+          train_features:
+          train_labels:
+
+        Returns:
+
+        """
         train_features = train_features.to(dtype=self.dtype, device=self.device)
         train_labels = train_labels.to(dtype=self.dtype, device=self.device)
         if self.device == _CPU_DEVICE:
@@ -144,6 +177,18 @@ class LogRegModule(nn.Module):
 
 
 def evaluate_model(*, logreg_model, logreg_metric, test_data_loader, device):
+    """
+
+    Args:
+      *:
+      logreg_model:
+      logreg_metric:
+      test_data_loader:
+      device:
+
+    Returns:
+
+    """
     postprocessors = {"metrics": logreg_model}
     metrics = {"metrics": logreg_metric}
     return evaluate(nn.Identity(), test_data_loader, postprocessors, metrics, device)
@@ -158,6 +203,20 @@ def train_for_C(
     dtype=torch.float64,
     device=_CPU_DEVICE,
 ):
+    """
+
+    Args:
+      *:
+      C:
+      max_iter:
+      train_features:
+      train_labels:
+      dtype: (Default value = torch.float64)
+      device: (Default value = _CPU_DEVICE)
+
+    Returns:
+
+    """
     logreg_model = LogRegModule(C, max_iter=max_iter, dtype=dtype, device=device)
     logreg_model.fit(train_features, train_labels)
     return logreg_model
@@ -175,6 +234,23 @@ def train_and_evaluate(
     train_features_device,
     eval_device,
 ):
+    """
+
+    Args:
+      *:
+      C:
+      max_iter:
+      train_features:
+      train_labels:
+      logreg_metric:
+      test_data_loader:
+      train_dtype: (Default value = torch.float64)
+      train_features_device:
+      eval_device:
+
+    Returns:
+
+    """
     logreg_model = train_for_C(
         C=C,
         max_iter=max_iter,
@@ -202,6 +278,22 @@ def sweep_C_values(
     train_features_device=_CPU_DEVICE,
     max_train_iters=DEFAULT_MAX_ITER,
 ):
+    """
+
+    Args:
+      *:
+      train_features:
+      train_labels:
+      test_data_loader:
+      metric_type:
+      num_classes:
+      train_dtype: (Default value = torch.float64)
+      train_features_device: (Default value = _CPU_DEVICE)
+      max_train_iters: (Default value = DEFAULT_MAX_ITER)
+
+    Returns:
+
+    """
     if metric_type == MetricType.PER_CLASS_ACCURACY:
         # If we want to output per-class accuracy, we select the hyperparameters with mean per class
         metric_type = MetricType.MEAN_PER_CLASS_ACCURACY
@@ -270,13 +362,29 @@ def eval_log_regression(
     train_features_device=_CPU_DEVICE,
     max_train_iters=DEFAULT_MAX_ITER,
 ):
-    """
-    Implements the "standard" process for log regression evaluation:
+    """Implements the "standard" process for log regression evaluation:
+
     The value of C is chosen by training on train_dataset and evaluating on
     finetune_dataset. Then, the final model is trained on a concatenation of
-    train_dataset and finetune_dataset, and is evaluated on val_dataset.
-    If there is no finetune_dataset, the value of C is the one that yields
-    the best results on a random 10% subset of the train dataset
+    train_dataset and finetune_dataset, and is evaluated on val_dataset. If there is no
+    finetune_dataset, the value of C is the one that yields the best results on a random
+    10% subset of the train dataset
+
+    Args:
+      *:
+      model:
+      train_dataset:
+      val_dataset:
+      finetune_dataset:
+      metric_type:
+      batch_size:
+      num_workers:
+      finetune_on_val: (Default value = False)
+      train_dtype: (Default value = torch.float64)
+      train_features_device: (Default value = _CPU_DEVICE)
+      max_train_iters: (Default value = DEFAULT_MAX_ITER)
+
+    Returns:
     """
 
     start = time.time()
@@ -396,6 +504,23 @@ def eval_log_regression_with_model(
     train_features_device=_CPU_DEVICE,
     max_train_iters=DEFAULT_MAX_ITER,
 ):
+    """
+
+    Args:
+      model:
+      train_dataset_str: (Default value = "ImageNet:split=TRAIN")
+      val_dataset_str: (Default value = "ImageNet:split=VAL")
+      finetune_dataset_str: (Default value = None)
+      autocast_dtype: (Default value = torch.float)
+      finetune_on_val: (Default value = False)
+      metric_type: (Default value = MetricType.MEAN_ACCURACY)
+      train_dtype: (Default value = torch.float64)
+      train_features_device: (Default value = _CPU_DEVICE)
+      max_train_iters: (Default value = DEFAULT_MAX_ITER)
+
+    Returns:
+
+    """
     cudnn.benchmark = True
 
     transform = make_classification_eval_transform(resize_size=224)
@@ -456,6 +581,14 @@ def eval_log_regression_with_model(
 
 
 def main(args):
+    """
+
+    Args:
+      args:
+
+    Returns:
+
+    """
     model, autocast_dtype = setup_and_build_model(args)
     eval_log_regression_with_model(
         model=model,

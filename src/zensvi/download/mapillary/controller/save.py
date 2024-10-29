@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.controllers.save
+"""mapillary.controllers.save
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This module implements the saving business logic functionalities of the Mapillary Python SDK.
@@ -28,20 +26,15 @@ from zensvi.download.mapillary.utils.verify import check_file_name_validity
 
 
 def save_as_csv_controller(data: str, path: str, file_name: str) -> None:
-    """
-    Save data as CSV to given file path
+    """Save data as CSV to given file path.
 
-    :param data: The data to save as CSV
-    :type data: str
+    Args:
+        data (str): The data to save as CSV
+        path (str): The path to save to
+        file_name (str): The file name to save as
 
-    :param path: The path to save to
-    :type path: str
-
-    :param file_name: The file name to save as
-    :type file_name: str
-
-    :return: None
-    :rtype: None
+    Returns:
+        None: None
     """
 
     # Ensure that the geojson is a dictionary
@@ -103,20 +96,15 @@ def save_as_csv_controller(data: str, path: str, file_name: str) -> None:
 
 
 def save_as_geojson_controller(data: str, path: str, file_name: str) -> None:
-    """
-    Save data as GeoJSON to given file path
+    """Save data as GeoJSON to given file path.
 
-    :param data: The data to save as GeoJSON
-    :type data: str
+    Args:
+        data (str): The data to save as GeoJSON
+        path (str): The path to save to
+        file_name (str): The file name to save as
 
-    :param path: The path to save to
-    :type path: str
-
-    :param file_name: The file name to save as
-    :type file_name: str
-
-    :return: None
-    :rtype: None
+    Returns:
+        None: None
     """
 
     # Ensure that the geojson is a dictionary

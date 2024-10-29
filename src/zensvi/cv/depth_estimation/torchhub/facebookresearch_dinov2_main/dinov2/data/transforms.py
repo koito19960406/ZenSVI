@@ -11,9 +11,7 @@ from torchvision import transforms
 
 
 class GaussianBlur(transforms.RandomApply):
-    """
-    Apply Gaussian Blur to the PIL image.
-    """
+    """Apply Gaussian Blur to the PIL image."""
 
     def __init__(self, *, p: float = 0.5, radius_min: float = 0.1, radius_max: float = 2.0):
         # NOTE: torchvision is applying 1 - probability to return the original image
@@ -23,13 +21,16 @@ class GaussianBlur(transforms.RandomApply):
 
 
 class MaybeToTensor(transforms.ToTensor):
-    """
-    Convert a ``PIL Image`` or ``numpy.ndarray`` to tensor, or keep as is if already a tensor.
+    """Convert a ``PIL Image`` or ``numpy.ndarray`` to tensor, or keep as is if already
+    a tensor.
+
+    Args:
+
+    Returns:
     """
 
     def __call__(self, pic):
-        """
-        Args:
+        """Args:
             pic (PIL Image, numpy.ndarray or torch.tensor): Image to be converted to tensor.
         Returns:
             Tensor: Converted image.
@@ -48,6 +49,17 @@ def make_normalize_transform(
     mean: Sequence[float] = IMAGENET_DEFAULT_MEAN,
     std: Sequence[float] = IMAGENET_DEFAULT_STD,
 ) -> transforms.Normalize:
+    """
+
+    Args:
+      mean: Sequence[float]:  (Default value = IMAGENET_DEFAULT_MEAN)
+      std: Sequence[float]:  (Default value = IMAGENET_DEFAULT_STD)
+      mean: Sequence[float]:  (Default value = IMAGENET_DEFAULT_MEAN)
+      std: Sequence[float]:  (Default value = IMAGENET_DEFAULT_STD)
+
+    Returns:
+
+    """
     return transforms.Normalize(mean=mean, std=std)
 
 
@@ -61,6 +73,23 @@ def make_classification_train_transform(
     mean: Sequence[float] = IMAGENET_DEFAULT_MEAN,
     std: Sequence[float] = IMAGENET_DEFAULT_STD,
 ):
+    """
+
+    Args:
+      *:
+      crop_size: int:  (Default value = 224)
+      interpolation: (Default value = transforms.InterpolationMode.BICUBIC)
+      hflip_prob: float:  (Default value = 0.5)
+      mean: Sequence[float]:  (Default value = IMAGENET_DEFAULT_MEAN)
+      std: Sequence[float]:  (Default value = IMAGENET_DEFAULT_STD)
+      crop_size: int:  (Default value = 224)
+      hflip_prob: float:  (Default value = 0.5)
+      mean: Sequence[float]:  (Default value = IMAGENET_DEFAULT_MEAN)
+      std: Sequence[float]:  (Default value = IMAGENET_DEFAULT_STD)
+
+    Returns:
+
+    """
     transforms_list = [transforms.RandomResizedCrop(crop_size, interpolation=interpolation)]
     if hflip_prob > 0.0:
         transforms_list.append(transforms.RandomHorizontalFlip(hflip_prob))
@@ -83,6 +112,23 @@ def make_classification_eval_transform(
     mean: Sequence[float] = IMAGENET_DEFAULT_MEAN,
     std: Sequence[float] = IMAGENET_DEFAULT_STD,
 ) -> transforms.Compose:
+    """
+
+    Args:
+      *:
+      resize_size: int:  (Default value = 256)
+      interpolation: (Default value = transforms.InterpolationMode.BICUBIC)
+      crop_size: int:  (Default value = 224)
+      mean: Sequence[float]:  (Default value = IMAGENET_DEFAULT_MEAN)
+      std: Sequence[float]:  (Default value = IMAGENET_DEFAULT_STD)
+      resize_size: int:  (Default value = 256)
+      crop_size: int:  (Default value = 224)
+      mean: Sequence[float]:  (Default value = IMAGENET_DEFAULT_MEAN)
+      std: Sequence[float]:  (Default value = IMAGENET_DEFAULT_STD)
+
+    Returns:
+
+    """
     transforms_list = [
         transforms.Resize(resize_size, interpolation=interpolation),
         transforms.CenterCrop(crop_size),

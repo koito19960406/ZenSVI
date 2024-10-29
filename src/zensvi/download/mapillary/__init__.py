@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.__init__
+"""mapillary.__init__
 ~~~~~~~~~~~~~~~~~~
 
 This module imports the necessary parts of the SDK

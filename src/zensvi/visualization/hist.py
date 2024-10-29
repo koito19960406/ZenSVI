@@ -23,8 +23,8 @@ def plot_hist(
     dark_mode: bool = False,
     **kwargs,
 ) -> Tuple[plt.Figure, plt.Axes]:
-    """
-    Plots hist (Kernel Density Estimate) plots for specified columns from a CSV file using Seaborn.
+    """Plots hist (Kernel Density Estimate) plots for specified columns from a CSV file
+    using Seaborn.
 
     Args:
         path_input (Union[str, Path]): Path to the CSV file.

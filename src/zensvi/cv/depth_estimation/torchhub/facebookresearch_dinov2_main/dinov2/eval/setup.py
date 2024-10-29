@@ -19,6 +19,19 @@ def get_args_parser(
     parents: Optional[List[argparse.ArgumentParser]] = None,
     add_help: bool = True,
 ):
+    """
+
+    Args:
+      description: Optional[str]:  (Default value = None)
+      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
+      add_help: bool:  (Default value = True)
+      description: Optional[str]:  (Default value = None)
+      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
+      add_help: bool:  (Default value = True)
+
+    Returns:
+
+    """
     parser = argparse.ArgumentParser(
         description=description,
         parents=parents or [],
@@ -50,6 +63,14 @@ def get_args_parser(
 
 
 def get_autocast_dtype(config):
+    """
+
+    Args:
+      config:
+
+    Returns:
+
+    """
     teacher_dtype_str = config.compute_precision.teacher.backbone.mixed_precision.param_dtype
     if teacher_dtype_str == "fp16":
         return torch.half
@@ -60,6 +81,15 @@ def get_autocast_dtype(config):
 
 
 def build_model_for_eval(config, pretrained_weights):
+    """
+
+    Args:
+      config:
+      pretrained_weights:
+
+    Returns:
+
+    """
     model, _ = build_model_from_cfg(config, only_teacher=True)
     dinov2_utils.load_pretrained_weights(model, pretrained_weights, "teacher")
     model.eval()
@@ -68,6 +98,14 @@ def build_model_for_eval(config, pretrained_weights):
 
 
 def setup_and_build_model(args) -> Tuple[Any, torch.dtype]:
+    """
+
+    Args:
+      args:
+
+    Returns:
+
+    """
     cudnn.benchmark = True
     config = setup(args)
     model = build_model_for_eval(config, args.pretrained_weights)

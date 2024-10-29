@@ -34,6 +34,19 @@ def get_args_parser(
     parents: Optional[List[argparse.ArgumentParser]] = None,
     add_help: bool = True,
 ):
+    """
+
+    Args:
+      description: Optional[str]:  (Default value = None)
+      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
+      add_help: bool:  (Default value = True)
+      description: Optional[str]:  (Default value = None)
+      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
+      add_help: bool:  (Default value = True)
+
+    Returns:
+
+    """
     parents = parents or []
     setup_args_parser = get_setup_args_parser(parents=parents, add_help=False)
     parents = [setup_args_parser]
@@ -166,14 +179,40 @@ def get_args_parser(
 
 
 def has_ddp_wrapper(m: nn.Module) -> bool:
+    """
+
+    Args:
+      m: nn.Module:
+      m: nn.Module:
+
+    Returns:
+
+    """
     return isinstance(m, DistributedDataParallel)
 
 
 def remove_ddp_wrapper(m: nn.Module) -> nn.Module:
+    """
+
+    Args:
+      m: nn.Module:
+      m: nn.Module:
+
+    Returns:
+
+    """
     return m.module if has_ddp_wrapper(m) else m
 
 
 def _pad_and_collate(batch):
+    """
+
+    Args:
+      batch:
+
+    Returns:
+
+    """
     maxlen = max(len(targets) for image, targets in batch)
     padded_batch = [
         (image, np.pad(targets, (0, maxlen - len(targets)), constant_values=-1)) for image, targets in batch
@@ -182,6 +221,16 @@ def _pad_and_collate(batch):
 
 
 def create_linear_input(x_tokens_list, use_n_blocks, use_avgpool):
+    """
+
+    Args:
+      x_tokens_list:
+      use_n_blocks:
+      use_avgpool:
+
+    Returns:
+
+    """
     intermediate_output = x_tokens_list[-use_n_blocks:]
     output = torch.cat([class_token for _, class_token in intermediate_output], dim=-1)
     if use_avgpool:
@@ -197,7 +246,7 @@ def create_linear_input(x_tokens_list, use_n_blocks, use_avgpool):
 
 
 class LinearClassifier(nn.Module):
-    """Linear layer to train on top of frozen features"""
+    """Linear layer to train on top of frozen features."""
 
     def __init__(self, out_dim, use_n_blocks, use_avgpool, num_classes=1000):
         super().__init__()
@@ -210,17 +259,35 @@ class LinearClassifier(nn.Module):
         self.linear.bias.data.zero_()
 
     def forward(self, x_tokens_list):
+        """
+
+        Args:
+          x_tokens_list:
+
+        Returns:
+
+        """
         output = create_linear_input(x_tokens_list, self.use_n_blocks, self.use_avgpool)
         return self.linear(output)
 
 
 class AllClassifiers(nn.Module):
+    """"""
+
     def __init__(self, classifiers_dict):
         super().__init__()
         self.classifiers_dict = nn.ModuleDict()
         self.classifiers_dict.update(classifiers_dict)
 
     def forward(self, inputs):
+        """
+
+        Args:
+          inputs:
+
+        Returns:
+
+        """
         return {k: v.forward(inputs) for k, v in self.classifiers_dict.items()}
 
     def __len__(self):
@@ -228,6 +295,8 @@ class AllClassifiers(nn.Module):
 
 
 class LinearPostprocessor(nn.Module):
+    """"""
+
     def __init__(self, linear_classifier, class_mapping=None):
         super().__init__()
         self.linear_classifier = linear_classifier
@@ -237,6 +306,15 @@ class LinearPostprocessor(nn.Module):
         )
 
     def forward(self, samples, targets):
+        """
+
+        Args:
+          samples:
+          targets:
+
+        Returns:
+
+        """
         preds = self.linear_classifier(samples)
         return {
             "preds": (preds[:, self.class_mapping] if self.class_mapping is not None else preds),
@@ -245,10 +323,31 @@ class LinearPostprocessor(nn.Module):
 
 
 def scale_lr(learning_rates, batch_size):
+    """
+
+    Args:
+      learning_rates:
+      batch_size:
+
+    Returns:
+
+    """
     return learning_rates * (batch_size * distributed.get_global_size()) / 256.0
 
 
 def setup_linear_classifiers(sample_output, n_last_blocks_list, learning_rates, batch_size, num_classes=1000):
+    """
+
+    Args:
+      sample_output:
+      n_last_blocks_list:
+      learning_rates:
+      batch_size:
+      num_classes: (Default value = 1000)
+
+    Returns:
+
+    """
     linear_classifiers_dict = nn.ModuleDict()
     optim_param_groups = []
     for n in n_last_blocks_list:
@@ -288,6 +387,23 @@ def evaluate_linear_classifiers(
     class_mapping=None,
     best_classifier_on_val=None,
 ):
+    """
+
+    Args:
+      feature_model:
+      linear_classifiers:
+      data_loader:
+      metric_type:
+      metrics_file_path:
+      training_num_classes:
+      iteration:
+      prefixstring: (Default value = "")
+      class_mapping: (Default value = None)
+      best_classifier_on_val: (Default value = None)
+
+    Returns:
+
+    """
     logger.info("running validation !")
 
     num_classes = len(class_mapping) if class_mapping is not None else training_num_classes
@@ -352,6 +468,32 @@ def eval_linear(
     classifier_fpath=None,
     val_class_mapping=None,
 ):
+    """
+
+    Args:
+      *:
+      feature_model:
+      linear_classifiers:
+      train_data_loader:
+      val_data_loader:
+      metrics_file_path:
+      optimizer:
+      scheduler:
+      output_dir:
+      max_iter:
+      checkpoint_period:
+      # In number of iter:
+      creates a new file every periodrunning_checkpoint_period:
+      # Period to update main checkpoint fileeval_period:
+      metric_type:
+      training_num_classes:
+      resume: (Default value = True)
+      classifier_fpath: (Default value = None)
+      val_class_mapping: (Default value = None)
+
+    Returns:
+
+    """
     checkpointer = Checkpointer(linear_classifiers, output_dir, optimizer=optimizer, scheduler=scheduler)
     start_iter = checkpointer.resume_or_load(classifier_fpath or "", resume=resume).get("iteration", -1) + 1
 
@@ -431,6 +573,17 @@ def eval_linear(
 
 
 def make_eval_data_loader(test_dataset_str, batch_size, num_workers, metric_type):
+    """
+
+    Args:
+      test_dataset_str:
+      batch_size:
+      num_workers:
+      metric_type:
+
+    Returns:
+
+    """
     test_dataset = make_dataset(
         dataset_str=test_dataset_str,
         transform=make_classification_eval_transform(),
@@ -462,6 +615,25 @@ def test_on_datasets(
     prefixstring="",
     test_class_mappings=[None],
 ):
+    """
+
+    Args:
+      feature_model:
+      linear_classifiers:
+      test_dataset_strs:
+      batch_size:
+      num_workers:
+      test_metric_types:
+      metrics_file_path:
+      training_num_classes:
+      iteration:
+      best_classifier_on_val:
+      prefixstring: (Default value = "")
+      test_class_mappings: (Default value = [None])
+
+    Returns:
+
+    """
     results_dict = {}
     for test_dataset_str, class_mapping, metric_type in zip(test_dataset_strs, test_class_mappings, test_metric_types):
         logger.info(f"Testing on {test_dataset_str}")
@@ -503,6 +675,32 @@ def run_eval_linear(
     val_metric_type=MetricType.MEAN_ACCURACY,
     test_metric_types=None,
 ):
+    """
+
+    Args:
+      model:
+      output_dir:
+      train_dataset_str:
+      val_dataset_str:
+      batch_size:
+      epochs:
+      epoch_length:
+      num_workers:
+      save_checkpoint_frequency:
+      eval_period_iterations:
+      learning_rates:
+      autocast_dtype:
+      test_dataset_strs: (Default value = None)
+      resume: (Default value = True)
+      classifier_fpath: (Default value = None)
+      val_class_mapping_fpath: (Default value = None)
+      test_class_mapping_fpaths: (Default value = [None])
+      val_metric_type: (Default value = MetricType.MEAN_ACCURACY)
+      test_metric_types: (Default value = None)
+
+    Returns:
+
+    """
     seed = 0
 
     if test_dataset_strs is None:
@@ -615,6 +813,14 @@ def run_eval_linear(
 
 
 def main(args):
+    """
+
+    Args:
+      args:
+
+    Returns:
+
+    """
     model, autocast_dtype = setup_and_build_model(args)
     run_eval_linear(
         model=model,

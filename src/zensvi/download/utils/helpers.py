@@ -15,10 +15,10 @@ def standardize_column_names(df):
 
 
 def create_buffer_gdf(gdf, buffer_distance):
-    if gdf.crs == None:
+    if not gdf.crs:
         gdf = gdf.set_crs("EPSG:4326")
 
-    if gdf.crs.is_projected == False:
+    if not gdf.crs.is_projected:
         gdf = ox.projection.project_gdf(gdf)
 
     # Buffer the points by buffer_distance

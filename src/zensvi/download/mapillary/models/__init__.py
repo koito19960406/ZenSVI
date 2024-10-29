@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.models.__init__
+"""mapillary.models.__init__
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This package contains the class representations of logic within the Mapillary Python SDK.

@@ -11,12 +11,15 @@ from typing import Any, Dict, Optional
 
 
 class ClusterType(Enum):
+    """"""
+
     AWS = "aws"
     FAIR = "fair"
     RSC = "rsc"
 
 
 def _guess_cluster_type() -> ClusterType:
+    """"""
     uname = os.uname()
     if uname.sysname == "Linux":
         if uname.release.endswith("-aws"):
@@ -32,6 +35,15 @@ def _guess_cluster_type() -> ClusterType:
 def get_cluster_type(
     cluster_type: Optional[ClusterType] = None,
 ) -> Optional[ClusterType]:
+    """
+
+    Args:
+      cluster_type: Optional[ClusterType]:  (Default value = None)
+      cluster_type: Optional[ClusterType]:  (Default value = None)
+
+    Returns:
+
+    """
     if cluster_type is None:
         return _guess_cluster_type()
 
@@ -39,6 +51,15 @@ def get_cluster_type(
 
 
 def get_checkpoint_path(cluster_type: Optional[ClusterType] = None) -> Optional[Path]:
+    """
+
+    Args:
+      cluster_type: Optional[ClusterType]:  (Default value = None)
+      cluster_type: Optional[ClusterType]:  (Default value = None)
+
+    Returns:
+
+    """
     cluster_type = get_cluster_type(cluster_type)
     if cluster_type is None:
         return None
@@ -54,6 +75,15 @@ def get_checkpoint_path(cluster_type: Optional[ClusterType] = None) -> Optional[
 def get_user_checkpoint_path(
     cluster_type: Optional[ClusterType] = None,
 ) -> Optional[Path]:
+    """
+
+    Args:
+      cluster_type: Optional[ClusterType]:  (Default value = None)
+      cluster_type: Optional[ClusterType]:  (Default value = None)
+
+    Returns:
+
+    """
     checkpoint_path = get_checkpoint_path(cluster_type)
     if checkpoint_path is None:
         return None
@@ -64,6 +94,15 @@ def get_user_checkpoint_path(
 
 
 def get_slurm_partition(cluster_type: Optional[ClusterType] = None) -> Optional[str]:
+    """
+
+    Args:
+      cluster_type: Optional[ClusterType]:  (Default value = None)
+      cluster_type: Optional[ClusterType]:  (Default value = None)
+
+    Returns:
+
+    """
     cluster_type = get_cluster_type(cluster_type)
     if cluster_type is None:
         return None
@@ -79,6 +118,20 @@ def get_slurm_partition(cluster_type: Optional[ClusterType] = None) -> Optional[
 def get_slurm_executor_parameters(
     nodes: int, num_gpus_per_node: int, cluster_type: Optional[ClusterType] = None, **kwargs
 ) -> Dict[str, Any]:
+    """
+
+    Args:
+      nodes: int:
+      num_gpus_per_node: int:
+      cluster_type: Optional[ClusterType]:  (Default value = None)
+      **kwargs:
+      nodes: int:
+      num_gpus_per_node: int:
+      cluster_type: Optional[ClusterType]:  (Default value = None)
+
+    Returns:
+
+    """
     # create default parameters
     params = {
         "mem_gb": 0,  # Requests all memory on a node, see https://slurm.schedmd.com/sbatch.html

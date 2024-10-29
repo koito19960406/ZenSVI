@@ -1,13 +1,12 @@
 import os
 import shutil
 import unittest
-from pathlib import Path
 
 import geopandas as gp
+from test_base import TestBase
 
 import zensvi.download.kartaview.download_functions as kv
 from zensvi.download.kv import KVDownloader
-from test_base import TestBase
 
 
 class TestKartaView(TestBase):
@@ -24,7 +23,7 @@ class TestKartaView(TestBase):
         cls.kv_output_test_multipolygon = cls.output / "test_multipolygon"
         cls.kv_output_test_polygon = cls.output / "test_polygon"
 
-    @classmethod   
+    @classmethod
     def tearDown(self):
         # remove output directory
         shutil.rmtree(self.kv_output, ignore_errors=True)

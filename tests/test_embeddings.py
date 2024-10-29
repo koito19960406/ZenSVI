@@ -1,12 +1,9 @@
-import json
-import os
-import shutil
 import unittest
 from collections import namedtuple
-from pathlib import Path
+
+from test_base import TestBase
 
 from zensvi.cv import Embeddings
-from test_base import TestBase
 
 
 class TestEmbeddings(TestBase):
@@ -18,52 +15,41 @@ class TestEmbeddings(TestBase):
         cls.ensure_dir(cls.output)
         pass
 
-
     def test_embeddings(self):
         embedding = Embeddings(model_name="alexnet", cuda=True)
         image_output = self.output / "images"
-        emb_output = self.output / "embeddings"
-        
-        embs = embedding.generate_embedding(
-           str(self.image_input),
-            image_output,
-            batch_size=1000,
-        )
-        
-        # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            embs
-        )
-
-    def test_search_similar_images(self):
-        embedding = Embeddings(model_name="alexnet", cuda=True)
-        image_output = self.output / "images"
-        emb_output = self.output / "embeddings"
-        
         embs = embedding.generate_embedding(
             str(self.image_input),
             image_output,
             batch_size=1000,
         )
-        
+
         # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            embs
+        self.assertTrue(embs)
+
+    def test_search_similar_images(self):
+        embedding = Embeddings(model_name="alexnet", cuda=True)
+        image_output = self.output / "images"
+        embs = embedding.generate_embedding(
+            str(self.image_input),
+            image_output,
+            batch_size=1000,
         )
+
+        # assert True if files in image_output and summary_output are not empty
+        self.assertTrue(embs)
 
         # base file name of the first file in the image_input directory
         image_path = list(self.image_input.glob("*"))[0]
         image_base_name = image_path.stem
-        
+
         similar_images = embedding.search_similar_images(
             image_base_name,
             image_output,
             5,
         )
         # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            similar_images
-        )
+        self.assertTrue(similar_images)
 
     # test all models
     def test_all_models_cpu(self):
@@ -86,7 +72,6 @@ class TestEmbeddings(TestBase):
             print(f"Testing model: {model_name}")
             embedding = Embeddings(model_name=model_name, cuda=False)
             image_output = self.output / model_name
-            emb_output = self.output / "embeddings"
 
             embs = embedding.generate_embedding(
                 str(self.image_input),

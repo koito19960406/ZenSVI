@@ -16,6 +16,8 @@ from .utils import wideresnet
 
 
 class ImageDataset(Dataset):
+    """"""
+
     # Dataset class for loading images
     def __init__(self, img_paths, transform=None):
         self.img_paths = img_paths
@@ -32,12 +34,21 @@ class ImageDataset(Dataset):
         return image, str(img_path)
 
     def collate_fn(self, batch):
+        """
+
+        Args:
+          batch:
+
+        Returns:
+
+        """
         images, paths = zip(*batch)
         images = torch.stack(images, dim=0)  # This combines the images into a single tensor
         return images, list(paths)
 
 
 def _returnTF():
+    """"""
     # load the image transformer
     tf = trn.Compose(
         [
@@ -50,6 +61,14 @@ def _returnTF():
 
 
 def _recursion_change_bn(module):
+    """
+
+    Args:
+      module:
+
+    Returns:
+
+    """
     # change the batchnorm2D layer to batchnorm1D
     if isinstance(module, torch.nn.BatchNorm2d):
         module.track_running_stats = 1
@@ -60,6 +79,16 @@ def _recursion_change_bn(module):
 
 
 def _returnCAM(feature_conv, weight_softmax, class_idx):
+    """
+
+    Args:
+      feature_conv:
+      weight_softmax:
+      class_idx:
+
+    Returns:
+
+    """
     # generate the class activation maps upsample to 256x256
     size_upsample = (256, 256)
     nc, h, w = feature_conv.shape
@@ -75,12 +104,16 @@ def _returnCAM(feature_conv, weight_softmax, class_idx):
 
 
 class ClassifierPlaces365(BaseClassifier):
-    """
-    A classifier for identifying places using the Places365 model. The model is from Zhou et al. (2017) (https://github.com/CSAILVision/places365).
+    """A classifier for identifying places using the Places365 model. The model is from Zhou et al. (2017) (https://github.com/CSAILVision/places365).
 
-    :param device: The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
-        If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
-    :type device: str, optional
+    Args:
+      device(str): The device that the model should be
+    loaded onto. Options are "cpu", "cuda", or "mps". If `None`,
+    the model tries to use a GPU if available; otherwise, falls
+    back to CPU.
+
+    Returns:
+
     """
 
     def __init__(self, device=None):
@@ -94,6 +127,7 @@ class ClassifierPlaces365(BaseClassifier):
         self.weight_softmax = self._load_weight_softmax()
 
     def _load_labels(self):
+        """"""
         # prepare all the labels
         # scene category relevant
         file_name_category = pkg_resources.resource_filename(
@@ -130,9 +164,20 @@ class ClassifierPlaces365(BaseClassifier):
         return classes, labels_IO, labels_attribute, W_attribute
 
     def _hook_feature(self, module, input, output):
+        """
+
+        Args:
+          module:
+          input:
+          output:
+
+        Returns:
+
+        """
         self.features_blobs.append(np.squeeze(output.data.cpu().numpy()))
 
     def _load_model(self):
+        """"""
         model_file = pkg_resources.resource_filename("zensvi.cv.classification.utils", "wideresnet18_places365.pth.tar")
         model = wideresnet.resnet18(num_classes=365)
         checkpoint = torch.load(model_file, map_location=self.device)
@@ -155,6 +200,7 @@ class ClassifierPlaces365(BaseClassifier):
         return model
 
     def _load_weight_softmax(self):
+        """"""
         # get the softmax weight
         params = list(self.model.parameters())
         weight_softmax = params[-2].data.cpu().numpy()
@@ -162,6 +208,18 @@ class ClassifierPlaces365(BaseClassifier):
         return weight_softmax
 
     def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json", csv_format="long"):
+        """
+
+        Args:
+          results:
+          dir_output:
+          file_name:
+          save_format: (Default value = "csv json")
+          csv_format: (Default value = "long")
+
+        Returns:
+
+        """
         df = pd.DataFrame(results)
         if csv_format == "long":
             # Convert the DataFrame to long format if necessary
@@ -188,27 +246,58 @@ class ClassifierPlaces365(BaseClassifier):
         save_format: str = "json csv",
         csv_format: str = "long",  # "long" or "wide"
     ):
-        """
-        Classifies images based on scene recognition using the Places365 model. The output file can be saved in JSON and/or CSV format and will contain the scene categories, scene attributes, and environment type (indoor or outdoor) for each image.
+        """Classifies images based on scene recognition using the Places365 model. The
+        output file can be saved in JSON and/or CSV format and will contain the scene
+        categories, scene attributes, and environment type (indoor or outdoor) for each
+        image.
 
-        A list of categories can be found at https://github.com/CSAILVision/places365/blob/master/categories_places365.txt and a list of attributes can be found at https://github.com/CSAILVision/places365/blob/master/labels_sunattribute.txt
+        A list of categories can be found at
+        https://github.com/CSAILVision/places365/blob/master/categories_places365.txt
+        and a list of attributes can be found at
+        https://github.com/CSAILVision/places365/blob/master/labels_sunattribute.txt
 
-        Scene categories' values range from 0 to 1, where 1 is the highest probability of the scene category. Scene attributes' values are the responses of the scene attributes, which are the dot product of the scene attributes' weight and the features of the image, and higher values indicate a higher presence of the attribute in the image. The environment type is either "indoor" or "outdoor".
+        Scene categories' values range from 0 to 1, where 1 is the highest probability
+        of the scene category. Scene attributes' values are the responses of the scene
+        attributes, which are the dot product of the scene attributes' weight and the
+        features of the image, and higher values indicate a higher presence of the
+        attribute in the image. The environment type is either "indoor" or "outdoor".
 
-        :param dir_input: directory containing input images.
-        :type dir_input: Union[str, Path]
-        :param dir_image_output: directory to save output images, defaults to None
-        :type dir_image_output: Union[str, Path, None], optional
-        :param dir_summary_output: directory to save summary output, defaults to None
-        :type dir_summary_output: Union[str, Path, None], optional
-        :param batch_size: batch size for inference, defaults to 1
-        :type batch_size: int, optional
-        :param save_image_options: save options for images, defaults to "cam_image blend_image". Options are "cam_image" and "blend_image". Please add a space between options.
-        :type save_image_options: str, optional
-        :param save_format: save format for the output, defaults to "json csv". Options are "json" and "csv". Please add a space between options.
-        :type save_format: str, optional
-        :param csv_format: csv format for the output, defaults to "long". Options are "long" and "wide".
-        :type csv_format: str, optional
+        Args:
+          dir_input(Union[str): directory containing input
+        images.
+          dir_image_output(Union[str): directory to save output images, defaults to None
+          dir_summary_output(Union[str): directory to save summary output, defaults to None
+          batch_size(int): batch size for inference,
+        defaults to 1
+          save_image_options(str): save options for images,
+        defaults to "cam_image blend_image". Options are
+        "cam_image" and "blend_image". Please add a space
+        between options.
+          save_format(str): save format for the output,
+        defaults to "json csv". Options are "json" and "csv".
+        Please add a space between options.
+          csv_format(str): csv format for the output,
+        defaults to "long". Options are "long" and "wide".
+          dir_input: Union[str:
+          Path]:
+          dir_image_output: Union[str:
+          Path:
+          None]: (Default value = None)
+          dir_summary_output: Union[str:
+          batch_size: int:  (Default value = 1)
+          save_image_options: str:  (Default value = "cam_image blend_image")
+          save_format: str:  (Default value = "json csv")
+          csv_format: str:  (Default value = "long")
+          # "long" or "wide":
+          dir_input: Union[str:
+          dir_image_output: Union[str:
+          dir_summary_output: Union[str:
+          batch_size: int:  (Default value = 1)
+          save_image_options: str:  (Default value = "cam_image blend_image")
+          save_format: str:  (Default value = "json csv")
+          csv_format: str:  (Default value = "long")
+
+        Returns:
         """
         if not dir_image_output and not dir_summary_output:
             raise ValueError("At least one of dir_image_output and dir_summary_output must be provided")

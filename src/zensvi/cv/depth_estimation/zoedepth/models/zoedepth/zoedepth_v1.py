@@ -28,7 +28,6 @@ import torch
 import torch.nn as nn
 
 from ..base_models.depth_anything import DepthAnythingCore
-from ..base_models.midas import MidasCore
 from ..depth_model import DepthModel
 from ..layers.attractor import AttractorLayer, AttractorLayerUnnormed
 from ..layers.dist_layers import ConditionalLogBinomial
@@ -37,6 +36,8 @@ from ..model_io import load_state_from_resource
 
 
 class ZoeDepth(DepthModel):
+    """"""
+
     def __init__(
         self,
         core,
@@ -59,7 +60,8 @@ class ZoeDepth(DepthModel):
         inverse_midas=False,
         **kwargs,
     ):
-        """ZoeDepth model. This is the version of ZoeDepth that has a single metric head
+        """ZoeDepth model. This is the version of ZoeDepth that has a single metric
+        head.
 
         Args:
             core (models.base_models.midas.MidasCore): The base midas model that is used for extraction of "relative" features
@@ -156,18 +158,21 @@ class ZoeDepth(DepthModel):
 
     def forward(self, x, return_final_centers=False, denorm=False, return_probs=False, **kwargs):
         """
+
         Args:
-            x (torch.Tensor): Input image tensor of shape (B, C, H, W)
-            return_final_centers (bool, optional): Whether to return the final bin centers. Defaults to False.
-            denorm (bool, optional): Whether to denormalize the input image. This reverses ImageNet normalization as midas normalization is different. Defaults to False.
-            return_probs (bool, optional): Whether to return the output probability distribution. Defaults to False.
+          x: torch
+          return_final_centers: bool (Default value = False)
+          denorm: bool (Default value = False)
+          return_probs: bool (Default value = False)
+          kwargs:
+          **kwargs:
 
         Returns:
-            dict: Dictionary containing the following keys:
-                - rel_depth (torch.Tensor): Relative depth map of shape (B, H, W)
-                - metric_depth (torch.Tensor): Metric depth map of shape (B, 1, H, W)
-                - bin_centers (torch.Tensor): Bin centers of shape (B, n_bins). Present only if return_final_centers is True
-                - probs (torch.Tensor): Output probability distribution of shape (B, n_bins, H, W). Present only if return_probs is True
+          dict: Dictionary containing the following keys:
+          - rel_depth (torch.Tensor): Relative depth map of shape (B, H, W)
+          - metric_depth (torch.Tensor): Metric depth map of shape (B, 1, H, W)
+          - bin_centers (torch.Tensor): Bin centers of shape (B, n_bins). Present only if return_final_centers is True
+          - probs (torch.Tensor): Output probability distribution of shape (B, n_bins, H, W). Present only if return_probs is True
 
         """
         # print('input shape', x.shape)
@@ -235,12 +240,13 @@ class ZoeDepth(DepthModel):
         return output
 
     def get_lr_params(self, lr):
-        """
-        Learning rate configuration for different layers of the model
+        """Learning rate configuration for different layers of the model.
+
         Args:
-            lr (float) : Base learning rate
+          lr:
+
         Returns:
-            list : list of parameters to optimize and their learning rates, in the format required by torch optimizers.
+          list: list of parameters to optimize and their learning rates, in the format required by torch optimizers.
         """
         param_conf = []
         if self.train_midas:
@@ -284,6 +290,19 @@ class ZoeDepth(DepthModel):
         freeze_midas_bn=True,
         **kwargs,
     ):
+        """
+
+        Args:
+          midas_model_type: (Default value = "DPT_BEiT_L_384")
+          pretrained_resource: (Default value = None)
+          use_pretrained_midas: (Default value = False)
+          train_midas: (Default value = False)
+          freeze_midas_bn: (Default value = True)
+          **kwargs:
+
+        Returns:
+
+        """
         # core = MidasCore.build(midas_model_type=midas_model_type, use_pretrained_midas=use_pretrained_midas,
         #                        train_midas=train_midas, fetch_features=True, freeze_bn=freeze_midas_bn, **kwargs)
 
@@ -304,4 +323,12 @@ class ZoeDepth(DepthModel):
 
     @staticmethod
     def build_from_config(config):
+        """
+
+        Args:
+          config:
+
+        Returns:
+
+        """
         return ZoeDepth.build(**config)

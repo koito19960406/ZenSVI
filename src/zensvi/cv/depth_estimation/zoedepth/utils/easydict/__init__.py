@@ -1,13 +1,35 @@
-"""
-EasyDict
+"""EasyDict
 Copy/pasted from https://github.com/makinacorpus/easydict
 Original author: Mathieu Leplatre <mathieu.leplatre@makina-corpus.com>
 """
 
 
 class EasyDict(dict):
-    """
-    Get attributes
+    """Get attributes.
+
+    Works recursively
+
+
+    Bullet-proof
+
+
+    Set attributes
+
+
+    Values extraction
+
+
+    Still like a dict though
+
+
+    And like a class
+
+
+    update and pop items
+
+    Args:
+
+    Returns:
 
     >>> d = EasyDict({'foo':3})
     >>> d['foo']
@@ -19,15 +41,11 @@ class EasyDict(dict):
     ...
     AttributeError: 'EasyDict' object has no attribute 'bar'
 
-    Works recursively
-
     >>> d = EasyDict({'foo':3, 'bar':{'x':1, 'y':2}})
     >>> isinstance(d.bar, dict)
     True
     >>> d.bar.x
     1
-
-    Bullet-proof
 
     >>> EasyDict({})
     {}
@@ -41,8 +59,6 @@ class EasyDict(dict):
     >>> EasyDict((('a', 1), ('b', 2)))
     {'a': 1, 'b': 2}
 
-    Set attributes
-
     >>> d = EasyDict()
     >>> d.foo = 3
     >>> d.foo
@@ -55,9 +71,6 @@ class EasyDict(dict):
     >>> d.bar.prop = 'newer'
     >>> d.bar.prop
     'newer'
-
-
-    Values extraction
 
     >>> d = EasyDict({'foo':0, 'bar':[{'x':1, 'y':2}, {'x':3, 'y':4}]})
     >>> isinstance(d.bar, list)
@@ -76,13 +89,9 @@ class EasyDict(dict):
     >>> d.bar.x
     1
 
-    Still like a dict though
-
     >>> o = EasyDict({'clean':True})
     >>> list(o.items())
     [('clean', True)]
-
-    And like a class
 
     >>> class Flower(EasyDict):
     ...     power = 1
@@ -98,7 +107,6 @@ class EasyDict(dict):
     >>> sorted(f.keys())
     ['height', 'power']
 
-    update and pop items
     >>> d = EasyDict(a=1, b='2')
     >>> e = EasyDict(c=3.0, a=9.0)
     >>> d.update(e)
@@ -130,7 +138,7 @@ class EasyDict(dict):
             setattr(self, k, v)
         # Class attributes
         for k in self.__class__.__dict__.keys():
-            if not (k.startswith("__") and k.endswith("__")) and not k in (
+            if not (k.startswith("__") and k.endswith("__")) and k not in (
                 "update",
                 "pop",
             ):
@@ -147,12 +155,30 @@ class EasyDict(dict):
     __setitem__ = __setattr__
 
     def update(self, e=None, **f):
+        """
+
+        Args:
+          e: (Default value = None)
+          **f:
+
+        Returns:
+
+        """
         d = e or dict()
         d.update(f)
         for k in d:
             setattr(self, k, d[k])
 
     def pop(self, k, d=None):
+        """
+
+        Args:
+          k:
+          d: (Default value = None)
+
+        Returns:
+
+        """
         delattr(self, k)
         return super(EasyDict, self).pop(k, d)
 

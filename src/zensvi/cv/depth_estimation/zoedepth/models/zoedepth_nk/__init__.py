@@ -28,4 +28,6 @@ all_versions = {
     "v1": ZoeDepthNK,
 }
 
-get_version = lambda v: all_versions[v]
+
+def get_version(v):
+    return all_versions[v]

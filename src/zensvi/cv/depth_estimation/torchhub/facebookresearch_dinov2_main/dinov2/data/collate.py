@@ -17,6 +17,19 @@ def collate_data_and_cast(
     n_tokens=None,
     mask_generator=None,
 ):
+    """
+
+    Args:
+      samples_list:
+      mask_ratio_tuple:
+      mask_probability:
+      dtype:
+      n_tokens: (Default value = None)
+      mask_generator: (Default value = None)
+
+    Returns:
+
+    """
     # dtype = torch.half  # TODO: Remove
 
     n_global_crops = len(samples_list[0][0]["global_crops"])

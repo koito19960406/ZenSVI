@@ -10,13 +10,33 @@ from torch.utils.data import Dataset
 
 
 class DatasetWithEnumeratedTargets(Dataset):
+    """"""
+
     def __init__(self, dataset):
         self._dataset = dataset
 
     def get_image_data(self, index: int) -> bytes:
+        """
+
+        Args:
+          index: int:
+          index: int:
+
+        Returns:
+
+        """
         return self._dataset.get_image_data(index)
 
     def get_target(self, index: int) -> Tuple[Any, int]:
+        """
+
+        Args:
+          index: int:
+          index: int:
+
+        Returns:
+
+        """
         target = self._dataset.get_target(index)
         return (index, target)
 

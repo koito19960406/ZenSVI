@@ -10,7 +10,6 @@ readme = "README.md"
 python = "^3.9"
 Pillow = ">=10.0.0"
 geopandas = ">=0.10.0"
-geopy = "^2.2.0"
 numpy = "^1.21.0"
 opencv-python = ">=4.5.3"
 osmnx = "^1.1.1"
@@ -89,7 +88,7 @@ max-line-length = 120
 extend-ignore = "E203, W503"
 
 [tool.pydocstyle]
-convention = "sphinx"
+convention = "google"
 add-ignore = "D100,D104"
 
 [aool.poetry.group.dev.dependencies]

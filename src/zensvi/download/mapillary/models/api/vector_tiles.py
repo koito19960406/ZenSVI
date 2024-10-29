@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.models.api.vector_tiles
+"""mapillary.models.api.vector_tiles
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This module contains the adapter design for the Vector Tiles API of Mapillary API v4, Vector tiles
@@ -18,7 +16,6 @@ For more information, please check out https://www.mapillary.com/developer/api-d
 import glob
 import json
 import os
-import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import mercantile
@@ -42,11 +39,10 @@ from zensvi.download.mapillary.models.geojson import GeoJSON
 
 
 class VectorTilesAdapter(object):
-    """
-    Adapter model for dealing with the VectorTiles API, through the DRY principle. The
-    VectorTilesAdapter class can be instantiated in the controller modules, providing an
-    abstraction layer that uses the Client class, endpoints provided by the API v4 under
-    `/config/api/vector_tiles.py`.
+    """Adapter model for dealing with the VectorTiles API, through the DRY principle.
+    The VectorTilesAdapter class can be instantiated in the controller modules,
+    providing an abstraction layer that uses the Client class, endpoints provided by the
+    API v4 under `/config/api/vector_tiles.py`.
 
     It performs parsing, handling of layers, properties, and fields to make it easier to
     write higher level logic for extracing information, and lets developers to focus only
@@ -81,7 +77,7 @@ class VectorTilesAdapter(object):
     # __preprocess_features
 
     def __init__(self) -> None:
-        """Initializing VectorTilesAdapter constructor"""
+        """Initializing VectorTilesAdapter constructor."""
 
         # Initialize client object
         self.client = Client()
@@ -95,24 +91,18 @@ class VectorTilesAdapter(object):
         self.__max_zoom = 14
 
     def fetch_layer(self, layer: str, longitude: float, latitude: float, zoom: int = 14) -> dict:
-        """
-        Fetches an image tile layer depending on the coordinates, and the layer selected
-        along with the zoom level
+        """Fetches an image tile layer depending on the coordinates, and the layer
+        selected along with the zoom level.
 
-        :param layer: Either 'overview', 'sequence', 'image'
-        :type layer: str
+        Args:
+            layer (str): Either 'overview', 'sequence', 'image'
+            longitude (float): The longitude of the coordinates
+            latitude (float): The latitude of the coordinates
+            zoom (int): The zoom level, [0, 14], inclusive
 
-        :param longitude: The longitude of the coordinates
-        :type longitude: float
-
-        :param latitude: The latitude of the coordinates
-        :type latitude: float
-
-        :param zoom: The zoom level, [0, 14], inclusive
-        :type zoom: int
-
-        :return: A GeoJSON for that specific layer and the specified zoom level
-        :rtype: dict
+        Returns:
+            dict: A GeoJSON for that specific layer and the specified
+            zoom level
         """
 
         # Checking if the correct parameters are passed
@@ -132,24 +122,18 @@ class VectorTilesAdapter(object):
         )
 
     def fetch_computed_layer(self, layer: str, zoom: int, longitude: float, latitude: float):
-        """
-        Same as `fetch_layer`, but gets in return computed tiles only.
-        Depends on the layer, zoom level, longitude and the latitude specifications
+        """Same as `fetch_layer`, but gets in return computed tiles only. Depends on the
+        layer, zoom level, longitude and the latitude specifications.
 
-        :param layer: Either 'overview', 'sequence', 'image'
-        :type layer: str
+        Args:
+            layer (str): Either 'overview', 'sequence', 'image'
+            zoom (int): The zoom level, [0, 14], inclusive
+            longitude (float): The longitude of the coordinates
+            latitude (float): The latitude of the coordinates
 
-        :param zoom: The zoom level, [0, 14], inclusive
-        :type zoom: int
-
-        :param longitude: The longitude of the coordinates
-        :type longitude: float
-
-        :param latitude: The latitude of the coordinates
-        :type latitude: float
-
-        :return: A GeoJSON for that specific layer and the specified zoom level
-        :rtype: dict
+        Returns:
+            dict: A GeoJSON for that specific layer and the specified
+            zoom level
         """
 
         # Checking if the correct parameters are passed
@@ -169,23 +153,18 @@ class VectorTilesAdapter(object):
         )
 
     def fetch_features(self, feature_type: str, zoom: int, longitude: float, latitude: float):
-        """
-        Fetches specified features from the coordinates with the appropriate zoom level
+        """Fetches specified features from the coordinates with the appropriate zoom
+        level.
 
-        :param feature_type: Either `point`, or `tiles`
-        :type feature_type: str
+        Args:
+            feature_type (str): Either `point`, or `tiles`
+            zoom (int): The zoom level
+            longitude (float): The longitude of the coordinates
+            latitude (float): The latitude of the coordinates
 
-        :param zoom: The zoom level
-        :type zoom: int
-
-        :param longitude: The longitude of the coordinates
-        :type longitude: float
-
-        :param latitude: The latitude of the coordinates
-        :type latitude: float
-
-        :return: A GeoJSON for that specific layer and the specified zoom level
-        :rtype: dict
+        Returns:
+            dict: A GeoJSON for that specific layer and the specified
+            zoom level
         """
 
         # Checking if the correct parameters are passed
@@ -212,24 +191,22 @@ class VectorTilesAdapter(object):
         is_computed: bool = False,
         **kwargs,
     ) -> GeoJSON:
-        """
-        Fetches multiple vector tiles based on a list of multiple coordinates in a listed format
+        """Fetches multiple vector tiles based on a list of multiple coordinates in a
+        listed format.
 
-        :param coordinates: A list of lists of coordinates to get the vector tiles for
-        :type coordinates: "list[list]"
+        Args:
+            coordinates ("list[list]"): A list of lists of coordinates
+                to get the vector tiles for
+            layer (str): Either "overview", "sequence", "image",
+                "traffic_sign", or "map_feature", defaults to "image"
+            zoom (int): the zoom level [0, 14], inclusive. Defaults to
+                14
+            is_computed (bool): Will to be fetched layers be computed?
+                Defaults to False
 
-        :param layer: Either "overview", "sequence", "image", "traffic_sign", or "map_feature",
-            defaults to "image"
-        :type layer: str
-
-        :param zoom: the zoom level [0, 14], inclusive. Defaults to 14
-        :type zoom: int
-
-        :param is_computed: Will to be fetched layers be computed? Defaults to False
-        :type is_computed: bool
-
-        :return: A geojson with merged features from all unique vector tiles
-        :rtype: dict
+        Returns:
+            dict: A geojson with merged features from all unique vector
+            tiles
         """
 
         # Check for the correct zoom values against the layer specified
@@ -347,20 +324,19 @@ class VectorTilesAdapter(object):
         feature_type: str,
         zoom: int = 14,
     ) -> GeoJSON:
-        """
-        Fetches map features based on a list Polygon object
+        """Fetches map features based on a list Polygon object.
 
-        :param coordinates: A list of lists of coordinates to get the map features for
-        :type coordinates: "list[list]"
+        Args:
+            coordinates ("list[list]"): A list of lists of coordinates
+                to get the map features for
+            feature_type (str): Either "point", "traffic_signs",
+                defaults to "point"
+            zoom (int): the zoom level [0, 14], inclusive. Defaults to
+                14
 
-        :param feature_type: Either "point", "traffic_signs", defaults to "point"
-        :type feature_type: str
-
-        :param zoom: the zoom level [0, 14], inclusive. Defaults to 14
-        :type zoom: int
-
-        :return: A geojson with merged features from all unique vector tiles
-        :rtype: dict
+        Returns:
+            dict: A geojson with merged features from all unique vector
+            tiles
         """
 
         # Check for the correct zoom values against the layer specified
@@ -403,17 +379,15 @@ class VectorTilesAdapter(object):
         longitude: float,
         latitude: float,
     ):
-        """
-        Range checking for the parameters of longitude, latitude, layer, zoom
+        """Range checking for the parameters of longitude, latitude, layer, zoom.
 
-        :param longitude: The longitude of the coordinates
-        :type longitude: float
+        Args:
+            longitude (float): The longitude of the coordinates
+            latitude (float): The latitude of the coordinates
 
-        :param latitude: The latitude of the coordinates
-        :type latitude: float
-
-        :return: A GeoJSON for that specific layer and the specified zoom level
-        :rtype: dict
+        Returns:
+            dict: A GeoJSON for that specific layer and the specified
+            zoom level
         """
 
         # Lng, Lat ranges, https://docs.mapbox.com/help/glossary/lat-lon/
@@ -429,19 +403,18 @@ class VectorTilesAdapter(object):
             raise InvalidOptionError(param="latitude", value=latitude, options=[-180, 180])
 
     def __zoom_range_check(self, layer: str, zoom: int):
-        """
-        Checks for the correct zoom values for te specified layer
+        """Checks for the correct zoom values for te specified layer.
 
-        :param layer: Either 'overview', 'sequence', 'image', or 'map'
-        :type layer: str
+        Args:
+            layer (str): Either 'overview', 'sequence', 'image', or
+                'map'
+            zoom (int): The zoom levels,
 
-        :param zoom: The zoom levels,
-        :type zoom: int
+        Raises:
+            InvalidOptionError: Invalid option passed
 
-        :raises InvalidOptionError: Invalid option passed
-
-        :return: A GeoJSON for the return object
-        :rtype: dict
+        Returns:
+            dict: A GeoJSON for the return object
         """
 
         # If zoom is not in the valid range of values
@@ -500,20 +473,15 @@ class VectorTilesAdapter(object):
             )
 
     def __preprocess_layer(self, layer: str, tile: mercantile.Tile, zoom: int):
-        """
-        Preprocessing un-computed layers
+        """Preprocessing un-computed layers.
 
-        :param layer: Either 'overview', 'sequence', 'image'
-        :type layer: str
+        Args:
+            layer (str): Either 'overview', 'sequence', 'image'
+            tile (mercantile.Tile): The specified tile
+            zoom (int): The zoom level
 
-        :param tile: The specified tile
-        :type tile: mercantile.Tile
-
-        :param zoom: The zoom level
-        :type zoom: int
-
-        :return: A GeoJSON
-        :rtype: dict
+        Returns:
+            dict: A GeoJSON
         """
 
         # * See "FOR DEVELOPERS (3, 3.1)"
@@ -546,20 +514,15 @@ class VectorTilesAdapter(object):
         )
 
     def __preprocess_computed_layer(self, layer: str, tile: mercantile.Tile, zoom: int):
-        """
-        Preprocessing computed layers
+        """Preprocessing computed layers.
 
-        :param layer: Either 'overview', 'sequence', 'image'
-        :type layer: str
+        Args:
+            layer (str): Either 'overview', 'sequence', 'image'
+            tile (mercantile.Tile): The specified tile
+            zoom (int): The zoom level
 
-        :param tile: The specified tile
-        :type tile: mercantile.Tile
-
-        :param zoom: The zoom level
-        :type zoom: int
-
-        :return: A GeoJSON
-        :rtype: dict
+        Returns:
+            dict: A GeoJSON
         """
 
         # * See "FOR DEVELOPERS (3, 3.1)"
@@ -592,20 +555,15 @@ class VectorTilesAdapter(object):
         )
 
     def __preprocess_features(self, feature_type: str, tile: mercantile.Tile, zoom: int) -> dict:
-        """
-        Preprocess features
+        """Preprocess features.
 
-        :param feature_type: Either 'point', 'traffic_signs'
-        :type feature_type: str
+        Args:
+            feature_type (str): Either 'point', 'traffic_signs'
+            tile (mercantile.Tile): The specified tile
+            zoom (int): The zoom level
 
-        :param tile: The specified tile
-        :type tile: mercantile.Tile
-
-        :param zoom: The zoom level
-        :type zoom: int
-
-        :return: A GeoJSON
-        :rtype: dict
+        Returns:
+            dict: A GeoJSON
         """
 
         # * See "FOR DEVELOPERS (3, 3.1)"

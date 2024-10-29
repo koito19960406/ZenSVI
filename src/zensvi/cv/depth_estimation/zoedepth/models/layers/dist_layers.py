@@ -27,7 +27,15 @@ import torch.nn as nn
 
 
 def log_binom(n, k, eps=1e-7):
-    """log(nCk) using stirling approximation"""
+    """Log(nCk) using stirling approximation.
+
+    Args:
+      n:
+      k:
+      eps: (Default value = 1e-7)
+
+    Returns:
+    """
     n = n + eps
     k = k + eps
     return n * torch.log(n) - k * torch.log(k) - (n - k) * torch.log(n - k + eps)
@@ -35,10 +43,12 @@ def log_binom(n, k, eps=1e-7):
 
 class LogBinomial(nn.Module):
     def __init__(self, n_classes=256, act=torch.softmax):
-        """Compute log binomial distribution for n_classes
+        """Compute log binomial distribution for n_classes.
 
         Args:
-            n_classes (int, optional): number of output classes. Defaults to 256.
+          n_classes(int): number of output classes. Defaults to 256.
+
+        Returns:
         """
         super().__init__()
         self.K = n_classes
@@ -47,15 +57,15 @@ class LogBinomial(nn.Module):
         self.register_buffer("K_minus_1", torch.Tensor([self.K - 1]).view(1, -1, 1, 1))
 
     def forward(self, x, t=1.0, eps=1e-4):
-        """Compute log binomial distribution for x
+        """Compute log binomial distribution for x.
 
         Args:
-            x (torch.Tensor - NCHW): probabilities
-            t (float, torch.Tensor - NCHW, optional): Temperature of distribution. Defaults to 1..
-            eps (float, optional): Small number for numerical stability. Defaults to 1e-4.
+          x(torch.Tensor - NCHW): probabilities
+          t(float, optional): Temperature of distribution. Defaults to 1..
+          eps(float, optional): Small number for numerical stability. Defaults to 1e-4.
 
         Returns:
-            torch.Tensor -NCHW: log binomial distribution logbinomial(p;t)
+          torch.Tensor -NCHW: log binomial distribution logbinomial(p;t)
         """
         if x.ndim == 3:
             x = x.unsqueeze(1)  # make it nchw
@@ -71,6 +81,8 @@ class LogBinomial(nn.Module):
 
 
 class ConditionalLogBinomial(nn.Module):
+    """"""
+
     def __init__(
         self,
         in_features,
@@ -82,7 +94,7 @@ class ConditionalLogBinomial(nn.Module):
         min_temp=1e-7,
         act=torch.softmax,
     ):
-        """Conditional Log Binomial distribution
+        """Conditional Log Binomial distribution.
 
         Args:
             in_features (int): number of input channels in main feature
@@ -114,14 +126,14 @@ class ConditionalLogBinomial(nn.Module):
         )
 
     def forward(self, x, cond):
-        """Forward pass
+        """Forward pass.
 
         Args:
-            x (torch.Tensor - NCHW): Main feature
-            cond (torch.Tensor - NCHW): condition feature
+          x(torch.Tensor - NCHW): Main feature
+          cond(torch.Tensor - NCHW): condition feature
 
         Returns:
-            torch.Tensor: Output log binomial distribution
+          torch.Tensor: Output log binomial distribution
         """
         pt = self.mlp(torch.concat((x, cond), dim=1))
         p, t = pt[:, :2, ...], pt[:, 2:, ...]

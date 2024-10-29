@@ -34,24 +34,46 @@ from torchvision import transforms
 
 
 class DepthModel(nn.Module):
+    """"""
+
     def __init__(self):
         super().__init__()
         self.device = "cpu"
 
     def to(self, device) -> nn.Module:
+        """
+
+        Args:
+          device:
+
+        Returns:
+
+        """
         self.device = device
         return super().to(device)
 
     def forward(self, x, *args, **kwargs):
+        """
+
+        Args:
+          x:
+          *args:
+          **kwargs:
+
+        Returns:
+
+        """
         raise NotImplementedError
 
     def _infer(self, x: torch.Tensor):
-        """
-        Inference interface for the model
+        """Inference interface for the model.
+
         Args:
-            x (torch.Tensor): input tensor of shape (b, c, h, w)
+          x: torch.Tensor:
+          x: torch.Tensor:
+
         Returns:
-            torch.Tensor: output tensor of shape (b, 1, h, w)
+          torch.Tensor: output tensor of shape (b, 1, h, w)
         """
         return self(x)["metric_depth"]
 
@@ -65,22 +87,35 @@ class DepthModel(nn.Module):
         padding_mode="reflect",
         **kwargs,
     ) -> torch.Tensor:
-        """
-        Inference interface for the model with padding augmentation
-        Padding augmentation fixes the boundary artifacts in the output depth map.
-        Boundary artifacts are sometimes caused by the fact that the model is trained on NYU raw dataset which has a black or white border around the image.
-        This augmentation pads the input image and crops the prediction back to the original size / view.
+        """Inference interface for the model with padding augmentation Padding
+        augmentation fixes the boundary artifacts in the output depth map. Boundary
+        artifacts are sometimes caused by the fact that the model is trained on NYU raw
+        dataset which has a black or white border around the image. This augmentation
+        pads the input image and crops the prediction back to the original size / view.
 
         Note: This augmentation is not required for the models trained with 'avoid_boundary'=True.
+
         Args:
-            x (torch.Tensor): input tensor of shape (b, c, h, w)
-            pad_input (bool, optional): whether to pad the input or not. Defaults to True.
-            fh (float, optional): height padding factor. The padding is calculated as sqrt(h/2) * fh. Defaults to 3.
-            fw (float, optional): width padding factor. The padding is calculated as sqrt(w/2) * fw. Defaults to 3.
-            upsampling_mode (str, optional): upsampling mode. Defaults to 'bicubic'.
-            padding_mode (str, optional): padding mode. Defaults to "reflect".
+          x(torch.Tensor): input tensor of shape (b, c, h, w)
+          pad_input(bool): whether to pad the input or not. Defaults to True.
+          fh(float): height padding factor. The padding is calculated as sqrt(h/2) * fh. Defaults to 3.
+          fw(float): width padding factor. The padding is calculated as sqrt(w/2) * fw. Defaults to 3.
+          upsampling_mode(str): upsampling mode. Defaults to 'bicubic'.
+          x: torch.Tensor:
+          pad_input: bool:  (Default value = True)
+          fh: float:  (Default value = 3)
+          fw: float:  (Default value = 3)
+          upsampling_mode: str:  (Default value = "bicubic")
+          padding_mode: (Default value = "reflect")
+          **kwargs:
+          x: torch.Tensor:
+          pad_input: bool:  (Default value = True)
+          fh: float:  (Default value = 3)
+          fw: float:  (Default value = 3)
+          upsampling_mode: str:  (Default value = "bicubic")
+
         Returns:
-            torch.Tensor: output tensor of shape (b, 1, h, w)
+          torch.Tensor: output tensor of shape (b, 1, h, w)
         """
         # assert x is nchw and c = 3
         assert x.dim() == 4, "x must be 4 dimensional, got {}".format(x.dim())
@@ -112,14 +147,18 @@ class DepthModel(nn.Module):
         return out
 
     def infer_with_flip_aug(self, x, pad_input: bool = True, **kwargs) -> torch.Tensor:
-        """
-        Inference interface for the model with horizontal flip augmentation
-        Horizontal flip augmentation improves the accuracy of the model by averaging the output of the model with and without horizontal flip.
+        """Inference interface for the model with horizontal flip augmentation
+        Horizontal flip augmentation improves the accuracy of the model by averaging the
+        output of the model with and without horizontal flip.
+
         Args:
-            x (torch.Tensor): input tensor of shape (b, c, h, w)
-            pad_input (bool, optional): whether to use padding augmentation. Defaults to True.
+          x(torch.Tensor): input tensor of shape (b, c, h, w)
+          pad_input: bool:  (Default value = True)
+          **kwargs:
+          pad_input: bool:  (Default value = True)
+
         Returns:
-            torch.Tensor: output tensor of shape (b, 1, h, w)
+          torch.Tensor: output tensor of shape (b, 1, h, w)
         """
         # infer with horizontal flip and average
         out = self._infer_with_pad_aug(x, pad_input=pad_input, **kwargs)
@@ -128,14 +167,19 @@ class DepthModel(nn.Module):
         return out
 
     def infer(self, x, pad_input: bool = True, with_flip_aug: bool = True, **kwargs) -> torch.Tensor:
-        """
-        Inference interface for the model
+        """Inference interface for the model.
+
         Args:
-            x (torch.Tensor): input tensor of shape (b, c, h, w)
-            pad_input (bool, optional): whether to use padding augmentation. Defaults to True.
-            with_flip_aug (bool, optional): whether to use horizontal flip augmentation. Defaults to True.
+          x(torch.Tensor): input tensor of shape (b, c, h, w)
+          pad_input(bool): whether to use padding augmentation. Defaults to True.
+          pad_input: bool:  (Default value = True)
+          with_flip_aug: bool:  (Default value = True)
+          **kwargs:
+          pad_input: bool:  (Default value = True)
+          with_flip_aug: bool:  (Default value = True)
+
         Returns:
-            torch.Tensor: output tensor of shape (b, 1, h, w)
+          torch.Tensor: output tensor of shape (b, 1, h, w)
         """
         if with_flip_aug:
             return self.infer_with_flip_aug(x, pad_input=pad_input, **kwargs)
@@ -151,13 +195,22 @@ class DepthModel(nn.Module):
         output_type: str = "numpy",
         **kwargs,
     ) -> Union[np.ndarray, PIL.Image.Image, torch.Tensor]:
-        """
-        Inference interface for the model for PIL image
+        """Inference interface for the model for PIL image.
+
         Args:
-            pil_img (PIL.Image.Image): input PIL image
-            pad_input (bool, optional): whether to use padding augmentation. Defaults to True.
-            with_flip_aug (bool, optional): whether to use horizontal flip augmentation. Defaults to True.
-            output_type (str, optional): output type. Supported values are 'numpy', 'pil' and 'tensor'. Defaults to "numpy".
+          pil_img(PIL.Image.Image): input PIL image
+          pad_input(bool): whether to use padding augmentation. Defaults to True.
+          with_flip_aug(bool): whether to use horizontal flip augmentation. Defaults to True.
+          output_type(str): output type. Supported values are 'numpy', 'pil' and 'tensor'. Defaults to "numpy".
+          pad_input: bool:  (Default value = True)
+          with_flip_aug: bool:  (Default value = True)
+          output_type: str:  (Default value = "numpy")
+          **kwargs:
+          pad_input: bool:  (Default value = True)
+          with_flip_aug: bool:  (Default value = True)
+          output_type: str:  (Default value = "numpy")
+
+        Returns:
         """
         x = transforms.ToTensor()(pil_img).unsqueeze(0).to(self.device)
         out_tensor = self.infer(x, pad_input=pad_input, with_flip_aug=with_flip_aug, **kwargs)

@@ -27,7 +27,6 @@ import itertools
 import torch
 import torch.nn as nn
 from zoedepth.models.base_models.depth_anything import DepthAnythingCore
-from zoedepth.models.base_models.midas import MidasCore
 from zoedepth.models.depth_model import DepthModel
 from zoedepth.models.layers.attractor import AttractorLayer, AttractorLayerUnnormed
 from zoedepth.models.layers.dist_layers import ConditionalLogBinomial
@@ -37,6 +36,8 @@ from zoedepth.models.model_io import load_state_from_resource
 
 
 class ZoeDepthNK(DepthModel):
+    """"""
+
     def __init__(
         self,
         core,
@@ -59,7 +60,8 @@ class ZoeDepthNK(DepthModel):
         inverse_midas=False,
         **kwargs,
     ):
-        """ZoeDepthNK model. This is the version of ZoeDepth that has two metric heads and uses a learned router to route to experts.
+        """ZoeDepthNK model. This is the version of ZoeDepth that has two metric heads
+        and uses a learned router to route to experts.
 
         Args:
             core (models.base_models.midas.MidasCore): The base midas model that is used for extraction of "relative" features
@@ -88,7 +90,6 @@ class ZoeDepthNK(DepthModel):
             midas_lr_factor (int, optional): Learning rate reduction factor for base midas model except its encoder and positional encodings. Defaults to 10.
             encoder_lr_factor (int, optional): Learning rate reduction factor for the encoder in midas model. Defaults to 10.
             pos_enc_lr_factor (int, optional): Learning rate reduction factor for positional encodings in the base midas model. Defaults to 10.
-
         """
 
         super().__init__()
@@ -193,19 +194,23 @@ class ZoeDepthNK(DepthModel):
 
     def forward(self, x, return_final_centers=False, denorm=False, return_probs=False, **kwargs):
         """
+
         Args:
-            x (torch.Tensor): Input image tensor of shape (B, C, H, W). Assumes all images are from the same domain.
-            return_final_centers (bool, optional): Whether to return the final centers of the attractors. Defaults to False.
-            denorm (bool, optional): Whether to denormalize the input image. Defaults to False.
-            return_probs (bool, optional): Whether to return the probabilities of the bins. Defaults to False.
+          x: torch
+          return_final_centers: bool (Default value = False)
+          denorm: bool (Default value = False)
+          return_probs: bool (Default value = False)
+          kwargs:
+          **kwargs:
 
         Returns:
-            dict: Dictionary of outputs with keys:
-                - "rel_depth": Relative depth map of shape (B, 1, H, W)
-                - "metric_depth": Metric depth map of shape (B, 1, H, W)
-                - "domain_logits": Domain logits of shape (B, 2)
-                - "bin_centers": Bin centers of shape (B, N, H, W). Present only if return_final_centers is True
-                - "probs": Bin probabilities of shape (B, N, H, W). Present only if return_probs is True
+          dict: Dictionary of outputs with keys:
+          - "rel_depth": Relative depth map of shape (B, 1, H, W)
+          - "metric_depth": Metric depth map of shape (B, 1, H, W)
+          - "domain_logits": Domain logits of shape (B, 2)
+          - "bin_centers": Bin centers of shape (B, N, H, W). Present only if return_final_centers is True
+          - "probs": Bin probabilities of shape (B, N, H, W). Present only if return_probs is True
+
         """
         b, c, h, w = x.shape
         self.orig_input_width = w
@@ -272,24 +277,26 @@ class ZoeDepthNK(DepthModel):
         return output
 
     def get_lr_params(self, lr):
-        """
-        Learning rate configuration for different layers of the model
+        """Learning rate configuration for different layers of the model.
 
         Args:
-            lr (float) : Base learning rate
+          lr:
+
         Returns:
-            list : list of parameters to optimize and their learning rates, in the format required by torch optimizers.
+          list: list of parameters to optimize and their learning rates, in the format required by torch optimizers.
         """
         param_conf = []
         if self.train_midas:
 
             def get_rel_pos_params():
+                """"""
                 for name, p in self.core.core.pretrained.named_parameters():
                     # if "relative_position" in name:
                     if "pos_embed" in name:
                         yield p
 
             def get_enc_params_except_rel_pos():
+                """"""
                 for name, p in self.core.core.pretrained.named_parameters():
                     # if "relative_position" not in name:
                     if "pos_embed" not in name:
@@ -317,8 +324,13 @@ class ZoeDepthNK(DepthModel):
         return param_conf
 
     def get_conf_parameters(self, conf_name):
-        """
-        Returns parameters of all the ModuleDicts children that are exclusively used for the given bin configuration
+        """Returns parameters of all the ModuleDicts children that are exclusively used
+        for the given bin configuration.
+
+        Args:
+          conf_name:
+
+        Returns:
         """
         params = []
         for name, child in self.named_children():
@@ -329,23 +341,31 @@ class ZoeDepthNK(DepthModel):
         return params
 
     def freeze_conf(self, conf_name):
-        """
-        Freezes all the parameters of all the ModuleDicts children that are exclusively used for the given bin configuration
+        """Freezes all the parameters of all the ModuleDicts children that are
+        exclusively used for the given bin configuration.
+
+        Args:
+          conf_name:
+
+        Returns:
         """
         for p in self.get_conf_parameters(conf_name):
             p.requires_grad = False
 
     def unfreeze_conf(self, conf_name):
-        """
-        Unfreezes all the parameters of all the ModuleDicts children that are exclusively used for the given bin configuration
+        """Unfreezes all the parameters of all the ModuleDicts children that are
+        exclusively used for the given bin configuration.
+
+        Args:
+          conf_name:
+
+        Returns:
         """
         for p in self.get_conf_parameters(conf_name):
             p.requires_grad = True
 
     def freeze_all_confs(self):
-        """
-        Freezes all the parameters of all the ModuleDicts children
-        """
+        """Freezes all the parameters of all the ModuleDicts children."""
         for name, child in self.named_children():
             if isinstance(child, nn.ModuleDict):
                 for bin_conf_name, module in child.items():
@@ -361,6 +381,19 @@ class ZoeDepthNK(DepthModel):
         freeze_midas_bn=True,
         **kwargs,
     ):
+        """
+
+        Args:
+          midas_model_type: (Default value = "DPT_BEiT_L_384")
+          pretrained_resource: (Default value = None)
+          use_pretrained_midas: (Default value = False)
+          train_midas: (Default value = False)
+          freeze_midas_bn: (Default value = True)
+          **kwargs:
+
+        Returns:
+
+        """
         # core = MidasCore.build(midas_model_type=midas_model_type, use_pretrained_midas=use_pretrained_midas,
         #                        train_midas=train_midas, fetch_features=True, freeze_bn=freeze_midas_bn, **kwargs)
 
@@ -381,4 +414,12 @@ class ZoeDepthNK(DepthModel):
 
     @staticmethod
     def build_from_config(config):
+        """
+
+        Args:
+          config:
+
+        Returns:
+
+        """
         return ZoeDepthNK.build(**config)

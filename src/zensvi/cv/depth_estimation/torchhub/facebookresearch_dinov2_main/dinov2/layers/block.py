@@ -32,6 +32,8 @@ except ImportError:
 
 
 class Block(nn.Module):
+    """"""
+
     def __init__(
         self,
         dim: int,
@@ -78,10 +80,38 @@ class Block(nn.Module):
         self.sample_drop_ratio = drop_path
 
     def forward(self, x: Tensor) -> Tensor:
+        """
+
+        Args:
+          x: Tensor:
+          x: Tensor:
+
+        Returns:
+
+        """
+
         def attn_residual_func(x: Tensor) -> Tensor:
+            """
+
+            Args:
+              x: Tensor:
+              x: Tensor:
+
+            Returns:
+
+            """
             return self.ls1(self.attn(self.norm1(x)))
 
         def ffn_residual_func(x: Tensor) -> Tensor:
+            """
+
+            Args:
+              x: Tensor:
+              x: Tensor:
+
+            Returns:
+
+            """
             return self.ls2(self.mlp(self.norm2(x)))
 
         if self.training and self.sample_drop_ratio > 0.1:
@@ -110,6 +140,20 @@ def drop_add_residual_stochastic_depth(
     residual_func: Callable[[Tensor], Tensor],
     sample_drop_ratio: float = 0.0,
 ) -> Tensor:
+    """
+
+    Args:
+      x: Tensor:
+      residual_func: Callable[[Tensor]:
+      Tensor]:
+      sample_drop_ratio: float:  (Default value = 0.0)
+      x: Tensor:
+      residual_func: Callable[[Tensor]:
+      sample_drop_ratio: float:  (Default value = 0.0)
+
+    Returns:
+
+    """
     # 1) extract subset using permutation
     b, n, d = x.shape
     sample_subset_size = max(int(b * (1 - sample_drop_ratio)), 1)
@@ -130,6 +174,15 @@ def drop_add_residual_stochastic_depth(
 
 
 def get_branges_scales(x, sample_drop_ratio=0.0):
+    """
+
+    Args:
+      x:
+      sample_drop_ratio: (Default value = 0.0)
+
+    Returns:
+
+    """
     b, n, d = x.shape
     sample_subset_size = max(int(b * (1 - sample_drop_ratio)), 1)
     brange = (torch.randperm(b, device=x.device))[:sample_subset_size]
@@ -138,6 +191,18 @@ def get_branges_scales(x, sample_drop_ratio=0.0):
 
 
 def add_residual(x, brange, residual, residual_scale_factor, scaling_vector=None):
+    """
+
+    Args:
+      x:
+      brange:
+      residual:
+      residual_scale_factor:
+      scaling_vector: (Default value = None)
+
+    Returns:
+
+    """
     if scaling_vector is None:
         x_flat = x.flatten(1)
         residual = residual.flatten(1)
@@ -157,8 +222,14 @@ attn_bias_cache: Dict[Tuple, Any] = {}
 
 
 def get_attn_bias_and_cat(x_list, branges=None):
-    """
-    this will perform the index select, cat the tensors, and provide the attn_bias from cache
+    """This will perform the index select, cat the tensors, and provide the attn_bias
+    from cache.
+
+    Args:
+      x_list:
+      branges: (Default value = None)
+
+    Returns:
     """
     batch_sizes = [b.shape[0] for b in branges] if branges is not None else [x.shape[0] for x in x_list]
     all_shapes = tuple((b, x.shape[1]) for b, x in zip(batch_sizes, x_list))
@@ -186,6 +257,22 @@ def drop_add_residual_stochastic_depth_list(
     sample_drop_ratio: float = 0.0,
     scaling_vector=None,
 ) -> Tensor:
+    """
+
+    Args:
+      x_list: List[Tensor]:
+      residual_func: Callable[[Tensor:
+      Any]:
+      Tensor]:
+      sample_drop_ratio: float:  (Default value = 0.0)
+      scaling_vector: (Default value = None)
+      x_list: List[Tensor]:
+      residual_func: Callable[[Tensor:
+      sample_drop_ratio: float:  (Default value = 0.0)
+
+    Returns:
+
+    """
     # 1) generate random set of indices for dropping samples in the batch
     branges_scales = [get_branges_scales(x, sample_drop_ratio=sample_drop_ratio) for x in x_list]
     branges = [s[0] for s in branges_scales]
@@ -204,18 +291,45 @@ def drop_add_residual_stochastic_depth_list(
 
 
 class NestedTensorBlock(Block):
+    """"""
+
     def forward_nested(self, x_list: List[Tensor]) -> List[Tensor]:
-        """
-        x_list contains a list of tensors to nest together and run
+        """x_list contains a list of tensors to nest together and run.
+
+        Args:
+          x_list: List[Tensor]:
+          x_list: List[Tensor]:
+
+        Returns:
         """
         assert isinstance(self.attn, MemEffAttention)
 
         if self.training and self.sample_drop_ratio > 0.0:
 
             def attn_residual_func(x: Tensor, attn_bias=None) -> Tensor:
+                """
+
+                Args:
+                  x: Tensor:
+                  attn_bias: (Default value = None)
+                  x: Tensor:
+
+                Returns:
+
+                """
                 return self.attn(self.norm1(x), attn_bias=attn_bias)
 
             def ffn_residual_func(x: Tensor, attn_bias=None) -> Tensor:
+                """
+
+                Args:
+                  x: Tensor:
+                  attn_bias: (Default value = None)
+                  x: Tensor:
+
+                Returns:
+
+                """
                 return self.mlp(self.norm2(x))
 
             x_list = drop_add_residual_stochastic_depth_list(
@@ -234,9 +348,29 @@ class NestedTensorBlock(Block):
         else:
 
             def attn_residual_func(x: Tensor, attn_bias=None) -> Tensor:
+                """
+
+                Args:
+                  x: Tensor:
+                  attn_bias: (Default value = None)
+                  x: Tensor:
+
+                Returns:
+
+                """
                 return self.ls1(self.attn(self.norm1(x), attn_bias=attn_bias))
 
             def ffn_residual_func(x: Tensor, attn_bias=None) -> Tensor:
+                """
+
+                Args:
+                  x: Tensor:
+                  attn_bias: (Default value = None)
+                  x: Tensor:
+
+                Returns:
+
+                """
                 return self.ls2(self.mlp(self.norm2(x)))
 
             attn_bias, x = get_attn_bias_and_cat(x_list)
@@ -245,6 +379,14 @@ class NestedTensorBlock(Block):
             return attn_bias.split(x)
 
     def forward(self, x_or_x_list):
+        """
+
+        Args:
+          x_or_x_list:
+
+        Returns:
+
+        """
         if isinstance(x_or_x_list, Tensor):
             return super().forward(x_or_x_list)
         elif isinstance(x_or_x_list, list):

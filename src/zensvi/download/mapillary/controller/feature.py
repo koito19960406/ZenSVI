@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.controllers.feature
+"""mapillary.controllers.feature
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This module implements the feature extraction business logic functionalities of the Mapillary
@@ -34,18 +32,15 @@ from zensvi.download.mapillary.utils.verify import points_traffic_signs_check, v
 
 
 def get_feature_from_key_controller(key: int, fields: list) -> str:
-    """
-    A controller for getting properties of a certain image given the image key and
-    the list of fields/properties to be returned
+    """A controller for getting properties of a certain image given the image key and
+    the list of fields/properties to be returned.
 
-    :param key: The image key
-    :type key: int
+    Args:
+        key (int): The image key
+        fields (list): List of possible fields
 
-    :param fields: List of possible fields
-    :type fields: list
-
-    :return: The requested feature properties in GeoJSON format
-    :rtype: str
+    Returns:
+        str: The requested feature properties in GeoJSON format
     """
 
     valid_id(identity=key, image=False)
@@ -62,23 +57,17 @@ def get_map_features_in_bbox_controller(
     filters: dict,
     layer: str = "points",
 ) -> str:
-    """
-    For extracting either map feature points or traffic signs within a bounding box
+    """For extracting either map feature points or traffic signs within a bounding box.
 
-    :param bbox: Bounding box coordinates as argument
-    :type bbox: dict
+    Args:
+        bbox (dict): Bounding box coordinates as argument
+        layer (str): 'points' or 'traffic_signs'
+        filter_values (list): a list of filter values supported by the
+            API.
+        filters (dict): Chronological filters
 
-    :param layer: 'points' or 'traffic_signs'
-    :type layer: str
-
-    :param filter_values: a list of filter values supported by the API.
-    :type filter_values: list
-
-    :param filters: Chronological filters
-    :type filters: dict
-
-    :return: GeoJSON
-    :rtype: str
+    Returns:
+        str: GeoJSON
     """
 
     # Verifying the existence of the filter kwargs

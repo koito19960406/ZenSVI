@@ -25,12 +25,16 @@ _DEFAULT_MMAP_CACHE_SIZE = 16  # Warning: This can exhaust file descriptors
 
 @dataclass
 class _ClassEntry:
+    """"""
+
     block_offset: int
     maybe_filename: Optional[str] = None
 
 
 @dataclass
 class _Entry:
+    """"""
+
     class_index: int  # noqa: E701
     start_offset: int
     end_offset: int
@@ -38,27 +42,61 @@ class _Entry:
 
 
 class _Split(Enum):
+    """"""
+
     TRAIN = "train"
     VAL = "val"
 
     @property
     def length(self) -> int:
+        """"""
         return {
             _Split.TRAIN: 11_797_647,
             _Split.VAL: 561_050,
         }[self]
 
     def entries_path(self):
+        """"""
         return f"imagenet21kp_{self.value}.txt"
 
 
 def _get_tarball_path(class_id: str) -> str:
+    """
+
+    Args:
+      class_id: str:
+      class_id: str:
+
+    Returns:
+
+    """
     return f"{class_id}.tar"
 
 
 def _make_mmap_tarball(tarballs_root: str, mmap_cache_size: int):
+    """
+
+    Args:
+      tarballs_root: str:
+      mmap_cache_size: int:
+      tarballs_root: str:
+      mmap_cache_size: int:
+
+    Returns:
+
+    """
+
     @lru_cache(maxsize=mmap_cache_size)
     def _mmap_tarball(class_id: str) -> mmap:
+        """
+
+        Args:
+          class_id: str:
+          class_id: str:
+
+        Returns:
+
+        """
         tarball_path = _get_tarball_path(class_id)
         tarball_full_path = os.path.join(tarballs_root, tarball_path)
         with open(tarball_full_path) as f:
@@ -68,6 +106,8 @@ def _make_mmap_tarball(tarballs_root: str, mmap_cache_size: int):
 
 
 class ImageNet22k(ExtendedVisionDataset):
+    """"""
+
     _GZIPPED_INDICES: Set[int] = {
         841_545,
         1_304_131,
@@ -121,12 +161,39 @@ class ImageNet22k(ExtendedVisionDataset):
         self._mmap_tarball = _make_mmap_tarball(self._tarballs_root, mmap_cache_size)
 
     def _get_entries_path(self, root: Optional[str] = None) -> str:
+        """
+
+        Args:
+          root: Optional[str]:  (Default value = None)
+          root: Optional[str]:  (Default value = None)
+
+        Returns:
+
+        """
         return "entries.npy"
 
     def _get_class_ids_path(self, root: Optional[str] = None) -> str:
+        """
+
+        Args:
+          root: Optional[str]:  (Default value = None)
+          root: Optional[str]:  (Default value = None)
+
+        Returns:
+
+        """
         return "class-ids.npy"
 
     def _find_class_ids(self, path: str) -> List[str]:
+        """
+
+        Args:
+          path: str:
+          path: str:
+
+        Returns:
+
+        """
         class_ids = []
 
         with os.scandir(path) as entries:
@@ -139,6 +206,15 @@ class ImageNet22k(ExtendedVisionDataset):
         return sorted(class_ids)
 
     def _load_entries_class_ids(self, root: Optional[str] = None) -> Tuple[List[_Entry], List[str]]:
+        """
+
+        Args:
+          root: Optional[str]:  (Default value = None)
+          root: Optional[str]:  (Default value = None)
+
+        Returns:
+
+        """
         root = self.get_root(root)
         entries: List[_Entry] = []
         class_ids = self._find_class_ids(root)
@@ -183,11 +259,31 @@ class ImageNet22k(ExtendedVisionDataset):
         return entries, class_ids
 
     def _load_extra(self, extra_path: str) -> np.ndarray:
+        """
+
+        Args:
+          extra_path: str:
+          extra_path: str:
+
+        Returns:
+
+        """
         extra_root = self._extra_root
         extra_full_path = os.path.join(extra_root, extra_path)
         return np.load(extra_full_path, mmap_mode="r")
 
     def _save_extra(self, extra_array: np.ndarray, extra_path: str) -> None:
+        """
+
+        Args:
+          extra_array: np.ndarray:
+          extra_path: str:
+          extra_array: np.ndarray:
+          extra_path: str:
+
+        Returns:
+
+        """
         extra_root = self._extra_root
         extra_full_path = os.path.join(extra_root, extra_path)
         os.makedirs(extra_root, exist_ok=True)
@@ -195,12 +291,31 @@ class ImageNet22k(ExtendedVisionDataset):
 
     @property
     def _tarballs_root(self) -> str:
+        """"""
         return self.root
 
     def find_class_id(self, class_index: int) -> str:
+        """
+
+        Args:
+          class_index: int:
+          class_index: int:
+
+        Returns:
+
+        """
         return str(self._class_ids[class_index])
 
     def get_image_data(self, index: int) -> bytes:
+        """
+
+        Args:
+          index: int:
+          index: int:
+
+        Returns:
+
+        """
         entry = self._entries[index]
         class_id = entry["class_id"]
         class_mmap = self._mmap_tarball(class_id)
@@ -220,15 +335,35 @@ class ImageNet22k(ExtendedVisionDataset):
         return data
 
     def get_target(self, index: int) -> Any:
+        """
+
+        Args:
+          index: int:
+          index: int:
+
+        Returns:
+
+        """
         return int(self._entries[index]["class_index"])
 
     def get_targets(self) -> np.ndarray:
+        """"""
         return self._entries["class_index"]
 
     def get_class_id(self, index: int) -> str:
+        """
+
+        Args:
+          index: int:
+          index: int:
+
+        Returns:
+
+        """
         return str(self._entries[index]["class_id"])
 
     def get_class_ids(self) -> np.ndarray:
+        """"""
         return self._entries["class_id"]
 
     def __getitem__(self, index: int) -> Tuple[Any, Any]:
@@ -240,6 +375,15 @@ class ImageNet22k(ExtendedVisionDataset):
         return len(self._entries)
 
     def _dump_entries(self, *args, **kwargs) -> None:
+        """
+
+        Args:
+          *args:
+          **kwargs:
+
+        Returns:
+
+        """
         entries, class_ids = self._load_entries_class_ids(*args, **kwargs)
 
         max_class_id_length, max_filename_length, max_class_index = -1, -1, -1
@@ -278,6 +422,15 @@ class ImageNet22k(ExtendedVisionDataset):
         self._save_extra(entries_array, entries_path)
 
     def _dump_class_ids(self, *args, **kwargs) -> None:
+        """
+
+        Args:
+          *args:
+          **kwargs:
+
+        Returns:
+
+        """
         entries_path = self._get_entries_path(*args, **kwargs)
         entries_array = self._load_extra(entries_path)
 
@@ -295,8 +448,26 @@ class ImageNet22k(ExtendedVisionDataset):
         self._save_extra(class_ids_array, class_ids_path)
 
     def _dump_extra(self, *args, **kwargs) -> None:
+        """
+
+        Args:
+          *args:
+          **kwargs:
+
+        Returns:
+
+        """
         self._dump_entries(*args, *kwargs)
         self._dump_class_ids(*args, *kwargs)
 
     def dump_extra(self, root: Optional[str] = None) -> None:
+        """
+
+        Args:
+          root: Optional[str]:  (Default value = None)
+          root: Optional[str]:  (Default value = None)
+
+        Returns:
+
+        """
         return self._dump_extra(root)

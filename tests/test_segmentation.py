@@ -1,11 +1,9 @@
-import json
-import os
 import shutil
 import unittest
-from pathlib import Path
+
+from test_base import TestBase
 
 from zensvi.cv import Segmenter
-from test_base import TestBase
 
 
 class TestSegmentation(TestBase):

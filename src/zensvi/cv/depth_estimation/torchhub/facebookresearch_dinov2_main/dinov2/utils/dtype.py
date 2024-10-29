@@ -29,6 +29,15 @@ _NUMPY_TO_TORCH_DTYPE: Dict[np.dtype, torch.dtype] = {
 
 
 def as_torch_dtype(dtype: TypeSpec) -> torch.dtype:
+    """
+
+    Args:
+      dtype: TypeSpec:
+      dtype: TypeSpec:
+
+    Returns:
+
+    """
     if isinstance(dtype, torch.dtype):
         return dtype
     if isinstance(dtype, str):

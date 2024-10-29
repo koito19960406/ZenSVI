@@ -40,9 +40,9 @@ def plot_image(
     dark_mode: bool = False,
     dpi: int = 300,
 ) -> Tuple[plt.Figure, plt.Axes]:
-    """
-    Generates a grid of images based on specified parameters and optionally annotates them using data from a CSV file.
-    Images can be displayed in a random or sorted order according to metadata provided in a CSV file.
+    """Generates a grid of images based on specified parameters and optionally annotates
+    them using data from a CSV file. Images can be displayed in a random or sorted order
+    according to metadata provided in a CSV file.
 
     Args:
         dir_image_input (Union[str, Path]): Directory path containing image files.

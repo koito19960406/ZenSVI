@@ -14,6 +14,8 @@ from .utils.global_streetscapes import GlobalStreetScapesClassificationModel, qu
 
 
 class ImageDataset(Dataset):
+    """"""
+
     def __init__(self, image_files: List[Path]):
         self.image_files = [
             image_file
@@ -41,14 +43,16 @@ class ImageDataset(Dataset):
         return str(image_file), img
 
     def collate_fn(self, data: List[Tuple[str, torch.Tensor]]) -> Tuple[List[str], torch.Tensor]:
-        """
-        Custom collate function for the dataset.
+        """Custom collate function for the dataset.
 
         Args:
-            data (List[Tuple[str, torch.Tensor]]): List of tuples containing image file path and transformed image tensor.
+          data(List[Tuple[str): List of tuples containing image file path and transformed image tensor.
+          data: List[Tuple[str:
+          torch.Tensor]]:
+          data: List[Tuple[str:
 
         Returns:
-            Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
+          Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
         """
         image_files, images = zip(*data)
         images = torch.stack(images)  # Stack images to create a batch
@@ -56,12 +60,16 @@ class ImageDataset(Dataset):
 
 
 class ClassifierQuality(BaseClassifier):
-    """
-    A classifier for identifying quality. The model is from Hou et al (2024) (https://github.com/ualsg/global-streetscapes).
+    """A classifier for identifying quality. The model is from Hou et al (2024) (https://github.com/ualsg/global-streetscapes).
 
-    :param device: The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
-        If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
-    :type device: str, optional
+    Args:
+      device(str): The device that the model should be
+    loaded onto. Options are "cpu", "cuda", or "mps". If `None`,
+    the model tries to use a GPU if available; otherwise, falls
+    back to CPU.
+
+    Returns:
+
     """
 
     def __init__(self, device=None):
@@ -88,6 +96,17 @@ class ClassifierQuality(BaseClassifier):
         self.model.to(self.device)
 
     def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json"):
+        """
+
+        Args:
+          results:
+          dir_output:
+          file_name:
+          save_format: (Default value = "csv json")
+
+        Returns:
+
+        """
         df = pd.DataFrame(results)
         dir_output = Path(dir_output)
         dir_output.mkdir(parents=True, exist_ok=True)
@@ -105,17 +124,27 @@ class ClassifierQuality(BaseClassifier):
         batch_size=1,
         save_format="json csv",
     ) -> List[str]:
-        """
-        Classifies images based on quality. The output file can be saved in JSON and/or CSV format and will contain quality for each image. The quality categories are "good", "slghtly poor", and "very poor".
+        """Classifies images based on quality. The output file can be saved in JSON
+        and/or CSV format and will contain quality for each image. The quality
+        categories are "good", "slghtly poor", and "very poor".
 
-        :param dir_input: directory containing input images.
-        :type dir_input: Union[str, Path]
-        :param dir_summary_output: directory to save summary output.
-        :type dir_summary_output: Union[str, Path, None]
-        :param batch_size: batch size for inference, defaults to 1
-        :type batch_size: int, optional
-        :param save_format: save format for the output, defaults to "json csv". Options are "json" and "csv". Please add a space between options.
-        :type save_format: str, optional
+        Args:
+          dir_input(Union[str): directory containing input
+        images.
+          dir_summary_output(Union[str): directory to
+        save summary output.
+          batch_size(int, optional): batch size for inference,
+        defaults to 1
+          save_format(str, optional): save format for the output,
+        defaults to "json csv". Options are "json" and "csv".
+        Please add a space between options.
+          dir_input: Union[str:
+          Path]:
+          dir_summary_output: Union[str:
+          dir_input: Union[str:
+          dir_summary_output: Union[str:
+
+        Returns:
         """
         # Prepare output directories
         if dir_summary_output:

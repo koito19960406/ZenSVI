@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 import os
-from pathlib import Path
+import unittest
+from test_base import TestBase
 
 from zensvi.cv import ClassifierPerception
-from test_base import TestBase
 
 
 class TestClassifierPerception(TestBase):
