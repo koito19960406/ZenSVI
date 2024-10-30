@@ -22,7 +22,7 @@ class TestMapillary(TestBase):
         cls.mly_svi_output = cls.output / "mly_svi"
         cls.mly_svi_output_multipolygon = cls.output / "mly_svi_multipolygon"
         cls.mly_svi_output_polygon = cls.output / "mly_svi_polygon"
-        cls.mly_svi_output_buffer = cls.output /  "mly_svi_buffer"
+        cls.mly_svi_output_buffer = cls.output / "mly_svi_buffer"
         cls.mly_log = cls.output / "log.log"
 
     def test_interface(self):

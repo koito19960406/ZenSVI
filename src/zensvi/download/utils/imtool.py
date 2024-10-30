@@ -11,7 +11,6 @@ from tqdm import tqdm
 
 
 class ImageTool:
-
     @staticmethod
     def concat_horizontally(im1, im2):
         """Description of concat_horizontally Horizontally concatenates two images.

@@ -131,9 +131,9 @@ def build_schedulers(cfg):
     teacher_temp_schedule = CosineScheduler(**teacher_temp)
     last_layer_lr_schedule = CosineScheduler(**lr)
 
-    last_layer_lr_schedule.schedule[: cfg.optim["freeze_last_layer_epochs"] * OFFICIAL_EPOCH_LENGTH] = (
-        0  # mimicking the original schedules
-    )
+    last_layer_lr_schedule.schedule[
+        : cfg.optim["freeze_last_layer_epochs"] * OFFICIAL_EPOCH_LENGTH
+    ] = 0  # mimicking the original schedules
 
     logger.info("Schedulers ready.")
 
