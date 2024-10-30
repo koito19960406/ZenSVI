@@ -4,7 +4,7 @@ import unittest
 import pandas as pd
 from test_base import TestBase
 
-from zensvi.dowload import AMSDownloader
+from zensvi.download import AMSDownloader
 
 
 class TestAMSDownloader(TestBase):

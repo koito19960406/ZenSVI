@@ -12,8 +12,8 @@ from .classification import (
 )
 from .depth_estimation import DepthEstimator
 from .embeddings import Embeddings
-from .low_level import LowLevelFeatures
-from .segmentation import Segmentation
+from .low_level import get_low_level_features
+from .segmentation import Segmenter
 
 __all__ = [
     # Classification models
@@ -32,7 +32,7 @@ __all__ = [
     # Embeddings
     "Embeddings",
     # Low level features
-    "LowLevelFeatures",
+    "get_low_level_features",
     # Segmentation
-    "Segmentation",
+    "Segmenter",
 ]

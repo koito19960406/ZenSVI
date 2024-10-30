@@ -110,7 +110,7 @@ class GSVDownloader(BaseDownloader):
 
         def get_year_month(pid, proxies):
             url = "https://maps.googleapis.com/maps/api/streetview/metadata?pano={}&key={}".format(
-                pid, self.gsv_api_key
+                pid, self._gsv_api_key
             )
             while True:
                 proxy = random.choice(proxies)
@@ -463,9 +463,9 @@ class GSVDownloader(BaseDownloader):
         # get raw pid
         pid = self._get_raw_pids(**kwargs)
 
-        if kwargs["augment_metadata"] & (self.gsv_api_key is not None):
+        if kwargs["augment_metadata"] & (self._gsv_api_key is not None):
             pid = self._augment_metadata(pid)
-        elif kwargs["augment_metadata"] & (self.gsv_api_key is None):
+        elif kwargs["augment_metadata"] & (self._gsv_api_key is None):
             raise ValueError("Please set the gsv api key by calling the gsv_api_key method.")
         pid.to_csv(path_pid, index=False)
         print("The panorama IDs have been saved to {}".format(path_pid))
