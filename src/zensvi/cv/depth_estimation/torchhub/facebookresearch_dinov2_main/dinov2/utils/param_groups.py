@@ -11,24 +11,23 @@ logger = logging.getLogger("dinov2")
 
 
 def get_vit_lr_decay_rate(
-    name,
-    lr_decay_rate=1.0,
-    num_layers=12,
-    force_is_backbone=False,
-    chunked_blocks=False,
-):
-    """Calculate lr decay rate for different ViT blocks.
+    name: str,
+    lr_decay_rate: float = 1.0,
+    num_layers: int = 12,
+    force_is_backbone: bool = False,
+    chunked_blocks: bool = False,
+) -> float:
+    """Calculate the learning rate decay rate for different ViT blocks.
 
     Args:
-      name(string): parameter name.
-      lr_decay_rate(float, optional): base lr decay rate. (Default value = 1.0)
-      num_layers: (Default value = 12)
-      force_is_backbone: (Default value = False)
-      chunked_blocks: (Default value = False)
+        name (str): Parameter name.
+        lr_decay_rate (float, optional): Base learning rate decay rate. (Default value = 1.0)
+        num_layers (int, optional): Number of layers. (Default value = 12)
+        force_is_backbone (bool, optional): Flag to force treating as backbone. (Default value = False)
+        chunked_blocks (bool, optional): Flag to indicate if blocks are chunked. (Default value = False)
 
     Returns:
-      : lr decay rate for the given parameter.
-
+        float: Learning rate decay rate for the given parameter.
     """
     layer_id = num_layers + 1
     if name.startswith("backbone") or force_is_backbone:
@@ -48,16 +47,16 @@ def get_vit_lr_decay_rate(
     return lr_decay_rate ** (num_layers + 1 - layer_id)
 
 
-def get_params_groups_with_decay(model, lr_decay_rate=1.0, patch_embed_lr_mult=1.0):
-    """
+def get_params_groups_with_decay(model, lr_decay_rate: float = 1.0, patch_embed_lr_mult: float = 1.0):
+    """Get parameter groups with decay rates for a given model.
 
     Args:
-      model:
-      lr_decay_rate: (Default value = 1.0)
-      patch_embed_lr_mult: (Default value = 1.0)
+        model: The model from which to extract parameters.
+        lr_decay_rate (float, optional): Base learning rate decay rate. (Default value = 1.0)
+        patch_embed_lr_mult (float, optional): Learning rate multiplier for patch embedding. (Default value = 1.0)
 
     Returns:
-
+        list: A list of parameter groups with their respective decay rates.
     """
     chunked_blocks = False
     if hasattr(model, "n_blocks"):
@@ -110,16 +109,14 @@ def get_params_groups_with_decay(model, lr_decay_rate=1.0, patch_embed_lr_mult=1
 
 
 def fuse_params_groups(all_params_groups, keys=("lr_multiplier", "wd_multiplier", "is_last_layer")):
-    """
+    """Fuse parameter groups based on specified keys.
 
     Args:
-      all_params_groups:
-      keys: (Default value = ("lr_multiplier")
-      "wd_multiplier":
-      "is_last_layer"):
+        all_params_groups: A list of parameter groups to be fused.
+        keys (tuple, optional): Keys to use for fusion. (Default value = ("lr_multiplier", "wd_multiplier", "is_last_layer"))
 
     Returns:
-
+        dict_values: Fused parameter groups.
     """
     fused_params_groups = defaultdict(lambda: {"params": []})
     for d in all_params_groups:

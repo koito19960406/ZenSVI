@@ -42,7 +42,6 @@ def get_feature_from_key_controller(key: int, fields: list) -> str:
     Returns:
         str: The requested feature properties in GeoJSON format
     """
-
     valid_id(identity=key, image=False)
 
     # ? feature_to_geojson returns dict, but merged_features_list_to_geojson takes list as input
@@ -69,7 +68,6 @@ def get_map_features_in_bbox_controller(
     Returns:
         str: GeoJSON
     """
-
     # Verifying the existence of the filter kwargs
     filters = points_traffic_signs_check(filters)
 

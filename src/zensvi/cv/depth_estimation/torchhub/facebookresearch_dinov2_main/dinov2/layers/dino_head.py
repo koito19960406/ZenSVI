@@ -11,7 +11,20 @@ from torch.nn.utils import weight_norm
 
 
 class DINOHead(nn.Module):
-    """ """
+    """DINO Head for the DINO model.
+
+    This class implements the DINO head which consists of a multi-layer perceptron (MLP)
+    followed by a normalization layer and a final linear layer.
+
+    Args:
+        in_dim (int): The input dimension of the MLP.
+        out_dim (int): The output dimension of the final layer.
+        use_bn (bool, optional): Whether to use batch normalization in the MLP. Defaults to False.
+        nlayers (int, optional): The number of layers in the MLP. Defaults to 3.
+        hidden_dim (int, optional): The hidden dimension of the MLP. Defaults to 2048.
+        bottleneck_dim (int, optional): The bottleneck dimension of the MLP. Defaults to 256.
+        mlp_bias (bool, optional): Whether to use bias in the MLP layers. Defaults to True.
+    """
 
     def __init__(
         self,
@@ -38,27 +51,26 @@ class DINOHead(nn.Module):
         self.last_layer.weight_g.data.fill_(1)
 
     def _init_weights(self, m):
-        """
+        """Initializes the weights of the model.
+
+        This method applies weight initialization to the linear layers.
 
         Args:
-          m:
-
-        Returns:
-
+            m (nn.Module): The module to initialize.
         """
         if isinstance(m, nn.Linear):
             trunc_normal_(m.weight, std=0.02)
-            if isinstance(m, nn.Linear) and m.bias is not None:
+            if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
-        """
+        """Forward pass for the DINO head.
 
         Args:
-          x:
+            x (torch.Tensor): The input tensor.
 
         Returns:
-
+            torch.Tensor: The output tensor after applying the MLP and final linear layer.
         """
         x = self.mlp(x)
         eps = 1e-6 if x.dtype == torch.float16 else 1e-12
@@ -68,18 +80,21 @@ class DINOHead(nn.Module):
 
 
 def _build_mlp(nlayers, in_dim, bottleneck_dim, hidden_dim=None, use_bn=False, bias=True):
-    """
+    """Builds a multi-layer perceptron (MLP).
+
+    This function constructs an MLP with the specified number of layers, input dimension,
+    bottleneck dimension, and optional batch normalization.
 
     Args:
-      nlayers:
-      in_dim:
-      bottleneck_dim:
-      hidden_dim: (Default value = None)
-      use_bn: (Default value = False)
-      bias: (Default value = True)
+        nlayers (int): The number of layers in the MLP.
+        in_dim (int): The input dimension of the MLP.
+        bottleneck_dim (int): The bottleneck dimension of the MLP.
+        hidden_dim (int, optional): The hidden dimension of the MLP. Defaults to None.
+        use_bn (bool, optional): Whether to use batch normalization in the MLP. Defaults to False.
+        bias (bool, optional): Whether to use bias in the MLP layers. Defaults to True.
 
     Returns:
-
+        nn.Sequential: A sequential container of the MLP layers.
     """
     if nlayers == 1:
         return nn.Linear(in_dim, bottleneck_dim, bias=bias)

@@ -14,14 +14,14 @@ import torch.nn as nn
 from torch import Tensor
 
 
-def make_2tuple(x):
-    """
+def make_2tuple(x: Union[int, Tuple[int, int]]) -> Tuple[int, int]:
+    """Converts an integer or a tuple into a tuple of two integers.
 
     Args:
-      x:
+        x (Union[int, Tuple[int, int]]): An integer or a tuple of two integers.
 
     Returns:
-
+        Tuple[int, int]: A tuple containing two integers.
     """
     if isinstance(x, tuple):
         assert len(x) == 2
@@ -34,15 +34,26 @@ def make_2tuple(x):
 class PatchEmbed(nn.Module):
     """2D image to patch embedding: (B,C,H,W) -> (B,N,D)
 
+    This class converts a 2D image into patch embeddings.
+
     Args:
-      img_size: Image size.
-      patch_size: Patch token size.
-      in_chans: Number of input image channels.
-      embed_dim: Number of linear projection output channels.
-      norm_layer: Normalization layer.
+        img_size (Union[int, Tuple[int, int]]): Image size.
+        patch_size (Union[int, Tuple[int, int]]): Patch token size.
+        in_chans (int): Number of input image channels.
+        embed_dim (int): Number of linear projection output channels.
+        norm_layer (Optional[Callable]): Normalization layer.
+        flatten_embedding (bool): Whether to flatten the embedding. Defaults to True.
 
-    Returns:
-
+    Attributes:
+        img_size (Tuple[int, int]): The size of the input image.
+        patch_size (Tuple[int, int]): The size of each patch.
+        patches_resolution (Tuple[int, int]): The resolution of the patches.
+        num_patches (int): The total number of patches.
+        in_chans (int): Number of input channels.
+        embed_dim (int): Dimension of the embedding.
+        flatten_embedding (bool): Whether to flatten the embedding.
+        proj (nn.Conv2d): Convolutional layer for patch projection.
+        norm (nn.Module): Normalization layer.
     """
 
     def __init__(
@@ -77,15 +88,14 @@ class PatchEmbed(nn.Module):
         self.norm = norm_layer(embed_dim) if norm_layer else nn.Identity()
 
     def forward(self, x: Tensor) -> Tensor:
-        """
+        """Forward pass for the patch embedding layer.
 
         Args:
-          x: Tensor:
-          x: Tensor:
-          x: Tensor:
+            x (Tensor): Input tensor of shape (B, C, H, W).
 
         Returns:
-
+            Tensor: Output tensor of shape (B, H', W', D) if flatten_embedding is False,
+                    otherwise (B, HW, D).
         """
         _, _, H, W = x.shape
         patch_H, patch_W = self.patch_size
@@ -102,7 +112,11 @@ class PatchEmbed(nn.Module):
         return x
 
     def flops(self) -> float:
-        """ """
+        """Calculates the number of floating point operations (FLOPs).
+
+        Returns:
+            float: The number of FLOPs for the patch embedding operation.
+        """
         Ho, Wo = self.patches_resolution
         flops = Ho * Wo * self.embed_dim * self.in_chans * (self.patch_size[0] * self.patch_size[1])
         if self.norm is not None:

@@ -34,7 +34,6 @@ def date_to_unix_timestamp(date: str) -> int:
         >>> date_to_unix_timestamp('2020-10-23')
         ... "1603393200"
     """
-
     # Returns the epoch current timestamp in milliseconds
     if date == "*":
         return int(datetime.datetime.now().timestamp()) * 1000
@@ -52,5 +51,4 @@ def is_iso8601_datetime_format(date_time: str) -> bool:
     Returns:
         bool: True if the date time is in ISO 8601 format, else False
     """
-
     return re.match(r"(\d{4})\-(\d{2})\-(\d{2})T(\d{2})\:(\d{2})\:(\d{2})Z", date_time) is not None

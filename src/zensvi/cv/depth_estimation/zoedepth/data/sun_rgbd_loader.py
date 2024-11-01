@@ -31,7 +31,14 @@ from torch.utils.data import DataLoader, Dataset
 
 
 class ToTensor(object):
-    """ """
+    """Convert images and depth maps to PyTorch tensors.
+
+    This class normalizes the image and converts both the image and depth
+    maps from numpy arrays to PyTorch tensors.
+
+    Attributes:
+        normalize (callable): A function to normalize the image.
+    """
 
     def __init__(self):
         # self.normalize = transforms.Normalize(
@@ -39,6 +46,14 @@ class ToTensor(object):
         self.normalize = lambda x: x
 
     def __call__(self, sample):
+        """Convert the sample to tensors and apply normalization.
+
+        Args:
+            sample (dict): A dictionary containing 'image' and 'depth'.
+
+        Returns:
+            dict: A dictionary containing the transformed 'image', 'depth', and dataset name.
+        """
         image, depth = sample["image"], sample["depth"]
         image = self.to_tensor(image)
         image = self.normalize(image)
@@ -47,20 +62,19 @@ class ToTensor(object):
         return {"image": image, "depth": depth, "dataset": "sunrgbd"}
 
     def to_tensor(self, pic):
-        """
+        """Convert a PIL image or numpy array to a PyTorch tensor.
 
         Args:
-          pic:
+            pic (PIL Image or np.ndarray): The image to convert.
 
         Returns:
-
+            torch.Tensor: The converted image as a tensor.
         """
-
         if isinstance(pic, np.ndarray):
             img = torch.from_numpy(pic.transpose((2, 0, 1)))
             return img
 
-        #         # handle PIL Image
+        # Handle PIL Image
         if pic.mode == "I":
             img = torch.from_numpy(np.array(pic, np.int32, copy=False))
         elif pic.mode == "I;16":
@@ -84,18 +98,23 @@ class ToTensor(object):
 
 
 class SunRGBD(Dataset):
-    """ """
+    """Dataset class for loading Sun RGB-D images and depth maps.
+
+    This class handles the loading of RGB images and their corresponding depth maps
+    from the Sun RGB-D dataset.
+
+    Attributes:
+        image_files (list): List of file paths to the RGB images.
+        depth_files (list): List of file paths to the depth maps.
+        transform (callable): Transform to apply to the images and depth maps.
+    """
 
     def __init__(self, data_dir_root):
-        # test_file_dirs = loadmat(train_test_file)['alltest'].squeeze()
-        # all_test = [t[0].replace("/n/fs/sun3d/data/", "") for t in test_file_dirs]
-        # self.all_test = [os.path.join(data_dir_root, t) for t in all_test]
+        """Initialize the SunRGBD dataset.
 
-        # self.image_files = glob.glob(
-        #     os.path.join(data_dir_root, 'rgb', 'rgb', '*'))
-        # self.depth_files = [
-        #     r.replace("rgb/rgb", "gt/gt").replace("jpg", "png") for r in self.image_files]
-
+        Args:
+            data_dir_root (str): Root directory containing the dataset.
+        """
         self.image_files, self.depth_files = [], []
         filenames = os.listdir(os.path.join(data_dir_root, "rgb"))
         for i, filename in enumerate(filenames):
@@ -106,30 +125,42 @@ class SunRGBD(Dataset):
         self.transform = ToTensor()
 
     def __getitem__(self, idx):
+        """Get a sample from the dataset.
+
+        Args:
+            idx (int): Index of the sample to retrieve.
+
+        Returns:
+            dict: A dictionary containing the transformed 'image', 'depth', and dataset name.
+        """
         image_path = self.image_files[idx]
         depth_path = self.depth_files[idx]
 
         image = np.asarray(Image.open(image_path), dtype=np.float32) / 255.0
         depth = np.asarray(Image.open(depth_path), dtype="uint16") / 10000.0
-        # print(depth, depth.min(), depth.max())
         depth[depth > 8] = -1
         depth = depth[..., None]
         return self.transform(dict(image=image, depth=depth))
 
     def __len__(self):
+        """Return the total number of samples in the dataset.
+
+        Returns:
+            int: Number of samples in the dataset.
+        """
         return len(self.image_files)
 
 
 def get_sunrgbd_loader(data_dir_root, batch_size=1, **kwargs):
-    """
+    """Get a DataLoader for the Sun RGB-D dataset.
 
     Args:
-      data_dir_root:
-      batch_size: (Default value = 1)
-      **kwargs:
+        data_dir_root (str): Root directory containing the dataset.
+        batch_size (int, optional): Number of samples per batch. Defaults to 1.
+        **kwargs: Additional arguments for DataLoader.
 
     Returns:
-
+        DataLoader: A DataLoader for the Sun RGB-D dataset.
     """
     dataset = SunRGBD(data_dir_root)
     return DataLoader(dataset, batch_size, **kwargs)

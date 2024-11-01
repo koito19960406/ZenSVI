@@ -35,7 +35,12 @@ _models_dict = {
 
 
 class ImageDataset(Dataset):
-    """ """
+    """A PyTorch Dataset for loading images.
+
+    Args:
+        image_paths: List of paths to image files.
+        transform: Optional transform to be applied on the images.
+    """
 
     def __init__(self, image_paths, transform=None):
         self.image_paths = image_paths
@@ -53,13 +58,15 @@ class ImageDataset(Dataset):
         return str(image_path), image
 
     def collate_fn(self, data):
-        """
+        """Custom collate function for batching data.
 
         Args:
-          data:
+            data: List of tuples containing (image_path, image).
 
         Returns:
-
+            tuple: Contains:
+                - list of image paths
+                - tensor of stacked images
         """
         image_paths, images = zip(*data)
         # Stack images to create a batch
@@ -69,7 +76,7 @@ class ImageDataset(Dataset):
 
 # create a class for extracting embeddings
 class Embeddings:
-    """ """
+    """A class for extracting image embeddings using pre-trained models."""
 
     def __init__(
         self,
@@ -79,11 +86,10 @@ class Embeddings:
     ):
         """Initialize the Embeddings class for extracting image embeddings.
 
-        This class uses pre-trained models from the Img2Vec package (
-        https://github.com/christiansafka/img2vec)
-         to extract feature vectors from images. These embeddings can be used for
-        various downstream tasks such as image similarity, clustering, or as input to
-        other machine learning models.
+        This class uses pre-trained models from the Img2Vec package
+        (https://github.com/christiansafka/img2vec) to extract feature vectors from images.
+        These embeddings can be used for various downstream tasks such as image similarity,
+        clustering, or as input to other machine learning models.
 
         The available models include popular architectures like ResNet, AlexNet, VGG,
         DenseNet, and various EfficientNet variants. Each model is configured to extract
@@ -91,12 +97,10 @@ class Embeddings:
         depending on the chosen model.
 
         Args:
-            model_name: Name of the model to be used for extracting
-                embeddings. Default is 'resnet-18'. Other options
-                include 'alexnet', 'vgg', 'densenet', and
-                'efficientnet_b0' through 'efficientnet_b7'.
-            cuda: Whether to use CUDA for GPU acceleration. Default is
-                False.
+            model_name: Name of the model to be used for extracting embeddings.
+                Default is 'resnet-18'. Other options include 'alexnet', 'vgg',
+                'densenet', and 'efficientnet_b0' through 'efficientnet_b7'.
+            cuda: Whether to use CUDA for GPU acceleration. Default is False.
             tensor: Whether to return the embedding as a PyTorch tensor.
                 If False, returns a numpy array. Default is True.
         """
@@ -109,51 +113,42 @@ class Embeddings:
         self.tensor = tensor
 
     def load_image(self, image_path):
-        """
+        """Load and preprocess an image from a file path.
 
         Args:
-          image_path: path to the image
+            image_path: Path to the image file.
 
         Returns:
-          : image
-
+            PIL.Image: Loaded and resized image.
         """
         img = Image.open(image_path)
         img = img.resize((224, 224))
         return img
 
     def get_model_and_layer(self):
-        """
-
-        Args:
+        """Get the pre-trained model and extraction layer.
 
         Returns:
-          : model and layer
-
+            tuple: Contains:
+                - torch.nn.Module: The pre-trained model
+                - torch.nn.Module: The extraction layer
         """
         model = models.__dict__[_models_dict[self.model_name].name](pretrained=True)
         layer = getattr(model, self.layer)
         return model, layer
 
     def get_image_embedding(self, image_path: Union[List[str], str], tensor: bool = None, cuda: bool = None):
-        """
+        """Extract embedding for a single image.
 
         Args:
-          image_path: path to the image
-          image_path: Union[List[str]:
-          str]:
-          tensor: bool:  (Default value = None)
-          cuda: bool:  (Default value = None)
-          image_path: Union[List[str]:
-          tensor: bool:  (Default value = None)
-          cuda: bool:  (Default value = None)
-          image_path: Union[List[str]:
-          tensor: bool:  (Default value = None)
-          cuda: bool:  (Default value = None)
+            image_path: Path to the image file.
+            tensor: Whether to return the embedding as a PyTorch tensor.
+                If None, uses the instance default.
+            cuda: Whether to use CUDA for computation.
+                If None, uses the instance default.
 
         Returns:
-          : image embedding
-
+            Union[torch.Tensor, numpy.ndarray]: The image embedding.
         """
         if not tensor:
             tensor = self.tensor
@@ -172,27 +167,17 @@ class Embeddings:
         batch_size: int = 100,
         maxWorkers: int = 8,
     ):
-        """
+        """Generate and save embeddings for multiple images.
 
         Args:
-          images_path: Union[List[str]:
-          str]:
-          dir_embeddings_output: str:
-          batch_size: int:  (Default value = 100)
-          maxWorkers: int:  (Default value = 8)
-          images_path: Union[List[str]:
-          dir_embeddings_output: str:
-          batch_size: int:  (Default value = 100)
-          maxWorkers: int:  (Default value = 8)
-          images_path: Union[List[str]:
-          dir_embeddings_output: str:
-          batch_size: int:  (Default value = 100)
-          maxWorkers: int:  (Default value = 8)
+            images_path: Either a directory path containing images or a list of image paths.
+            dir_embeddings_output: Directory where embeddings will be saved as parquet files.
+            batch_size: Number of images to process in each batch. Default is 100.
+            maxWorkers: Maximum number of worker threads for image processing. Default is 8.
 
         Returns:
-
+            bool: True if embeddings were successfully generated and saved.
         """
-
         if isinstance(images_path, str):
             valid_extensions = [
                 ".jpg",
@@ -242,13 +227,13 @@ class Embeddings:
         to_pil = ToPILImage()
 
         def process_image(image):
-            """
+            """Convert a tensor image to PIL Image.
 
             Args:
-              image:
+                image: Input tensor image.
 
             Returns:
-
+                PIL.Image: Converted image.
             """
             pil_image = to_pil(image)
             return pil_image
@@ -281,21 +266,15 @@ class Embeddings:
         return True
 
     def search_similar_images(self, image_key: str, embeddings_dir: str, number_of_items: int = 10):
-        """
+        """Search for similar images using embeddings.
 
         Args:
-          image_key: str:
-          embeddings_dir: str:
-          number_of_items: int:  (Default value = 10)
-          image_key: str:
-          embeddings_dir: str:
-          number_of_items: int:  (Default value = 10)
-          image_key: str:
-          embeddings_dir: str:
-          number_of_items: int:  (Default value = 10)
+            image_key: Key of the query image.
+            embeddings_dir: Directory containing the embeddings parquet file.
+            number_of_items: Number of similar images to return. Default is 10.
 
         Returns:
-
+            list: List of tuples containing (similarity_score, image_key, image_filename).
         """
         embeddings_df = pq.read_table(embeddings_dir).to_pandas()
         embeddings_np_array = np.stack(embeddings_df[embeddings_df.columns[1:]].to_numpy())
@@ -315,10 +294,7 @@ class Embeddings:
     def get_all_models(self):
         """Get all the available models.
 
-        Args:
-
         Returns:
-          dict: dictionary of available models
-
+            dict: Dictionary of available models with their configurations.
         """
         return _models_dict

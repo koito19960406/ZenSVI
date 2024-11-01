@@ -10,13 +10,9 @@ class BaseClassifier(ABC):
     """A base class for image classification.
 
     Args:
-      device(str): The device that the model should be
-    loaded onto. Options are "cpu", "cuda", or "mps". If `None`,
-    the model tries to use a GPU if available; otherwise, falls
-    back to CPU.
-
-    Returns:
-
+        device (str, optional): The device that the model should be loaded onto.
+            Options are "cpu", "cuda", or "mps". If `None`, the model tries to use
+            a GPU if available; otherwise, falls back to CPU.
     """
 
     def __init__(self, device=None):
@@ -26,11 +22,13 @@ class BaseClassifier(ABC):
         """Get the appropriate device for running the model.
 
         Args:
-          device:
+            device (str, optional): Device to use. Options are "cpu", "cuda", or "mps".
 
         Returns:
-          torch.device: The device to use for running the model.
+            torch.device: The device to use for running the model.
 
+        Raises:
+            ValueError: If an unknown device type is specified.
         """
         if device is not None:
             if device not in ["cpu", "cuda", "mps"]:
@@ -56,51 +54,20 @@ class BaseClassifier(ABC):
         save_format: str = "json csv",
         csv_format: str = "long",  # "long" or "wide"
     ) -> None:
-        """A method to classify images.
+        """Classify images in a directory.
 
         Args:
-          dir_input(Union[str): directory containing input
-        images.
-          dir_image_output(Union[str): directory to save output images, defaults to None
-          dir_summary_output(Union[str): directory to save summary output, defaults to None
-          batch_size(int): batch size for inference,
-        defaults to 1
-          save_image_options(str): save options for images,
-        defaults to "cam_image blend_image". Options are
-        "cam_image" and "blend_image". Please add a space
-        between options.
-          save_format(str): save format for the output,
-        defaults to "json csv". Options are "json" and "csv".
-        Please add a space between options.
-          csv_format(str): csv format for the output,
-        defaults to "long". Options are "long" and "wide".
-          dir_input: Union[str:
-          Path]:
-          dir_image_output: Union[str:
-          Path:
-          None]: (Default value = None)
-          dir_summary_output: Union[str:
-          batch_size: int:  (Default value = 1)
-          save_image_options: str:  (Default value = "cam_image blend_image")
-          save_format: str:  (Default value = "json csv")
-          csv_format: str:  (Default value = "long")
-          # "long" or "wide":
-          dir_input: Union[str:
-          dir_image_output: Union[str:
-          dir_summary_output: Union[str:
-          batch_size: int:  (Default value = 1)
-          save_image_options: str:  (Default value = "cam_image blend_image")
-          save_format: str:  (Default value = "json csv")
-          csv_format: str:  (Default value = "long")
-          dir_input: Union[str:
-          dir_image_output: Union[str:
-          dir_summary_output: Union[str:
-          batch_size: int:  (Default value = 1)
-          save_image_options: str:  (Default value = "cam_image blend_image")
-          save_format: str:  (Default value = "json csv")
-          csv_format: str:  (Default value = "long")
-
-        Returns:
-
+            dir_input (Union[str, Path]): Directory containing input images.
+            dir_image_output (Union[str, Path, None], optional): Directory to save output images.
+                Defaults to None.
+            dir_summary_output (Union[str, Path, None], optional): Directory to save summary output.
+                Defaults to None.
+            batch_size (int, optional): Batch size for inference. Defaults to 1.
+            save_image_options (str, optional): Space-separated options for image output.
+                Options are "cam_image" and "blend_image". Defaults to "cam_image blend_image".
+            save_format (str, optional): Space-separated output formats.
+                Options are "json" and "csv". Defaults to "json csv".
+            csv_format (str, optional): Format for CSV output.
+                Options are "long" and "wide". Defaults to "long".
         """
         pass

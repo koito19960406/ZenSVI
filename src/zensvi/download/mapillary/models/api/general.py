@@ -87,7 +87,6 @@ class GeneralAdapter(object):
         Returns:
             dict: A dictionary containing the tiles for the image.
         """
-
         # Perform validation checks
         self.__validation_checks(
             zoom=zoom,
@@ -255,7 +254,6 @@ class GeneralAdapter(object):
         Returns:
             str: The preprocessed API string.
         """
-
         if layer == "images":
             # Get the API string for the tile
             if is_computed:
@@ -327,7 +325,6 @@ class GeneralAdapter(object):
             dict: A GeoJSON for that specific layer and the specified
             zoom level
         """
-
         # Lng, Lat ranges, https://docs.mapbox.com/help/glossary/lat-lon/
 
         # If lng not in the range [-180, 180], inclusive
@@ -354,7 +351,6 @@ class GeneralAdapter(object):
         Returns:
             dict: A GeoJSON for the return object
         """
-
         # If zoom is not in the valid range of values
         if zoom < self.__min_zoom or zoom > self.__max_zoom:
             # Raise an exception for the invalid values passed

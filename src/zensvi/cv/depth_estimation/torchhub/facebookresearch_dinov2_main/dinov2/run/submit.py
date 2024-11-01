@@ -21,21 +21,15 @@ def get_args_parser(
     parents: Optional[List[argparse.ArgumentParser]] = None,
     add_help: bool = True,
 ) -> argparse.ArgumentParser:
-    """
+    """Creates an argument parser for job submission.
 
     Args:
-      description: Optional[str]:  (Default value = None)
-      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
-      add_help: bool:  (Default value = True)
-      description: Optional[str]:  (Default value = None)
-      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
-      add_help: bool:  (Default value = True)
-      description: Optional[str]:  (Default value = None)
-      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
-      add_help: bool:  (Default value = True)
+        description (Optional[str]): A brief description of the program.
+        parents (Optional[List[argparse.ArgumentParser]]): A list of parent parsers.
+        add_help (bool): Whether to add a help option to the parser.
 
     Returns:
-
+        argparse.ArgumentParser: The configured argument parser.
     """
     parents = parents or []
     slurm_partition = get_slurm_partition()
@@ -63,13 +57,13 @@ def get_args_parser(
         "--timeout",
         default=2800,
         type=int,
-        help="Duration of the job",
+        help="Duration of the job in minutes",
     )
     parser.add_argument(
         "--partition",
         default=slurm_partition,
         type=str,
-        help="Partition where to submit",
+        help="Partition where to submit the job",
     )
     parser.add_argument(
         "--use-volta32",
@@ -86,13 +80,20 @@ def get_args_parser(
         "--exclude",
         default="",
         type=str,
-        help="Nodes to exclude",
+        help="Nodes to exclude from the job submission",
     )
     return parser
 
 
 def get_shared_folder() -> Path:
-    """ """
+    """Gets the shared folder for experiment outputs.
+
+    Returns:
+        Path: The path to the shared folder.
+
+    Raises:
+        RuntimeError: If the user checkpoint path cannot be determined.
+    """
     user_checkpoint_path = get_user_checkpoint_path()
     if user_checkpoint_path is None:
         raise RuntimeError("Path to user checkpoint cannot be determined")
@@ -102,15 +103,15 @@ def get_shared_folder() -> Path:
 
 
 def submit_jobs(task_class, args, name: str):
-    """
+    """Submits jobs to the SLURM scheduler.
 
     Args:
-      task_class:
-      args:
-      name: str:
+        task_class: The class of the task to be executed.
+        args: The arguments for the task.
+        name (str): The name of the job.
 
     Returns:
-
+        None
     """
     if not args.output_dir:
         args.output_dir = str(get_shared_folder() / "%j")

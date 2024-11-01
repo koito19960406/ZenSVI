@@ -39,21 +39,15 @@ def get_args_parser(
     parents: Optional[List[argparse.ArgumentParser]] = None,
     add_help: bool = True,
 ):
-    """
+    """Creates an argument parser for the script.
 
     Args:
-      description: Optional[str]:  (Default value = None)
-      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
-      add_help: bool:  (Default value = True)
-      description: Optional[str]:  (Default value = None)
-      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
-      add_help: bool:  (Default value = True)
-      description: Optional[str]:  (Default value = None)
-      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
-      add_help: bool:  (Default value = True)
+        description (Optional[str]): Description of the parser.
+        parents (Optional[List[argparse.ArgumentParser]]): List of parent parsers.
+        add_help (bool): Whether to add a help option. Defaults to True.
 
     Returns:
-
+        argparse.ArgumentParser: The configured argument parser.
     """
     parents = parents or []
     setup_args_parser = get_setup_args_parser(parents=parents, add_help=False)
@@ -122,7 +116,13 @@ def get_args_parser(
 
 
 class LogRegModule(nn.Module):
-    """ """
+    """Logistic Regression Module using cuML's LogisticRegression.
+
+    Attributes:
+        dtype (torch.dtype): Data type for the model.
+        device (torch.device): Device for the model.
+        estimator (LogisticRegression): The cuML logistic regression estimator.
+    """
 
     def __init__(
         self,
@@ -131,6 +131,14 @@ class LogRegModule(nn.Module):
         dtype=torch.float64,
         device=_CPU_DEVICE,
     ):
+        """Initializes the LogRegModule.
+
+        Args:
+            C (float): Inverse of regularization strength.
+            max_iter (int): Maximum number of iterations for optimization.
+            dtype (torch.dtype): Data type for the model. Defaults to torch.float64.
+            device (torch.device): Device for the model. Defaults to CPU.
+        """
         super().__init__()
         self.dtype = dtype
         self.device = device
@@ -144,14 +152,14 @@ class LogRegModule(nn.Module):
         )
 
     def forward(self, samples, targets):
-        """
+        """Forward pass for the model.
 
         Args:
-          samples:
-          targets:
+            samples (torch.Tensor): Input samples.
+            targets (torch.Tensor): Target labels.
 
         Returns:
-
+            dict: A dictionary containing predictions and targets.
         """
         samples_device = samples.device
         samples = samples.to(dtype=self.dtype, device=self.device)
@@ -161,14 +169,11 @@ class LogRegModule(nn.Module):
         return {"preds": torch.from_numpy(probas).to(samples_device), "target": targets}
 
     def fit(self, train_features, train_labels):
-        """
+        """Fits the logistic regression model to the training data.
 
         Args:
-          train_features:
-          train_labels:
-
-        Returns:
-
+            train_features (torch.Tensor): Features for training.
+            train_labels (torch.Tensor): Labels for training.
         """
         train_features = train_features.to(dtype=self.dtype, device=self.device)
         train_labels = train_labels.to(dtype=self.dtype, device=self.device)
@@ -180,17 +185,16 @@ class LogRegModule(nn.Module):
 
 
 def evaluate_model(*, logreg_model, logreg_metric, test_data_loader, device):
-    """
+    """Evaluates the logistic regression model.
 
     Args:
-      *:
-      logreg_model:
-      logreg_metric:
-      test_data_loader:
-      device:
+        logreg_model (LogRegModule): The logistic regression model.
+        logreg_metric: Metric tracker for evaluation.
+        test_data_loader: DataLoader for the test dataset.
+        device (torch.device): Device for evaluation.
 
     Returns:
-
+        Evaluation results.
     """
     postprocessors = {"metrics": logreg_model}
     metrics = {"metrics": logreg_metric}
@@ -206,19 +210,18 @@ def train_for_C(
     dtype=torch.float64,
     device=_CPU_DEVICE,
 ):
-    """
+    """Trains the logistic regression model for a specific C value.
 
     Args:
-      *:
-      C:
-      max_iter:
-      train_features:
-      train_labels:
-      dtype: (Default value = torch.float64)
-      device: (Default value = _CPU_DEVICE)
+        C (float): Inverse of regularization strength.
+        max_iter (int): Maximum number of iterations for optimization.
+        train_features (torch.Tensor): Features for training.
+        train_labels (torch.Tensor): Labels for training.
+        dtype (torch.dtype): Data type for the model. Defaults to torch.float64.
+        device (torch.device): Device for the model. Defaults to CPU.
 
     Returns:
-
+        LogRegModule: The trained logistic regression model.
     """
     logreg_model = LogRegModule(C, max_iter=max_iter, dtype=dtype, device=device)
     logreg_model.fit(train_features, train_labels)
@@ -237,22 +240,21 @@ def train_and_evaluate(
     train_features_device,
     eval_device,
 ):
-    """
+    """Trains and evaluates the logistic regression model.
 
     Args:
-      *:
-      C:
-      max_iter:
-      train_features:
-      train_labels:
-      logreg_metric:
-      test_data_loader:
-      train_dtype: (Default value = torch.float64)
-      train_features_device:
-      eval_device:
+        C (float): Inverse of regularization strength.
+        max_iter (int): Maximum number of iterations for optimization.
+        train_features (torch.Tensor): Features for training.
+        train_labels (torch.Tensor): Labels for training.
+        logreg_metric: Metric tracker for evaluation.
+        test_data_loader: DataLoader for the test dataset.
+        train_dtype (torch.dtype): Data type for the model. Defaults to torch.float64.
+        train_features_device (torch.device): Device for training features.
+        eval_device (torch.device): Device for evaluation.
 
     Returns:
-
+        Evaluation results.
     """
     logreg_model = train_for_C(
         C=C,
@@ -281,21 +283,20 @@ def sweep_C_values(
     train_features_device=_CPU_DEVICE,
     max_train_iters=DEFAULT_MAX_ITER,
 ):
-    """
+    """Sweeps over a range of C values to find the best one.
 
     Args:
-      *:
-      train_features:
-      train_labels:
-      test_data_loader:
-      metric_type:
-      num_classes:
-      train_dtype: (Default value = torch.float64)
-      train_features_device: (Default value = _CPU_DEVICE)
-      max_train_iters: (Default value = DEFAULT_MAX_ITER)
+        train_features (torch.Tensor): Features for training.
+        train_labels (torch.Tensor): Labels for training.
+        test_data_loader: DataLoader for the test dataset.
+        metric_type: Type of metric for evaluation.
+        num_classes (int): Number of classes in the dataset.
+        train_dtype (torch.dtype): Data type for the model. Defaults to torch.float64.
+        train_features_device (torch.device): Device for training features. Defaults to CPU.
+        max_train_iters (int): Maximum number of iterations for training. Defaults to DEFAULT_MAX_ITER.
 
     Returns:
-
+        tuple: Best statistics and best C value.
     """
     if metric_type == MetricType.PER_CLASS_ACCURACY:
         # If we want to output per-class accuracy, we select the hyperparameters with mean per class
@@ -365,32 +366,30 @@ def eval_log_regression(
     train_features_device=_CPU_DEVICE,
     max_train_iters=DEFAULT_MAX_ITER,
 ):
-    """Implements the "standard" process for log regression evaluation:
+    """Implements the "standard" process for log regression evaluation.
 
     The value of C is chosen by training on train_dataset and evaluating on
     finetune_dataset. Then, the final model is trained on a concatenation of
     train_dataset and finetune_dataset, and is evaluated on val_dataset. If there is no
     finetune_dataset, the value of C is the one that yields the best results on a random
-    10% subset of the train dataset
+    10% subset of the train dataset.
 
     Args:
-      *:
-      model:
-      train_dataset:
-      val_dataset:
-      finetune_dataset:
-      metric_type:
-      batch_size:
-      num_workers:
-      finetune_on_val: (Default value = False)
-      train_dtype: (Default value = torch.float64)
-      train_features_device: (Default value = _CPU_DEVICE)
-      max_train_iters: (Default value = DEFAULT_MAX_ITER)
+        model: The model to extract features from.
+        train_dataset: Dataset for training.
+        val_dataset: Dataset for validation.
+        finetune_dataset: Dataset for fine-tuning.
+        metric_type: Type of metric for evaluation.
+        batch_size (int): Batch size for data loading.
+        num_workers (int): Number of workers for data loading.
+        finetune_on_val (bool): Whether to fine-tune on validation dataset. Defaults to False.
+        train_dtype (torch.dtype): Data type for the model. Defaults to torch.float64.
+        train_features_device (torch.device): Device for training features. Defaults to CPU.
+        max_train_iters (int): Maximum number of iterations for training. Defaults to DEFAULT_MAX_ITER.
 
     Returns:
-
+        dict: Best statistics from the evaluation.
     """
-
     start = time.time()
 
     train_features, train_labels = extract_features(
@@ -508,22 +507,22 @@ def eval_log_regression_with_model(
     train_features_device=_CPU_DEVICE,
     max_train_iters=DEFAULT_MAX_ITER,
 ):
-    """
+    """Evaluates the logistic regression model with the specified datasets.
 
     Args:
-      model:
-      train_dataset_str: (Default value = "ImageNet:split=TRAIN")
-      val_dataset_str: (Default value = "ImageNet:split=VAL")
-      finetune_dataset_str: (Default value = None)
-      autocast_dtype: (Default value = torch.float)
-      finetune_on_val: (Default value = False)
-      metric_type: (Default value = MetricType.MEAN_ACCURACY)
-      train_dtype: (Default value = torch.float64)
-      train_features_device: (Default value = _CPU_DEVICE)
-      max_train_iters: (Default value = DEFAULT_MAX_ITER)
+        model: The model to extract features from.
+        train_dataset_str (str): String representation of the training dataset. Defaults to "ImageNet:split=TRAIN".
+        val_dataset_str (str): String representation of the validation dataset. Defaults to "ImageNet:split=VAL".
+        finetune_dataset_str (str): String representation of the fine-tuning dataset. Defaults to None.
+        autocast_dtype (torch.dtype): Data type for automatic mixed precision. Defaults to torch.float.
+        finetune_on_val (bool): Whether to fine-tune on validation dataset. Defaults to False.
+        metric_type: Type of metric for evaluation. Defaults to MetricType.MEAN_ACCURACY.
+        train_dtype (torch.dtype): Data type for the model. Defaults to torch.float64.
+        train_features_device (torch.device): Device for training features. Defaults to CPU.
+        max_train_iters (int): Maximum number of iterations for training. Defaults to DEFAULT_MAX_ITER.
 
     Returns:
-
+        dict: Results of the evaluation including accuracies and best C value.
     """
     cudnn.benchmark = True
 
@@ -585,13 +584,13 @@ def eval_log_regression_with_model(
 
 
 def main(args):
-    """
+    """Main function to execute the logistic regression evaluation.
 
     Args:
-      args:
+        args: Command line arguments.
 
     Returns:
-
+        int: Exit status code.
     """
     model, autocast_dtype = setup_and_build_model(args)
     eval_log_regression_with_model(

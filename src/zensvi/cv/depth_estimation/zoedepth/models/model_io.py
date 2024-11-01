@@ -27,21 +27,20 @@ import torch
 
 def load_state_dict(model, state_dict):
     """Load state_dict into model, handling DataParallel and DistributedDataParallel.
-    Also checks for "model" key in state_dict.
 
-    DataParallel prefixes state_dict keys with 'module.' when saving. If the model is
-    not a DataParallel model but the state_dict is, then prefixes are removed. If the
-    model is a DataParallel model but the state_dict is not, then prefixes are added.
+    This function checks for the "model" key in the state_dict. DataParallel prefixes
+    state_dict keys with 'module.' when saving. If the model is not a DataParallel model
+    but the state_dict is, then prefixes are removed. If the model is a DataParallel model
+    but the state_dict is not, then prefixes are added.
 
     Args:
-      model:
-      state_dict:
+        model (torch.nn.Module): The model to load the state_dict into.
+        state_dict (dict): The state dictionary containing model weights.
 
     Returns:
-
+        torch.nn.Module: The model with loaded state_dict.
     """
     state_dict = state_dict.get("model", state_dict)
-    # if model is a DataParallel model, then state_dict keys are prefixed with 'module.'
 
     do_prefix = isinstance(model, (torch.nn.DataParallel, torch.nn.parallel.DistributedDataParallel))
     state = {}
@@ -60,52 +59,52 @@ def load_state_dict(model, state_dict):
 
 
 def load_wts(model, checkpoint_path):
-    """
+    """Load weights from a checkpoint file into the model.
 
     Args:
-      model:
-      checkpoint_path:
+        model (torch.nn.Module): The model to load weights into.
+        checkpoint_path (str): The path to the checkpoint file.
 
     Returns:
-
+        torch.nn.Module: The model with loaded weights.
     """
     ckpt = torch.load(checkpoint_path, map_location="cpu")
     return load_state_dict(model, ckpt)
 
 
 def load_state_dict_from_url(model, url, **kwargs):
-    """
+    """Load state_dict from a URL into the model.
 
     Args:
-      model:
-      url:
-      **kwargs:
+        model (torch.nn.Module): The model to load the state_dict into.
+        url (str): The URL to load the state_dict from.
+        **kwargs: Additional arguments for loading the state_dict.
 
     Returns:
-
+        torch.nn.Module: The model with loaded state_dict.
     """
     state_dict = torch.hub.load_state_dict_from_url(url, map_location="cpu", **kwargs)
     return load_state_dict(model, state_dict)
 
 
 def load_state_from_resource(model, resource: str):
-    """Loads weights to the model from a given resource. A resource can be of following types:
-        1. URL. Prefixed with "url::"
-                e.g. url::http(s)://url.resource.com/ckpt.pt
+    """Loads weights to the model from a given resource.
 
+    A resource can be of the following types:
+        1. URL. Prefixed with "url::"
+           e.g. url::http(s)://url.resource.com/ckpt.pt
         2. Local path. Prefixed with "local::"
-                e.g. local::/path/to/ckpt.pt
+           e.g. local::/path/to/ckpt.pt
 
     Args:
-      model(torch.nn.Module): Model
-      resource(str): resource string
-      resource: str:
-      resource: str:
-      resource: str:
+        model (torch.nn.Module): The model to load weights into.
+        resource (str): The resource string indicating the source of weights.
 
     Returns:
-      torch.nn.Module: Model with loaded weights
+        torch.nn.Module: The model with loaded weights.
 
+    Raises:
+        ValueError: If the resource type is invalid.
     """
     print(f"Using pretrained resource {resource}")
 

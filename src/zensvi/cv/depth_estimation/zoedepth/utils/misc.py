@@ -39,38 +39,39 @@ from torchvision.transforms import ToTensor
 
 
 class RunningAverage:
-    """ """
+    """Class to compute running average of values."""
 
     def __init__(self):
+        """Initializes the RunningAverage with average and count set to zero."""
         self.avg = 0
         self.count = 0
 
     def append(self, value):
-        """
+        """Updates the running average with a new value.
 
         Args:
-          value:
-
-        Returns:
-
+            value (float): The new value to include in the average.
         """
         self.avg = (value + self.count * self.avg) / (self.count + 1)
         self.count += 1
 
     def get_value(self):
-        """ """
+        """Returns the current running average.
+
+        Returns:
+            float: The current average value.
+        """
         return self.avg
 
 
 def denormalize(x):
-    """Reverses the imagenet normalization applied to the input.
+    """Reverses the ImageNet normalization applied to the input tensor.
 
     Args:
-      x(torch.Tensor - shape(N): input tensor
+        x (torch.Tensor): Input tensor of shape (N, C, H, W).
 
     Returns:
-      N: Denormalized input
-
+        torch.Tensor: Denormalized input tensor.
     """
     mean = torch.Tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(x.device)
     std = torch.Tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(x.device)
@@ -78,19 +79,17 @@ def denormalize(x):
 
 
 class RunningAverageDict:
-    """A dictionary of running averages."""
+    """Class to maintain a dictionary of running averages."""
 
     def __init__(self):
+        """Initializes the RunningAverageDict with an empty dictionary."""
         self._dict = None
 
     def update(self, new_dict):
-        """
+        """Updates the dictionary with new values.
 
         Args:
-          new_dict:
-
-        Returns:
-
+            new_dict (dict): A dictionary of new values to update.
         """
         if new_dict is None:
             return
@@ -104,7 +103,11 @@ class RunningAverageDict:
             self._dict[key].append(value)
 
     def get_value(self):
-        """ """
+        """Returns the current values of the running averages.
+
+        Returns:
+            dict: A dictionary of current average values.
+        """
         if self._dict is None:
             return None
         return {key: value.get_value() for key, value in self._dict.items()}
@@ -124,21 +127,18 @@ def colorize(
     """Converts a depth map to a color image.
 
     Args:
-      value(torch.Tensor): Input depth map. Shape: (H, W) or (1, H, W) or (1, 1, H, W). All singular dimensions are squeezed
-      vmin(float, optional): vmin-valued entries are mapped to start color of cmap. If None, value.min() is used. Defaults to None.
-      vmax(float, optional): vmax-valued entries are mapped to end color of cmap. If None, value.max() is used. Defaults to None.
-      cmap(str, optional): matplotlib colormap to use. Defaults to 'magma_r'.
-      invalid_val(int, optional): Specifies value of invalid pixels that should be colored as 'background_color'. Defaults to -99.
-      invalid_mask(numpy.ndarray, optional): Boolean mask for invalid regions. Defaults to None.
-      background_color(tuple[int], optional): 4-tuple RGB color to give to invalid pixels. Defaults to (128, 128, 128, 255).
-      gamma_corrected(bool, optional): Apply gamma correction to colored image. Defaults to False.
-      value_transform(Callable, optional): Apply transform function to valid pixels before coloring. Defaults to None.
-      128:
-      255):
+        value (torch.Tensor): Input depth map. Shape: (H, W) or (1, H, W) or (1, 1, H, W).
+        vmin (float, optional): Minimum value for color mapping. Defaults to None.
+        vmax (float, optional): Maximum value for color mapping. Defaults to None.
+        cmap (str, optional): Matplotlib colormap to use. Defaults to 'gray_r'.
+        invalid_val (int, optional): Value of invalid pixels. Defaults to -99.
+        invalid_mask (numpy.ndarray, optional): Boolean mask for invalid regions. Defaults to None.
+        background_color (tuple[int], optional): RGB color for invalid pixels. Defaults to (128, 128, 128, 255).
+        gamma_corrected (bool, optional): Apply gamma correction. Defaults to False.
+        value_transform (Callable, optional): Transform function for valid pixels. Defaults to None.
 
     Returns:
-      numpy.ndarray, dtype - uint8: Colored depth map. Shape: (H, W, 4)
-
+        numpy.ndarray: Colored depth map of shape (H, W, 4).
     """
     if isinstance(value, torch.Tensor):
         value = value.detach().cpu().numpy()
@@ -157,21 +157,15 @@ def colorize(
         # Avoid 0-division
         value = value * 0.0
 
-    # squeeze last dim if it exists
-    # grey out the invalid values
-
     value[invalid_mask] = np.nan
     cmapper = matplotlib.cm.get_cmap(cmap)
     if value_transform:
         value = value_transform(value)
-        # value = value / value.max()
     value = cmapper(value, bytes=True)  # (nxmx4)
 
-    # img = value[:, :, :]
     img = value[...]
     img[invalid_mask] = background_color
 
-    #     return img.transpose((2, 0, 1))
     if gamma_corrected:
         # gamma correction
         img = img / 255
@@ -182,39 +176,27 @@ def colorize(
 
 
 def count_parameters(model, include_all=False):
-    """
+    """Counts the number of parameters in a model.
 
     Args:
-      model:
-      include_all: (Default value = False)
+        model (torch.nn.Module): The model to count parameters for.
+        include_all (bool, optional): If True, include all parameters. Defaults to False.
 
     Returns:
-
+        int: The total number of parameters.
     """
     return sum(p.numel() for p in model.parameters() if p.requires_grad or include_all)
 
 
 def compute_errors(gt, pred):
-    """Compute metrics for 'pred' compared to 'gt'.
+    """Compute metrics for predicted values compared to ground truth.
 
     Args:
-      gt(numpy.ndarray): Ground truth values
-      pred(numpy.ndarray): Predicted values
-      pred(numpy.ndarray): Predicted values
-    gt.shape should be equal to pred.shape
+        gt (numpy.ndarray): Ground truth values.
+        pred (numpy.ndarray): Predicted values.
 
     Returns:
-      dict: Dictionary containing the following metrics:
-      'a1': Delta1 accuracy: Fraction of pixels that are within a scale factor of 1.25
-      'a2': Delta2 accuracy: Fraction of pixels that are within a scale factor of 1.25^2
-      'a3': Delta3 accuracy: Fraction of pixels that are within a scale factor of 1.25^3
-      'abs_rel': Absolute relative error
-      'rmse': Root mean squared error
-      'log_10': Absolute log10 error
-      'sq_rel': Squared relative error
-      'rmse_log': Root mean squared error on the log scale
-      'silog': Scale invariant log error
-
+        dict: Dictionary containing various error metrics.
     """
     thresh = np.maximum((gt / pred), (pred / gt))
     a1 = (thresh < 1.25).mean()
@@ -260,22 +242,21 @@ def compute_metrics(
 ):
     """Compute metrics of predicted depth maps.
 
-    Applies cropping and masking as necessary or specified via arguments. Refer to
-    compute_errors for more details on metrics.
+    Applies cropping and masking as necessary or specified via arguments.
 
     Args:
-      gt:
-      pred:
-      interpolate: (Default value = True)
-      garg_crop: (Default value = False)
-      eigen_crop: (Default value = True)
-      dataset: (Default value = "nyu")
-      min_depth_eval: (Default value = 0.1)
-      max_depth_eval: (Default value = 10)
-      **kwargs:
+        gt (torch.Tensor): Ground truth depth map.
+        pred (torch.Tensor): Predicted depth map.
+        interpolate (bool, optional): If True, interpolate predictions to match ground truth size. Defaults to True.
+        garg_crop (bool, optional): If True, apply Garg crop. Defaults to False.
+        eigen_crop (bool, optional): If True, apply Eigen crop. Defaults to True.
+        dataset (str, optional): Dataset name. Defaults to "nyu".
+        min_depth_eval (float, optional): Minimum depth for evaluation. Defaults to 0.1.
+        max_depth_eval (float, optional): Maximum depth for evaluation. Defaults to 10.
+        **kwargs: Additional keyword arguments.
 
     Returns:
-
+        dict: Computed error metrics.
     """
     if "config" in kwargs:
         config = kwargs["config"]
@@ -307,14 +288,12 @@ def compute_metrics(
             ] = 1
 
         elif eigen_crop:
-            # print("-"*10, " EIGEN CROP ", "-"*10)
             if dataset == "kitti":
                 eval_mask[
                     int(0.3324324 * gt_height) : int(0.91351351 * gt_height),
                     int(0.0359477 * gt_width) : int(0.96405229 * gt_width),
                 ] = 1
             else:
-                # assert gt_depth.shape == (480, 640), "Error: Eigen crop is currently only valid for (480, 640) images"
                 eval_mask[45:471, 41:601] = 1
         else:
             eval_mask = np.ones(valid_mask.shape)
@@ -326,24 +305,22 @@ def compute_metrics(
 
 
 def parallelize(config, model, find_unused_parameters=True):
-    """
+    """Parallelizes the model for multi-GPU training.
 
     Args:
-      config:
-      model:
-      find_unused_parameters: (Default value = True)
+        config: Configuration object containing settings for parallelization.
+        model (torch.nn.Module): The model to parallelize.
+        find_unused_parameters (bool, optional): If True, find unused parameters. Defaults to True.
 
     Returns:
-
+        torch.nn.Module: The parallelized model.
     """
-
     if config.gpu is not None:
         torch.cuda.set_device(config.gpu)
         model = model.cuda(config.gpu)
 
     config.multigpu = False
     if config.distributed:
-        # Use DDP
         config.multigpu = True
         config.rank = config.rank * config.ngpus_per_node + config.gpu
         dist.init_process_group(
@@ -353,7 +330,6 @@ def parallelize(config, model, find_unused_parameters=True):
             rank=config.rank,
         )
         config.batch_size = int(config.batch_size / config.ngpus_per_node)
-        # config.batch_size = 8
         config.workers = int((config.num_workers + config.ngpus_per_node - 1) / config.ngpus_per_node)
         print(
             "Device",
@@ -376,7 +352,6 @@ def parallelize(config, model, find_unused_parameters=True):
         )
 
     elif config.gpu is None:
-        # Use DP
         config.multigpu = True
         model = model.cuda()
         model = torch.nn.DataParallel(model)
@@ -391,19 +366,19 @@ def parallelize(config, model, find_unused_parameters=True):
 
 
 class colors:
-    """Colors class:
-    Reset all colors with colors.reset
-    Two subclasses fg for foreground and bg for background.
-    Use as colors.subclass.colorname.
-    i.e. colors.fg.red or colors.bg.green
-    Also, the generic bold, disable, underline, reverse, strikethrough,
-    and invisible work with the main class
-    i.e. colors.bold
+    """Class for terminal colors.
 
-    Args:
+    Provides methods to reset colors and define foreground and background colors.
+    Use as colors.subclass.colorname, e.g., colors.fg.red or colors.bg.green.
 
-    Returns:
-
+    Attributes:
+        reset (str): Reset all colors.
+        bold (str): Bold text.
+        disable (str): Disable text.
+        underline (str): Underline text.
+        reverse (str): Reverse text.
+        strikethrough (str): Strikethrough text.
+        invisible (str): Invisible text.
     """
 
     reset = "\033[0m"
@@ -415,7 +390,7 @@ class colors:
     invisible = "\033[08m"
 
     class fg:
-        """ """
+        """Foreground colors."""
 
         black = "\033[30m"
         red = "\033[31m"
@@ -434,7 +409,7 @@ class colors:
         lightcyan = "\033[96m"
 
     class bg:
-        """ """
+        """Background colors."""
 
         black = "\033[40m"
         red = "\033[41m"
@@ -447,14 +422,11 @@ class colors:
 
 
 def printc(text, color):
-    """
+    """Prints colored text to the console.
 
     Args:
-      text:
-      color:
-
-    Returns:
-
+        text (str): The text to print.
+        color (str): The color code to use for printing.
     """
     print(f"{color}{text}{colors.reset}")
 
@@ -463,13 +435,13 @@ def printc(text, color):
 
 
 def get_image_from_url(url):
-    """
+    """Fetches an image from a URL.
 
     Args:
-      url:
+        url (str): The URL of the image.
 
     Returns:
-
+        PIL.Image: The fetched image in RGB format.
     """
     response = requests.get(url)
     img = Image.open(BytesIO(response.content)).convert("RGB")
@@ -477,15 +449,14 @@ def get_image_from_url(url):
 
 
 def url_to_torch(url, size=(384, 384)):
-    """
+    """Converts an image from a URL to a PyTorch tensor.
 
     Args:
-      url:
-      size: (Default value = (384)
-      384):
+        url (str): The URL of the image.
+        size (tuple[int], optional): The desired size of the image. Defaults to (384, 384).
 
     Returns:
-
+        torch.Tensor: The image as a PyTorch tensor.
     """
     img = get_image_from_url(url)
     img = img.resize(size, Image.ANTIALIAS)
@@ -496,26 +467,23 @@ def url_to_torch(url, size=(384, 384)):
 
 
 def pil_to_batched_tensor(img):
-    """
+    """Converts a PIL image to a batched PyTorch tensor.
 
     Args:
-      img:
+        img (PIL.Image): The input image.
 
     Returns:
-
+        torch.Tensor: The image as a batched tensor.
     """
     return ToTensor()(img).unsqueeze(0)
 
 
 def save_raw_16bit(depth, fpath="raw.png"):
-    """
+    """Saves a depth map as a 16-bit PNG file.
 
     Args:
-      depth:
-      fpath: (Default value = "raw.png")
-
-    Returns:
-
+        depth (torch.Tensor or numpy.ndarray): The depth map to save.
+        fpath (str, optional): The file path to save the image. Defaults to "raw.png".
     """
     if isinstance(depth, torch.Tensor):
         depth = depth.squeeze().cpu().numpy()

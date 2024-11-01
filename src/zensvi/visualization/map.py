@@ -80,7 +80,8 @@ def _add_colorbar(
     dark_mode=False,
 ):
     """Adds a colorbar to the figure based on given parameters, with optional dark
-    mode."""
+    mode.
+    """
     norm = colors.Normalize(vmin=vmin, vmax=vmax)
     sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
     sm.set_array([])

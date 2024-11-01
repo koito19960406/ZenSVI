@@ -19,19 +19,16 @@ class General:
     @staticmethod
     def get_tile_metadata():
         """Root endpoint for metadata."""
-
         return "https://graph.mapillary.com/"
 
     @staticmethod
     def get_vector_tiles():
         """Root endpoint for vector tiles."""
-
         return "https://tiles.mapillary.com/"
 
     @staticmethod
     def get_image_type_tiles(x: float, y: float, z: float) -> str:
         """image_type tiles."""
-
         return f"https://tiles.mapillary.com/maps/vtp/mly1_public/2/{z}/{x}/{y}/"
 
     @staticmethod
@@ -41,7 +38,6 @@ class General:
         z: float,
     ) -> str:
         """Computed image_type tiles."""
-
         return "https://tiles.mapillary.com/maps/vtp/mly1_computed_public/2" f"/{z}/{x}/{y}/"
 
     @staticmethod
@@ -51,7 +47,6 @@ class General:
         z: float,
     ) -> str:
         """Map features (points) tiles."""
-
         return f"https://tiles.mapillary.com/maps/vtp/mly_map_feature_point/2" f"/{z}/{x}/{y}/"
 
     @staticmethod
@@ -61,5 +56,4 @@ class General:
         z: float,
     ) -> str:
         """Map features (traffic signs) tiles."""
-
         return "https://tiles.mapillary.com/maps/vtp/" f"mly_map_feature_traffic_sign/2/{z}/{x}/{y}"

@@ -29,14 +29,13 @@ from torchvision.transforms import Normalize
 
 
 def denormalize(x):
-    """Reverses the imagenet normalization applied to the input.
+    """Reverses the ImageNet normalization applied to the input.
 
     Args:
-      x(torch.Tensor - shape(N): input tensor
+        x (torch.Tensor): Input tensor of shape (N, C, H, W).
 
     Returns:
-      N: Denormalized input
-
+        torch.Tensor: Denormalized input tensor.
     """
     mean = torch.Tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(x.device)
     std = torch.Tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(x.device)
@@ -44,26 +43,23 @@ def denormalize(x):
 
 
 def get_activation(name, bank):
-    """
+    """Creates a hook to store the output of a layer.
 
     Args:
-      name:
-      bank:
+        name (str): Name of the layer.
+        bank (dict): Dictionary to store the output.
 
     Returns:
-
+        function: Hook function to capture the output.
     """
 
     def hook(model, input, output):
-        """
+        """Hook function to store the output of the layer.
 
         Args:
-          model:
-          input:
-          output:
-
-        Returns:
-
+            model: The model instance.
+            input: Input to the layer.
+            output: Output from the layer.
         """
         bank[name] = output
 
@@ -82,28 +78,28 @@ class Resize(object):
         ensure_multiple_of=1,
         resize_method="lower_bound",
     ):
-        """Init.
+        """Initializes the Resize object.
 
         Args:
-            width (int): desired output width
-            height (int): desired output height
+            width (int): Desired output width.
+            height (int): Desired output height.
             resize_target (bool, optional):
                 True: Resize the full sample (image, mask, target).
-                False: Resize image only.
-                Defaults to True.
+                False: Resize image only. Defaults to True.
             keep_aspect_ratio (bool, optional):
                 True: Keep the aspect ratio of the input sample.
                 Output sample might not have the given width and height, and
-                resize behaviour depends on the parameter 'resize_method'.
+                resize behavior depends on the parameter 'resize_method'.
                 Defaults to False.
             ensure_multiple_of (int, optional):
                 Output width and height is constrained to be multiple of this parameter.
                 Defaults to 1.
             resize_method (str, optional):
                 "lower_bound": Output will be at least as large as the given size.
-                "upper_bound": Output will be at max as large as the given size. (Output size might be smaller than given size.)
-                "minimal": Scale as least as possible.  (Output size might be smaller than given size.)
-                Defaults to "lower_bound".
+                "upper_bound": Output will be at max as large as the given size.
+                (Output size might be smaller than given size.)
+                "minimal": Scale as least as possible.
+                (Output size might be smaller than given size.) Defaults to "lower_bound".
         """
         print("Params passed to Resize transform:")
         print("\twidth: ", width)
@@ -115,21 +111,20 @@ class Resize(object):
 
         self.__width = width
         self.__height = height
-
         self.__keep_aspect_ratio = keep_aspect_ratio
         self.__multiple_of = ensure_multiple_of
         self.__resize_method = resize_method
 
     def constrain_to_multiple_of(self, x, min_val=0, max_val=None):
-        """
+        """Constrain a value to be a multiple of a specified number.
 
         Args:
-          x:
-          min_val: (Default value = 0)
-          max_val: (Default value = None)
+            x (np.ndarray): Input values.
+            min_val (int, optional): Minimum value. Defaults to 0.
+            max_val (int, optional): Maximum value. Defaults to None.
 
         Returns:
-
+            np.ndarray: Constrained values.
         """
         y = (np.round(x / self.__multiple_of) * self.__multiple_of).astype(int)
 
@@ -142,14 +137,14 @@ class Resize(object):
         return y
 
     def get_size(self, width, height):
-        """
+        """Determine new size based on the resizing parameters.
 
         Args:
-          width:
-          height:
+            width (int): Original width.
+            height (int): Original height.
 
         Returns:
-
+            tuple: New width and height.
         """
         # determine new height and width
         scale_height = self.__height / height
@@ -173,7 +168,7 @@ class Resize(object):
                     # fit height
                     scale_width = scale_height
             elif self.__resize_method == "minimal":
-                # scale as least as possbile
+                # scale as least as possible
                 if abs(1 - scale_width) < abs(1 - scale_height):
                     # fit width
                     scale_height = scale_width
@@ -198,12 +193,20 @@ class Resize(object):
         return (new_width, new_height)
 
     def __call__(self, x):
+        """Resize the input tensor.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (N, C, H, W).
+
+        Returns:
+            torch.Tensor: Resized tensor.
+        """
         width, height = self.get_size(*x.shape[-2:][::-1])
         return nn.functional.interpolate(x, (height, width), mode="bilinear", align_corners=True)
 
 
 class PrepForMidas(object):
-    """ """
+    """Prepares input for the MiDaS model by resizing and normalizing."""
 
     def __init__(
         self,
@@ -212,6 +215,14 @@ class PrepForMidas(object):
         img_size=384,
         do_resize=True,
     ):
+        """Initializes the preparation for MiDaS.
+
+        Args:
+            resize_mode (str, optional): Method for resizing. Defaults to "minimal".
+            keep_aspect_ratio (bool, optional): Whether to keep aspect ratio. Defaults to True.
+            img_size (int, tuple, optional): Size of the image. Defaults to 384.
+            do_resize (bool, optional): Whether to perform resizing. Defaults to True.
+        """
         if isinstance(img_size, int):
             img_size = (img_size, img_size)
         net_h, net_w = img_size
@@ -229,11 +240,19 @@ class PrepForMidas(object):
         )
 
     def __call__(self, x):
+        """Apply normalization and resizing to the input tensor.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (N, C, H, W).
+
+        Returns:
+            torch.Tensor: Prepared tensor.
+        """
         return self.normalization(self.resizer(x))
 
 
 class MidasCore(nn.Module):
-    """ """
+    """MiDaS Core model for multi-scale feature extraction."""
 
     def __init__(
         self,
@@ -246,15 +265,16 @@ class MidasCore(nn.Module):
         img_size=384,
         **kwargs,
     ):
-        """Midas Base model used for multi-scale feature extraction.
+        """Initializes the MiDaS core model.
 
         Args:
-            midas (torch.nn.Module): Midas model.
-            trainable (bool, optional): Train midas model. Defaults to False.
+            midas (torch.nn.Module): MiDaS model.
+            trainable (bool, optional): Train MiDaS model. Defaults to False.
             fetch_features (bool, optional): Extract multi-scale features. Defaults to True.
-            layer_names (tuple, optional): Layers used for feature extraction. Order = (head output features, last layer features, ...decoder features). Defaults to ('out_conv', 'l4_rn', 'r4', 'r3', 'r2', 'r1').
-            freeze_bn (bool, optional): Freeze BatchNorm. Generally results in better finetuning performance. Defaults to False.
-            keep_aspect_ratio (bool, optional): Keep the aspect ratio of input images while resizing. Defaults to True.
+            layer_names (tuple, optional): Layers used for feature extraction.
+                Defaults to ('out_conv', 'l4_rn', 'r4', 'r3', 'r2', 'r1').
+            freeze_bn (bool, optional): Freeze BatchNorm. Defaults to False.
+            keep_aspect_ratio (bool, optional): Keep aspect ratio while resizing. Defaults to True.
             img_size (int, tuple, optional): Input resolution. Defaults to 384.
         """
         super().__init__()
@@ -263,9 +283,7 @@ class MidasCore(nn.Module):
         self.core_out = {}
         self.trainable = trainable
         self.fetch_features = fetch_features
-        # midas.scratch.output_conv = nn.Identity()
         self.handles = []
-        # self.layer_names = ['out_conv','l4_rn', 'r4', 'r3', 'r2', 'r1']
         self.layer_names = layer_names
 
         self.set_trainable(trainable)
@@ -281,13 +299,13 @@ class MidasCore(nn.Module):
             self.freeze_bn()
 
     def set_trainable(self, trainable):
-        """
+        """Set the trainable state of the model.
 
         Args:
-          trainable:
+            trainable (bool): Whether the model should be trainable.
 
         Returns:
-
+            MidasCore: Self for chaining.
         """
         self.trainable = trainable
         if trainable:
@@ -297,13 +315,13 @@ class MidasCore(nn.Module):
         return self
 
     def set_fetch_features(self, fetch_features):
-        """
+        """Set whether to fetch features from the model.
 
         Args:
-          fetch_features:
+            fetch_features (bool): Whether to fetch features.
 
         Returns:
-
+            MidasCore: Self for chaining.
         """
         self.fetch_features = fetch_features
         if fetch_features:
@@ -314,51 +332,44 @@ class MidasCore(nn.Module):
         return self
 
     def freeze(self):
-        """ """
+        """Freeze the parameters of the model."""
         for p in self.parameters():
             p.requires_grad = False
         self.trainable = False
         return self
 
     def unfreeze(self):
-        """ """
+        """Unfreeze the parameters of the model."""
         for p in self.parameters():
             p.requires_grad = True
         self.trainable = True
         return self
 
     def freeze_bn(self):
-        """ """
+        """Freeze BatchNorm layers in the model."""
         for m in self.modules():
             if isinstance(m, nn.BatchNorm2d):
                 m.eval()
         return self
 
     def forward(self, x, denorm=False, return_rel_depth=False):
-        """
+        """Forward pass through the model.
 
         Args:
-          x:
-          denorm: Default value
-          return_rel_depth: Default value
+            x (torch.Tensor): Input tensor.
+            denorm (bool, optional): Whether to denormalize the input. Defaults to False.
+            return_rel_depth (bool, optional): Whether to return relative depth. Defaults to False.
 
         Returns:
-
-
+            tuple or torch.Tensor: Relative depth and/or feature outputs.
         """
-        # print('input to midas:', x.shape)
         with torch.no_grad():
             if denorm:
                 x = denormalize(x)
             x = self.prep(x)
-            # print("Shape after prep: ", x.shape)
-        # print('pre-processed:', x.shape)
 
         with torch.set_grad_enabled(self.trainable):
-
-            # print("Input size to Midascore", x.shape)
             rel_depth = self.core(x)
-            # print("Output from midas shape", rel_depth.shape)
             if not self.fetch_features:
                 return rel_depth
         out = [self.core_out[k] for k in self.layer_names]
@@ -368,25 +379,25 @@ class MidasCore(nn.Module):
         return out
 
     def get_rel_pos_params(self):
-        """ """
+        """Yield relative position parameters from the model."""
         for name, p in self.core.pretrained.named_parameters():
             if "relative_position" in name:
                 yield p
 
     def get_enc_params_except_rel_pos(self):
-        """ """
+        """Yield encoder parameters excluding relative position parameters."""
         for name, p in self.core.pretrained.named_parameters():
             if "relative_position" not in name:
                 yield p
 
     def freeze_encoder(self, freeze_rel_pos=False):
-        """
+        """Freeze the encoder parameters.
 
         Args:
-          freeze_rel_pos: (Default value = False)
+            freeze_rel_pos (bool, optional): Whether to freeze relative position parameters. Defaults to False.
 
         Returns:
-
+            MidasCore: Self for chaining.
         """
         if freeze_rel_pos:
             for p in self.core.pretrained.parameters():
@@ -397,13 +408,13 @@ class MidasCore(nn.Module):
         return self
 
     def attach_hooks(self, midas):
-        """
+        """Attach hooks to the MiDaS model for feature extraction.
 
         Args:
-          midas:
+            midas (torch.nn.Module): MiDaS model.
 
         Returns:
-
+            MidasCore: Self for chaining.
         """
         if len(self.handles) > 0:
             self.remove_hooks()
@@ -427,22 +438,20 @@ class MidasCore(nn.Module):
         return self
 
     def remove_hooks(self):
-        """ """
+        """Remove all hooks attached to the model."""
         for h in self.handles:
             h.remove()
         return self
 
     def __del__(self):
+        """Destructor to remove hooks when the object is deleted."""
         self.remove_hooks()
 
     def set_output_channels(self, model_type):
-        """
+        """Set the output channels based on the model type.
 
         Args:
-          model_type:
-
-        Returns:
-
+            model_type (str): Type of the model.
         """
         self.output_channels = MIDAS_SETTINGS[model_type]
 
@@ -457,27 +466,26 @@ class MidasCore(nn.Module):
         force_reload=False,
         **kwargs,
     ):
-        """
+        """Build the MiDaS core model.
 
         Args:
-          midas_model_type: (Default value = "DPT_BEiT_L_384")
-          train_midas: (Default value = False)
-          use_pretrained_midas: (Default value = True)
-          fetch_features: (Default value = False)
-          freeze_bn: (Default value = True)
-          force_keep_ar: (Default value = False)
-          force_reload: (Default value = False)
-          **kwargs:
+            midas_model_type (str, optional): Type of MiDaS model. Defaults to "DPT_BEiT_L_384".
+            train_midas (bool, optional): Whether to train the MiDaS model. Defaults to False.
+            use_pretrained_midas (bool, optional): Whether to use a pretrained MiDaS model. Defaults to True.
+            fetch_features (bool, optional): Whether to fetch features. Defaults to False.
+            freeze_bn (bool, optional): Whether to freeze BatchNorm layers. Defaults to True.
+            force_keep_ar (bool, optional): Whether to force keeping aspect ratio. Defaults to False.
+            force_reload (bool, optional): Whether to force reload the model. Defaults to False.
+            **kwargs: Additional arguments.
 
         Returns:
-
+            MidasCore: Instance of the MidasCore model.
         """
         if midas_model_type not in MIDAS_SETTINGS:
             raise ValueError(f"Invalid model type: {midas_model_type}. Must be one of {list(MIDAS_SETTINGS.keys())}")
         if "img_size" in kwargs:
             kwargs = MidasCore.parse_img_size(kwargs)
         img_size = kwargs.pop("img_size", [384, 384])
-        # print("img_size", img_size)
         midas = torch.hub.load(
             "intel-isl/MiDaS",
             midas_model_type,
@@ -498,25 +506,25 @@ class MidasCore(nn.Module):
 
     @staticmethod
     def build_from_config(config):
-        """
+        """Build the MiDaS core model from a configuration dictionary.
 
         Args:
-          config:
+            config (dict): Configuration dictionary.
 
         Returns:
-
+            MidasCore: Instance of the MidasCore model.
         """
         return MidasCore.build(**config)
 
     @staticmethod
     def parse_img_size(config):
-        """
+        """Parse the image size from the configuration.
 
         Args:
-          config:
+            config (dict): Configuration dictionary.
 
         Returns:
-
+            dict: Updated configuration dictionary with parsed image size.
         """
         assert "img_size" in config
         if isinstance(config["img_size"], str):

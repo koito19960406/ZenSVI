@@ -41,7 +41,6 @@ def get_image_detections_controller(image_id: typing.Union[str, int], fields: li
     Returns:
         dict: GeoJSON
     """
-
     # Checks if the Id given is indeed a valid image_id
     valid_id(identity=image_id, image=True)
 
@@ -69,7 +68,6 @@ def get_map_feature_detections_controller(map_feature_id: typing.Union[str, int]
     Returns:
         dict: GeoJSON
     """
-
     # Checks if the Id given is indeed a valid image_id
     valid_id(identity=map_feature_id, image=False)
 

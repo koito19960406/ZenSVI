@@ -8,15 +8,15 @@ from huggingface_hub import PyTorchModelHubMixin
 
 
 def _make_fusion_block(features, use_bn, size=None):
-    """
+    """Creates a feature fusion block.
 
     Args:
-      features:
-      use_bn:
-      size: (Default value = None)
+        features (int): Number of input features.
+        use_bn (bool): Whether to use batch normalization.
+        size (tuple, optional): Size of the output. Defaults to None.
 
     Returns:
-
+        FeatureFusionBlock: The constructed feature fusion block.
     """
     return FeatureFusionBlock(
         features,
@@ -30,7 +30,7 @@ def _make_fusion_block(features, use_bn, size=None):
 
 
 class DPTHead(nn.Module):
-    """ """
+    """DPT Head for depth estimation."""
 
     def __init__(
         self,
@@ -41,6 +41,16 @@ class DPTHead(nn.Module):
         out_channels=[256, 512, 1024, 1024],
         use_clstoken=False,
     ):
+        """Initializes the DPTHead.
+
+        Args:
+            nclass (int): Number of output classes.
+            in_channels (int): Number of input channels.
+            features (int, optional): Number of features. Defaults to 256.
+            use_bn (bool, optional): Whether to use batch normalization. Defaults to False.
+            out_channels (list, optional): List of output channels. Defaults to [256, 512, 1024, 1024].
+            use_clstoken (bool, optional): Whether to use class token. Defaults to False.
+        """
         super(DPTHead, self).__init__()
 
         self.nclass = nclass
@@ -138,15 +148,15 @@ class DPTHead(nn.Module):
             )
 
     def forward(self, out_features, patch_h, patch_w):
-        """
+        """Forward pass for the DPTHead.
 
         Args:
-          out_features:
-          patch_h:
-          patch_w:
+            out_features (list): List of output features from the encoder.
+            patch_h (int): Height of the patch.
+            patch_w (int): Width of the patch.
 
         Returns:
-
+            Tensor: The output tensor after processing through the head.
         """
         out = []
         for i, x in enumerate(out_features):
@@ -189,7 +199,7 @@ class DPTHead(nn.Module):
 
 
 class DPT_DINOv2(nn.Module):
-    """ """
+    """DPT model using DINOv2 for depth estimation."""
 
     def __init__(
         self,
@@ -200,6 +210,16 @@ class DPT_DINOv2(nn.Module):
         use_clstoken=False,
         localhub=True,
     ):
+        """Initializes the DPT_DINOv2 model.
+
+        Args:
+            encoder (str, optional): The encoder type. Defaults to "vitl".
+            features (int, optional): Number of features. Defaults to 256.
+            out_channels (list, optional): List of output channels. Defaults to [256, 512, 1024, 1024].
+            use_bn (bool, optional): Whether to use batch normalization. Defaults to False.
+            use_clstoken (bool, optional): Whether to use class token. Defaults to False.
+            localhub (bool, optional): Whether to load the model locally. Defaults to True.
+        """
         super(DPT_DINOv2, self).__init__()
 
         assert encoder in ["vits", "vitb", "vitl"]
@@ -227,13 +247,13 @@ class DPT_DINOv2(nn.Module):
         )
 
     def forward(self, x):
-        """
+        """Forward pass for the DPT_DINOv2 model.
 
         Args:
-          x:
+            x (Tensor): Input tensor.
 
         Returns:
-
+            Tensor: The estimated depth map.
         """
         h, w = x.shape[-2:]
 
@@ -249,9 +269,14 @@ class DPT_DINOv2(nn.Module):
 
 
 class DepthAnything(DPT_DINOv2, PyTorchModelHubMixin):
-    """ """
+    """DepthAnything model for depth estimation."""
 
     def __init__(self, config):
+        """Initializes the DepthAnything model.
+
+        Args:
+            config (dict): Configuration dictionary for the model.
+        """
         super().__init__(**config)
 
 

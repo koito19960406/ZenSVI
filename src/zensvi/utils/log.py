@@ -8,6 +8,18 @@ class Logger:
     _loggers = {}
 
     def __new__(cls, log_file_path, level=logging.INFO):
+        """Create or retrieve a logger instance.
+
+        This method implements the singleton pattern, ensuring only one logger exists
+        per log file path.
+
+        Args:
+            log_file_path: Path to the log file
+            level: Logging level to use, defaults to logging.INFO
+
+        Returns:
+            Logger: A logger instance for the specified log file
+        """
         if log_file_path not in cls._loggers:
             logger = super(Logger, cls).__new__(cls)
             cls._initialize_logger(logger, log_file_path, level)

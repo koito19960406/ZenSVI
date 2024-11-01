@@ -15,7 +15,16 @@ from torch.utils.data.sampler import Sampler
 
 
 class EpochSampler(Sampler):
-    """ """
+    """Sampler that yields indices for a dataset over epochs.
+
+    Attributes:
+        size (int): Total number of samples.
+        sample_count (int): Number of samples to draw in each iteration.
+        shuffle (bool): Whether to shuffle the samples.
+        seed (int): Seed for random number generation.
+        start (Optional[int]): Starting index for sampling.
+        step (Optional[int]): Step size for sampling.
+    """
 
     def __init__(
         self,
@@ -36,6 +45,11 @@ class EpochSampler(Sampler):
         self._epoch = 0
 
     def __iter__(self):
+        """Yield indices for sampling based on the current epoch.
+
+        Yields:
+            Indices for the samples.
+        """
         count = (self._size + self._sample_count - 1) // self._sample_count
         tiled_indices = np.tile(np.arange(self._sample_count), count)
         if self._shuffle:
@@ -48,44 +62,42 @@ class EpochSampler(Sampler):
         yield from itertools.islice(iterable, self._start, None, self._step)
 
     def __len__(self):
-        return (self._size - self._start + self._step - 1) // self._step
-
-    def set_epoch(self, epoch):
-        """
-
-        Args:
-          epoch:
+        """Return the number of samples that can be drawn.
 
         Returns:
+            int: Number of samples.
+        """
+        return (self._size - self._start + self._step - 1) // self._step
 
+    def set_epoch(self, epoch: int):
+        """Set the current epoch for sampling.
+
+        Args:
+            epoch (int): The current epoch number.
         """
         self._epoch = epoch
 
 
 def _get_numpy_dtype(size: int) -> Any:
-    """
+    """Get the appropriate NumPy data type based on the size.
 
     Args:
-      size: int:
-      size: int:
-      size: int:
+        size (int): The size to determine the data type for.
 
     Returns:
-
+        Any: NumPy data type (np.int32 or np.int64).
     """
     return np.int32 if size <= 2**31 else np.int64
 
 
 def _get_torch_dtype(size: int) -> Any:
-    """
+    """Get the appropriate PyTorch data type based on the size.
 
     Args:
-      size: int:
-      size: int:
-      size: int:
+        size (int): The size to determine the data type for.
 
     Returns:
-
+        Any: PyTorch data type (torch.int32 or torch.int64).
     """
     return torch.int32 if size <= 2**31 else torch.int64
 
@@ -94,24 +106,16 @@ def _generate_randperm_indices(*, size: int, generator: torch.Generator):
     """Generate the indices of a random permutation.
 
     Args:
-      *:
-      size: int:
-      generator: torch.Generator:
-      size: int:
-      generator: torch.Generator:
-      size: int:
-      generator: torch.Generator:
+        size (int): The size of the permutation.
+        generator (torch.Generator): The random number generator.
 
-    Returns:
-
+    Yields:
+        int: Randomly permuted indices.
     """
     dtype = _get_torch_dtype(size)
-    # This is actually matching PyTorch's CPU implementation, see: https://github.com/pytorch/pytorch/blob/master/aten/src/ATen/native/TensorFactories.cpp#L900-L921
     perm = torch.arange(size, dtype=dtype)
     for i in range(size):
         j = torch.randint(i, size, size=(1,), generator=generator).item()
-
-        # Always swap even if no-op
         value = perm[j].item()
         perm[j] = perm[i].item()
         perm[i] = value
@@ -119,7 +123,16 @@ def _generate_randperm_indices(*, size: int, generator: torch.Generator):
 
 
 class InfiniteSampler(Sampler):
-    """ """
+    """Sampler that yields an infinite sequence of indices.
+
+    Attributes:
+        sample_count (int): Number of samples to draw in each iteration.
+        shuffle (bool): Whether to shuffle the samples.
+        seed (int): Seed for random number generation.
+        start (Optional[int]): Starting index for sampling.
+        step (Optional[int]): Step size for sampling.
+        advance (int): Number of samples to advance before yielding.
+    """
 
     def __init__(
         self,
@@ -139,6 +152,11 @@ class InfiniteSampler(Sampler):
         self._advance = advance
 
     def __iter__(self):
+        """Yield an infinite sequence of indices for sampling.
+
+        Yields:
+            Indices for the samples.
+        """
         if self._shuffle:
             iterator = self._shuffled_iterator()
         else:
@@ -147,7 +165,11 @@ class InfiniteSampler(Sampler):
         yield from itertools.islice(iterator, self._advance, None)
 
     def _iterator(self):
-        """ """
+        """Yield indices in a non-shuffled manner.
+
+        Yields:
+            Indices for the samples.
+        """
         assert not self._shuffle
 
         while True:
@@ -155,11 +177,13 @@ class InfiniteSampler(Sampler):
             yield from itertools.islice(iterable, self._start, None, self._step)
 
     def _shuffled_iterator(self):
-        """ """
+        """Yield indices in a shuffled manner.
+
+        Yields:
+            Indices for the samples.
+        """
         assert self._shuffle
 
-        # Instantiate a generator here (rather than in the ctor) to keep the class
-        # picklable (requirement of mp.spawn)
         generator = torch.Generator().manual_seed(self._seed)
 
         while True:
@@ -167,30 +191,19 @@ class InfiniteSampler(Sampler):
             yield from itertools.islice(iterable, self._start, None, self._step)
 
 
-# The following function is somewhat equivalent to _new_shuffle_tensor_slice below,
-# but avoids a full in-place random permutation generation.
 def _shuffle_tensor_slice(
     *, tensor: torch.Tensor, start: int = 0, step: int = 1, generator: torch.Generator
 ) -> np.ndarray:
-    """
+    """Shuffle a slice of a tensor.
 
     Args:
-      *:
-      tensor: torch.Tensor:
-      start: int:  (Default value = 0)
-      step: int:  (Default value = 1)
-      generator: torch.Generator:
-      tensor: torch.Tensor:
-      start: int:  (Default value = 0)
-      step: int:  (Default value = 1)
-      generator: torch.Generator:
-      tensor: torch.Tensor:
-      start: int:  (Default value = 0)
-      step: int:  (Default value = 1)
-      generator: torch.Generator:
+        tensor (torch.Tensor): The tensor to shuffle.
+        start (int, optional): The starting index for the slice. Defaults to 0.
+        step (int, optional): The step size for the slice. Defaults to 1.
+        generator (torch.Generator): The random number generator.
 
     Returns:
-
+        np.ndarray: The shuffled slice of the tensor.
     """
     stop = len(tensor)
     count = stop // step
@@ -203,7 +216,6 @@ def _shuffle_tensor_slice(
 
     for i in range(count):
         j = torch.randint(0, i + 1, size=(1,), generator=generator).item() if i > 0 else 0
-
         result[i] = result[j]
         result[j] = tensor[start + i * step].item()
 
@@ -213,30 +225,20 @@ def _shuffle_tensor_slice(
 def _new_shuffle_tensor_slice(
     *, tensor: torch.Tensor, start: int = 0, step: int = 1, generator: torch.Generator
 ) -> np.ndarray:
-    """
+    """Shuffle a slice of a tensor using a new method.
 
     Args:
-      *:
-      tensor: torch.Tensor:
-      start: int:  (Default value = 0)
-      step: int:  (Default value = 1)
-      generator: torch.Generator:
-      tensor: torch.Tensor:
-      start: int:  (Default value = 0)
-      step: int:  (Default value = 1)
-      generator: torch.Generator:
-      tensor: torch.Tensor:
-      start: int:  (Default value = 0)
-      step: int:  (Default value = 1)
-      generator: torch.Generator:
+        tensor (torch.Tensor): The tensor to shuffle.
+        start (int, optional): The starting index for the slice. Defaults to 0.
+        step (int, optional): The step size for the slice. Defaults to 1.
+        generator (torch.Generator): The random number generator.
 
     Returns:
-
+        np.ndarray: The shuffled slice of the tensor.
     """
     stop = len(tensor)
     count = stop // step
     dtype = torch.int64  # Needed for using randperm result as indices
-    count = stop // step
     drop_count = stop - step * count
     if drop_count:
         warnings.warn(f"# of dropped samples: {drop_count}")
@@ -245,28 +247,31 @@ def _new_shuffle_tensor_slice(
 
 
 def _make_seed(seed: int, start: int, iter_count: int) -> int:
-    """
+    """Create a seed based on the initial seed, start index, and iteration count.
 
     Args:
-      seed: int:
-      start: int:
-      iter_count: int:
-      seed: int:
-      start: int:
-      iter_count: int:
-      seed: int:
-      start: int:
-      iter_count: int:
+        seed (int): The initial seed.
+        start (int): The starting index.
+        iter_count (int): The iteration count.
 
     Returns:
-
+        int: The generated seed.
     """
-    # NOTE: Tried a few variants (including iter_count << 32), this one worked best.
     return seed + start + (iter_count << 24)
 
 
 class ShardedInfiniteSampler(Sampler):
-    """ """
+    """Sampler that yields an infinite sequence of indices with sharding.
+
+    Attributes:
+        sample_count (int): Number of samples to draw in each iteration.
+        shuffle (bool): Whether to shuffle the samples.
+        seed (int): Seed for random number generation.
+        start (Optional[int]): Starting index for sampling.
+        step (Optional[int]): Step size for sampling.
+        advance (int): Number of samples to advance before yielding.
+        use_new_shuffle_tensor_slice (bool): Whether to use the new shuffle method.
+    """
 
     def __init__(
         self,
@@ -291,6 +296,11 @@ class ShardedInfiniteSampler(Sampler):
         )
 
     def __iter__(self):
+        """Yield an infinite sequence of indices for sampling.
+
+        Yields:
+            Indices for the samples.
+        """
         iter_count = self._advance // self._sample_count
         if iter_count > 0:
             self._advance -= iter_count * self._sample_count
@@ -304,7 +314,11 @@ class ShardedInfiniteSampler(Sampler):
         yield from itertools.islice(iterator, self._advance, None)
 
     def _iterator(self):
-        """ """
+        """Yield indices in a non-shuffled manner.
+
+        Yields:
+            Indices for the samples.
+        """
         assert not self._shuffle
 
         while True:
@@ -312,20 +326,19 @@ class ShardedInfiniteSampler(Sampler):
             yield from itertools.islice(iterable, self._start, None, self._step)
 
     def _shuffled_iterator(self):
-        """ """
+        """Yield indices in a shuffled manner.
+
+        Yields:
+            Indices for the samples.
+        """
         assert self._shuffle
 
-        # Instantiate a generator here (rather than in the ctor) to be keep the class
-        # picklable (requirement of mp.spawn)
         generator = torch.Generator()
-
-        # Always shuffle everything first
         generator.manual_seed(self._seed)
         dtype = _get_torch_dtype(self._sample_count)
         perm = torch.randperm(self._sample_count, dtype=dtype, generator=generator)
 
         while True:
-            # Re-seed on each iteration to allow skipping whole permutations
             seed = _make_seed(self._seed, self._start, self._iter_count)
             generator.manual_seed(seed)
 

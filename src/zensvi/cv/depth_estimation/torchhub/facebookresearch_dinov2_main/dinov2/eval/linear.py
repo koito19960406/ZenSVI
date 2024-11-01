@@ -33,22 +33,16 @@ def get_args_parser(
     description: Optional[str] = None,
     parents: Optional[List[argparse.ArgumentParser]] = None,
     add_help: bool = True,
-):
-    """
+) -> argparse.ArgumentParser:
+    """Creates an argument parser for the linear evaluation.
 
     Args:
-      description: Optional[str]:  (Default value = None)
-      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
-      add_help: bool:  (Default value = True)
-      description: Optional[str]:  (Default value = None)
-      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
-      add_help: bool:  (Default value = True)
-      description: Optional[str]:  (Default value = None)
-      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
-      add_help: bool:  (Default value = True)
+        description (Optional[str]): Description of the parser.
+        parents (Optional[List[argparse.ArgumentParser]]): Parent parsers to inherit arguments from.
+        add_help (bool): Whether to add a help option to the parser.
 
     Returns:
-
+        argparse.ArgumentParser: The configured argument parser.
     """
     parents = parents or []
     setup_args_parser = get_setup_args_parser(parents=parents, add_help=False)
@@ -90,7 +84,7 @@ def get_args_parser(
     parser.add_argument(
         "--num-workers",
         type=int,
-        help="Number de Workers",
+        help="Number of Workers",
     )
     parser.add_argument(
         "--epoch-length",
@@ -182,41 +176,37 @@ def get_args_parser(
 
 
 def has_ddp_wrapper(m: nn.Module) -> bool:
-    """
+    """Checks if the given module is wrapped in DistributedDataParallel.
 
     Args:
-      m: nn.Module:
-      m: nn.Module:
-      m: nn.Module:
+        m (nn.Module): The module to check.
 
     Returns:
-
+        bool: True if the module is wrapped in DistributedDataParallel, False otherwise.
     """
     return isinstance(m, DistributedDataParallel)
 
 
 def remove_ddp_wrapper(m: nn.Module) -> nn.Module:
-    """
+    """Removes the DistributedDataParallel wrapper from the module if present.
 
     Args:
-      m: nn.Module:
-      m: nn.Module:
-      m: nn.Module:
+        m (nn.Module): The module to unwrap.
 
     Returns:
-
+        nn.Module: The unwrapped module.
     """
     return m.module if has_ddp_wrapper(m) else m
 
 
 def _pad_and_collate(batch):
-    """
+    """Pads and collates a batch of data.
 
     Args:
-      batch:
+        batch: A batch of data to pad and collate.
 
     Returns:
-
+        Tensor: A collated tensor of the padded batch.
     """
     maxlen = max(len(targets) for image, targets in batch)
     padded_batch = [
@@ -226,15 +216,15 @@ def _pad_and_collate(batch):
 
 
 def create_linear_input(x_tokens_list, use_n_blocks, use_avgpool):
-    """
+    """Creates the input for the linear classifier from the token list.
 
     Args:
-      x_tokens_list:
-      use_n_blocks:
-      use_avgpool:
+        x_tokens_list: List of token outputs from the feature model.
+        use_n_blocks: Number of blocks to use from the token list.
+        use_avgpool: Whether to use average pooling.
 
     Returns:
-
+        Tensor: The processed input tensor for the linear classifier.
     """
     intermediate_output = x_tokens_list[-use_n_blocks:]
     output = torch.cat([class_token for _, class_token in intermediate_output], dim=-1)
@@ -254,6 +244,14 @@ class LinearClassifier(nn.Module):
     """Linear layer to train on top of frozen features."""
 
     def __init__(self, out_dim, use_n_blocks, use_avgpool, num_classes=1000):
+        """Initializes the LinearClassifier.
+
+        Args:
+            out_dim (int): The output dimension of the classifier.
+            use_n_blocks (int): Number of blocks to use from the token list.
+            use_avgpool (bool): Whether to use average pooling.
+            num_classes (int): Number of classes for classification.
+        """
         super().__init__()
         self.out_dim = out_dim
         self.use_n_blocks = use_n_blocks
@@ -264,45 +262,61 @@ class LinearClassifier(nn.Module):
         self.linear.bias.data.zero_()
 
     def forward(self, x_tokens_list):
-        """
+        """Forward pass for the linear classifier.
 
         Args:
-          x_tokens_list:
+            x_tokens_list: List of token outputs from the feature model.
 
         Returns:
-
+            Tensor: The output predictions from the linear classifier.
         """
         output = create_linear_input(x_tokens_list, self.use_n_blocks, self.use_avgpool)
         return self.linear(output)
 
 
 class AllClassifiers(nn.Module):
-    """ """
+    """Container for multiple classifiers."""
 
     def __init__(self, classifiers_dict):
+        """Initializes the AllClassifiers.
+
+        Args:
+            classifiers_dict (dict): A dictionary of classifiers.
+        """
         super().__init__()
         self.classifiers_dict = nn.ModuleDict()
         self.classifiers_dict.update(classifiers_dict)
 
     def forward(self, inputs):
-        """
+        """Forward pass for all classifiers.
 
         Args:
-          inputs:
+            inputs: Input data for the classifiers.
 
         Returns:
-
+            dict: A dictionary of outputs from each classifier.
         """
         return {k: v.forward(inputs) for k, v in self.classifiers_dict.items()}
 
     def __len__(self):
+        """Returns the number of classifiers.
+
+        Returns:
+            int: The number of classifiers.
+        """
         return len(self.classifiers_dict)
 
 
 class LinearPostprocessor(nn.Module):
-    """ """
+    """Postprocessor for linear classifier outputs."""
 
     def __init__(self, linear_classifier, class_mapping=None):
+        """Initializes the LinearPostprocessor.
+
+        Args:
+            linear_classifier (LinearClassifier): The linear classifier to postprocess.
+            class_mapping (Optional[list]): Mapping for class adjustments.
+        """
         super().__init__()
         self.linear_classifier = linear_classifier
         self.register_buffer(
@@ -311,14 +325,14 @@ class LinearPostprocessor(nn.Module):
         )
 
     def forward(self, samples, targets):
-        """
+        """Forward pass for the postprocessor.
 
         Args:
-          samples:
-          targets:
+            samples: Input samples for the classifier.
+            targets: Ground truth targets.
 
         Returns:
-
+            dict: A dictionary containing predictions and targets.
         """
         preds = self.linear_classifier(samples)
         return {
@@ -328,30 +342,30 @@ class LinearPostprocessor(nn.Module):
 
 
 def scale_lr(learning_rates, batch_size):
-    """
+    """Scales the learning rates based on the batch size.
 
     Args:
-      learning_rates:
-      batch_size:
+        learning_rates: The original learning rates.
+        batch_size: The batch size used for training.
 
     Returns:
-
+        Tensor: The scaled learning rates.
     """
     return learning_rates * (batch_size * distributed.get_global_size()) / 256.0
 
 
 def setup_linear_classifiers(sample_output, n_last_blocks_list, learning_rates, batch_size, num_classes=1000):
-    """
+    """Sets up linear classifiers based on the sample output.
 
     Args:
-      sample_output:
-      n_last_blocks_list:
-      learning_rates:
-      batch_size:
-      num_classes: (Default value = 1000)
+        sample_output: Sample output from the feature model.
+        n_last_blocks_list: List of last blocks to use for classifiers.
+        learning_rates: Learning rates for the classifiers.
+        batch_size: Batch size used for training.
+        num_classes (int): Number of classes for classification.
 
     Returns:
-
+        tuple: A tuple containing the linear classifiers and optimizer parameter groups.
     """
     linear_classifiers_dict = nn.ModuleDict()
     optim_param_groups = []
@@ -392,22 +406,22 @@ def evaluate_linear_classifiers(
     class_mapping=None,
     best_classifier_on_val=None,
 ):
-    """
+    """Evaluates the linear classifiers on the given data loader.
 
     Args:
-      feature_model:
-      linear_classifiers:
-      data_loader:
-      metric_type:
-      metrics_file_path:
-      training_num_classes:
-      iteration:
-      prefixstring: (Default value = "")
-      class_mapping: (Default value = None)
-      best_classifier_on_val: (Default value = None)
+        feature_model: The feature model used for evaluation.
+        linear_classifiers: The linear classifiers to evaluate.
+        data_loader: Data loader for the evaluation dataset.
+        metric_type: Type of metric to use for evaluation.
+        metrics_file_path: File path to save evaluation metrics.
+        training_num_classes: Number of classes used during training.
+        iteration: Current iteration number.
+        prefixstring (str): Prefix string for logging.
+        class_mapping (Optional): Mapping for class adjustments.
+        best_classifier_on_val (Optional): Best classifier based on validation.
 
     Returns:
-
+        dict: A dictionary containing evaluation results.
     """
     logger.info("running validation !")
 
@@ -473,31 +487,29 @@ def eval_linear(
     classifier_fpath=None,
     val_class_mapping=None,
 ):
-    """
+    """Evaluates the linear classifiers during training.
 
     Args:
-      *:
-      feature_model:
-      linear_classifiers:
-      train_data_loader:
-      val_data_loader:
-      metrics_file_path:
-      optimizer:
-      scheduler:
-      output_dir:
-      max_iter:
-      checkpoint_period:
-      # In number of iter:
-      creates a new file every periodrunning_checkpoint_period:
-      # Period to update main checkpoint fileeval_period:
-      metric_type:
-      training_num_classes:
-      resume: (Default value = True)
-      classifier_fpath: (Default value = None)
-      val_class_mapping: (Default value = None)
+        feature_model: The feature model used for evaluation.
+        linear_classifiers: The linear classifiers to evaluate.
+        train_data_loader: Data loader for the training dataset.
+        val_data_loader: Data loader for the validation dataset.
+        metrics_file_path: File path to save evaluation metrics.
+        optimizer: Optimizer used for training.
+        scheduler: Learning rate scheduler.
+        output_dir: Directory to save output files.
+        max_iter: Maximum number of iterations for training.
+        checkpoint_period: Number of iterations between checkpoints.
+        running_checkpoint_period: Period to update the main checkpoint file.
+        eval_period: Number of iterations between evaluations.
+        metric_type: Type of metric to use for evaluation.
+        training_num_classes: Number of classes used during training.
+        resume (bool): Whether to resume from a checkpoint.
+        classifier_fpath (Optional): File path to the classifier checkpoint.
+        val_class_mapping (Optional): Mapping for class adjustments.
 
     Returns:
-
+        tuple: A tuple containing validation results, feature model, linear classifiers, and iteration count.
     """
     checkpointer = Checkpointer(linear_classifiers, output_dir, optimizer=optimizer, scheduler=scheduler)
     start_iter = checkpointer.resume_or_load(classifier_fpath or "", resume=resume).get("iteration", -1) + 1
@@ -578,16 +590,16 @@ def eval_linear(
 
 
 def make_eval_data_loader(test_dataset_str, batch_size, num_workers, metric_type):
-    """
+    """Creates a data loader for evaluation.
 
     Args:
-      test_dataset_str:
-      batch_size:
-      num_workers:
-      metric_type:
+        test_dataset_str: String representation of the test dataset.
+        batch_size: Batch size for the data loader.
+        num_workers: Number of workers for data loading.
+        metric_type: Type of metric to use for evaluation.
 
     Returns:
-
+        DataLoader: The configured data loader for evaluation.
     """
     test_dataset = make_dataset(
         dataset_str=test_dataset_str,
@@ -620,24 +632,24 @@ def test_on_datasets(
     prefixstring="",
     test_class_mappings=[None],
 ):
-    """
+    """Tests the model on multiple datasets.
 
     Args:
-      feature_model:
-      linear_classifiers:
-      test_dataset_strs:
-      batch_size:
-      num_workers:
-      test_metric_types:
-      metrics_file_path:
-      training_num_classes:
-      iteration:
-      best_classifier_on_val:
-      prefixstring: (Default value = "")
-      test_class_mappings: (Default value = [None])
+        feature_model: The feature model used for testing.
+        linear_classifiers: The linear classifiers to test.
+        test_dataset_strs: List of test dataset strings.
+        batch_size: Batch size for the data loader.
+        num_workers: Number of workers for data loading.
+        test_metric_types: List of metric types for evaluation.
+        metrics_file_path: File path to save evaluation metrics.
+        training_num_classes: Number of classes used during training.
+        iteration: Current iteration number.
+        best_classifier_on_val: Best classifier based on validation.
+        prefixstring (str): Prefix string for logging.
+        test_class_mappings (list): List of class mappings for testing.
 
     Returns:
-
+        dict: A dictionary containing test results.
     """
     results_dict = {}
     for test_dataset_str, class_mapping, metric_type in zip(test_dataset_strs, test_class_mappings, test_metric_types):
@@ -680,31 +692,31 @@ def run_eval_linear(
     val_metric_type=MetricType.MEAN_ACCURACY,
     test_metric_types=None,
 ):
-    """
+    """Runs the linear evaluation process.
 
     Args:
-      model:
-      output_dir:
-      train_dataset_str:
-      val_dataset_str:
-      batch_size:
-      epochs:
-      epoch_length:
-      num_workers:
-      save_checkpoint_frequency:
-      eval_period_iterations:
-      learning_rates:
-      autocast_dtype:
-      test_dataset_strs: (Default value = None)
-      resume: (Default value = True)
-      classifier_fpath: (Default value = None)
-      val_class_mapping_fpath: (Default value = None)
-      test_class_mapping_fpaths: (Default value = [None])
-      val_metric_type: (Default value = MetricType.MEAN_ACCURACY)
-      test_metric_types: (Default value = None)
+        model: The model to evaluate.
+        output_dir: Directory to save output files.
+        train_dataset_str: String representation of the training dataset.
+        val_dataset_str: String representation of the validation dataset.
+        batch_size: Batch size for training.
+        epochs: Number of training epochs.
+        epoch_length: Length of an epoch in number of iterations.
+        num_workers: Number of workers for data loading.
+        save_checkpoint_frequency: Frequency of saving checkpoints.
+        eval_period_iterations: Number of iterations between evaluations.
+        learning_rates: List of learning rates for training.
+        autocast_dtype: Data type for automatic mixed precision.
+        test_dataset_strs (Optional): List of test dataset strings.
+        resume (bool): Whether to resume from a checkpoint.
+        classifier_fpath (Optional): File path to the classifier checkpoint.
+        val_class_mapping_fpath (Optional): File path to the validation class mapping.
+        test_class_mapping_fpaths (Optional): List of class mapping file paths.
+        val_metric_type (Optional): Metric type for validation.
+        test_metric_types (Optional): List of metric types for testing.
 
     Returns:
-
+        dict: A dictionary containing evaluation results.
     """
     seed = 0
 
@@ -818,13 +830,13 @@ def run_eval_linear(
 
 
 def main(args):
-    """
+    """Main function to run the linear evaluation of the DINOv2 model.
 
     Args:
-      args:
+        args: Command line arguments containing various parameters for the evaluation.
 
     Returns:
-
+        int: Exit status code (0 for success).
     """
     model, autocast_dtype = setup_and_build_model(args)
     run_eval_linear(

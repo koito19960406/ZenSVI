@@ -27,20 +27,20 @@ import torch.nn as nn
 
 
 class SeedBinRegressor(nn.Module):
+    """Bin center regressor network.
+
+    This network regresses bin centers that are bounded within the interval
+    (min_depth, max_depth).
+
+    Args:
+        in_features (int): Number of input channels.
+        n_bins (int): Number of bin centers. Defaults to 16.
+        mlp_dim (int): Hidden dimension. Defaults to 256.
+        min_depth (float): Minimum depth value. Defaults to 1e-3.
+        max_depth (float): Maximum depth value. Defaults to 10.
+    """
+
     def __init__(self, in_features, n_bins=16, mlp_dim=256, min_depth=1e-3, max_depth=10):
-        """Bin center regressor network. Bin centers are bounded on (min_depth, max_depth)
-            interval.
-
-        Args:
-        in_features(int): input channels
-        n_bins(int): Number of bin centers. Defaults to 16.
-        mlp_dim(int): Hidden dimension. Defaults to 256.
-        min_depth(float): Min depth value. Defaults to 1e-3.
-        max_depth(float): Max depth value. Defaults to 10.
-
-        Returns:
-
-        """
         super().__init__()
         self.version = "1_1"
         self.min_depth = min_depth
@@ -54,15 +54,18 @@ class SeedBinRegressor(nn.Module):
         )
 
     def forward(self, x):
-        """Returns tensor of bin_width vectors (centers).
+        """Forward pass through the network.
 
-        One vector b for every pixel
+        This method computes the normalized bin widths and bin centers for the input tensor.
 
         Args:
-          x:
+            x (torch.Tensor): Input tensor of shape (N, C, H, W), where N is the batch size,
+                              C is the number of input channels, H is the height, and W is the width.
 
         Returns:
-
+            Tuple[torch.Tensor, torch.Tensor]: A tuple containing:
+                - Normalized bin widths (torch.Tensor): The normalized widths of the bins.
+                - Bin centers (torch.Tensor): The computed bin centers.
         """
         B = self._net(x)
         eps = 1e-3
@@ -78,19 +81,20 @@ class SeedBinRegressor(nn.Module):
 
 
 class SeedBinRegressorUnnormed(nn.Module):
+    """Bin center regressor network with unbounded bin centers.
+
+    This class implements a network that regresses bin centers for depth estimation.
+    The bin centers are not bounded, allowing for a wider range of depth values.
+
+    Args:
+        in_features (int): Number of input channels.
+        n_bins (int): Number of bin centers. Defaults to 16.
+        mlp_dim (int): Hidden dimension. Defaults to 256.
+        min_depth (float): Not used. For compatibility with SeedBinRegressor.
+        max_depth (float): Not used. For compatibility with SeedBinRegressor.
+    """
+
     def __init__(self, in_features, n_bins=16, mlp_dim=256, min_depth=1e-3, max_depth=10):
-        """Bin center regressor network. Bin centers are unbounded.
-
-        Args:
-        in_features(int): input channels
-        n_bins(int): Number of bin centers. Defaults to 16.
-        mlp_dim(int): Hidden dimension. Defaults to 256.
-        min_depth(float): Not used. (for compatibility with SeedBinRegressor)
-        max_depth(float): Not used. (for compatibility with SeedBinRegressor)
-
-        Returns:
-
-        """
         super().__init__()
         self.version = "1_1"
         self._net = nn.Sequential(
@@ -101,32 +105,36 @@ class SeedBinRegressorUnnormed(nn.Module):
         )
 
     def forward(self, x):
-        """Returns tensor of bin_width vectors (centers).
+        """Forward pass through the network.
 
-        One vector b for every pixel
+        This method computes the bin centers for the input tensor.
 
         Args:
-          x:
+            x (torch.Tensor): Input tensor of shape (N, C, H, W), where N is the batch size,
+                              C is the number of input channels, H is the height, and W is the width.
 
         Returns:
-
+            Tuple[torch.Tensor, torch.Tensor]: A tuple containing:
+                - Bin centers (torch.Tensor): The computed bin centers.
+                - Unnormalized bin centers (torch.Tensor): The same values as bin centers.
         """
         B_centers = self._net(x)
         return B_centers, B_centers
 
 
 class Projector(nn.Module):
+    """Projector MLP for transforming input features.
+
+    This module applies a series of convolutional layers followed by a ReLU activation
+    to project the input features into a specified output dimension.
+
+    Args:
+        in_features (int): Number of input channels.
+        out_features (int): Number of output channels.
+        mlp_dim (int): Hidden dimension. Defaults to 128.
+    """
+
     def __init__(self, in_features, out_features, mlp_dim=128):
-        """Projector MLP.
-
-        Args:
-        in_features(int): input channels
-        out_features(int): output channels
-        mlp_dim(int): hidden dimension. Defaults to 128.
-
-        Returns:
-
-        """
         super().__init__()
 
         self._net = nn.Sequential(
@@ -136,19 +144,32 @@ class Projector(nn.Module):
         )
 
     def forward(self, x):
-        """
+        """Forward pass through the projector.
 
         Args:
-          x:
+            x (torch.Tensor): Input tensor of shape (N, C, H, W), where N is the batch size,
+                              C is the number of input channels, H is the height, and W is the width.
 
         Returns:
-
+            torch.Tensor: Output tensor after projection of shape (N, out_features, H, W).
         """
         return self._net(x)
 
 
 class LinearSplitter(nn.Module):
-    """ """
+    """Linear splitter for depth estimation.
+
+    This module splits the previous bin widths into a specified number of bins
+    based on a learned transformation.
+
+    Args:
+        in_features (int): Number of input channels.
+        prev_nbins (int): Number of previous bins.
+        split_factor (int): Factor by which to split. Defaults to 2.
+        mlp_dim (int): Hidden dimension. Defaults to 128.
+        min_depth (float): Minimum depth value. Defaults to 1e-3.
+        max_depth (float): Maximum depth value. Defaults to 10.
+    """
 
     def __init__(
         self,
@@ -174,18 +195,22 @@ class LinearSplitter(nn.Module):
         )
 
     def forward(self, x, b_prev, prev_b_embedding=None, interpolate=True, is_for_query=False):
-        """x : feature block; shape - n, c, h, w
-        b_prev : previous bin widths normed; shape - n, prev_nbins, h, w
+        """Forward pass for the linear splitter.
+
+        This method computes the normalized bin widths and bin centers based on the input features
+        and previous bin widths.
 
         Args:
-          x:
-          b_prev:
-          prev_b_embedding: (Default value = None)
-          interpolate: (Default value = True)
-          is_for_query: (Default value = False)
+            x (torch.Tensor): Feature block of shape (N, C, H, W).
+            b_prev (torch.Tensor): Previous bin widths normalized of shape (N, prev_nbins, H, W).
+            prev_b_embedding (torch.Tensor, optional): Previous bin embedding. Defaults to None.
+            interpolate (bool, optional): Whether to interpolate previous embeddings. Defaults to True.
+            is_for_query (bool, optional): Flag for query mode. Defaults to False.
 
         Returns:
-
+            Tuple[torch.Tensor, torch.Tensor]: A tuple containing:
+                - Normalized bin widths of shape (N, prev_nbins * split_factor, H, W).
+                - Bin centers of shape (N, prev_nbins * split_factor - 1, H, W).
         """
         if prev_b_embedding is not None:
             if interpolate:
@@ -202,9 +227,7 @@ class LinearSplitter(nn.Module):
 
         b_prev = nn.functional.interpolate(b_prev, (h, w), mode="bilinear", align_corners=True)
 
-        b_prev = b_prev / b_prev.sum(dim=1, keepdim=True)  # renormalize for gurantees
-        # print(b_prev.shape, S_normed.shape)
-        # if is_for_query:(1).expand(-1, b_prev.size(0)//n, -1, -1, -1, -1).flatten(0,1)  # TODO ? can replace all this with a single torch.repeat?
+        b_prev = b_prev / b_prev.sum(dim=1, keepdim=True)  # renormalize for guarantees
         b = b_prev.unsqueeze(2) * S_normed
         b = b.flatten(1, 2)  # .shape n, prev_nbins * split_factor, h, w
 

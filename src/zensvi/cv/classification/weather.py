@@ -14,7 +14,11 @@ from .utils.global_streetscapes import GlobalStreetScapesClassificationModel, we
 
 
 class ImageDataset(Dataset):
-    """ """
+    """Dataset class for loading and transforming images.
+
+    Args:
+        image_files (List[Path]): List of paths to image files.
+    """
 
     def __init__(self, image_files: List[Path]):
         self.image_files = [
@@ -46,15 +50,10 @@ class ImageDataset(Dataset):
         """Custom collate function for the dataset.
 
         Args:
-          data(List[Tuple[str): List of tuples containing image file path and transformed image tensor.
-          data: List[Tuple[str:
-          torch.Tensor]]:
-          data: List[Tuple[str:
-          data: List[Tuple[str:
+            data (List[Tuple[str, torch.Tensor]]): List of tuples containing image file path and transformed image tensor.
 
         Returns:
-          Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
-
+            Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
         """
         image_files, images = zip(*data)
         images = torch.stack(images)  # Stack images to create a batch
@@ -65,13 +64,8 @@ class ClassifierWeather(BaseClassifier):
     """A classifier for identifying weather. The model is from Hou et al (2024) (https://github.com/ualsg/global-streetscapes).
 
     Args:
-      device(str): The device that the model should be
-    loaded onto. Options are "cpu", "cuda", or "mps". If `None`,
-    the model tries to use a GPU if available; otherwise, falls
-    back to CPU.
-
-    Returns:
-
+        device (str, optional): The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
+            If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
     """
 
     def __init__(self, device=None):
@@ -98,16 +92,13 @@ class ClassifierWeather(BaseClassifier):
         self.model.to(self.device)
 
     def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json"):
-        """
+        """Save classification results to file in specified formats.
 
         Args:
-          results:
-          dir_output:
-          file_name:
-          save_format: (Default value = "csv json")
-
-        Returns:
-
+            results (List[dict]): List of dictionaries containing classification results.
+            dir_output (Path): Directory to save output files.
+            file_name (str): Base name for output files.
+            save_format (str, optional): Space-separated string of formats to save. Defaults to "csv json".
         """
         df = pd.DataFrame(results)
         dir_output = Path(dir_output)
@@ -126,30 +117,17 @@ class ClassifierWeather(BaseClassifier):
         batch_size=1,
         save_format="json csv",
     ) -> List[str]:
-        """Classifies images based on weather. The output file can be saved in JSON
-        and/or CSV format and will contain weather for each image. The weather
-        categories are "clear", "cloudy", "foggy", "rainy", and "snowy".
+        """Classifies images based on weather.
 
         Args:
-          dir_input(Union[str): directory containing input
-        images.
-          dir_summary_output(Union[str): directory to
-        save summary output.
-          batch_size(int, optional): batch size for inference,
-        defaults to 1
-          save_format(str, optional): save format for the output,
-        defaults to "json csv". Options are "json" and "csv".
-        Please add a space between options.
-          dir_input: Union[str:
-          Path]:
-          dir_summary_output: Union[str:
-          dir_input: Union[str:
-          dir_summary_output: Union[str:
-          dir_input: Union[str:
-          dir_summary_output: Union[str:
+            dir_input (Union[str, Path]): Directory containing input images or path to a single image.
+            dir_summary_output (Union[str, Path]): Directory to save summary output.
+            batch_size (int, optional): Batch size for inference. Defaults to 1.
+            save_format (str, optional): Space-separated string of formats to save results.
+                Options are "json" and "csv". Defaults to "json csv".
 
         Returns:
-
+            List[str]: List of classification results.
         """
         # Prepare output directories
         if dir_summary_output:

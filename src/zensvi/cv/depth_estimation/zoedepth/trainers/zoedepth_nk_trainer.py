@@ -33,9 +33,29 @@ from .base_trainer import BaseTrainer
 
 
 class Trainer(BaseTrainer):
-    """ """
+    """Trainer class for depth estimation models.
+
+    This class handles the training and validation processes for the model,
+    including loss computation and logging.
+
+    Attributes:
+        device (torch.device): The device to run the model on (CPU or GPU).
+        silog_loss (SILogLoss): The scale-invariant loss for depth estimation.
+        grad_loss (GradL1Loss): The gradient loss for depth estimation.
+        domain_classifier_loss (nn.CrossEntropyLoss): The loss for domain classification.
+        scaler (amp.GradScaler): Scaler for mixed precision training.
+    """
 
     def __init__(self, config, model, train_loader, test_loader=None, device=None):
+        """Initializes the Trainer.
+
+        Args:
+            config (dict): Configuration parameters for training.
+            model (nn.Module): The model to be trained.
+            train_loader (DataLoader): DataLoader for the training dataset.
+            test_loader (DataLoader, optional): DataLoader for the validation dataset. Defaults to None.
+            device (torch.device, optional): The device to run the model on. Defaults to None.
+        """
         super().__init__(config, model, train_loader, test_loader=test_loader, device=device)
         self.device = device
         self.silog_loss = SILogLoss()
@@ -45,26 +65,24 @@ class Trainer(BaseTrainer):
         self.scaler = amp.GradScaler(enabled=self.config.use_amp)
 
     def train_on_batch(self, batch, train_step):
-        """Expects a batch of images and depth as input batch["image"].shape :
-        batch_size, c, h, w batch["depth"].shape : batch_size, 1, h, w.
+        """Trains the model on a single batch of data.
 
-        Assumes all images in a batch are from the same dataset
+        Expects a batch of images and depth as input with the following shapes:
+        - batch["image"].shape: (batch_size, c, h, w)
+        - batch["depth"].shape: (batch_size, 1, h, w)
+
+        Assumes all images in a batch are from the same dataset.
 
         Args:
-          batch:
-          train_step:
+            batch (dict): A dictionary containing the input batch data.
+            train_step (int): The current training step.
 
         Returns:
-
+            dict: A dictionary containing the computed losses for the batch.
         """
-
         images, depths_gt = batch["image"].to(self.device), batch["depth"].to(self.device)
-        # batch['dataset'] is a tensor strings all valued either 'nyu' or 'kitti'. labels nyu -> 0, kitti -> 1
         dataset = batch["dataset"][0]
-        # Convert to 0s or 1s
         domain_labels = torch.Tensor([dataset == "kitti" for _ in range(images.size(0))]).to(torch.long).to(self.device)
-
-        # m = self.model.module if self.config.multigpu else self.model
 
         b, c, h, w = images.size()
         mask = batch["mask"].to(self.device).to(torch.bool)
@@ -128,14 +146,14 @@ class Trainer(BaseTrainer):
         return losses
 
     def validate_on_batch(self, batch, val_step):
-        """
+        """Validates the model on a single batch of data.
 
         Args:
-          batch:
-          val_step:
+            batch (dict): A dictionary containing the input batch data.
+            val_step (int): The current validation step.
 
         Returns:
-
+            tuple: A tuple containing the computed metrics and losses for the batch.
         """
         images = batch["image"].to(self.device)
         depths_gt = batch["depth"].to(self.device)

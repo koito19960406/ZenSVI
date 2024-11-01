@@ -86,7 +86,6 @@ class Entities:
             21. sfm_cluster - { id: string, url: string } - URL to the point cloud
             22. width - int, width of the original image uploaded
         """
-
         fields = Entities.__field_validity(
             given_fields=fields,
             actual_fields=Entities.get_image_fields(),
@@ -139,7 +138,6 @@ class Entities:
 
             InvalidNumberOfArguments - if the number of ids passed is 0 or greater than 50
         """
-
         # TODO: while this function should not be responsible to check if
         # all of the IDs passed are image_ids or detections_ids, this comment
         # should be to remind that this logic should belong elsewhere or to integrated
@@ -264,7 +262,6 @@ class Entities:
         Returns:
             str: endpoint for searching an image
         """
-
         fields = Entities.__field_validity(
             given_fields=fields,
             actual_fields=Entities.get_image_fields(),
@@ -357,7 +354,6 @@ class Entities:
         Returns:
             list: Image field list
         """
-
         return [
             "altitude",
             "atomic_scale",
@@ -403,13 +399,11 @@ class Entities:
             5. geometry - GeoJSON Point geometry
             6. images - list of IDs, which images this map feature was derived from
         """
-
         fields = Entities.__field_validity(
             given_fields=fields,
             actual_fields=Entities.get_map_feature_fields(),
             endpoint="https://graph.mapillary.com/:map_feature_id?fields=",
         )
-
         return f"https://graph.mapillary.com/{map_feature_id}/?fields={','.join(fields)}"
 
     @staticmethod
@@ -419,7 +413,6 @@ class Entities:
         Returns:
             list: Possible map feature fields
         """
-
         return [
             "first_seen_at",
             "last_seen_at",
@@ -450,7 +443,6 @@ class Entities:
             3. image - object, image the detection belongs to
             4. value - string, what kind of object the detection represents
         """
-
         fields = Entities.__field_validity(
             given_fields=fields,
             actual_fields=Entities.get_detection_with_image_id_fields(),
@@ -466,7 +458,6 @@ class Entities:
         Returns:
             list: Possible detection parameters
         """
-
         return ["created_at", "geometry", "image", "value"]
 
     @staticmethod
@@ -490,7 +481,6 @@ class Entities:
             3. image - object, image the detection belongs to
             4. value - string, what kind of object the detection represents
         """
-
         fields = Entities.__field_validity(
             given_fields=fields,
             actual_fields=Entities.get_detection_with_map_feature_id_fields(),
@@ -506,7 +496,6 @@ class Entities:
         Returns:
             list: Map feature detection fields
         """
-
         return ["created_at", "geometry", "image", "value"]
 
     @staticmethod
@@ -526,7 +515,6 @@ class Entities:
             2. name - nice name
             3. description - public description of the organization
         """
-
         fields = Entities.__field_validity(
             given_fields=fields,
             actual_fields=Entities.get_organization_id_fields(),
@@ -542,7 +530,6 @@ class Entities:
         Returns:
             list: Possible organization fields
         """
-
         return ["slug", "name", "description"]
 
     @staticmethod
@@ -560,7 +547,6 @@ class Entities:
 
             1. id - ID of the image belonging to the sequence
         """
-
         return f"https://graph.mapillary.com/image_ids?sequence_id={sequence_id}"
 
     @staticmethod
@@ -581,7 +567,6 @@ class Entities:
         Returns:
             list: The given_fields if everything is correct
         """
-
         if len(given_fields) == 0:
             return given_fields  # empty list: []
 

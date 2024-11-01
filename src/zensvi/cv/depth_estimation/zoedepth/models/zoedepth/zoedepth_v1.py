@@ -36,7 +36,29 @@ from ..model_io import load_state_from_resource
 
 
 class ZoeDepth(DepthModel):
-    """ """
+    """ZoeDepth model with a single metric head for depth estimation.
+
+    This model utilizes a core midas model to extract "relative" features and processes them to generate depth estimates.
+
+    Attributes:
+        core (DepthAnythingCore): The base midas model used for extraction of "relative" features.
+        n_bins (int): Number of bin centers.
+        bin_centers_type (str): Type of activation for bin centers. Options are "normed" or "softplus".
+        bin_embedding_dim (int): Dimension of the bin embedding.
+        min_depth (float): Lower bound for normed bin centers.
+        max_depth (float): Upper bound for normed bin centers.
+        n_attractors (List[int]): Number of bin attractors at decoder layers.
+        attractor_alpha (int): Proportional attractor strength.
+        attractor_gamma (int): Exponential attractor strength.
+        attractor_kind (str): Attraction aggregation method, either "sum" or "mean".
+        attractor_type (str): Type of attractor to use; either "inv" (Inverse attractor) or "exp" (Exponential attractor).
+        min_temp (int): Lower bound for temperature of output probability distribution.
+        max_temp (int): Upper bound for temperature of output probability distribution.
+        train_midas (bool): Whether to train the core midas model.
+        midas_lr_factor (int): Learning rate reduction factor for the base midas model except its encoder and positional encodings.
+        encoder_lr_factor (int): Learning rate reduction factor for the encoder in the midas model.
+        pos_enc_lr_factor (int): Learning rate reduction factor for positional encodings in the base midas model.
+    """
 
     def __init__(
         self,
@@ -60,28 +82,27 @@ class ZoeDepth(DepthModel):
         inverse_midas=False,
         **kwargs,
     ):
-        """ZoeDepth model. This is the version of ZoeDepth that has a single metric
-        head.
+        """Initializes the ZoeDepth model.
 
         Args:
-            core (models.base_models.midas.MidasCore): The base midas model that is used for extraction of "relative" features
+            core (DepthAnythingCore): The base midas model used for extraction of "relative" features.
             n_bins (int, optional): Number of bin centers. Defaults to 64.
-            bin_centers_type (str, optional): "normed" or "softplus". Activation type used for bin centers. For "normed" bin centers, linear normalization trick is applied. This results in bounded bin centers.
-                                               For "softplus", softplus activation is used and thus are unbounded. Defaults to "softplus".
-            bin_embedding_dim (int, optional): bin embedding dimension. Defaults to 128.
+            bin_centers_type (str, optional): Type of activation for bin centers. Options are "normed" or "softplus". Defaults to "softplus".
+            bin_embedding_dim (int, optional): Dimension of the bin embedding. Defaults to 128.
             min_depth (float, optional): Lower bound for normed bin centers. Defaults to 1e-3.
             max_depth (float, optional): Upper bound for normed bin centers. Defaults to 10.
             n_attractors (List[int], optional): Number of bin attractors at decoder layers. Defaults to [16, 8, 4, 1].
-            attractor_alpha (int, optional): Proportional attractor strength. Refer to models.layers.attractor for more details. Defaults to 300.
-            attractor_gamma (int, optional): Exponential attractor strength. Refer to models.layers.attractor for more details. Defaults to 2.
-            attractor_kind (str, optional): Attraction aggregation "sum" or "mean". Defaults to 'sum'.
-            attractor_type (str, optional): Type of attractor to use; "inv" (Inverse attractor) or "exp" (Exponential attractor). Defaults to 'exp'.
+            attractor_alpha (int, optional): Proportional attractor strength. Defaults to 300.
+            attractor_gamma (int, optional): Exponential attractor strength. Defaults to 2.
+            attractor_kind (str, optional): Attraction aggregation method, either "sum" or "mean". Defaults to 'sum'.
+            attractor_type (str, optional): Type of attractor to use; either "inv" (Inverse attractor) or "exp" (Exponential attractor). Defaults to 'exp'.
             min_temp (int, optional): Lower bound for temperature of output probability distribution. Defaults to 5.
             max_temp (int, optional): Upper bound for temperature of output probability distribution. Defaults to 50.
-            train_midas (bool, optional): Whether to train "core", the base midas model. Defaults to True.
-            midas_lr_factor (int, optional): Learning rate reduction factor for base midas model except its encoder and positional encodings. Defaults to 10.
-            encoder_lr_factor (int, optional): Learning rate reduction factor for the encoder in midas model. Defaults to 10.
+            train_midas (bool, optional): Whether to train the core midas model. Defaults to True.
+            midas_lr_factor (int, optional): Learning rate reduction factor for the base midas model except its encoder and positional encodings. Defaults to 10.
+            encoder_lr_factor (int, optional): Learning rate reduction factor for the encoder in the midas model. Defaults to 10.
             pos_enc_lr_factor (int, optional): Learning rate reduction factor for positional encodings in the base midas model. Defaults to 10.
+            inverse_midas (bool, optional): Whether to invert the midas depth map. Defaults to False.
         """
         super().__init__()
 
@@ -104,9 +125,7 @@ class ZoeDepth(DepthModel):
         btlnck_features = self.core.output_channels[0]
         num_out_features = self.core.output_channels[1:]
 
-        # print('core output channels:', self.core.output_channels)
-
-        self.conv2 = nn.Conv2d(btlnck_features, btlnck_features, kernel_size=1, stride=1, padding=0)  # btlnck conv
+        self.conv2 = nn.Conv2d(btlnck_features, btlnck_features, kernel_size=1, stride=1, padding=0)  # bottleneck conv
 
         if bin_centers_type == "normed":
             SeedBinRegressorLayer = SeedBinRegressor
@@ -157,37 +176,25 @@ class ZoeDepth(DepthModel):
         )
 
     def forward(self, x, return_final_centers=False, denorm=False, return_probs=False, **kwargs):
-        """
+        """Forward pass for the ZoeDepth model.
 
         Args:
-          x: torch
-          return_final_centers: bool (Default value = False)
-          denorm: bool (Default value = False)
-          return_probs: bool (Default value = False)
-          kwargs:
-          kwargs:
-          **kwargs:
+            x (torch.Tensor): Input tensor of shape (B, C, H, W).
+            return_final_centers (bool, optional): Whether to return final bin centers. Defaults to False.
+            denorm (bool, optional): Whether to denormalize the output. Defaults to False.
+            return_probs (bool, optional): Whether to return the output probability distribution. Defaults to False.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-          dict: Dictionary containing the following keys:
-          - rel_depth (torch.Tensor): Relative depth map of shape (B, H, W)
-          - metric_depth (torch.Tensor): Metric depth map of shape (B, 1, H, W)
-          - bin_centers (torch.Tensor): Bin centers of shape (B, n_bins). Present only if return_final_centers is True
-          - probs (torch.Tensor): Output probability distribution of shape (B, n_bins, H, W). Present only if return_probs is True
-
+            dict: A dictionary containing:
+                - metric_depth (torch.Tensor): Metric depth map of shape (B, 1, H, W).
+                - bin_centers (torch.Tensor, optional): Bin centers of shape (B, n_bins) if return_final_centers is True.
+                - probs (torch.Tensor, optional): Output probability distribution of shape (B, n_bins, H, W) if return_probs is True.
         """
-        # print('input shape', x.shape)
-
         b, c, h, w = x.shape
-        # print("input shape:", x.shape)
         self.orig_input_width = w
         self.orig_input_height = h
         rel_depth, out = self.core(x, denorm=denorm, return_rel_depth=True)
-        # print("output shapes", rel_depth.shape, out.shape)
-        # print('rel_depth shape:', rel_depth.shape)
-        # print('out type:', type(out))
-        # for k in range(len(out)):
-        #     print(k, out[k].shape)
 
         outconv_activation = out[0]
         btlnck = out[1]
@@ -225,8 +232,6 @@ class ZoeDepth(DepthModel):
         b_embedding = nn.functional.interpolate(b_embedding, last.shape[-2:], mode="bilinear", align_corners=True)
         x = self.conditional_log_binomial(last, b_embedding)
 
-        # Now depth value is Sum px * cx , where cx are bin_centers from the last bin tensor
-        # print(x.shape, b_centers.shape)
         b_centers = nn.functional.interpolate(b_centers, x.shape[-2:], mode="bilinear", align_corners=True)
         out = torch.sum(x * b_centers, dim=1, keepdim=True)
 
@@ -241,14 +246,13 @@ class ZoeDepth(DepthModel):
         return output
 
     def get_lr_params(self, lr):
-        """Learning rate configuration for different layers of the model.
+        """Configures learning rates for different layers of the model.
 
         Args:
-          lr:
+            lr (float): Base learning rate.
 
         Returns:
-          list: list of parameters to optimize and their learning rates, in the format required by torch optimizers.
-
+            list: List of parameters to optimize and their learning rates, in the format required by torch optimizers.
         """
         param_conf = []
         if self.train_midas:
@@ -268,7 +272,6 @@ class ZoeDepth(DepthModel):
                     }
                 )
 
-            # midas_params = self.core.core.scratch.parameters()
             midas_params = self.core.core.depth_head.parameters()
             midas_lr_factor = self.midas_lr_factor
             param_conf.append({"params": midas_params, "lr": lr / midas_lr_factor})
@@ -292,22 +295,19 @@ class ZoeDepth(DepthModel):
         freeze_midas_bn=True,
         **kwargs,
     ):
-        """
+        """Builds the ZoeDepth model.
 
         Args:
-          midas_model_type: (Default value = "DPT_BEiT_L_384")
-          pretrained_resource: (Default value = None)
-          use_pretrained_midas: (Default value = False)
-          train_midas: (Default value = False)
-          freeze_midas_bn: (Default value = True)
-          **kwargs:
+            midas_model_type (str, optional): Type of midas model to use. Defaults to "DPT_BEiT_L_384".
+            pretrained_resource (str, optional): Path to pretrained model resource. Defaults to None.
+            use_pretrained_midas (bool, optional): Whether to use a pretrained midas model. Defaults to False.
+            train_midas (bool, optional): Whether to train the midas model. Defaults to False.
+            freeze_midas_bn (bool, optional): Whether to freeze batch normalization layers in the midas model. Defaults to True.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-
+            ZoeDepth: An instance of the ZoeDepth model.
         """
-        # core = MidasCore.build(midas_model_type=midas_model_type, use_pretrained_midas=use_pretrained_midas,
-        #                        train_midas=train_midas, fetch_features=True, freeze_bn=freeze_midas_bn, **kwargs)
-
         core = DepthAnythingCore.build(
             midas_model_type=midas_model_type,
             use_pretrained_midas=use_pretrained_midas,
@@ -325,12 +325,12 @@ class ZoeDepth(DepthModel):
 
     @staticmethod
     def build_from_config(config):
-        """
+        """Builds the ZoeDepth model from a configuration dictionary.
 
         Args:
-          config:
+            config (dict): Configuration dictionary containing model parameters.
 
         Returns:
-
+            ZoeDepth: An instance of the ZoeDepth model.
         """
         return ZoeDepth.build(**config)

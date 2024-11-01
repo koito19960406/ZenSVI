@@ -2,16 +2,16 @@ import torch.nn as nn
 
 
 def _make_scratch(in_shape, out_shape, groups=1, expand=False):
-    """
+    """Creates a scratch module with convolutional layers.
 
     Args:
-      in_shape:
-      out_shape:
-      groups: (Default value = 1)
-      expand: (Default value = False)
+        in_shape (tuple): Input shape for each layer.
+        out_shape (int): Output shape for the layers.
+        groups (int, optional): Number of groups for convolution. Defaults to 1.
+        expand (bool, optional): Whether to expand the output shapes. Defaults to False.
 
     Returns:
-
+        nn.Module: A module containing the convolutional layers.
     """
     scratch = nn.Module()
 
@@ -73,10 +73,12 @@ class ResidualConvUnit(nn.Module):
     """Residual convolution module."""
 
     def __init__(self, features, activation, bn):
-        """Init.
+        """Initializes the ResidualConvUnit.
 
         Args:
-            features (int): number of features
+            features (int): Number of features for the convolution layers.
+            activation (callable): Activation function to use.
+            bn (bool): Whether to use batch normalization.
         """
         super().__init__()
 
@@ -113,16 +115,14 @@ class ResidualConvUnit(nn.Module):
         self.skip_add = nn.quantized.FloatFunctional()
 
     def forward(self, x):
-        """Forward pass.
+        """Forward pass for the ResidualConvUnit.
 
         Args:
-          x(tensor): input
+            x (tensor): Input tensor.
 
         Returns:
-          tensor: output
-
+            tensor: Output tensor after applying convolutions and skip connection.
         """
-
         out = self.activation(x)
         out = self.conv1(out)
         if self.bn:
@@ -152,10 +152,16 @@ class FeatureFusionBlock(nn.Module):
         align_corners=True,
         size=None,
     ):
-        """Init.
+        """Initializes the FeatureFusionBlock.
 
         Args:
-            features (int): number of features
+            features (int): Number of features for the convolution layers.
+            activation (callable): Activation function to use.
+            deconv (bool, optional): Whether to use deconvolution. Defaults to False.
+            bn (bool, optional): Whether to use batch normalization. Defaults to False.
+            expand (bool, optional): Whether to expand the output features. Defaults to False.
+            align_corners (bool, optional): Whether to align corners in interpolation. Defaults to True.
+            size (tuple, optional): Size for interpolation. Defaults to None.
         """
         super(FeatureFusionBlock, self).__init__()
 
@@ -187,15 +193,14 @@ class FeatureFusionBlock(nn.Module):
         self.size = size
 
     def forward(self, *xs, size=None):
-        """Forward pass.
+        """Forward pass for the FeatureFusionBlock.
 
         Args:
-          *xs:
-          size: (Default value = None)
+            *xs (tuple): Input tensors.
+            size (tuple, optional): Size for interpolation. Defaults to None.
 
         Returns:
-          tensor: output
-
+            tensor: Output tensor after feature fusion and convolution.
         """
         output = xs[0]
 

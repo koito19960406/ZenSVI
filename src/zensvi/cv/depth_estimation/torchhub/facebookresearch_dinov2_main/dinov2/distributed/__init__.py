@@ -18,49 +18,37 @@ _LOCAL_WORLD_SIZE = -1
 
 
 def is_enabled() -> bool:
-    """
-
-    Args:
+    """Check if distributed training is enabled.
 
     Returns:
-      : True if distributed training is enabled
-
+        bool: True if distributed training is enabled, False otherwise.
     """
     return dist.is_available() and dist.is_initialized()
 
 
 def get_global_size() -> int:
-    """
-
-    Args:
+    """Get the number of processes in the global process group.
 
     Returns:
-      : The number of processes in the process group
-
+        int: The number of processes in the process group.
     """
     return dist.get_world_size() if is_enabled() else 1
 
 
 def get_global_rank() -> int:
-    """
-
-    Args:
+    """Get the rank of the current process within the global process group.
 
     Returns:
-      : The rank of the current process within the global process group.
-
+        int: The rank of the current process within the global process group.
     """
     return dist.get_rank() if is_enabled() else 0
 
 
 def get_local_rank() -> int:
-    """
-
-    Args:
+    """Get the rank of the current process within the local (per-machine) process group.
 
     Returns:
-      : The rank of the current process within the local (per-machine) process group.
-
+        int: The rank of the current process within the local process group.
     """
     if not is_enabled():
         return 0
@@ -69,16 +57,10 @@ def get_local_rank() -> int:
 
 
 def get_local_size() -> int:
-    """
-
-    Args:
+    """Get the size of the per-machine process group.
 
     Returns:
-      : The size of the per-machine process group,
-      : The size of the per-machine process group,
-      : The size of the per-machine process group,
-      i.e. the number of processes per machine.
-
+        int: The size of the per-machine process group, i.e. the number of processes per machine.
     """
     if not is_enabled():
         return 1
@@ -87,32 +69,26 @@ def get_local_size() -> int:
 
 
 def is_main_process() -> bool:
-    """
-
-    Args:
+    """Check if the current process is the main one.
 
     Returns:
-      : True if the current process is the main one.
-
+        bool: True if the current process is the main one, False otherwise.
     """
     return get_global_rank() == 0
 
 
 def _restrict_print_to_main_process() -> None:
-    """This function disables printing when not in the main process."""
+    """Disable printing when not in the main process."""
     import builtins as __builtin__
 
     builtin_print = __builtin__.print
 
     def print(*args, **kwargs):
-        """
+        """Custom print function that restricts output to the main process.
 
         Args:
-          *args:
-          **kwargs:
-
-        Returns:
-
+            *args: Positional arguments to print.
+            **kwargs: Keyword arguments to print.
         """
         force = kwargs.pop("force", False)
         if is_main_process() or force:
@@ -122,15 +98,13 @@ def _restrict_print_to_main_process() -> None:
 
 
 def _get_master_port(seed: int = 0) -> int:
-    """
+    """Get a master port for distributed training.
 
     Args:
-      seed: int:  (Default value = 0)
-      seed: int:  (Default value = 0)
-      seed: int:  (Default value = 0)
+        seed (int, optional): Seed for random number generation. Defaults to 0.
 
     Returns:
-
+        int: A valid master port number.
     """
     MIN_MASTER_PORT, MAX_MASTER_PORT = (20_000, 60_000)
 
@@ -143,7 +117,11 @@ def _get_master_port(seed: int = 0) -> int:
 
 
 def _get_available_port() -> int:
-    """ """
+    """Get an available port for binding.
+
+    Returns:
+        int: An available port number.
+    """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         # A "" host address means INADDR_ANY i.e. binding to all interfaces.
         # Note this is not compatible with IPv6.
@@ -163,25 +141,31 @@ _TORCH_DISTRIBUTED_ENV_VARS = (
 
 
 def _collect_env_vars() -> Dict[str, str]:
-    """ """
+    """Collect environment variables related to PyTorch distributed training.
+
+    Returns:
+        Dict[str, str]: A dictionary of collected environment variables.
+    """
     return {env_var: os.environ[env_var] for env_var in _TORCH_DISTRIBUTED_ENV_VARS if env_var in os.environ}
 
 
 def _is_slurm_job_process() -> bool:
-    """ """
+    """Check if the current process is part of a SLURM job.
+
+    Returns:
+        bool: True if the current process is part of a SLURM job, False otherwise.
+    """
     return "SLURM_JOB_ID" in os.environ
 
 
 def _parse_slurm_node_list(s: str) -> List[str]:
-    """
+    """Parse the SLURM node list string into a list of node names.
 
     Args:
-      s: str:
-      s: str:
-      s: str:
+        s (str): The SLURM node list string.
 
     Returns:
-
+        List[str]: A list of parsed node names.
     """
     nodes = []
     # Extract "hostname", "hostname[1-2,3,4-5]," substrings
@@ -200,18 +184,14 @@ def _parse_slurm_node_list(s: str) -> List[str]:
 
 
 def _check_env_variable(key: str, new_value: str):
-    """
+    """Check if an environment variable can be set to a new value.
 
     Args:
-      key: str:
-      new_value: str:
-      key: str:
-      new_value: str:
-      key: str:
-      new_value: str:
+        key (str): The name of the environment variable.
+        new_value (str): The new value to set.
 
-    Returns:
-
+    Raises:
+        RuntimeError: If the environment variable is already set to a different value.
     """
     # Only check for difference with preset environment variables
     if key in os.environ and os.environ[key] != new_value:
@@ -219,9 +199,10 @@ def _check_env_variable(key: str, new_value: str):
 
 
 class _TorchDistributedEnvironment:
-    """ """
+    """Class to manage the PyTorch distributed environment."""
 
     def __init__(self):
+        """Initialize the distributed environment settings."""
         self.master_addr = "127.0.0.1"
         self.master_port = 0
         self.rank = -1
@@ -249,9 +230,8 @@ class _TorchDistributedEnvironment:
 
         raise RuntimeError("Can't initialize PyTorch distributed environment")
 
-    # Slurm job created with sbatch, submitit, etc...
     def _set_from_slurm_env(self):
-        """ """
+        """Set environment variables from SLURM job environment."""
         # logger.info("Initialization from Slurm environment")
         job_id = int(os.environ["SLURM_JOB_ID"])
         node_count = int(os.environ["SLURM_JOB_NUM_NODES"])
@@ -267,9 +247,8 @@ class _TorchDistributedEnvironment:
         self.local_world_size = self.world_size // node_count
         assert self.local_rank < self.local_world_size
 
-    # Single node job with preset environment (i.e. torchrun)
     def _set_from_preset_env(self):
-        """ """
+        """Set environment variables from preset environment (i.e. torchrun)."""
         # logger.info("Initialization from preset environment")
         self.master_addr = os.environ["MASTER_ADDR"]
         self.master_port = os.environ["MASTER_PORT"]
@@ -280,9 +259,8 @@ class _TorchDistributedEnvironment:
         self.local_world_size = int(os.environ["LOCAL_WORLD_SIZE"])
         assert self.local_rank < self.local_world_size
 
-    # Single node and GPU job (i.e. local script run)
     def _set_from_local(self):
-        """ """
+        """Set environment variables for a single node and GPU job (i.e. local script run)."""
         # logger.info("Initialization from local")
         self.master_addr = "127.0.0.1"
         self.master_port = _get_available_port()
@@ -292,16 +270,13 @@ class _TorchDistributedEnvironment:
         self.local_world_size = 1
 
     def export(self, *, overwrite: bool) -> "_TorchDistributedEnvironment":
-        """
+        """Export the environment variables for distributed training.
 
         Args:
-          *:
-          overwrite: bool:
-          overwrite: bool:
-          overwrite: bool:
+            overwrite (bool): If True, overwrites already set variables. Else fails.
 
         Returns:
-
+            _TorchDistributedEnvironment: The current instance of the distributed environment.
         """
         # See the "Environment variable initialization" section from
         # https://pytorch.org/docs/stable/distributed.html for the complete list of
@@ -331,24 +306,14 @@ def enable(
     """Enable distributed mode.
 
     Args:
-      set_cuda_current_device: If True, call torch.cuda.set_device() to set the
-    current PyTorch CUDA device to the one matching the local rank.
-      overwrite: If True, overwrites already set variables. Else fails.
-      *:
-      set_cuda_current_device: bool:  (Default value = True)
-      overwrite: bool:  (Default value = False)
-      allow_nccl_timeout: bool:  (Default value = False)
-      set_cuda_current_device: bool:  (Default value = True)
-      overwrite: bool:  (Default value = False)
-      allow_nccl_timeout: bool:  (Default value = False)
-      set_cuda_current_device: bool:  (Default value = True)
-      overwrite: bool:  (Default value = False)
-      allow_nccl_timeout: bool:  (Default value = False)
+        set_cuda_current_device (bool, optional): If True, call torch.cuda.set_device() to set the
+            current PyTorch CUDA device to the one matching the local rank. Defaults to True.
+        overwrite (bool, optional): If True, overwrites already set variables. Else fails. Defaults to False.
+        allow_nccl_timeout (bool, optional): If True, allows NCCL timeout. Defaults to False.
 
-    Returns:
-
+    Raises:
+        RuntimeError: If distributed mode has already been enabled.
     """
-
     global _LOCAL_RANK, _LOCAL_WORLD_SIZE
     if _LOCAL_RANK >= 0 or _LOCAL_WORLD_SIZE >= 0:
         raise RuntimeError("Distributed mode has already been enabled")

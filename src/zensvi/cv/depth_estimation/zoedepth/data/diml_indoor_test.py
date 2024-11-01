@@ -32,7 +32,7 @@ from torchvision import transforms
 
 
 class ToTensor(object):
-    """ """
+    """Convert images and depth maps to PyTorch tensors and apply transformations."""
 
     def __init__(self):
         # self.normalize = transforms.Normalize(
@@ -41,6 +41,14 @@ class ToTensor(object):
         self.resize = transforms.Resize((480, 640))
 
     def __call__(self, sample):
+        """Convert the sample to tensors and apply normalization and resizing.
+
+        Args:
+            sample (dict): A dictionary containing 'image' and 'depth'.
+
+        Returns:
+            dict: A dictionary containing the transformed 'image', 'depth', and dataset name.
+        """
         image, depth = sample["image"], sample["depth"]
         image = self.to_tensor(image)
         image = self.normalize(image)
@@ -51,20 +59,19 @@ class ToTensor(object):
         return {"image": image, "depth": depth, "dataset": "diml_indoor"}
 
     def to_tensor(self, pic):
-        """
+        """Convert a PIL image or numpy array to a PyTorch tensor.
 
         Args:
-          pic:
+            pic (PIL Image or np.ndarray): The image to convert.
 
         Returns:
-
+            torch.Tensor: The converted image as a tensor.
         """
-
         if isinstance(pic, np.ndarray):
             img = torch.from_numpy(pic.transpose((2, 0, 1)))
             return img
 
-        #         # handle PIL Image
+        # Handle PIL Image
         if pic.mode == "I":
             img = torch.from_numpy(np.array(pic, np.int32, copy=False))
         elif pic.mode == "I;16":
@@ -88,12 +95,17 @@ class ToTensor(object):
 
 
 class DIML_Indoor(Dataset):
-    """ """
+    """Dataset class for loading DIML indoor images and depth maps."""
 
     def __init__(self, data_dir_root):
+        """Initialize the dataset with the root directory for data.
+
+        Args:
+            data_dir_root (str): The root directory containing the dataset.
+        """
         import glob
 
-        # image paths are of the form <data_dir_root>/{HR, LR}/<scene>/{color, depth_filled}/*.png
+        # Image paths are of the form <data_dir_root>/{HR, LR}/<scene>/{color, depth_filled}/*.png
         self.image_files = glob.glob(os.path.join(data_dir_root, "LR", "*", "color", "*.png"))
         self.depth_files = [
             r.replace("color", "depth_filled").replace("_c.png", "_depth_filled.png") for r in self.image_files
@@ -101,21 +113,25 @@ class DIML_Indoor(Dataset):
         self.transform = ToTensor()
 
     def __getitem__(self, idx):
+        """Get a sample from the dataset.
+
+        Args:
+            idx (int): The index of the sample to retrieve.
+
+        Returns:
+            dict: A dictionary containing the transformed 'image' and 'depth'.
+        """
         image_path = self.image_files[idx]
         depth_path = self.depth_files[idx]
 
         image = np.asarray(Image.open(image_path), dtype=np.float32) / 255.0
         depth = np.asarray(Image.open(depth_path), dtype="uint16") / 1000.0  # mm to meters
 
-        # print(np.shape(image))
-        # print(np.shape(depth))
-
         # depth[depth > 8] = -1
         depth = depth[..., None]
 
         sample = dict(image=image, depth=depth)
 
-        # return sample
         sample = self.transform(sample)
 
         if idx == 0:
@@ -124,19 +140,24 @@ class DIML_Indoor(Dataset):
         return sample
 
     def __len__(self):
+        """Return the total number of samples in the dataset.
+
+        Returns:
+            int: The number of samples in the dataset.
+        """
         return len(self.image_files)
 
 
 def get_diml_indoor_loader(data_dir_root, batch_size=1, **kwargs):
-    """
+    """Get a DataLoader for the DIML indoor dataset.
 
     Args:
-      data_dir_root:
-      batch_size: (Default value = 1)
-      **kwargs:
+        data_dir_root (str): The root directory containing the dataset.
+        batch_size (int, optional): The number of samples per batch. Defaults to 1.
+        **kwargs: Additional arguments to pass to the DataLoader.
 
     Returns:
-
+        DataLoader: A DataLoader for the DIML indoor dataset.
     """
     dataset = DIML_Indoor(data_dir_root)
     return DataLoader(dataset, batch_size, **kwargs)

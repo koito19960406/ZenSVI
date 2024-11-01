@@ -83,7 +83,6 @@ def get_image_close_to_controller(
     Returns:
         dict: GeoJSON
     """
-
     # Checking if a non valid key has been passed to the function If that is the case, throw an
     # exception
     image_check(kwargs=kwargs)
@@ -180,7 +179,6 @@ def get_image_looking_at_controller(
     Returns:
         dict: GeoJSON
     """
-
     # Converting 'at' of type Coordinates|List to dict
     at: dict = coord_or_list_to_dict(data=at)
 
@@ -300,7 +298,6 @@ def is_image_being_looked_at_controller(
         bool: True if the image is looked at by the given looker and at
         coordinates, False otherwise
     """
-
     result: dict = get_image_looking_at_controller(at=at, filters=filters).to_dict()
 
     # If the result is empty, the image is not looked at, hence return False
@@ -319,7 +316,6 @@ def get_image_thumbnail_controller(image_id: str, resolution: int, additional_fi
     Returns:
         str: A URL for the thumbnail
     """
-
     # check if the entered resolution is one of the supported image sizes
     resolution_check(resolution)
     if additional_fields != ["all"]:
@@ -373,7 +369,6 @@ def get_images_in_bbox_controller(bounding_box: dict, layer: str, zoom: int, fil
 
     - https://www.mapillary.com/developer/api-documentation/#coverage-tiles
     """
-
     # Check if the given filters are valid ones
     filters["zoom"] = filters.get("zoom", zoom)
     filters = image_bbox_check(filters) if layer == "image" else sequence_bbox_check(filters)
@@ -474,7 +469,6 @@ def get_image_from_key_controller(key: int, fields: list) -> str:
     Returns:
         str: The requested image properties in GeoJSON format
     """
-
     valid_id(identity=key, image=True)
 
     # ? 'merged_features_list_to_geojson' takes list, 'feature_to_geojson' returns dict
@@ -523,7 +517,6 @@ def geojson_features_controller(geojson: dict, is_image: bool = True, filters: d
     Returns:
         dict: A feature collection as a GeoJSON
     """
-
     # Filter checking
     image_bbox_check(filters)
 
@@ -705,7 +698,6 @@ def shape_features_controller(shape, is_image: bool = True, filters: dict = None
     Returns:
         dict: A feature collection as a GeoJSON
     """
-
     image_bbox_check(filters)
 
     # Generating a coordinates list to extract from polygon

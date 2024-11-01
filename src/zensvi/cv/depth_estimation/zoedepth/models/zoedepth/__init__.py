@@ -30,12 +30,15 @@ all_versions = {
 
 
 def get_version(v):
-    """
+    """Retrieve the specified version of the ZoeDepth model.
 
     Args:
-      v:
+        v (str): The version identifier for the ZoeDepth model.
 
     Returns:
+        ZoeDepth: The corresponding ZoeDepth model class for the specified version.
 
+    Raises:
+        KeyError: If the specified version is not available in the all_versions dictionary.
     """
     return all_versions[v]

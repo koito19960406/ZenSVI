@@ -45,7 +45,6 @@ class VectorTiles:
         3. sequence_id, string, ID of the sequence this image belongs to
         4. is_pano, bool, if it is a panoramic image
         """
-
         return f"https://tiles.mapillary.com/maps/vtp/mly1_public/2/{z}/{x}/{y}/"
 
     @staticmethod
@@ -71,7 +70,6 @@ class VectorTiles:
         4. organization_id, int, ID of the organization this image belongs to. It can be absent
         5. is_pano, bool, if it is a panoramic sequence
         """
-
         return f"https://tiles.mapillary.com/maps/vtp/mly1_public/2/{z}/{x}/{y}/"
 
     @staticmethod
@@ -98,7 +96,6 @@ class VectorTiles:
         5. organization_id, int, ID of the organization this image belongs to. It can be absent
         6. is_pano, bool, if it is a panoramic image
         """
-
         return f"https://tiles.mapillary.com/maps/vtp/mly1_public/2/{z}/{x}/{y}/"
 
     @staticmethod
@@ -123,7 +120,6 @@ class VectorTiles:
         3. sequence_id, string, ID of the sequence this image belongs to
         4. is_pano, bool, if it is a panoramic image
         """
-
         return f"https://tiles.mapillary.com/maps/vtp/mly1_computed_public/2/{z}/{x}/{y}/"
 
     @staticmethod
@@ -149,7 +145,6 @@ class VectorTiles:
         4. organization_id, int, ID of the organization this image belongs to. It can be absent
         5. is_pano, bool, if it is a panoramic sequence
         """
-
         return f"https://tiles.mapillary.com/maps/vtp/mly1_computed_public/2/{z}/{x}/{y}/"
 
     @staticmethod
@@ -176,7 +171,6 @@ class VectorTiles:
         5. organization_id, int, ID of the organization this image belongs to. It can be absent
         6. is_pano, bool, if it is a panoramic image
         """
-
         return f"https://tiles.mapillary.com/maps/vtp/mly1_computed_public/2/{z}/{x}/{y}/"
 
     @staticmethod
@@ -203,7 +197,6 @@ class VectorTiles:
         4. last_seen_at, int, timestamp in ms since epoch, capture time of the latest image on which
             the detection contribute to this map feature
         """
-
         return f"https://tiles.mapillary.com/maps/vtp/mly_map_feature_point/2/{z}/{x}/{y}/"
 
     @staticmethod
@@ -233,5 +226,4 @@ class VectorTiles:
         4. last_seen_at, int, timestamp in ms since epoch, capture time of the latest image on
             which the detection contribute to this map feature
         """
-
         return f"https://tiles.mapillary.com/maps/vtp/mly_map_feature_traffic_sign/2/{z}/{x}/{y}/"

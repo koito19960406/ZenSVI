@@ -58,7 +58,6 @@ def _create_cityscapes_label_colormap():
       : A colormap for visualizing segmentation results.
 
     """
-
     labels = [
         #       name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
         _Label("unlabeled", 0, 255, "void", 0, False, True, (0, 0, 0)),
@@ -109,7 +108,6 @@ def _create_mapillary_vistas_label_colormap():
       : A list of labels for visualizing segmentation results.
 
     """
-
     labels = [
         _Label("Bird", 0, 0, "animal", 0, True, False, (165, 42, 42)),
         _Label("Ground Animal", 1, 1, "animal", 0, True, False, (0, 192, 0)),
@@ -192,21 +190,15 @@ def _create_mapillary_vistas_label_colormap():
 def _get_resized_dimensions(width: int, height: int, max_size: int = 2048) -> Tuple[int, int]:
     """Calculate the new dimensions of an image to maintain aspect ratio.
 
-    Returns original dimensions if both are less than max_size.
+    If both dimensions are less than or equal to max_size, the original dimensions are returned.
 
     Args:
-      width: int:
-      height: int:
-      max_size: int:  (Default value = 2048)
-      width: int:
-      height: int:
-      max_size: int:  (Default value = 2048)
-      width: int:
-      height: int:
-      max_size: int:  (Default value = 2048)
+        width (int): The original width of the image.
+        height (int): The original height of the image.
+        max_size (int, optional): The maximum size for either dimension. Defaults to 2048.
 
     Returns:
-
+        Tuple[int, int]: The new dimensions (width, height) of the image.
     """
     if max(width, height) > max_size:
         scaling_factor = max_size / max(width, height)
@@ -219,14 +211,26 @@ def _get_resized_dimensions(width: int, height: int, max_size: int = 2048) -> Tu
 
 
 class ImageDataset(Dataset):
+    """A dataset class for loading and processing images.
+
+    This class handles the loading of images from specified file paths,
+    resizing them to a maximum size while maintaining the aspect ratio,
+    and converting them to RGB format if required.
+
+    Args:
+        image_files (List[Path]): A list of paths to the image files.
+        max_size (int, optional): The maximum size for resizing the images. Defaults to 2048.
+        rgb (bool, optional): If True, images will be converted to RGB format. Defaults to True.
+    """
+
     def __init__(self, image_files: List[Path], max_size: int = 2048, rgb: bool = True) -> None:
-        """Initialize the dataset with the path to images, the maximum size for resizing,
-            and color mode.
+        """Initializes the ImageDataset with the paths to images, maximum size for resizing,
+        and color mode.
 
         Args:
-
-        Returns:
-
+            image_files (List[Path]): A list of paths to the image files.
+            max_size (int, optional): The maximum size for resizing the images. Defaults to 2048.
+            rgb (bool, optional): If True, images will be converted to RGB format. Defaults to True.
         """
         self.image_files = [
             image_file
@@ -237,9 +241,26 @@ class ImageDataset(Dataset):
         self.rgb = rgb
 
     def __len__(self) -> int:
+        """Returns the number of images in the dataset.
+
+        Returns:
+            int: The number of images in the dataset.
+        """
         return len(self.image_files)
 
     def __getitem__(self, idx: int) -> Tuple[str, cv2.Mat, Tuple[int, int]]:
+        """Retrieves an image and its metadata from the dataset.
+
+        Args:
+            idx (int): The index of the image to retrieve.
+
+        Returns:
+            Tuple[str, cv2.Mat, Tuple[int, int]]: A tuple containing the image file path,
+            the image data, and the dimensions of the image (height, width).
+
+        Raises:
+            ValueError: If the image cannot be read.
+        """
         image_file = self.image_files[idx]
         img = cv2.imread(str(image_file))
 
@@ -264,17 +285,12 @@ class ImageDataset(Dataset):
         """Custom collate function for the dataset.
 
         Args:
-          data(List[Tuple[str): List of tuples containing image file path, image data, and original image dimensions.
-          data: List[Tuple[str:
-          cv2.Mat:
-          Tuple[int:
-          int]]]:
-          data: List[Tuple[str:
-          data: List[Tuple[str:
+            data (List[Tuple[str, cv2.Mat, Tuple[int, int]]]): A list of tuples containing
+            image file path, image data, and original image dimensions.
 
         Returns:
-          Tuple[List[str], List[cv2.Mat], List[Tuple[int, int]]]: Tuple containing lists of image file paths, image data, and original image dimensions.
-
+            Tuple[List[str], List[cv2.Mat], List[Tuple[int, int]]]: A tuple containing lists
+            of image file paths, image data, and original image dimensions.
         """
         image_files, images, original_img_shape = zip(*data)
         return list(image_files), list(images), list(original_img_shape)
@@ -285,18 +301,36 @@ class Segmenter:
 
     The models used are from the Mask2Former (https://huggingface.co/docs/transformers/model_doc/mask2former).
 
+    Attributes:
+        device (str): The device to run the model on (e.g., "cuda" or "cpu").
+        dataset (str): The name of the dataset (e.g., "cityscapes" or "mapillary").
+        task (str): The type of segmentation task (e.g., "semantic" or "panoptic").
+        model_name (str): The name of the pre-trained model corresponding to the dataset and task.
+        model: The segmentation model.
+        processor: The image processor for the model.
+        color_map: A mapping of class IDs to colors.
+        label_map: A mapping of class IDs to labels.
+        id_to_name_map: A mapping of label IDs to label names.
+
     Args:
+        dataset (str): The name of the dataset (default is "cityscapes").
+        task (str): The type of task (default is "semantic").
+        device (str, optional): The device to run the model on (e.g., "cuda" or "cpu"). If None, the default device will be used.
 
     Returns:
-
+        None
     """
 
     def __init__(self, dataset="cityscapes", task="semantic", device=None):
-        """Initialize the Segmenter with a model and dataset.
+        """Initializes the Segmenter with a model and dataset.
 
         Args:
-            model_name (str): The name of the pre-trained model.
-            dataset (str): The name of the dataset.
+            dataset (str): The name of the dataset (default is "cityscapes").
+            task (str): The type of task (default is "semantic").
+            device (str, optional): The device to run the model on (e.g., "cuda" or "cpu"). If None, the default device will be used.
+
+        Returns:
+            None
         """
         self.device = self._get_device(device)
         self.dataset = dataset
@@ -307,14 +341,18 @@ class Segmenter:
         self.label_map = self._create_label_map(dataset)
         self.id_to_name_map = self._create_id_to_name_map(dataset)
 
-    def _get_model_name(self, dataset, task):
-        """
+    def _get_model_name(self, dataset: str, task: str) -> str:
+        """Get the model name based on the dataset and task.
 
         Args:
-          dataset:
-          task:
+            dataset (str): The name of the dataset (e.g., "cityscapes", "mapillary").
+            task (str): The type of task (e.g., "semantic", "panoptic").
 
         Returns:
+            str: The name of the pre-trained model corresponding to the dataset and task.
+
+        Raises:
+            ValueError: If the dataset is unknown.
 
         """
         if dataset == "cityscapes":
@@ -400,13 +438,13 @@ class Segmenter:
         return color_to_label
 
     def _create_id_to_name_map(self, dataset):
-        """
+        """Create a mapping from train IDs to label names based on the dataset.
 
         Args:
-          dataset:
+            dataset (str): The name of the dataset (e.g., "cityscapes" or "mapillary").
 
         Returns:
-
+            dict: A dictionary mapping train IDs to label names.
         """
         if dataset == "cityscapes":
             labels = _create_cityscapes_label_colormap()
@@ -418,11 +456,13 @@ class Segmenter:
         """Get the appropriate device for running the model.
 
         Args:
-          device:
+            device (str or None): The device to use (e.g., "cpu", "cuda", "mps"). If None, the function will select the best available device.
 
         Returns:
-          torch.device: The device to use for running the model.
+            torch.device: The device to use for running the model.
 
+        Raises:
+            ValueError: If the provided device is not recognized.
         """
         if device is not None:
             if device not in ["cpu", "cuda", "mps"]:
@@ -441,11 +481,10 @@ class Segmenter:
         """Calculate pixel ratios for each class in the segmented image.
 
         Args:
-          segmented_img(numpy.ndarray): Segmented image.
+            segmented_img (numpy.ndarray): Segmented image.
 
         Returns:
-          dict: A dictionary with class names as keys and pixel ratios as values.
-
+            dict: A dictionary with class names as keys and pixel ratios as values.
         """
         unique, counts = np.unique(segmented_img, return_counts=True)
         total_pixels = np.sum(counts)
@@ -455,17 +494,19 @@ class Segmenter:
 
         return pixel_ratios
 
-    def _save_as_csv(self, input_dict, dir_output, value_name, csv_format):
-        """
+    def _save_as_csv(self, input_dict: dict, dir_output: Path, value_name: str, csv_format: str) -> None:
+        """Save pixel ratios as a CSV file.
+
+        This function takes a dictionary of pixel ratios and saves it to a CSV file in either long or wide format.
 
         Args:
-          input_dict:
-          dir_output:
-          value_name:
-          csv_format:
+            input_dict (dict): A dictionary containing pixel ratios for each image and label.
+            dir_output (Path): The directory where the CSV file will be saved.
+            value_name (str): The name of the value to be saved in the CSV.
+            csv_format (str): The format of the CSV file, either 'long' or 'wide'.
 
         Returns:
-
+            None: This function does not return any value but saves the CSV file to the specified directory.
         """
         if csv_format == "long":
             df_list = [
@@ -535,18 +576,19 @@ class Segmenter:
         colored_img = self.color_map[segmented_img]
         return colored_img
 
-    def _save_panoptic_segmentation_image(self, image_file, img, dir_output, output):
-        """Save the panoptic segmentation image as a blended image with the original
-        input image.
+    def _save_panoptic_segmentation_image(
+        self, image_file: str, img: np.ndarray, dir_output: Path, output: dict
+    ) -> None:
+        """Save the panoptic segmentation image as a blended image with the original input image.
 
         Args:
-          image_file(str): The input image file path.
-          img(np.array): The input image in the format of a NumPy array.
-          dir_output(Path): The output directory path to save the blended image.
-          output(dict): The output dictionary containing the segmentation data.
+            image_file (str): The input image file path.
+            img (np.ndarray): The input image in the format of a NumPy array.
+            dir_output (Path): The output directory path to save the blended image.
+            output (dict): The output dictionary containing the segmentation data.
 
         Returns:
-
+            None: This function does not return any value but saves the blended image and segmented image to the specified directory.
         """
         colored_segmented_img = self._trainid_to_color(output["label_segmentation"].cpu().numpy())
         alpha = 0.5
@@ -598,17 +640,17 @@ class Segmenter:
             )
 
     def _save_semantic_segmentation_image(self, image_file, img, dir_output, output):
-        """Save the semantic segmentation image as a colored segmented image and/or a
+        """Saves the semantic segmentation image as a colored segmented image and/or a
         blended image with the original input image.
 
         Args:
-          image_file(str): The input image file path.
-          img(np.array): The input image in the format of a NumPy array.
-          dir_output(Path): The output directory path to save the colored segmented and/or blended image.
-          output(Tensor): The output tensor containing the semantic segmentation data.
+            image_file (str): The input image file path.
+            img (np.array): The input image in the format of a NumPy array.
+            dir_output (Path): The output directory path to save the colored segmented and/or blended image.
+            output (Tensor): The output tensor containing the semantic segmentation data.
 
         Returns:
-
+            None
         """
         colored_segmented_img = self._trainid_to_color(output.cpu().numpy())
         alpha = 0.5
@@ -629,13 +671,16 @@ class Segmenter:
             )
 
     def _panoptic_count_labels(self, output):
-        """
+        """Count the occurrences of each label in the panoptic segmentation output.
 
         Args:
-          output:
+            output (dict): The output dictionary containing segmentation information.
+                It should have a key "segments_info" which is a list of dictionaries,
+                each containing a "label_id".
 
         Returns:
-
+            dict: A dictionary where keys are label names and values are the counts
+            of each label in the segmentation output.
         """
         label_counts = {}
 

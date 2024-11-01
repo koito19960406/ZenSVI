@@ -52,56 +52,64 @@ from .vkitti2 import get_vkitti2_loader
 
 
 def _is_pil_image(img):
-    """
+    """Check if the input image is a PIL Image.
 
     Args:
-      img:
+        img (PIL.Image): The image to check.
 
     Returns:
-
+        bool: True if the image is a PIL Image, False otherwise.
     """
     return isinstance(img, Image.Image)
 
 
 def _is_numpy_image(img):
-    """
+    """Check if the input image is a NumPy array.
 
     Args:
-      img:
+        img (np.ndarray): The image to check.
 
     Returns:
-
+        bool: True if the image is a NumPy array with 2 or 3 dimensions, False otherwise.
     """
     return isinstance(img, np.ndarray) and (img.ndim in {2, 3})
 
 
 def preprocessing_transforms(mode, **kwargs):
-    """
+    """Create preprocessing transforms for the dataset.
 
     Args:
-      mode:
-      **kwargs:
+        mode (str): The mode of the dataset (e.g., 'train', 'test').
+        **kwargs: Additional keyword arguments for the transforms.
 
     Returns:
-
+        torchvision.transforms.Compose: A composed transform object.
     """
     return transforms.Compose([ToTensor(mode=mode, **kwargs)])
 
 
 class DepthDataLoader(object):
+    """Data loader for depth datasets.
+
+    This class handles the loading of various depth datasets based on the provided configuration.
+
+    Args:
+        config (dict): Configuration dictionary. Refer to utils/config.py for details.
+        mode (str): Mode of operation, either "train" or "online_eval".
+        device (str, optional): Device to load the data on. Defaults to 'cpu'.
+        transform (torchvision.transforms, optional): Transform to apply to the data. Defaults to None.
+        **kwargs: Additional keyword arguments for customization.
+    """
+
     def __init__(self, config, mode, device="cpu", transform=None, **kwargs):
-        """Data loader for depth datasets.
+        """Initializes the DepthDataLoader with the specified configuration and mode.
 
         Args:
-        config(dict): Config dictionary. Refer to utils/config.py
-        mode(str): "train" or "online_eval"
-        device(str): Device to load the data on. Defaults to 'cpu'.
-        transform(torchvision.transforms): Transform to apply to the data. Defaults to None.
-
-        Returns:
-
+            config (dict): Configuration dictionary. Refer to utils/config.py.
+            mode (str): "train" or "online_eval".
+            device (str, optional): Device to load the data on. Defaults to 'cpu'.
+            transform (torchvision.transforms, optional): Transform to apply to the data. Defaults to None.
         """
-
         self.config = config
 
         if config.dataset == "ibims":
@@ -147,7 +155,6 @@ class DepthDataLoader(object):
             transform = preprocessing_transforms(mode, size=img_size)
 
         if mode == "train":
-
             Dataset = DataLoadPreprocess
             self.training_samples = Dataset(config, mode, transform=transform, device=device)
 
@@ -163,14 +170,12 @@ class DepthDataLoader(object):
                 num_workers=config.workers,
                 pin_memory=True,
                 persistent_workers=True,
-                #    prefetch_factor=2,
                 sampler=self.train_sampler,
             )
 
         elif mode == "online_eval":
             self.testing_samples = DataLoadPreprocess(config, mode, transform=transform)
             if config.distributed:  # redundant. here only for readability and to be more explicit
-                # Give whole test set to all processes (and report evaluation only on one) regardless
                 self.eval_sampler = None
             else:
                 self.eval_sampler = None
@@ -192,20 +197,14 @@ class DepthDataLoader(object):
 
 
 def repetitive_roundrobin(*iterables):
-    """Cycles through iterables but sample wise first yield first sample from first
-    iterable then first sample from second iterable and so on then second sample from
-    first iterable then second sample from second iterable and so on.
-
-    If one iterable is shorter than the others, it is repeated until all iterables are
-    exhausted repetitive_roundrobin('ABC', 'D', 'EF') --> A D E B D F C D E
+    """Cycles through iterables but sample-wise.
 
     Args:
-      *iterables:
+        *iterables: Variable length argument list of iterables.
 
-    Returns:
-
+    Yields:
+        The next item from each iterable in a round-robin fashion.
     """
-    # Repetitive roundrobin
     iterables_ = [iter(it) for it in iterables]
     exhausted = [False] * len(iterables)
     while not all(exhausted):
@@ -215,28 +214,48 @@ def repetitive_roundrobin(*iterables):
             except StopIteration:
                 exhausted[i] = True
                 iterables_[i] = itertools.cycle(iterables[i])
-                # First elements may get repeated if one iterable is shorter than the others
                 yield next(iterables_[i])
 
 
 class RepetitiveRoundRobinDataLoader(object):
-    """ """
+    """Data loader that cycles through multiple data loaders in a round-robin fashion."""
 
     def __init__(self, *dataloaders):
+        """Initialize the RepetitiveRoundRobinDataLoader.
+
+        Args:
+            *dataloaders: Data loaders to cycle through.
+        """
         self.dataloaders = dataloaders
 
     def __iter__(self):
+        """Return an iterator for the data loader.
+
+        Returns:
+            An iterator that yields samples from the data loaders in a round-robin fashion.
+        """
         return repetitive_roundrobin(*self.dataloaders)
 
     def __len__(self):
-        # First samples get repeated, thats why the plus one
+        """Return the total number of samples across all data loaders.
+
+        Returns:
+            int: Total number of samples.
+        """
         return len(self.dataloaders) * (max(len(dl) for dl in self.dataloaders) + 1)
 
 
 class MixedNYUKITTI(object):
-    """ """
+    """Data loader that combines NYU and KITTI datasets."""
 
     def __init__(self, config, mode, device="cpu", **kwargs):
+        """Initialize the MixedNYUKITTI data loader.
+
+        Args:
+            config (dict): Configuration dictionary.
+            mode (str): Mode of operation (e.g., 'train', 'test').
+            device (str): Device to load the data on. Defaults to 'cpu'.
+        """
         config = edict(config)
         config.workers = config.workers // 2
         self.config = config
@@ -260,20 +279,19 @@ class MixedNYUKITTI(object):
                 device=device,
                 transform=preprocessing_transforms(mode, size=img_size),
             ).data
-            # It has been changed to repetitive roundrobin
             self.data = RepetitiveRoundRobinDataLoader(nyu_loader, kitti_loader)
         else:
             self.data = DepthDataLoader(nyu_conf, mode, device=device).data
 
 
 def remove_leading_slash(s):
-    """
+    """Remove leading slashes from a string.
 
     Args:
-      s:
+        s (str): The input string.
 
     Returns:
-
+        str: The string without leading slashes.
     """
     if s[0] == "/" or s[0] == "\\":
         return s[1:]
@@ -281,22 +299,27 @@ def remove_leading_slash(s):
 
 
 class CachedReader:
-    """ """
+    """A class to read images with caching capabilities."""
 
     def __init__(self, shared_dict=None):
+        """Initialize the CachedReader.
+
+        Args:
+            shared_dict (dict, optional): A shared dictionary for caching. Defaults to None.
+        """
         if shared_dict:
             self._cache = shared_dict
         else:
             self._cache = {}
 
     def open(self, fpath):
-        """
+        """Open an image file, using the cache if available.
 
         Args:
-          fpath:
+            fpath (str): The file path of the image.
 
         Returns:
-
+            PIL.Image: The opened image.
         """
         im = self._cache.get(fpath, None)
         if im is None:
@@ -305,28 +328,36 @@ class CachedReader:
 
 
 class ImReader:
-    """ """
+    """A class to read images without caching."""
 
     def __init__(self):
+        """Initialize the ImReader."""
         pass
 
-    # @cache
     def open(self, fpath):
-        """
+        """Open an image file.
 
         Args:
-          fpath:
+            fpath (str): The file path of the image.
 
         Returns:
-
+            PIL.Image: The opened image.
         """
         return Image.open(fpath)
 
 
 class DataLoadPreprocess(Dataset):
-    """ """
+    """Data loader for preprocessing depth data."""
 
     def __init__(self, config, mode, transform=None, is_for_online_eval=False, **kwargs):
+        """Initialize the DataLoadPreprocess.
+
+        Args:
+            config (dict): Configuration dictionary.
+            mode (str): Mode of operation (e.g., 'train', 'online_eval').
+            transform (callable, optional): Transform to apply to the data. Defaults to None.
+            is_for_online_eval (bool, optional): Flag for online evaluation mode. Defaults to False.
+        """
         self.config = config
         if mode == "online_eval":
             with open(config.filenames_file_eval, "r") as f:
@@ -345,17 +376,25 @@ class DataLoadPreprocess(Dataset):
             self.reader = ImReader()
 
     def postprocess(self, sample):
-        """
+        """Post-process the sample.
 
         Args:
-          sample:
+            sample (dict): The sample to post-process.
 
         Returns:
-
+            dict: The post-processed sample.
         """
         return sample
 
     def __getitem__(self, idx):
+        """Get a sample by index.
+
+        Args:
+            idx (int): The index of the sample.
+
+        Returns:
+            dict: The sample containing image, depth, focal length, and mask.
+        """
         sample_path = self.filenames[idx]
         focal = float(sample_path.split()[2])
         sample = {}
@@ -380,12 +419,7 @@ class DataLoadPreprocess(Dataset):
                 depth_gt = depth_gt.crop((left_margin, top_margin, left_margin + 1216, top_margin + 352))
                 image = image.crop((left_margin, top_margin, left_margin + 1216, top_margin + 352))
 
-            # Avoid blank boundaries due to pixel registration?
-            # Train images have white border. Test images have black border.
             if self.config.dataset == "nyu" and self.config.avoid_boundary:
-                # print("Avoiding Blank Boundaries!")
-                # We just crop and pad again with reflect padding to original size
-                # original_size = image.size
                 crop_params = get_white_border(np.array(image, dtype=np.uint8))
                 image = image.crop(
                     (
@@ -404,7 +438,6 @@ class DataLoadPreprocess(Dataset):
                     )
                 )
 
-                # Use reflect padding to fill the blank
                 image = np.array(image)
                 image = np.pad(
                     image,
@@ -447,7 +480,6 @@ class DataLoadPreprocess(Dataset):
                 image, depth_gt = self.random_crop(image, depth_gt, self.config.input_height, self.config.input_width)
 
             if self.config.aug and self.config.random_translate:
-                # print("Random Translation!")
                 image, depth_gt = self.random_translate(image, depth_gt, self.config.max_translation)
 
             image, depth_gt = self.train_preprocess(image, depth_gt)
@@ -480,7 +512,6 @@ class DataLoadPreprocess(Dataset):
                     has_valid_depth = True
                 except IOError:
                     depth_gt = False
-                    # print('Missing gt for {}'.format(image_path))
 
                 if has_valid_depth:
                     depth_gt = np.asarray(depth_gt, dtype=np.float32)
@@ -543,30 +574,30 @@ class DataLoadPreprocess(Dataset):
         return sample
 
     def rotate_image(self, image, angle, flag=Image.BILINEAR):
-        """
+        """Rotate an image by a given angle.
 
         Args:
-          image:
-          angle:
-          flag: (Default value = Image.BILINEAR)
+            image (PIL.Image): The image to rotate.
+            angle (float): The angle to rotate the image.
+            flag (int, optional): Resampling filter. Defaults to Image.BILINEAR.
 
         Returns:
-
+            PIL.Image: The rotated image.
         """
         result = image.rotate(angle, resample=flag)
         return result
 
     def random_crop(self, img, depth, height, width):
-        """
+        """Randomly crop an image and its corresponding depth map.
 
         Args:
-          img:
-          depth:
-          height:
-          width:
+            img (np.ndarray): The image to crop.
+            depth (np.ndarray): The depth map to crop.
+            height (int): The height of the crop.
+            width (int): The width of the crop.
 
         Returns:
-
+            tuple: The cropped image and depth map.
         """
         assert img.shape[0] >= height
         assert img.shape[1] >= width
@@ -580,15 +611,15 @@ class DataLoadPreprocess(Dataset):
         return img, depth
 
     def random_translate(self, img, depth, max_t=20):
-        """
+        """Randomly translate an image and its corresponding depth map.
 
         Args:
-          img:
-          depth:
-          max_t: (Default value = 20)
+            img (np.ndarray): The image to translate.
+            depth (np.ndarray): The depth map to translate.
+            max_t (int, optional): Maximum translation in pixels. Defaults to 20.
 
         Returns:
-
+            tuple: The translated image and depth map.
         """
         assert img.shape[0] == depth.shape[0]
         assert img.shape[1] == depth.shape[1]
@@ -599,22 +630,20 @@ class DataLoadPreprocess(Dataset):
         x = random.randint(-max_t, max_t)
         y = random.randint(-max_t, max_t)
         M = np.float32([[1, 0, x], [0, 1, y]])
-        # print(img.shape, depth.shape)
         img = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]))
         depth = cv2.warpAffine(depth, M, (depth.shape[1], depth.shape[0]))
         depth = depth.squeeze()[..., None]  # add channel dim back. Affine warp removes it
-        # print("after", img.shape, depth.shape)
         return img, depth
 
     def train_preprocess(self, image, depth_gt):
-        """
+        """Preprocess the image and depth map for training.
 
         Args:
-          image:
-          depth_gt:
+            image (np.ndarray): The input image.
+            depth_gt (np.ndarray): The ground truth depth map.
 
         Returns:
-
+            tuple: The preprocessed image and depth map.
         """
         if self.config.aug:
             # Random flipping
@@ -631,13 +660,13 @@ class DataLoadPreprocess(Dataset):
         return image, depth_gt
 
     def augment_image(self, image):
-        """
+        """Apply random augmentations to the image.
 
         Args:
-          image:
+            image (np.ndarray): The input image.
 
         Returns:
-
+            np.ndarray: The augmented image.
         """
         # gamma augmentation
         gamma = random.uniform(0.9, 1.1)
@@ -660,13 +689,25 @@ class DataLoadPreprocess(Dataset):
         return image_aug
 
     def __len__(self):
+        """Return the number of samples in the dataset.
+
+        Returns:
+            int: The number of samples.
+        """
         return len(self.filenames)
 
 
 class ToTensor(object):
-    """ """
+    """Convert images and depth maps to PyTorch tensors."""
 
     def __init__(self, mode, do_normalize=False, size=None):
+        """Initialize the ToTensor transform.
+
+        Args:
+            mode (str): The mode of the dataset (e.g., 'train', 'test').
+            do_normalize (bool, optional): Whether to normalize the image. Defaults to False.
+            size (tuple, optional): Size to resize the image. Defaults to None.
+        """
         self.mode = mode
         self.normalize = (
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -680,6 +721,14 @@ class ToTensor(object):
             self.resize = nn.Identity()
 
     def __call__(self, sample):
+        """Convert the sample to tensors.
+
+        Args:
+            sample (dict): The sample containing image and depth.
+
+        Returns:
+            dict: The sample with image and depth as tensors.
+        """
         image, focal = sample["image"], sample["focal"]
         image = self.to_tensor(image)
         image = self.normalize(image)
@@ -706,13 +755,13 @@ class ToTensor(object):
             }
 
     def to_tensor(self, pic):
-        """
+        """Convert a PIL image or NumPy array to a PyTorch tensor.
 
         Args:
-          pic:
+            pic (PIL.Image or np.ndarray): The image to convert.
 
         Returns:
-
+            torch.Tensor: The converted tensor.
         """
         if not (_is_pil_image(pic) or _is_numpy_image(pic)):
             raise TypeError("pic should be PIL Image or ndarray. Got {}".format(type(pic)))

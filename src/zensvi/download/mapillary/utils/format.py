@@ -42,7 +42,6 @@ def feature_to_geojson(json_data: dict) -> dict:
     Returns:
         dict: The formatted GeoJSON
     """
-
     # The geometry property will always be present
     keys = [key for key in json_data.keys() if key != "geometry"]
 
@@ -84,7 +83,6 @@ def join_geojson_with_keys(
         ...     geojson_dest_key='id'
         ... )
     """
-
     # Go through the feature set in the src geojson
     for from_features in geojson_src["features"]:
 
@@ -144,7 +142,6 @@ def geojson_to_features_list(json_data: dict) -> list:
     Returns:
         list: The feature list
     """
-
     return json_data["features"]
 
 
@@ -170,7 +167,6 @@ def merged_features_list_to_geojson(features_list: list) -> str:
     Returns:
         str: GeoJSON string formatted with all the extra commas removed.
     """
-
     return json.dumps({"type": "FeatureCollection", "features": features_list})
 
 
@@ -201,7 +197,6 @@ def detection_features_to_geojson(feature_list: list) -> dict:
         ... 'GjUKBm1weS1vchIVEgIAABgDIg0JhiekKBoqAABKKQAPGgR0eXBlIgkKB3BvbHlnb24ogCB4AQ==',
         ... 'value': 'regulatory--no-parking--g2', 'id': '1942105415944115' } }, ... ]}
     """
-
     resulting_geojson = {
         # FeatureCollection type
         "type": "FeatureCollection",
@@ -301,7 +296,6 @@ def flatten_geojson(geojson: dict) -> list:
 
     *TODO*: Further testing needed with different geometries, e.g., Polygon, etc.
     """
-
     for feature in geojson["features"]:
         # Check if the geometry is a Point
         if feature["geometry"]["type"] == "Point":
@@ -392,7 +386,6 @@ def geojson_to_polygon(geojson: dict) -> GeoJSON:
     Returns:
         dict: A geojson of the format mentioned under 'To'
     """
-
     return GeoJSON(
         geojson={
             "type": "FeatureCollection",
@@ -443,7 +436,6 @@ def flatten_dictionary(
     Returns:
         dict: A flattened dictionary
     """
-
     # Final results
     items = []
 
@@ -492,7 +484,6 @@ def normalize_list(coordinates: list, width: int = 4096, height: int = 4096) -> 
     Returns:
         list: The normalized list
     """
-
     # Extracting the list from the coordinates
     coordinates = coordinates[0]
 
@@ -532,7 +523,6 @@ def decode_pixel_geometry(base64_string: str, normalized: bool = True, width: in
         list: A dictionary with coordinates as key, and value as the
         normalized list
     """
-
     # The data retrieved after being decoded as base64
     data = base64.decodebytes(base64_string.encode("utf-8"))
 
@@ -581,7 +571,6 @@ def decode_pixel_geometry_in_geojson(
         width (int): The width of the pixel geometry, defaults to 4096
         height (int): The height of the pixel geometry, defaults to 4096
     """
-
     # If geojson is of type GeoJSON, convert to dict
     if isinstance(geojson, GeoJSON):
         geojson: dict = geojson.to_dict()
@@ -616,7 +605,6 @@ def coord_or_list_to_dict(data: Union[Coordinates, list, dict]) -> dict:
     Returns:
         dict: The dictionary representation of the coordinates
     """
-
     if isinstance(data, dict):
         return data
 
@@ -688,7 +676,6 @@ def polygon_feature_to_bbox_list(polygon: dict, is_bbox_list_required: bool = Tr
     Returns:
         typing.Union[list, dict]: The bounding box
     """
-
     west = polygon["geometry"]["coordinates"][0][1][0]
     south = polygon["geometry"]["coordinates"][0][0][0]
     east = polygon["geometry"]["coordinates"][0][0][1]
@@ -746,7 +733,6 @@ def bbox_to_polygon(bbox: typing.Union[list, dict]) -> dict:
     Returns:
         dict: The polygon
     """
-
     # Initializing the polygon
     polygon = {
         "type": "Feature",

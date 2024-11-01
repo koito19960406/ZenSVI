@@ -42,5 +42,4 @@ class Config:
 
     def __init__(self, use_strict: bool = True) -> None:
         """Initialize the Config class."""
-
         self.use_strict = use_strict

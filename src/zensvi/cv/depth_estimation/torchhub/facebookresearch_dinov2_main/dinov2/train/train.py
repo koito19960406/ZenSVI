@@ -32,22 +32,20 @@ logger = logging.getLogger("dinov2")
 
 
 def get_args_parser(add_help: bool = True):
-    """
+    """Creates an argument parser for DINOv2 training.
 
     Args:
-      add_help: bool:  (Default value = True)
-      add_help: bool:  (Default value = True)
-      add_help: bool:  (Default value = True)
+        add_help (bool): Whether to add help to the parser. Default is True.
 
     Returns:
-
+        argparse.ArgumentParser: The argument parser.
     """
     parser = argparse.ArgumentParser("DINOv2 training", add_help=add_help)
     parser.add_argument("--config-file", default="", metavar="FILE", help="path to config file")
     parser.add_argument(
         "--no-resume",
         action="store_true",
-        help="Whether to not attempt to resume from the checkpoint directory. ",
+        help="Whether to not attempt to resume from the checkpoint directory.",
     )
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
     parser.add_argument("--eval", type=str, default="", help="Eval type to perform")
@@ -73,31 +71,26 @@ For python-based LazyConfig, use "path.key=value".
 
 
 def build_optimizer(cfg, params_groups):
-    """Args:
-      cfg:
+    """Builds the AdamW optimizer.
 
     Args:
-      cfg:
-
-    Args:
-      cfg:
-      params_groups:
+        cfg: Configuration object containing optimizer settings.
+        params_groups: Parameter groups to optimize.
 
     Returns:
-
-
+        torch.optim.AdamW: The constructed optimizer.
     """
     return torch.optim.AdamW(params_groups, betas=(cfg.optim.adamw_beta1, cfg.optim.adamw_beta2))
 
 
 def build_schedulers(cfg):
-    """
+    """Builds learning rate and other schedulers.
 
     Args:
-      cfg:
+        cfg: Configuration object containing scheduler settings.
 
     Returns:
-
+        tuple: A tuple containing the learning rate, weight decay, momentum, teacher temperature, and last layer learning rate schedules.
     """
     OFFICIAL_EPOCH_LENGTH = cfg.train.OFFICIAL_EPOCH_LENGTH
     lr = dict(
@@ -147,16 +140,13 @@ def build_schedulers(cfg):
 
 
 def apply_optim_scheduler(optimizer, lr, wd, last_layer_lr):
-    """
+    """Applies the learning rate and weight decay to the optimizer.
 
     Args:
-      optimizer:
-      lr:
-      wd:
-      last_layer_lr:
-
-    Returns:
-
+        optimizer: The optimizer to apply the schedules to.
+        lr: The current learning rate.
+        wd: The current weight decay.
+        last_layer_lr: The learning rate for the last layer.
     """
     for param_group in optimizer.param_groups:
         is_last_layer = param_group["is_last_layer"]
@@ -167,15 +157,12 @@ def apply_optim_scheduler(optimizer, lr, wd, last_layer_lr):
 
 
 def do_test(cfg, model, iteration):
-    """
+    """Performs evaluation and saves the teacher model checkpoint.
 
     Args:
-      cfg:
-      model:
-      iteration:
-
-    Returns:
-
+        cfg: Configuration object containing evaluation settings.
+        model: The model to evaluate.
+        iteration: The current iteration number.
     """
     new_state_dict = model.teacher.state_dict()
 
@@ -189,15 +176,15 @@ def do_test(cfg, model, iteration):
 
 
 def do_train(cfg, model, resume=False):
-    """
+    """Runs the training loop.
 
     Args:
-      cfg:
-      model:
-      resume: (Default value = False)
+        cfg: Configuration object containing training settings.
+        model: The model to train.
+        resume (bool): Whether to resume training from a checkpoint. Default is False.
 
     Returns:
-
+        dict: A dictionary containing the average metrics.
     """
     model.train()
     inputs_dtype = torch.half
@@ -362,13 +349,13 @@ def do_train(cfg, model, resume=False):
 
 
 def main(args):
-    """
+    """Main entry point for the training script.
 
     Args:
-      args:
+        args: Command line arguments.
 
     Returns:
-
+        None
     """
     cfg = setup(args)
 

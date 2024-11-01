@@ -25,7 +25,19 @@ except ImportError:
 
 
 class Attention(nn.Module):
-    """ """
+    """Implements the multi-head attention mechanism.
+
+    This class applies the attention mechanism to the input tensor, allowing the model
+    to focus on different parts of the input sequence.
+
+    Args:
+        dim (int): The number of input features.
+        num_heads (int, optional): The number of attention heads. Defaults to 8.
+        qkv_bias (bool, optional): If True, adds a learnable bias to the query, key, and value projections. Defaults to False.
+        proj_bias (bool, optional): If True, adds a learnable bias to the output projection. Defaults to True.
+        attn_drop (float, optional): Dropout rate for the attention weights. Defaults to 0.0.
+        proj_drop (float, optional): Dropout rate for the output projection. Defaults to 0.0.
+    """
 
     def __init__(
         self,
@@ -47,15 +59,14 @@ class Attention(nn.Module):
         self.proj_drop = nn.Dropout(proj_drop)
 
     def forward(self, x: Tensor) -> Tensor:
-        """
+        """Forward pass for the attention layer.
 
         Args:
-          x: Tensor:
-          x: Tensor:
-          x: Tensor:
+            x (Tensor): The input tensor of shape (B, N, C), where B is the batch size,
+                        N is the number of tokens, and C is the number of features.
 
         Returns:
-
+            Tensor: The output tensor after applying attention and projection.
         """
         B, N, C = x.shape
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
@@ -73,19 +84,24 @@ class Attention(nn.Module):
 
 
 class MemEffAttention(Attention):
-    """ """
+    """Implements memory-efficient multi-head attention.
+
+    This class extends the Attention class to utilize xFormers for memory-efficient
+    attention computation when available.
+
+    Args:
+        Attention (nn.Module): The base attention class.
+    """
 
     def forward(self, x: Tensor, attn_bias=None) -> Tensor:
-        """
+        """Forward pass for the memory-efficient attention layer.
 
         Args:
-          x: Tensor:
-          attn_bias: (Default value = None)
-          x: Tensor:
-          x: Tensor:
+            x (Tensor): The input tensor of shape (B, N, C).
+            attn_bias (optional): An optional bias to add to the attention scores. Defaults to None.
 
         Returns:
-
+            Tensor: The output tensor after applying memory-efficient attention and projection.
         """
         if not XFORMERS_AVAILABLE:
             assert attn_bias is None, "xFormers is required for nested tensors usage"

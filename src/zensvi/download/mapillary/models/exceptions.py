@@ -68,7 +68,6 @@ class InvalidTokenError(MapillaryException):
             code (str): The error code
             fbtrace_id (str): the FBTrace_ID
         """
-
         self.message = message
         self.error_type = error_type
         self.code = code
@@ -101,7 +100,6 @@ class AuthError(MapillaryException):
         Args:
             message (str): Error message
         """
-
         self.message = message
 
     def __str__(self):
@@ -127,7 +125,6 @@ class InvalidImageResolutionError(MapillaryException):
         Args:
             resolution (int): Image resolution
         """
-
         self._resolution = resolution
 
     def __str__(self) -> str:
@@ -157,7 +154,6 @@ class InvalidImageKeyError(MapillaryException):
         Args:
             image_id (int|str): The image id
         """
-
         self._image_id = image_id
 
     def __str__(self) -> str:
@@ -196,7 +192,6 @@ class InvalidKwargError(MapillaryException):
             value (str): The value along with that key
             options (list): List of possible keys that can be passed
         """
-
         self.func = func
         self.key = key
         self.value = value
@@ -244,7 +239,6 @@ class InvalidOptionError(MapillaryException):
             value (any): The invalid value passed
             options (list): The possible list of zoom values
         """
-
         self.param = param
         self.value = value
         self.options = options
@@ -284,7 +278,6 @@ class InvalidFieldError(MapillaryException):
             endpoint (str): The API endpoint that was targeted
             field (list): The invalid field that was passed
         """
-
         self.endpoint = endpoint
         self.field = field
 
@@ -307,9 +300,17 @@ class LiteralEnforcementException(MapillaryException):
         options: typing.Union[typing.List[str], typing.List[int]],
         param: str,
     ):
+        """Enforce that a selected option is one of the allowed options.
 
+        Args:
+            option_selected (str): The option that was selected
+            options (Union[List[str], List[int]]): List of valid options to choose from
+            param (str): Name of the parameter being validated
+
+        Raises:
+            InvalidOptionError: If option_selected is not in options
+        """
         if option_selected not in options:
-
             raise InvalidOptionError(param=param, value=option_selected, options=options)
 
 

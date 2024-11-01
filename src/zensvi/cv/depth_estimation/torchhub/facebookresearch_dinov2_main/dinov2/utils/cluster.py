@@ -11,7 +11,13 @@ from typing import Any, Dict, Optional
 
 
 class ClusterType(Enum):
-    """ """
+    """Enumeration of cluster types.
+
+    Attributes:
+        AWS: Represents AWS cluster type.
+        FAIR: Represents FAIR cluster type.
+        RSC: Represents RSC cluster type.
+    """
 
     AWS = "aws"
     FAIR = "fair"
@@ -19,7 +25,11 @@ class ClusterType(Enum):
 
 
 def _guess_cluster_type() -> ClusterType:
-    """ """
+    """Guesses the cluster type based on the system's uname.
+
+    Returns:
+        ClusterType: The guessed cluster type.
+    """
     uname = os.uname()
     if uname.sysname == "Linux":
         if uname.release.endswith("-aws"):
@@ -35,15 +45,13 @@ def _guess_cluster_type() -> ClusterType:
 def get_cluster_type(
     cluster_type: Optional[ClusterType] = None,
 ) -> Optional[ClusterType]:
-    """
+    """Gets the cluster type.
 
     Args:
-      cluster_type: Optional[ClusterType]:  (Default value = None)
-      cluster_type: Optional[ClusterType]:  (Default value = None)
-      cluster_type: Optional[ClusterType]:  (Default value = None)
+        cluster_type (Optional[ClusterType]): The cluster type to use. If None, it will guess the cluster type.
 
     Returns:
-
+        Optional[ClusterType]: The determined cluster type.
     """
     if cluster_type is None:
         return _guess_cluster_type()
@@ -52,15 +60,13 @@ def get_cluster_type(
 
 
 def get_checkpoint_path(cluster_type: Optional[ClusterType] = None) -> Optional[Path]:
-    """
+    """Gets the checkpoint path based on the cluster type.
 
     Args:
-      cluster_type: Optional[ClusterType]:  (Default value = None)
-      cluster_type: Optional[ClusterType]:  (Default value = None)
-      cluster_type: Optional[ClusterType]:  (Default value = None)
+        cluster_type (Optional[ClusterType]): The cluster type to use. If None, it will guess the cluster type.
 
     Returns:
-
+        Optional[Path]: The path to the checkpoint directory.
     """
     cluster_type = get_cluster_type(cluster_type)
     if cluster_type is None:
@@ -77,15 +83,13 @@ def get_checkpoint_path(cluster_type: Optional[ClusterType] = None) -> Optional[
 def get_user_checkpoint_path(
     cluster_type: Optional[ClusterType] = None,
 ) -> Optional[Path]:
-    """
+    """Gets the user-specific checkpoint path.
 
     Args:
-      cluster_type: Optional[ClusterType]:  (Default value = None)
-      cluster_type: Optional[ClusterType]:  (Default value = None)
-      cluster_type: Optional[ClusterType]:  (Default value = None)
+        cluster_type (Optional[ClusterType]): The cluster type to use. If None, it will guess the cluster type.
 
     Returns:
-
+        Optional[Path]: The path to the user's checkpoint directory.
     """
     checkpoint_path = get_checkpoint_path(cluster_type)
     if checkpoint_path is None:
@@ -97,15 +101,13 @@ def get_user_checkpoint_path(
 
 
 def get_slurm_partition(cluster_type: Optional[ClusterType] = None) -> Optional[str]:
-    """
+    """Gets the SLURM partition based on the cluster type.
 
     Args:
-      cluster_type: Optional[ClusterType]:  (Default value = None)
-      cluster_type: Optional[ClusterType]:  (Default value = None)
-      cluster_type: Optional[ClusterType]:  (Default value = None)
+        cluster_type (Optional[ClusterType]): The cluster type to use. If None, it will guess the cluster type.
 
     Returns:
-
+        Optional[str]: The name of the SLURM partition.
     """
     cluster_type = get_cluster_type(cluster_type)
     if cluster_type is None:
@@ -122,22 +124,16 @@ def get_slurm_partition(cluster_type: Optional[ClusterType] = None) -> Optional[
 def get_slurm_executor_parameters(
     nodes: int, num_gpus_per_node: int, cluster_type: Optional[ClusterType] = None, **kwargs
 ) -> Dict[str, Any]:
-    """
+    """Gets the SLURM executor parameters.
 
     Args:
-      nodes: int:
-      num_gpus_per_node: int:
-      cluster_type: Optional[ClusterType]:  (Default value = None)
-      **kwargs:
-      nodes: int:
-      num_gpus_per_node: int:
-      cluster_type: Optional[ClusterType]:  (Default value = None)
-      nodes: int:
-      num_gpus_per_node: int:
-      cluster_type: Optional[ClusterType]:  (Default value = None)
+        nodes (int): The number of nodes to use.
+        num_gpus_per_node (int): The number of GPUs per node.
+        cluster_type (Optional[ClusterType]): The cluster type to use. If None, it will guess the cluster type.
+        **kwargs: Additional parameters to override defaults.
 
     Returns:
-
+        Dict[str, Any]: A dictionary of SLURM executor parameters.
     """
     # create default parameters
     params = {

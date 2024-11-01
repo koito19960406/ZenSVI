@@ -103,7 +103,6 @@ class Client:
         Returns:
             The access token
         """
-
         return Client.__access_token
 
     @staticmethod
@@ -113,7 +112,6 @@ class Client:
         Args:
             access_token: The access token to be set
         """
-
         Client.__check_token_validity(access_token)
 
         Client.__access_token = access_token
@@ -128,9 +126,7 @@ class Client:
             method (str): HTTP method to be used - required
             params (dict): Query parameters to be attached to the
                 request - optional
-
         """
-
         request = requests.Request(method, url, params=params)
 
         # create a prepared request with the request and the session info merged
@@ -206,7 +202,6 @@ class Client:
             1. 'https://github.com/michaeldbianchi/Python-API-Client-Boilerplate/blob/fd1c82be9e98e'
                 '24730c4631ffc30068272386669/exampleClient.py#L202'
         """
-
         method = prepped_req.method
         url = prepped_req.url
 
@@ -234,7 +229,6 @@ class Client:
             1. 'https://github.com/michaeldbianchi/Python-API-Client-Boilerplate/blob/fd1c82be9e98e'
                 '24730c4631ffc30068272386669/exampleClient.py#L230'
         """
-
         http_v0, http_v1 = list(str(res.raw.version))
         http_v = f"HTTP/{http_v0}.{http_v1}"
         status_code = res.status_code

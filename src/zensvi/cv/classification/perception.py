@@ -14,7 +14,11 @@ from .utils.place_pulse import PlacePulseClassificationModel
 
 
 class ImageDataset(Dataset):
-    """ """
+    """Dataset class for loading and preprocessing images.
+
+    Args:
+        image_files (List[Path]): List of paths to image files.
+    """
 
     def __init__(self, image_files: List[Path]):
         self.image_files = [
@@ -46,15 +50,10 @@ class ImageDataset(Dataset):
         """Custom collate function for the dataset.
 
         Args:
-          data(List[Tuple[str): List of tuples containing image file path and transformed image tensor.
-          data: List[Tuple[str:
-          torch.Tensor]]:
-          data: List[Tuple[str:
-          data: List[Tuple[str:
+            data (List[Tuple[str, torch.Tensor]]): List of tuples containing image file paths and transformed image tensors.
 
         Returns:
-          Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
-
+            Tuple[List[str], torch.Tensor]: Tuple containing a list of image file paths and a batch of stacked image tensors.
         """
         image_files, images = zip(*data)
         images = torch.stack(images)  # Stack images to create a batch
@@ -65,17 +64,11 @@ class ClassifierPerception(BaseClassifier):
     """A classifier for evaluating the perception of streetscape based on a given study.
 
     Args:
-      device(str): The device that the model should be
-    loaded onto. Options are "cpu", "cuda", or "mps". If `None`,
-    the model tries to use a GPU if available; otherwise, falls
-    back to CPU.
-      perception_study(str): The specific perception study for which
-    the model is trained, including "safer", "livelier",
-    "wealthier", "more beautiful", "more boring", "more
-    depressing". This affects the checkpoint file used.
-
-    Returns:
-
+        perception_study (str): The specific perception study for which the model is trained, including
+            "safer", "livelier", "wealthier", "more beautiful", "more boring", "more depressing".
+            This affects the checkpoint file used.
+        device (str, optional): The device that the model should be loaded onto. Options are "cpu", "cuda",
+            or "mps". If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
     """
 
     def __init__(self, perception_study, device=None):
@@ -97,16 +90,13 @@ class ClassifierPerception(BaseClassifier):
         self.model.to(self.device)
 
     def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json"):
-        """
+        """Save results to file in specified format.
 
         Args:
-          results:
-          dir_output:
-          file_name:
-          save_format: (Default value = "csv json")
-
-        Returns:
-
+            results (List[dict]): List of dictionaries containing results to save
+            dir_output (Union[str, Path]): Directory to save output files
+            file_name (str): Base name for output files
+            save_format (str, optional): Format(s) to save results in. Defaults to "csv json".
         """
         df = pd.DataFrame(results)
         dir_output = Path(dir_output)
@@ -119,14 +109,14 @@ class ClassifierPerception(BaseClassifier):
             df.to_json(file_path, orient="records")
 
     def load_checkpoint(self, model, checkpoint_path):
-        """
+        """Load model weights from checkpoint file.
 
         Args:
-          model:
-          checkpoint_path:
+            model (torch.nn.Module): Model to load weights into
+            checkpoint_path (Union[str, Path]): Path to checkpoint file
 
         Returns:
-
+            torch.nn.Module: Model with loaded weights
         """
         checkpoint = torch.load(checkpoint_path, map_location=self.device)
         model.load_state_dict(checkpoint)
@@ -139,30 +129,17 @@ class ClassifierPerception(BaseClassifier):
         batch_size=1,
         save_format="json csv",
     ) -> List[str]:
-        """Classifies images based on human perception of streetscapes from the
-        specified perception study. The output file can be saved in JSON and/or CSV
-        format and will contain the final perception score for each image.
+        """Classifies images based on human perception of streetscapes from the specified perception study.
 
         Args:
-          dir_input(Union[str): Directory containing input
-        images.
-          dir_summary_output(Union[str): Directory to
-        save summary output. If None, output is not saved.
-          batch_size(int, optional): Batch size for inference,
-        defaults to 1.
-          save_format(str, optional): Save format for the output,
-        defaults to "json csv". Options are "json" and "csv".
-        Please add a space between options.
-          dir_input: Union[str:
-          Path]:
-          dir_summary_output: Union[str:
-          dir_input: Union[str:
-          dir_summary_output: Union[str:
-          dir_input: Union[str:
-          dir_summary_output: Union[str:
+            dir_input (Union[str, Path]): Directory containing input images.
+            dir_summary_output (Union[str, Path]): Directory to save summary output. If None, output is not saved.
+            batch_size (int, optional): Batch size for inference. Defaults to 1.
+            save_format (str, optional): Save format for the output. Options are "json" and "csv".
+                Add a space between options. Defaults to "json csv".
 
         Returns:
-
+            List[dict]: List of dictionaries containing perception scores for each image.
         """
         # Prepare output directories
         if dir_summary_output:

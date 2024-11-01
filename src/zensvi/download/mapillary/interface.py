@@ -110,7 +110,6 @@ def get_image_close_to(latitude=-122.1504711, longitude=37.485073, **kwargs):
         'compass_angle': 322.56726074219, 'id': 499412381300321, 'is_pano':
         False, 'sequence_id': '94afmyyhq85xd9bi8p44ve'}} ...
     """
-
     return image.get_image_close_to_controller(
         latitude=latitude,
         longitude=longitude,
@@ -170,7 +169,6 @@ def get_image_looking_at(
         ... {'captured_at': 1612606959408, 'compass_angle': 21.201110839844, 'id': 1199705400459580,
         ... 'is_pano': False, 'sequence_id': 'qrrqtke4a6vtygyc7w8rzc'}}, ... }
     """
-
     return image.get_image_looking_at_controller(
         at=at,
         filters=filters,
@@ -228,7 +226,6 @@ def is_image_being_looked_at(
         ...     )
         ... True
     """
-
     return image.is_image_being_looked_at_controller(at=at, filters=filters)
 
 
@@ -265,7 +262,6 @@ def get_detections_with_image_id(image_id: int, fields: list = []):
         ... "id":"1933525276802129"},"value":"information--parking--g1","id":"1942144785940178"},
         ... , ...}
     """
-
     return detection.get_image_detections_controller(
         image_id=image_id,
         fields=fields,
@@ -302,7 +298,6 @@ def get_detections_with_map_feature_id(map_feature_id: str, fields: list = None)
         ...     "Id: 1933525276802129, image: False" while possible id options, [Id is image_id
         ...     AND image is True, key is map_feature_id ANDimage is False]
     """
-
     return detection.get_map_feature_detections_controller(
         map_feature_id=map_feature_id,
         fields=fields,
@@ -393,7 +388,6 @@ def images_in_bbox(bbox: dict, **filters) -> str:
         ...     organization_id='ORG_ID'
         ... )
     """
-
     return image.get_images_in_bbox_controller(bounding_box=bbox, layer="image", zoom=14, filters=filters)
 
 
@@ -477,7 +471,6 @@ def sequences_in_bbox(bbox: dict, **filters) -> str:
         ...     org_id='ORG_ID'
         ... )
     """
-
     return image.get_images_in_bbox_controller(bounding_box=bbox, layer="sequence", zoom=14, filters=filters)
 
 
@@ -534,7 +527,6 @@ def map_feature_points_in_bbox(bbox: dict, filter_values: list = None, **filters
         ...     existed_before='YYYY-MM-DD HH:MM:SS'
         ... )
     """
-
     return feature.get_map_features_in_bbox_controller(
         bbox=bbox, filters=filters, filter_values=filter_values, layer="points"
     )
@@ -596,7 +588,6 @@ def traffic_signs_in_bbox(bbox: dict, filter_values: list = None, **filters: dic
         ...    existed_before='YYYY-MM-DD HH:MM:SS'
         ... )
     """
-
     return feature.get_map_features_in_bbox_controller(
         bbox=bbox, filters=filters, filter_values=filter_values, layer="traffic_signs"
     )
@@ -655,7 +646,6 @@ def images_in_geojson(
         >>> data = mly.interface.images_in_geojson(json.load(open('my_geojson.geojson', mode='r')))
         >>> open('output_geojson.geojson', mode='w').write(data.encode())
     """
-
     return image.geojson_features_controller(
         geojson=geojson,
         is_image=True,
@@ -726,7 +716,6 @@ def images_in_shape(shape, **filters: dict):
         >>> data = mly.interface.images_in_shape(json.load(open('polygon.geojson', mode='r')))
         >>> open('output_geojson.geojson', mode='w').write(data.encode())
     """
-
     return image.shape_features_controller(shape=shape, is_image=True, filters=filters)
 
 
@@ -775,7 +764,6 @@ def map_features_in_geojson(geojson: dict, **filters: dict):
         ... )
         >>> open('output_geojson.geojson', mode='w').write(data.encode())
     """
-
     if isinstance(geojson, str):
         if "http" in geojson:
             geojson = json.loads(requests.get(geojson).content.decode("utf-8"))
@@ -852,7 +840,6 @@ def map_features_in_shape(shape: dict, **filters: dict):
         >>> data = mly.interface.map_features_in_shape(json.load(open('polygon.geojson', mode='r')))
         >>> open('output_geojson.geojson', mode='w').write(data.encode())
     """
-
     if isinstance(shape, str):
         if "http" in shape:
             shape = json.loads(requests.get(shape).content.decode("utf-8"))
@@ -899,7 +886,6 @@ def feature_from_key(key: str, fields: list = []) -> str:
         ...     fields=['object_value']
         ... )
     """
-
     return feature.get_feature_from_key_controller(key=int(key), fields=fields)
 
 
@@ -958,7 +944,6 @@ def image_from_key(key: str, fields: list = None) -> str:
         ...     fields=['captured_at', 'sfm_cluster', 'width']
         ... )
     """
-
     return image.get_image_from_key_controller(key=int(key), fields=fields)
 
 
@@ -1021,7 +1006,6 @@ def save_locally(
         ...     extension='csv'
         ... )
     """
-
     # Check if a valid file format was provided
     if extension.lower() not in ["geojson", "csv"]:
         # If not, raise an error

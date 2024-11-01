@@ -2,6 +2,17 @@ import osmnx as ox
 
 
 def standardize_column_names(df):
+    """Standardizes column names for latitude and longitude in a DataFrame.
+
+    Converts various common column names for latitude and longitude coordinates
+    to standardized 'latitude' and 'longitude' names.
+
+    Args:
+        df (pandas.DataFrame): DataFrame containing coordinate columns.
+
+    Returns:
+        pandas.DataFrame: DataFrame with standardized column names.
+    """
     longitude_variants = ["longitude", "long", "lon", "lng", "x"]
     latitude_variants = ["latitude", "lat", "lt", "y"]
     # convert all column names to lowercase
@@ -15,6 +26,18 @@ def standardize_column_names(df):
 
 
 def create_buffer_gdf(gdf, buffer_distance):
+    """Creates a buffer around geometries in a GeoDataFrame.
+
+    Projects the GeoDataFrame if needed, creates a buffer of specified distance
+    around the geometries, and reprojects back to WGS84.
+
+    Args:
+        gdf (geopandas.GeoDataFrame): GeoDataFrame containing geometries.
+        buffer_distance (float): Buffer distance in meters.
+
+    Returns:
+        geopandas.GeoDataFrame: GeoDataFrame with buffered geometries.
+    """
     if not gdf.crs:
         gdf = gdf.set_crs("EPSG:4326")
 
@@ -31,6 +54,21 @@ def create_buffer_gdf(gdf, buffer_distance):
 
 
 def check_and_buffer(gdf, buffer):
+    """Checks geometry type and creates buffer if appropriate.
+
+    Validates that point and line geometries have non-zero buffers,
+    then creates the buffer if validation passes.
+
+    Args:
+        gdf (geopandas.GeoDataFrame): GeoDataFrame to check and buffer.
+        buffer (float): Buffer distance in meters.
+
+    Returns:
+        geopandas.GeoDataFrame: Buffered GeoDataFrame if validation passes.
+
+    Raises:
+        ValueError: If buffer is 0 for point or line geometries.
+    """
     # check geometry type
     geom_type = gdf.geom_type.unique()[0]
     # raise an error if the geometry is a Point/MultiPoint or a LineString/MultiLineString & buffer = 0

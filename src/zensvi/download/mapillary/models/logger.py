@@ -17,6 +17,16 @@ import sys
 
 
 class Logger:
+    """A wrapper class for configuring and setting up logging.
+
+    This class provides static methods to configure logging with consistent formatting
+    and file output handling.
+
+    Attributes:
+        format_string (str): The format string used for log messages.
+            Default: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        level (int): The default logging level. Default: logging.INFO
+    """
 
     format_string: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     level: int = logging.INFO
@@ -38,7 +48,6 @@ class Logger:
         Returns:
             logging.Logger: The logger object
         """
-
         # Basic logger setup
         logger: Logger = logging.getLogger(name)
 
@@ -70,7 +79,6 @@ class Logger:
         Returns:
             str: The path where the logs will be stored
         """
-
         log_path: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
 
         if not os.path.exists(log_path):

@@ -45,7 +45,8 @@ def auth():
 
         @wraps(f)
         def wrapper(*args, **kwargs):
-            """
+            """Wrapper.
+
             Args:
                 *args: Function arguments
                 **kwargs: Key word arguments
@@ -53,7 +54,6 @@ def auth():
             Returns:
                 Return the specified function with args, kwargs
             """
-
             if Client.get_token() == "":
                 # If empty, raise exception
                 raise AuthError("Function called without setting the access token")

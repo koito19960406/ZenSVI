@@ -78,7 +78,6 @@ class VectorTilesAdapter(object):
 
     def __init__(self) -> None:
         """Initializing VectorTilesAdapter constructor."""
-
         # Initialize client object
         self.client = Client()
 
@@ -104,7 +103,6 @@ class VectorTilesAdapter(object):
             dict: A GeoJSON for that specific layer and the specified
             zoom level
         """
-
         # Checking if the correct parameters are passed
         VectorTilesAdapter.__check_parameters(longitude=longitude, latitude=latitude)
 
@@ -135,7 +133,6 @@ class VectorTilesAdapter(object):
             dict: A GeoJSON for that specific layer and the specified
             zoom level
         """
-
         # Checking if the correct parameters are passed
         VectorTilesAdapter.__check_parameters(longitude=longitude, latitude=latitude)
 
@@ -166,7 +163,6 @@ class VectorTilesAdapter(object):
             dict: A GeoJSON for that specific layer and the specified
             zoom level
         """
-
         # Checking if the correct parameters are passed
         VectorTilesAdapter.__check_parameters(longitude=longitude, latitude=latitude)
 
@@ -208,7 +204,6 @@ class VectorTilesAdapter(object):
             dict: A geojson with merged features from all unique vector
             tiles
         """
-
         # Check for the correct zoom values against the layer specified
         self.__zoom_range_check(layer=layer, zoom=zoom)
 
@@ -338,7 +333,6 @@ class VectorTilesAdapter(object):
             dict: A geojson with merged features from all unique vector
             tiles
         """
-
         # Check for the correct zoom values against the layer specified
         self.__zoom_range_check(layer="map_feature", zoom=zoom)
 
@@ -389,7 +383,6 @@ class VectorTilesAdapter(object):
             dict: A GeoJSON for that specific layer and the specified
             zoom level
         """
-
         # Lng, Lat ranges, https://docs.mapbox.com/help/glossary/lat-lon/
 
         # If lng not in the range [-180, 180], inclusive
@@ -416,7 +409,6 @@ class VectorTilesAdapter(object):
         Returns:
             dict: A GeoJSON for the return object
         """
-
         # If zoom is not in the valid range of values
         if zoom < self.__min_zoom or zoom > self.__max_zoom:
             # Raise an exception for the invalid values passed
@@ -483,7 +475,6 @@ class VectorTilesAdapter(object):
         Returns:
             dict: A GeoJSON
         """
-
         # * See "FOR DEVELOPERS (3, 3.1)"
 
         # Extract the url depending upon the layer
@@ -524,7 +515,6 @@ class VectorTilesAdapter(object):
         Returns:
             dict: A GeoJSON
         """
-
         # * See "FOR DEVELOPERS (3, 3.1)"
 
         # Extracting url from specified VectorTiles endpoint
@@ -565,7 +555,6 @@ class VectorTilesAdapter(object):
         Returns:
             dict: A GeoJSON
         """
-
         # * See "FOR DEVELOPERS (3, 3.1)"
 
         # Extracting url from specified VectorTiles endpoint

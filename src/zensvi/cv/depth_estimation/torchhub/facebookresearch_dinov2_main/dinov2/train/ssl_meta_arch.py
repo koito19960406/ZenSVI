@@ -30,9 +30,27 @@ logger = logging.getLogger("dinov2")
 
 
 class SSLMetaArch(nn.Module):
-    """ """
+    """SSLMetaArch is a class for building and training a self-supervised learning architecture.
+
+    Attributes:
+        cfg: Configuration object containing model parameters and settings.
+        fp16_scaler: Scaler for mixed precision training.
+        embed_dim: Dimension of the embedding.
+        dino_out_dim: Output dimension for DINO head.
+        do_dino: Boolean indicating if DINO loss is used.
+        do_koleo: Boolean indicating if KOLEO loss is used.
+        do_ibot: Boolean indicating if iBOT loss is used.
+        ibot_separate_head: Boolean indicating if iBOT uses a separate head.
+        student: ModuleDict containing the student model components.
+        teacher: ModuleDict containing the teacher model components.
+    """
 
     def __init__(self, cfg):
+        """Initializes the SSLMetaArch with the given configuration.
+
+        Args:
+            cfg: Configuration object containing model parameters and settings.
+        """
         super().__init__()
         self.cfg = cfg
         self.fp16_scaler = ShardedGradScaler() if cfg.compute_precision.grad_scaler else None
@@ -124,24 +142,21 @@ class SSLMetaArch(nn.Module):
         logger.info(f"Student and Teacher are built: they are both {cfg.student.arch} network.")
 
     def forward(self, inputs):
-        """
+        """Defines the forward pass of the model.
 
         Args:
-          inputs:
+            inputs: Input data for the model.
 
-        Returns:
-
+        Raises:
+            NotImplementedError: This method should be implemented in subclasses.
         """
         raise NotImplementedError
 
     def backprop_loss(self, loss):
-        """
+        """Performs backpropagation on the given loss.
 
         Args:
-          loss:
-
-        Returns:
-
+            loss: The loss value to backpropagate.
         """
         if self.fp16_scaler is not None:
             self.fp16_scaler.scale(loss).backward()
@@ -149,14 +164,14 @@ class SSLMetaArch(nn.Module):
             loss.backward()
 
     def forward_backward(self, images, teacher_temp):
-        """
+        """Performs the forward and backward pass for training.
 
         Args:
-          images:
-          teacher_temp:
+            images: A dictionary containing input images and masks.
+            teacher_temp: Temperature parameter for the teacher model.
 
         Returns:
-
+            A dictionary containing the computed loss values.
         """
         n_global_crops = 2
         assert n_global_crops == 2
@@ -184,7 +199,11 @@ class SSLMetaArch(nn.Module):
         # teacher output
         @torch.no_grad()
         def get_teacher_output():
-            """ """
+            """Computes the output from the teacher model.
+
+            Returns:
+                A tuple containing the softmaxed centered outputs from the teacher model.
+            """
             x, n_global_crops_teacher = global_crops, n_global_crops
             teacher_backbone_output_dict = self.teacher.backbone(x, is_training=True)
             teacher_cls_tokens = teacher_backbone_output_dict["x_norm_clstoken"]
@@ -391,7 +410,7 @@ class SSLMetaArch(nn.Module):
         return loss_dict
 
     def fsdp_synchronize_streams(self):
-        """ """
+        """Synchronizes the FSDP streams for the student and teacher models."""
         if self.need_to_synchronize_fsdp_streams:
             torch.cuda.synchronize()
             self.student.dino_head._streams = (
@@ -400,13 +419,10 @@ class SSLMetaArch(nn.Module):
             self.need_to_synchronize_fsdp_streams = False
 
     def update_teacher(self, m):
-        """
+        """Updates the teacher model parameters using the student model parameters.
 
         Args:
-          m:
-
-        Returns:
-
+            m: A scalar value used for the update.
         """
         student_param_list = []
         teacher_param_list = []
@@ -419,18 +435,18 @@ class SSLMetaArch(nn.Module):
             torch._foreach_add_(teacher_param_list, student_param_list, alpha=1 - m)
 
     def train(self):
-        """ """
+        """Sets the model to training mode and the teacher to evaluation mode."""
         super().train()
         self.teacher.eval()
 
     def get_maybe_fused_params_for_submodel(self, m):
-        """
+        """Gets the parameter groups for a submodel, potentially fusing them.
 
         Args:
-          m:
+            m: The submodel for which to get the parameter groups.
 
         Returns:
-
+            A list of parameter groups, potentially fused.
         """
         params_groups = get_params_groups_with_decay(
             model=m,
@@ -445,14 +461,18 @@ class SSLMetaArch(nn.Module):
         return fused_params_groups
 
     def get_params_groups(self):
-        """ """
+        """Gets all parameter groups for the student model.
+
+        Returns:
+            A list of all parameter groups for the student model.
+        """
         all_params_groups = []
         for m in self.student.values():
             all_params_groups += self.get_maybe_fused_params_for_submodel(m)
         return all_params_groups
 
     def prepare_for_distributed_training(self):
-        """ """
+        """Prepares the model for distributed training using FSDP."""
         logger.info("DISTRIBUTED FSDP -- preparing model for distributed training")
         if has_batchnorms(self.student):
             raise NotImplementedError

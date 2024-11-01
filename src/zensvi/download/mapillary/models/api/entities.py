@@ -61,7 +61,6 @@ class EntityAdapter(object):
 
     def __init__(self):
         """Initializing EntityAdapter constructor."""
-
         # client object to deal with session and requests
         self.client = Client()
 
@@ -76,7 +75,6 @@ class EntityAdapter(object):
         Returns:
             dict: The fetched GeoJSON
         """
-
         # Getting the results through the client, and return after decoding
         try:
             return (
@@ -118,7 +116,6 @@ class EntityAdapter(object):
         Returns:
             dict: The fetched GeoJSON
         """
-
         # Getting the results through the client, and return after decoding
         return ast.literal_eval(
             self.client.get(
@@ -153,7 +150,6 @@ class EntityAdapter(object):
         Returns:
             dict: The fetched GeoJSON
         """
-
         # If id_type is True(id is for image)
         if id_type:
 
@@ -202,7 +198,6 @@ class EntityAdapter(object):
         Returns:
             bool: True if id is image, else False
         """
-
         try:
             # If image data is fetched without an exception being thrown ...
             self.fetch_image(image_id=identity, fields=fields)

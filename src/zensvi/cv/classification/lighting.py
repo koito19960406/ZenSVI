@@ -14,7 +14,12 @@ from .utils.global_streetscapes import GlobalStreetScapesClassificationModel, li
 
 
 class ImageDataset(Dataset):
-    """ """
+    """Dataset class for loading images.
+
+    Args:
+        img_paths: List of paths to image files
+        transform: Optional transform to apply to images
+    """
 
     def __init__(self, image_files: List[Path]):
         self.image_files = [
@@ -46,14 +51,14 @@ class ImageDataset(Dataset):
         """Custom collate function for the dataset.
 
         Args:
-          data(List[Tuple[str): List of tuples containing image file path and transformed image tensor.
-          data: List[Tuple[str:
-          torch.Tensor]]:
-          data: List[Tuple[str:
-          data: List[Tuple[str:
+            data(List[Tuple[str): List of tuples containing image file path and transformed image tensor.
+            data: List[Tuple[str:
+            torch.Tensor]]:
+            data: List[Tuple[str:
+            data: List[Tuple[str:
 
         Returns:
-          Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
+            Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
 
         """
         image_files, images = zip(*data)
@@ -62,16 +67,21 @@ class ImageDataset(Dataset):
 
 
 class ClassifierLighting(BaseClassifier):
-    """A classifier for identifying lighting. The model is from Hou et al (2024) (https://github.com/ualsg/global-streetscapes).
+    """A classifier for identifying lighting conditions in images.
+
+    This classifier uses a pre-trained model from Hou et al (2024)
+    (https://github.com/ualsg/global-streetscapes) to detect lighting conditions
+    in street-level imagery. The model classifies images into three categories:
+    "day", "night", and "dawn/dusk".
 
     Args:
-      device(str): The device that the model should be
-    loaded onto. Options are "cpu", "cuda", or "mps". If `None`,
-    the model tries to use a GPU if available; otherwise, falls
-    back to CPU.
+        device (str, optional): The device to load the model onto. Options are "cpu",
+            "cuda", or "mps". If None, tries to use GPU if available, otherwise falls
+            back to CPU.
 
-    Returns:
-
+    Attributes:
+        device (torch.device): The device the model is loaded on.
+        model (GlobalStreetScapesClassificationModel): The loaded classification model.
     """
 
     def __init__(self, device=None):
@@ -98,16 +108,14 @@ class ClassifierLighting(BaseClassifier):
         self.model.to(self.device)
 
     def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json"):
-        """
+        """Saves classification results to file(s) in specified format(s).
 
         Args:
-          results:
-          dir_output:
-          file_name:
-          save_format: (Default value = "csv json")
-
-        Returns:
-
+            results (List[dict]): List of dictionaries containing classification results.
+            dir_output (Union[str, Path]): Directory to save output files.
+            file_name (str): Base name for output files (without extension).
+            save_format (str, optional): Space-separated string of formats to save in.
+                Options are "csv" and "json". Defaults to "csv json".
         """
         df = pd.DataFrame(results)
         dir_output = Path(dir_output)
@@ -131,25 +139,14 @@ class ClassifierLighting(BaseClassifier):
         categories are "day", "night", and "dawn/dusk".
 
         Args:
-          dir_input(Union[str): directory containing input
-        images.
-          dir_summary_output(Union[str): directory to
-        save summary output.
-          batch_size(int, optional): batch size for inference,
-        defaults to 1
-          save_format(str, optional): save format for the output,
-        defaults to "json csv". Options are "json" and "csv".
-        Please add a space between options.
-          dir_input: Union[str:
-          Path]:
-          dir_summary_output: Union[str:
-          dir_input: Union[str:
-          dir_summary_output: Union[str:
-          dir_input: Union[str:
-          dir_summary_output: Union[str:
+            dir_input (Union[str, Path]): Directory containing input images.
+            dir_summary_output (Union[str, Path]): Directory to save summary output.
+            batch_size (int, optional): Batch size for inference. Defaults to 1.
+            save_format (str, optional): Save format for the output. Options are "json" and "csv".
+                Add a space between options. Defaults to "json csv".
 
         Returns:
-
+            List[str]: List of lighting classifications for each image.
         """
         # Prepare output directories
         if dir_summary_output:

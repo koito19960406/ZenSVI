@@ -37,9 +37,28 @@ from .base_trainer import BaseTrainer
 
 
 class Trainer(BaseTrainer):
-    """ """
+    """Trainer class for depth estimation models.
+
+    This class handles the training and validation processes for the model,
+    including loss computation and logging.
+
+    Attributes:
+        device (torch.device): The device to run the model on (CPU or GPU).
+        silog_loss (SILogLoss): The scale-invariant loss for depth estimation.
+        grad_loss (GradL1Loss): The gradient loss for depth estimation.
+        scaler (amp.GradScaler): Scaler for mixed precision training.
+    """
 
     def __init__(self, config, model, train_loader, test_loader=None, device=None):
+        """Initializes the Trainer.
+
+        Args:
+            config (dict): Configuration parameters for the trainer.
+            model (nn.Module): The model to be trained.
+            train_loader (DataLoader): DataLoader for the training dataset.
+            test_loader (DataLoader, optional): DataLoader for the testing dataset. Defaults to None.
+            device (torch.device, optional): The device to run the model on. Defaults to None.
+        """
         super().__init__(config, model, train_loader, test_loader=test_loader, device=device)
         self.device = device
         self.silog_loss = SILogLoss()
@@ -47,18 +66,19 @@ class Trainer(BaseTrainer):
         self.scaler = amp.GradScaler(enabled=self.config.use_amp)
 
     def train_on_batch(self, batch, train_step):
-        """Expects a batch of images and depth as input batch["image"].shape :
+        """Trains the model on a single batch of data.
 
-        batch_size, c, h, w batch["depth"].shape : batch_size, 1, h, w.
+        Expects a batch of images and depth as input with the following shapes:
+        - batch["image"].shape: (batch_size, c, h, w)
+        - batch["depth"].shape: (batch_size, 1, h, w)
 
         Args:
-          batch:
-          train_step:
+            batch (dict): A dictionary containing the input batch data.
+            train_step (int): The current training step.
 
         Returns:
-
+            dict: A dictionary containing the computed losses.
         """
-
         images, depths_gt = batch["image"].to(self.device), batch["depth"].to(self.device)
         dataset = batch["dataset"][0]
 
@@ -68,7 +88,6 @@ class Trainer(BaseTrainer):
         losses = {}
 
         with amp.autocast(enabled=self.config.use_amp):
-
             output = self.model(images)
             pred_depths = output["metric_depth"]
 
@@ -122,13 +141,13 @@ class Trainer(BaseTrainer):
 
     @torch.no_grad()
     def eval_infer(self, x):
-        """
+        """Evaluates the model inference on the input data.
 
         Args:
-          x:
+            x (torch.Tensor): Input tensor of shape (batch_size, c, h, w).
 
         Returns:
-
+            torch.Tensor: The predicted depth values.
         """
         with amp.autocast(enabled=self.config.use_amp):
             m = self.model.module if self.config.multigpu else self.model
@@ -137,13 +156,16 @@ class Trainer(BaseTrainer):
 
     @torch.no_grad()
     def crop_aware_infer(self, x):
-        """
+        """Performs inference while avoiding the black border.
+
+        If the configuration specifies to avoid the black border, this method crops
+        the input image before inference.
 
         Args:
-          x:
+            x (torch.Tensor): Input tensor of shape (1, c, h, w).
 
         Returns:
-
+            torch.Tensor: The predicted depth values, padded back to the original size.
         """
         # if we are not avoiding the black border, we can just use the normal inference
         if not self.config.get("avoid_boundary", False):
@@ -189,14 +211,14 @@ class Trainer(BaseTrainer):
         return pred_depths
 
     def validate_on_batch(self, batch, val_step):
-        """
+        """Validates the model on a single batch of data.
 
         Args:
-          batch:
-          val_step:
+            batch (dict): A dictionary containing the input batch data.
+            val_step (int): The current validation step.
 
         Returns:
-
+            tuple: A tuple containing metrics and losses.
         """
         images = batch["image"].to(self.device)
         depths_gt = batch["depth"].to(self.device)

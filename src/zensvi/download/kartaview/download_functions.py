@@ -8,6 +8,14 @@ import requests
 
 
 def get_data_from_url(url):
+    """Get data from a KartaView API URL.
+
+    Args:
+        url (str): The KartaView API URL to query.
+
+    Returns:
+        dict: The JSON response data if successful, None otherwise.
+    """
     try:
         r = requests.get(url, timeout=None)
         while r.status_code != 200:
@@ -22,6 +30,14 @@ def get_data_from_url(url):
 
 
 def data_to_dataframe(data):
+    """Convert JSON data to a pandas DataFrame.
+
+    Args:
+        data (dict): JSON data from KartaView API.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the data.
+    """
     try:
         df = pd.DataFrame(data)
         return df
@@ -30,6 +46,14 @@ def data_to_dataframe(data):
 
 
 def get_points_in_sequence(sequenceId):
+    """Get all photo points in a KartaView sequence.
+
+    Args:
+        sequenceId (str): ID of the KartaView sequence.
+
+    Returns:
+        geopandas.GeoDataFrame: GeoDataFrame containing photo points, or empty DataFrame if no data.
+    """
     try:
         url = f"https://api.openstreetcam.org/2.0/sequence/{sequenceId}/photos?itemsPerPage=1000000&join=user,photo,photos,attachment,attachments"
         data = get_data_from_url(url)
@@ -45,6 +69,15 @@ def get_points_in_sequence(sequenceId):
 
 
 def clip_points_with_shape(points, shape):
+    """Clip points to within a shape boundary.
+
+    Args:
+        points (geopandas.GeoDataFrame): GeoDataFrame containing points.
+        shape (geopandas.GeoDataFrame): GeoDataFrame containing boundary shape.
+
+    Returns:
+        geopandas.GeoDataFrame: Points clipped to shape boundary.
+    """
     try:
         if not points.empty:
             points = gp.clip(
@@ -58,6 +91,14 @@ def clip_points_with_shape(points, shape):
 
 
 def get_sequences_in_shape(shape):
+    """Get all KartaView sequences within a shape boundary.
+
+    Args:
+        shape (geopandas.GeoDataFrame): GeoDataFrame containing boundary shape.
+
+    Returns:
+        pd.DataFrame: DataFrame containing sequence data.
+    """
     try:
         ls = []  # empty list to collect sequences
         shape = shape.explode(ignore_index=True)  # explode the shape gdf in case there's any multipolygon in any row
@@ -83,6 +124,14 @@ def get_sequences_in_shape(shape):
 
 
 def get_points_in_shape(shape):
+    """Get all KartaView photo points within a shape boundary.
+
+    Args:
+        shape (geopandas.GeoDataFrame): GeoDataFrame containing boundary shape.
+
+    Returns:
+        pd.DataFrame: DataFrame containing photo points and sequence metadata.
+    """
     try:
         df_seqs = get_sequences_in_shape(shape)
         if df_seqs.empty:

@@ -41,21 +41,50 @@ from zoedepth.utils.misc import RunningAverageDict, colorize, colors
 
 
 def is_rank_zero(args):
-    """
+    """Check if the current process is the rank zero process.
 
     Args:
-      args:
+        args: The arguments containing rank information.
 
     Returns:
-
+        bool: True if the rank is zero, False otherwise.
     """
     return args.rank == 0
 
 
 class BaseTrainer:
-    def __init__(self, config, model, train_loader, test_loader=None, device=None):
-        """Base Trainer class for training a model."""
+    """Base Trainer class for training a model.
 
+    This class provides the necessary methods and attributes to train a depth estimation model.
+
+    Args:
+        config (dict): Configuration object containing training parameters.
+        model (torch.nn.Module): The model to be trained.
+        train_loader (torch.utils.data.DataLoader): DataLoader for the training dataset.
+        test_loader (torch.utils.data.DataLoader, optional): DataLoader for the testing dataset. Defaults to None.
+        device (torch.device, optional): Device to run the model on. Defaults to None, which will use CUDA if available.
+
+    Attributes:
+        config (dict): Configuration parameters for training.
+        metric_criterion (str): The metric criterion used for evaluation.
+        device (torch.device): The device on which the model is trained.
+        model (torch.nn.Module): The model to be trained.
+        train_loader (torch.utils.data.DataLoader): DataLoader for the training dataset.
+        test_loader (torch.utils.data.DataLoader, optional): DataLoader for the testing dataset.
+        optimizer (torch.optim.Optimizer): The optimizer for training the model.
+        scheduler (torch.optim.lr_scheduler): The learning rate scheduler for the optimizer.
+    """
+
+    def __init__(self, config, model, train_loader, test_loader=None, device=None):
+        """Initializes the BaseTrainer with the provided configuration, model, and data loaders.
+
+        Args:
+            config (dict): Configuration object containing training parameters.
+            model (torch.nn.Module): The model to be trained.
+            train_loader (torch.utils.data.DataLoader): DataLoader for the training dataset.
+            test_loader (torch.utils.data.DataLoader, optional): DataLoader for the testing dataset. Defaults to None.
+            device (torch.device, optional): Device to run the model on. Defaults to None, which will use CUDA if available.
+        """
         self.config = config
         self.metric_criterion = "abs_rel"
         if device is None:
@@ -68,14 +97,14 @@ class BaseTrainer:
         self.scheduler = self.init_scheduler()
 
     def resize_to_target(self, prediction, target):
-        """
+        """Resize the prediction to match the target dimensions.
 
         Args:
-          prediction:
-          target:
+            prediction: The predicted output from the model.
+            target: The ground truth target output.
 
         Returns:
-
+            Tensor: Resized prediction tensor.
         """
         if prediction.shape[2:] != target.shape[-2:]:
             prediction = nn.functional.interpolate(
@@ -84,14 +113,14 @@ class BaseTrainer:
         return prediction
 
     def load_ckpt(self, checkpoint_dir="./checkpoints", ckpt_type="best"):
-        """
+        """Load model weights from a checkpoint.
 
         Args:
-          checkpoint_dir: (Default value = "./checkpoints")
-          ckpt_type: (Default value = "best")
+            checkpoint_dir (str): Directory to load checkpoints from (default: "./checkpoints").
+            ckpt_type (str): Type of checkpoint to load (default: "best").
 
         Returns:
-
+            None
         """
         import glob
         import os
@@ -117,7 +146,11 @@ class BaseTrainer:
         self.model = model
 
     def init_optimizer(self):
-        """ """
+        """Initialize the optimizer for the model.
+
+        Returns:
+            Optimizer: The initialized AdamW optimizer.
+        """
         m = self.model.module if self.config.multigpu else self.model
 
         if self.config.same_lr:
@@ -137,7 +170,11 @@ class BaseTrainer:
         return optim.AdamW(params, lr=self.config.lr, weight_decay=self.config.wd)
 
     def init_scheduler(self):
-        """ """
+        """Initialize the learning rate scheduler.
+
+        Returns:
+            Scheduler: The initialized OneCycleLR scheduler.
+        """
         lrs = [params["lr"] for params in self.optimizer.param_groups]
         return optim.lr_scheduler.OneCycleLR(
             self.optimizer,
@@ -154,37 +191,37 @@ class BaseTrainer:
         )
 
     def train_on_batch(self, batch, train_step):
-        """
+        """Train the model on a single batch of data.
 
         Args:
-          batch:
-          train_step:
+            batch: A batch of training data.
+            train_step: The current training step.
 
         Returns:
-
+            dict: A dictionary of loss values.
         """
         raise NotImplementedError
 
     def validate_on_batch(self, batch, val_step):
-        """
+        """Validate the model on a single batch of data.
 
         Args:
-          batch:
-          val_step:
+            batch: A batch of validation data.
+            val_step: The current validation step.
 
         Returns:
-
+            dict: A dictionary of metrics and loss values.
         """
         raise NotImplementedError
 
     def raise_if_nan(self, losses):
-        """
+        """Raise an error if any loss value is NaN.
 
         Args:
-          losses:
+            losses: A dictionary of loss values.
 
         Returns:
-
+            None
         """
         for key, value in losses.items():
             if torch.isnan(value):
@@ -192,21 +229,37 @@ class BaseTrainer:
 
     @property
     def iters_per_epoch(self):
-        """ """
+        """Get the number of iterations per epoch.
+
+        Returns:
+            int: The number of iterations in the training loader.
+        """
         return len(self.train_loader)
 
     @property
     def total_iters(self):
-        """ """
+        """Get the total number of iterations for training.
+
+        Returns:
+            int: Total iterations calculated as epochs * iterations per epoch.
+        """
         return self.config.epochs * self.iters_per_epoch
 
     def should_early_stop(self):
-        """ """
+        """Check if early stopping criteria are met.
+
+        Returns:
+            bool: True if early stopping is required, False otherwise.
+        """
         if self.config.get("early_stop", False) and self.step > self.config.early_stop:
             return True
 
     def train(self):
-        """ """
+        """Train the model over multiple epochs.
+
+        Returns:
+            None
+        """
         print(f"Training {self.config.name}")
         if self.config.uid is None:
             self.config.uid = str(uuid.uuid4()).split("-")[-1]
@@ -248,13 +301,13 @@ class BaseTrainer:
         losses = {}
 
         def stringify_losses(L):
-            """
+            """Convert loss dictionary to a string representation.
 
             Args:
-              L:
+                L: A dictionary of loss values.
 
             Returns:
-
+                str: A string representation of the losses.
             """
             return "; ".join(
                 map(
@@ -362,7 +415,11 @@ class BaseTrainer:
         self.model.train()
 
     def validate(self):
-        """ """
+        """Validate the model on the test dataset.
+
+        Returns:
+            tuple: A tuple containing average metrics and average losses.
+        """
         with torch.no_grad():
             losses_avg = RunningAverageDict()
             metrics_avg = RunningAverageDict()
@@ -382,13 +439,13 @@ class BaseTrainer:
             return metrics_avg.get_value(), losses_avg.get_value()
 
     def save_checkpoint(self, filename):
-        """
+        """Save the model checkpoint to a file.
 
         Args:
-          filename:
+            filename (str): The name of the file to save the checkpoint.
 
         Returns:
-
+            None
         """
         if not self.should_write:
             return
@@ -417,26 +474,19 @@ class BaseTrainer:
         min_depth=None,
         max_depth=None,
     ):
-        """
+        """Log images to WandB.
 
         Args:
-          rgb: Dict[str:
-          list]: (Default value = {})
-          depth: Dict[str:
-          scalar_field: Dict[str:
-          prefix: (Default value = "")
-          scalar_cmap: (Default value = "jet")
-          min_depth: (Default value = None)
-          max_depth: (Default value = None)
-          rgb: Dict[str:
-          depth: Dict[str:
-          scalar_field: Dict[str:
-          rgb: Dict[str:
-          depth: Dict[str:
-          scalar_field: Dict[str:
+            rgb (Dict[str, list]): Dictionary of RGB images (default: {}).
+            depth (Dict[str, list]): Dictionary of depth images (default: {}).
+            scalar_field (Dict[str, list]): Dictionary of scalar field images (default: {}).
+            prefix (str): Prefix for the logged images (default: "").
+            scalar_cmap (str): Colormap for scalar fields (default: "jet").
+            min_depth: Minimum depth value for colorization (default: None).
+            max_depth: Maximum depth value for colorization (default: None).
 
         Returns:
-
+            None
         """
         if not self.should_log:
             return
@@ -456,13 +506,13 @@ class BaseTrainer:
         wandb.log(wimages, step=self.step)
 
     def log_line_plot(self, data):
-        """
+        """Log a line plot to WandB.
 
         Args:
-          data:
+            data: Data to plot.
 
         Returns:
-
+            None
         """
         if not self.should_log:
             return
@@ -473,15 +523,15 @@ class BaseTrainer:
         plt.close()
 
     def log_bar_plot(self, title, labels, values):
-        """
+        """Log a bar plot to WandB.
 
         Args:
-          title:
-          labels:
-          values:
+            title (str): Title of the bar plot.
+            labels (list): List of labels for the bars.
+            values (list): List of values for the bars.
 
         Returns:
-
+            None
         """
         if not self.should_log:
             return

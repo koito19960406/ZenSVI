@@ -212,7 +212,6 @@ class AMSDownloader(BaseDownloader):
             ValueError: If neither lat and lon, csv file, shapefile, nor
                 place name is provided.
         """
-
         if self.logger is not None:
             self.logger.log_args(
                 "AMSDownloader download_svi",

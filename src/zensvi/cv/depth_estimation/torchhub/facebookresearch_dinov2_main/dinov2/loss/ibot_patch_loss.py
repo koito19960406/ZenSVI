@@ -18,15 +18,15 @@ try:
     from xformers.ops import cross_entropy
 
     def lossfunc(t, s, temp):
-        """
+        """Calculates the loss using cross-entropy.
 
         Args:
-          t:
-          s:
-          temp:
+            t (torch.Tensor): Target tensor.
+            s (torch.Tensor): Prediction tensor.
+            temp (float): Temperature parameter for scaling.
 
         Returns:
-
+            torch.Tensor: Computed loss.
         """
         s = s.float()
         t = t.float()
@@ -38,23 +38,35 @@ try:
 except ImportError:
 
     def lossfunc(t, s, temp):
-        """
+        """Calculates the loss using log softmax.
 
         Args:
-          t:
-          s:
-          temp:
+            t (torch.Tensor): Target tensor.
+            s (torch.Tensor): Prediction tensor.
+            temp (float): Temperature parameter for scaling.
 
         Returns:
-
+            torch.Tensor: Computed loss.
         """
         return torch.sum(t * F.log_softmax(s / temp, dim=-1), dim=-1)
 
 
 class iBOTPatchLoss(nn.Module):
-    """ """
+    """Implements the iBOT patch loss for training.
+
+    Attributes:
+        student_temp (float): Temperature for the student model.
+        center_momentum (float): Momentum for updating the center.
+    """
 
     def __init__(self, patch_out_dim, student_temp=0.1, center_momentum=0.9):
+        """Initializes the iBOTPatchLoss.
+
+        Args:
+            patch_out_dim (int): Output dimension of the patch.
+            student_temp (float, optional): Temperature for the student model. Defaults to 0.1.
+            center_momentum (float, optional): Momentum for updating the center. Defaults to 0.9.
+        """
         super().__init__()
         self.student_temp = student_temp
         self.center_momentum = center_momentum
@@ -66,46 +78,33 @@ class iBOTPatchLoss(nn.Module):
 
     @torch.no_grad()
     def softmax_center_teacher(self, teacher_patch_tokens, teacher_temp):
-        """
+        """Applies softmax to the teacher patch tokens with centering.
 
         Args:
-          teacher_patch_tokens:
-          teacher_temp:
+            teacher_patch_tokens (torch.Tensor): Teacher patch tokens.
+            teacher_temp (float): Temperature for scaling.
 
         Returns:
-
+            torch.Tensor: Softmax normalized teacher patch tokens.
         """
         self.apply_center_update()
-        # teacher centering and sharpening
-        #
-        # WARNING:
-        #   as self.center is a float32, everything gets casted to float32 afterwards
-        #
-        # teacher_patch_tokens = teacher_patch_tokens.float()
-        # return F.softmax((teacher_patch_tokens.sub_(self.center.to(teacher_patch_tokens.dtype))).mul_(1 / teacher_temp), dim=-1)
-
         return F.softmax((teacher_patch_tokens - self.center) / teacher_temp, dim=-1)
-
-        # this is experimental, keep everything in float16 and let's see what happens:
-        # return F.softmax((teacher_patch_tokens.sub_(self.center)) / teacher_temp, dim=-1)
 
     @torch.no_grad()
     def sinkhorn_knopp_teacher(self, teacher_output, teacher_temp, n_masked_patches_tensor, n_iterations=3):
-        """
+        """Applies Sinkhorn-Knopp normalization to the teacher output.
 
         Args:
-          teacher_output:
-          teacher_temp:
-          n_masked_patches_tensor:
-          n_iterations: (Default value = 3)
+            teacher_output (torch.Tensor): Teacher output tensor.
+            teacher_temp (float): Temperature for scaling.
+            n_masked_patches_tensor (torch.Tensor): Number of masked patches.
+            n_iterations (int, optional): Number of iterations for normalization. Defaults to 3.
 
         Returns:
-
+            torch.Tensor: Normalized output tensor.
         """
         teacher_output = teacher_output.float()
-        # world_size = dist.get_world_size() if dist.is_initialized() else 1
         Q = torch.exp(teacher_output / teacher_temp).t()  # Q is K-by-B for consistency with notations from our paper
-        # B = Q.shape[1] * world_size # number of samples to assign
         B = n_masked_patches_tensor
         dist.all_reduce(B)
         K = Q.shape[0]  # how many prototypes
@@ -132,19 +131,15 @@ class iBOTPatchLoss(nn.Module):
         return Q.t()
 
     def forward(self, student_patch_tokens, teacher_patch_tokens, student_masks_flat):
-        """Cross-entropy between softmax outputs of the teacher and student networks.
-
-        student_patch_tokens: (B, N, D) tensor
-        teacher_patch_tokens: (B, N, D) tensor
-        student_masks_flat: (B, N) tensor
+        """Computes the loss between student and teacher patch tokens.
 
         Args:
-          student_patch_tokens:
-          teacher_patch_tokens:
-          student_masks_flat:
+            student_patch_tokens (torch.Tensor): Student patch tokens.
+            teacher_patch_tokens (torch.Tensor): Teacher patch tokens.
+            student_masks_flat (torch.Tensor): Masks for the student tokens.
 
         Returns:
-
+            torch.Tensor: Computed loss.
         """
         t = teacher_patch_tokens
         s = student_patch_tokens
@@ -160,21 +155,20 @@ class iBOTPatchLoss(nn.Module):
         n_masked_patches=None,
         masks_weight=None,
     ):
-        """
+        """Computes the masked loss between student and teacher patch tokens.
 
         Args:
-          student_patch_tokens_masked:
-          teacher_patch_tokens_masked:
-          student_masks_flat:
-          n_masked_patches: (Default value = None)
-          masks_weight: (Default value = None)
+            student_patch_tokens_masked (torch.Tensor): Masked student patch tokens.
+            teacher_patch_tokens_masked (torch.Tensor): Masked teacher patch tokens.
+            student_masks_flat (torch.Tensor): Masks for the student tokens.
+            n_masked_patches (int, optional): Number of masked patches. Defaults to None.
+            masks_weight (torch.Tensor, optional): Weights for the masks. Defaults to None.
 
         Returns:
-
+            torch.Tensor: Computed masked loss.
         """
         t = teacher_patch_tokens_masked
         s = student_patch_tokens_masked
-        # loss = torch.sum(t * F.log_softmax(s / self.student_temp, dim=-1), dim=-1)
         loss = lossfunc(t, s, self.student_temp)
         if masks_weight is None:
             masks_weight = (
@@ -189,25 +183,19 @@ class iBOTPatchLoss(nn.Module):
 
     @torch.no_grad()
     def update_center(self, teacher_patch_tokens):
-        """
+        """Updates the center using the teacher patch tokens.
 
         Args:
-          teacher_patch_tokens:
-
-        Returns:
-
+            teacher_patch_tokens (torch.Tensor): Teacher patch tokens.
         """
         self.reduce_center_update(teacher_patch_tokens)
 
     @torch.no_grad()
     def reduce_center_update(self, teacher_patch_tokens):
-        """
+        """Reduces the center update across distributed processes.
 
         Args:
-          teacher_patch_tokens:
-
-        Returns:
-
+            teacher_patch_tokens (torch.Tensor): Teacher patch tokens.
         """
         self.updated = False
         self.len_teacher_patch_tokens = len(teacher_patch_tokens)
@@ -217,7 +205,7 @@ class iBOTPatchLoss(nn.Module):
 
     @torch.no_grad()
     def apply_center_update(self):
-        """ """
+        """Applies the center update after reduction."""
         if self.updated is False:
             world_size = dist.get_world_size() if dist.is_initialized() else 1
 

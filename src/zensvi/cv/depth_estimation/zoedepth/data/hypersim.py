@@ -34,13 +34,13 @@ from torchvision import transforms
 
 
 def hypersim_distance_to_depth(npyDistance):
-    """
+    """Converts distance data to depth data.
 
     Args:
-      npyDistance:
+        npyDistance (numpy.ndarray): The distance data in numpy array format.
 
     Returns:
-
+        numpy.ndarray: The converted depth data.
     """
     intWidth, intHeight, fltFocal = 1024, 768, 886.81
 
@@ -64,15 +64,27 @@ def hypersim_distance_to_depth(npyDistance):
 
 
 class ToTensor(object):
-    """ """
+    """Converts images and depth maps to PyTorch tensors and applies resizing."""
 
     def __init__(self):
+        """Initializes the ToTensor transformation.
+
+        This transformation normalizes the image and resizes it to (480, 640).
+        """
         # self.normalize = transforms.Normalize(
         #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         self.normalize = lambda x: x
         self.resize = transforms.Resize((480, 640))
 
     def __call__(self, sample):
+        """Applies the transformation to the sample.
+
+        Args:
+            sample (dict): A dictionary containing "image" and "depth".
+
+        Returns:
+            dict: A dictionary containing the transformed "image", "depth", and dataset name.
+        """
         image, depth = sample["image"], sample["depth"]
         image = self.to_tensor(image)
         image = self.normalize(image)
@@ -83,20 +95,19 @@ class ToTensor(object):
         return {"image": image, "depth": depth, "dataset": "hypersim"}
 
     def to_tensor(self, pic):
-        """
+        """Converts a PIL image or numpy array to a PyTorch tensor.
 
         Args:
-          pic:
+            pic (PIL.Image or numpy.ndarray): The image to convert.
 
         Returns:
-
+            torch.Tensor: The converted image as a tensor.
         """
-
         if isinstance(pic, np.ndarray):
             img = torch.from_numpy(pic.transpose((2, 0, 1)))
             return img
 
-        #         # handle PIL Image
+        # Handle PIL Image
         if pic.mode == "I":
             img = torch.from_numpy(np.array(pic, np.int32, copy=False))
         elif pic.mode == "I;16":
@@ -120,9 +131,14 @@ class ToTensor(object):
 
 
 class HyperSim(Dataset):
-    """ """
+    """Dataset class for loading images and depth maps from the HyperSim dataset."""
 
     def __init__(self, data_dir_root):
+        """Initializes the HyperSim dataset.
+
+        Args:
+            data_dir_root (str): The root directory containing the dataset.
+        """
         # image paths are of the form <data_dir_root>/<scene>/images/scene_cam_#_final_preview/*.tonemap.jpg
         # depth paths are of the form <data_dir_root>/<scene>/images/scene_cam_#_final_preview/*.depth_meters.hdf5
         self.image_files = glob.glob(
@@ -141,6 +157,14 @@ class HyperSim(Dataset):
         self.transform = ToTensor()
 
     def __getitem__(self, idx):
+        """Fetches an item from the dataset.
+
+        Args:
+            idx (int): The index of the item to fetch.
+
+        Returns:
+            dict: A dictionary containing the transformed image and depth.
+        """
         image_path = self.image_files[idx]
         depth_path = self.depth_files[idx]
 
@@ -164,19 +188,24 @@ class HyperSim(Dataset):
         return sample
 
     def __len__(self):
+        """Returns the total number of items in the dataset.
+
+        Returns:
+            int: The number of items in the dataset.
+        """
         return len(self.image_files)
 
 
 def get_hypersim_loader(data_dir_root, batch_size=1, **kwargs):
-    """
+    """Creates a DataLoader for the HyperSim dataset.
 
     Args:
-      data_dir_root:
-      batch_size: (Default value = 1)
-      **kwargs:
+        data_dir_root (str): The root directory containing the dataset.
+        batch_size (int, optional): The number of samples per batch. Defaults to 1.
+        **kwargs: Additional arguments for DataLoader.
 
     Returns:
-
+        DataLoader: A DataLoader for the HyperSim dataset.
     """
     dataset = HyperSim(data_dir_root)
     return DataLoader(dataset, batch_size, **kwargs)

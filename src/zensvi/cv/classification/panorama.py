@@ -14,7 +14,15 @@ from .utils.global_streetscapes import GlobalStreetScapesClassificationModel, pa
 
 
 class ImageDataset(Dataset):
-    """ """
+    """A dataset class for loading and preprocessing images.
+
+    Args:
+        image_files (List[Path]): List of paths to image files.
+
+    Attributes:
+        image_files (List[Path]): Filtered list of valid image file paths.
+        transform (transforms.Compose): Composition of image transformations to apply.
+    """
 
     def __init__(self, image_files: List[Path]):
         self.image_files = [
@@ -33,9 +41,22 @@ class ImageDataset(Dataset):
         )
 
     def __len__(self) -> int:
+        """Returns the number of images in the dataset.
+
+        Returns:
+            int: Number of images.
+        """
         return len(self.image_files)
 
     def __getitem__(self, idx: int) -> Tuple[str, torch.Tensor]:
+        """Gets an image and its file path at the given index.
+
+        Args:
+            idx (int): Index of the image to retrieve.
+
+        Returns:
+            Tuple[str, torch.Tensor]: Tuple containing the image file path as string and the preprocessed image tensor.
+        """
         image_file = self.image_files[idx]
         img = Image.open(image_file)  # Open image directly using PIL
         img = self.transform(img)  # Apply transformations
@@ -46,15 +67,10 @@ class ImageDataset(Dataset):
         """Custom collate function for the dataset.
 
         Args:
-          data(List[Tuple[str): List of tuples containing image file path and transformed image tensor.
-          data: List[Tuple[str:
-          torch.Tensor]]:
-          data: List[Tuple[str:
-          data: List[Tuple[str:
+            data (List[Tuple[str, torch.Tensor]]): List of tuples containing image file paths and transformed image tensors.
 
         Returns:
-          Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
-
+            Tuple[List[str], torch.Tensor]: Tuple containing a list of image file paths and a batch of stacked image tensors.
         """
         image_files, images = zip(*data)
         images = torch.stack(images)  # Stack images to create a batch
@@ -65,13 +81,9 @@ class ClassifierPanorama(BaseClassifier):
     """A classifier for identifying panorama. The model is from Hou et al (2024) (https://github.com/ualsg/global-streetscapes).
 
     Args:
-      device(str): The device that the model should be
-    loaded onto. Options are "cpu", "cuda", or "mps". If `None`,
-    the model tries to use a GPU if available; otherwise, falls
-    back to CPU.
-
-    Returns:
-
+        device (str, optional): The device that the model should be loaded onto.
+            Options are "cpu", "cuda", or "mps". If `None`, the model tries to use
+            a GPU if available; otherwise, falls back to CPU.
     """
 
     def __init__(self, device=None):
@@ -100,16 +112,14 @@ class ClassifierPanorama(BaseClassifier):
         self.model.to(self.device)
 
     def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json"):
-        """
+        """Saves classification results to file(s) in specified format(s).
 
         Args:
-          results:
-          dir_output:
-          file_name:
-          save_format: (Default value = "csv json")
-
-        Returns:
-
+            results (List[dict]): List of dictionaries containing classification results.
+            dir_output (Union[str, Path]): Directory to save output files.
+            file_name (str): Base name for output files (without extension).
+            save_format (str, optional): Space-separated string of formats to save in.
+                Options are "csv" and "json". Defaults to "csv json".
         """
         df = pd.DataFrame(results)
         dir_output = Path(dir_output)
@@ -133,25 +143,14 @@ class ClassifierPanorama(BaseClassifier):
         categories are "True" and "False".
 
         Args:
-          dir_input(Union[str): directory containing input
-        images.
-          dir_summary_output(Union[str): directory to
-        save summary output.
-          batch_size(int, optional): batch size for inference,
-        defaults to 1
-          save_format(str, optional): save format for the output,
-        defaults to "json csv". Options are "json" and "csv".
-        Please add a space between options.
-          dir_input: Union[str:
-          Path]:
-          dir_summary_output: Union[str:
-          dir_input: Union[str:
-          dir_summary_output: Union[str:
-          dir_input: Union[str:
-          dir_summary_output: Union[str:
+            dir_input (Union[str, Path]): Directory containing input images.
+            dir_summary_output (Union[str, Path]): Directory to save summary output.
+            batch_size (int, optional): Batch size for inference. Defaults to 1.
+            save_format (str, optional): Save format for the output. Options are "json" and "csv".
+                Add a space between options. Defaults to "json csv".
 
         Returns:
-
+            List[str]: List of panorama classifications for each image.
         """
         # Prepare output directories
         if dir_summary_output:

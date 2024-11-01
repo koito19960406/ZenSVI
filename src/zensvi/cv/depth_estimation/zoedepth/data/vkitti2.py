@@ -32,7 +32,14 @@ from torch.utils.data import DataLoader, Dataset
 
 
 class ToTensor(object):
-    """ """
+    """Convert images and depth maps to PyTorch tensors.
+
+    This class normalizes the input images and depth maps and converts them
+    to tensors suitable for model input.
+
+    Attributes:
+        normalize (callable): A function to normalize the input images.
+    """
 
     def __init__(self):
         # self.normalize = transforms.Normalize(
@@ -41,6 +48,14 @@ class ToTensor(object):
         # self.resize = transforms.Resize((375, 1242))
 
     def __call__(self, sample):
+        """Convert the sample to tensors.
+
+        Args:
+            sample (dict): A dictionary containing "image" and "depth".
+
+        Returns:
+            dict: A dictionary containing the converted "image", "depth", and "dataset".
+        """
         image, depth = sample["image"], sample["depth"]
 
         image = self.to_tensor(image)
@@ -52,20 +67,19 @@ class ToTensor(object):
         return {"image": image, "depth": depth, "dataset": "vkitti"}
 
     def to_tensor(self, pic):
-        """
+        """Convert a picture to a PyTorch tensor.
 
         Args:
-          pic:
+            pic (PIL Image or np.ndarray): The input image to convert.
 
         Returns:
-
+            torch.Tensor: The converted image as a tensor.
         """
-
         if isinstance(pic, np.ndarray):
             img = torch.from_numpy(pic.transpose((2, 0, 1)))
             return img
 
-        #         # handle PIL Image
+        # Handle PIL Image
         if pic.mode == "I":
             img = torch.from_numpy(np.array(pic, np.int32, copy=False))
         elif pic.mode == "I;16":
@@ -89,9 +103,26 @@ class ToTensor(object):
 
 
 class VKITTI2(Dataset):
-    """ """
+    """VKITTI2 Dataset for depth estimation.
+
+    This dataset class loads images and depth maps from the VKITTI2 dataset,
+    applies transformations, and provides access to the data.
+
+    Attributes:
+        image_files (list): List of image file paths.
+        depth_files (list): List of depth file paths.
+        do_kb_crop (bool): Whether to apply KB cropping.
+        transform (ToTensor): Transformation to apply to the data.
+    """
 
     def __init__(self, data_dir_root, do_kb_crop=True, split="test"):
+        """Initialize the VKITTI2 dataset.
+
+        Args:
+            data_dir_root (str): Root directory of the dataset.
+            do_kb_crop (bool): Whether to apply KB cropping. Defaults to True.
+            split (str): Dataset split, either "train" or "test". Defaults to "test".
+        """
         import glob
 
         # image paths are of the form <data_dir_root>/rgb/<scene>/<variant>/frames/<rgb,depth>/Camera<0,1>/rgb_{}.jpg
@@ -102,7 +133,7 @@ class VKITTI2(Dataset):
         self.depth_files = [
             r.replace("/rgb/", "/depth/").replace("rgb_", "depth_").replace(".jpg", ".png") for r in self.image_files
         ]
-        self.do_kb_crop = True
+        self.do_kb_crop = do_kb_crop
         self.transform = ToTensor()
 
         # If train test split is not created, then create one.
@@ -145,6 +176,14 @@ class VKITTI2(Dataset):
             ]
 
     def __getitem__(self, idx):
+        """Get a sample from the dataset.
+
+        Args:
+            idx (int): Index of the sample to retrieve.
+
+        Returns:
+            dict: A dictionary containing the image, depth, and dataset information.
+        """
         image_path = self.image_files[idx]
         depth_path = self.depth_files[idx]
 
@@ -152,10 +191,6 @@ class VKITTI2(Dataset):
         # depth = Image.open(depth_path)
         depth = cv2.imread(depth_path, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH) / 100.0  # cm to m
         depth = Image.fromarray(depth)
-        # print("dpeth min max", depth.min(), depth.max())
-
-        # print(np.shape(image))
-        # print(np.shape(depth))
 
         if self.do_kb_crop:
             if idx == 0:
@@ -166,17 +201,14 @@ class VKITTI2(Dataset):
             left_margin = int((width - 1216) / 2)
             depth = depth.crop((left_margin, top_margin, left_margin + 1216, top_margin + 352))
             image = image.crop((left_margin, top_margin, left_margin + 1216, top_margin + 352))
-            # uv = uv[:, top_margin:top_margin + 352, left_margin:left_margin + 1216]
 
         image = np.asarray(image, dtype=np.float32) / 255.0
-        # depth = np.asarray(depth, dtype=np.uint16) /1.
         depth = np.asarray(depth, dtype=np.float32) / 1.0
         depth[depth > 80] = -1
 
         depth = depth[..., None]
         sample = dict(image=image, depth=depth)
 
-        # return sample
         sample = self.transform(sample)
 
         if idx == 0:
@@ -185,19 +217,24 @@ class VKITTI2(Dataset):
         return sample
 
     def __len__(self):
+        """Get the total number of samples in the dataset.
+
+        Returns:
+            int: The number of samples in the dataset.
+        """
         return len(self.image_files)
 
 
 def get_vkitti2_loader(data_dir_root, batch_size=1, **kwargs):
-    """
+    """Get a DataLoader for the VKITTI2 dataset.
 
     Args:
-      data_dir_root:
-      batch_size: (Default value = 1)
-      **kwargs:
+        data_dir_root (str): Root directory of the dataset.
+        batch_size (int): Number of samples per batch. Defaults to 1.
+        **kwargs: Additional arguments for DataLoader.
 
     Returns:
-
+        DataLoader: A DataLoader for the VKITTI2 dataset.
     """
     dataset = VKITTI2(data_dir_root)
     return DataLoader(dataset, batch_size, **kwargs)

@@ -7,16 +7,16 @@ import torch.nn.functional as F
 
 
 def apply_min_size(sample, size, image_interpolation_method=cv2.INTER_AREA):
-    """Rezise the sample to ensure the given size. Keeps aspect ratio.
+    """Resize the sample to ensure the given size while keeping the aspect ratio.
 
     Args:
-      sample(dict): sample
-      size(tuple): image size
-      image_interpolation_method: (Default value = cv2.INTER_AREA)
+        sample (dict): The sample containing image, disparity, and mask.
+        size (tuple): The desired output size as (height, width).
+        image_interpolation_method (int, optional): The interpolation method for resizing.
+            Defaults to cv2.INTER_AREA.
 
     Returns:
-      tuple: new size
-
+        tuple: The new size as (width, height).
     """
     shape = list(sample["disparity"].shape)
 
@@ -32,7 +32,7 @@ def apply_min_size(sample, size, image_interpolation_method=cv2.INTER_AREA):
     shape[0] = math.ceil(scale * shape[0])
     shape[1] = math.ceil(scale * shape[1])
 
-    # resize
+    # Resize the image, disparity, and mask
     sample["image"] = cv2.resize(sample["image"], tuple(shape[::-1]), interpolation=image_interpolation_method)
 
     sample["disparity"] = cv2.resize(sample["disparity"], tuple(shape[::-1]), interpolation=cv2.INTER_NEAREST)
@@ -47,7 +47,7 @@ def apply_min_size(sample, size, image_interpolation_method=cv2.INTER_AREA):
 
 
 class Resize(object):
-    """Resize sample to given size (width, height)."""
+    """Resize sample to a given size (width, height)."""
 
     def __init__(
         self,
@@ -59,28 +59,25 @@ class Resize(object):
         resize_method="lower_bound",
         image_interpolation_method=cv2.INTER_AREA,
     ):
-        """Init.
+        """Initialize the Resize object.
 
         Args:
-            width (int): desired output width
-            height (int): desired output height
-            resize_target (bool, optional):
-                True: Resize the full sample (image, mask, target).
-                False: Resize image only.
+            width (int): Desired output width.
+            height (int): Desired output height.
+            resize_target (bool, optional): Whether to resize the full sample (image, mask, target) or just the image.
                 Defaults to True.
-            keep_aspect_ratio (bool, optional):
-                True: Keep the aspect ratio of the input sample.
-                Output sample might not have the given width and height, and
-                resize behaviour depends on the parameter 'resize_method'.
-                Defaults to False.
-            ensure_multiple_of (int, optional):
-                Output width and height is constrained to be multiple of this parameter.
+            keep_aspect_ratio (bool, optional): Whether to preserve the aspect ratio of the input sample. If True,
+                output dimensions may differ from specified width/height based on resize_method. Defaults to False.
+            ensure_multiple_of (int, optional): Constrains output width and height to be multiples of this value.
                 Defaults to 1.
-            resize_method (str, optional):
-                "lower_bound": Output will be at least as large as the given size.
-                "upper_bound": Output will be at max as large as the given size. (Output size might be smaller than given size.)
-                "minimal": Scale as least as possible.  (Output size might be smaller than given size.)
+            resize_method (str, optional): Method to use for resizing. Options are:
+                - "lower_bound": Output dimensions will be at least as large as specified size
+                - "upper_bound": Output dimensions will be at most as large as specified size
+                - "minimal": Uses minimal scaling possible (may be smaller than specified size)
                 Defaults to "lower_bound".
+            image_interpolation_method (int, optional): Interpolation method to use for image resizing.
+                Defaults to cv2.INTER_AREA.
+
         """
         self.__width = width
         self.__height = height
@@ -92,15 +89,15 @@ class Resize(object):
         self.__image_interpolation_method = image_interpolation_method
 
     def constrain_to_multiple_of(self, x, min_val=0, max_val=None):
-        """
+        """Constrain a value to be a multiple of a specified value.
 
         Args:
-          x:
-          min_val: (Default value = 0)
-          max_val: (Default value = None)
+            x (float): The value to constrain.
+            min_val (int, optional): The minimum value. Defaults to 0.
+            max_val (int, optional): The maximum value. Defaults to None.
 
         Returns:
-
+            int: The constrained value.
         """
         y = (np.round(x / self.__multiple_of) * self.__multiple_of).astype(int)
 
@@ -113,43 +110,43 @@ class Resize(object):
         return y
 
     def get_size(self, width, height):
-        """
+        """Determine the new size based on the desired width and height.
 
         Args:
-          width:
-          height:
+            width (int): The original width.
+            height (int): The original height.
 
         Returns:
-
+            tuple: The new size as (new_width, new_height).
         """
-        # determine new height and width
+        # Determine new height and width
         scale_height = self.__height / height
         scale_width = self.__width / width
 
         if self.__keep_aspect_ratio:
             if self.__resize_method == "lower_bound":
-                # scale such that output size is lower bound
+                # Scale such that output size is lower bound
                 if scale_width > scale_height:
-                    # fit width
+                    # Fit width
                     scale_height = scale_width
                 else:
-                    # fit height
+                    # Fit height
                     scale_width = scale_height
             elif self.__resize_method == "upper_bound":
-                # scale such that output size is upper bound
+                # Scale such that output size is upper bound
                 if scale_width < scale_height:
-                    # fit width
+                    # Fit width
                     scale_height = scale_width
                 else:
-                    # fit height
+                    # Fit height
                     scale_width = scale_height
             elif self.__resize_method == "minimal":
-                # scale as least as possbile
+                # Scale as least as possible
                 if abs(1 - scale_width) < abs(1 - scale_height):
-                    # fit width
+                    # Fit width
                     scale_height = scale_width
                 else:
-                    # fit height
+                    # Fit height
                     scale_width = scale_height
             else:
                 raise ValueError(f"resize_method {self.__resize_method} not implemented")
@@ -169,9 +166,17 @@ class Resize(object):
         return (new_width, new_height)
 
     def __call__(self, sample):
+        """Resize the sample based on the initialized parameters.
+
+        Args:
+            sample (dict): The sample containing image, disparity, depth, and mask.
+
+        Returns:
+            dict: The resized sample.
+        """
         width, height = self.get_size(sample["image"].shape[1], sample["image"].shape[0])
 
-        # resize sample
+        # Resize sample
         sample["image"] = cv2.resize(
             sample["image"],
             (width, height),
@@ -190,9 +195,6 @@ class Resize(object):
                 sample["depth"] = cv2.resize(sample["depth"], (width, height), interpolation=cv2.INTER_NEAREST)
 
             if "semseg_mask" in sample:
-                # sample["semseg_mask"] = cv2.resize(
-                #     sample["semseg_mask"], (width, height), interpolation=cv2.INTER_NEAREST
-                # )
                 sample["semseg_mask"] = F.interpolate(
                     torch.from_numpy(sample["semseg_mask"]).float()[None, None, ...],
                     (height, width),
@@ -205,20 +207,32 @@ class Resize(object):
                     (width, height),
                     interpolation=cv2.INTER_NEAREST,
                 )
-                # sample["mask"] = sample["mask"].astype(bool)
 
-        # print(sample['image'].shape, sample['depth'].shape)
         return sample
 
 
 class NormalizeImage(object):
-    """Normlize image by given mean and std."""
+    """Normalize image by given mean and standard deviation."""
 
     def __init__(self, mean, std):
+        """Initialize the NormalizeImage object.
+
+        Args:
+            mean (float): The mean value for normalization.
+            std (float): The standard deviation value for normalization.
+        """
         self.__mean = mean
         self.__std = std
 
     def __call__(self, sample):
+        """Normalize the image in the sample.
+
+        Args:
+            sample (dict): The sample containing the image.
+
+        Returns:
+            dict: The sample with the normalized image.
+        """
         sample["image"] = (sample["image"] - self.__mean) / self.__std
 
         return sample
@@ -228,9 +242,18 @@ class PrepareForNet(object):
     """Prepare sample for usage as network input."""
 
     def __init__(self):
+        """Initialize the PrepareForNet object."""
         pass
 
     def __call__(self, sample):
+        """Prepare the sample for network input.
+
+        Args:
+            sample (dict): The sample containing the image, mask, depth, and semseg_mask.
+
+        Returns:
+            dict: The prepared sample for network input.
+        """
         image = np.transpose(sample["image"], (2, 0, 1))
         sample["image"] = np.ascontiguousarray(image).astype(np.float32)
 

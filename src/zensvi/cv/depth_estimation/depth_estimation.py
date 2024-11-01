@@ -18,7 +18,12 @@ from .zoedepth.utils.config import get_config
 
 
 class ImageDataset(Dataset):
-    """ """
+    """Dataset class for loading images.
+
+    Args:
+        image_files (List[Path]): List of paths to image files.
+        task (str): Task type, either "relative" or "absolute". Defaults to "relative".
+    """
 
     def __init__(self, image_files: List[Path], task="relative"):
         self.image_files = [
@@ -45,9 +50,22 @@ class ImageDataset(Dataset):
             )
 
     def __len__(self) -> int:
+        """Returns the number of images in the dataset.
+
+        Returns:
+            int: Number of images.
+        """
         return len(self.image_files)
 
     def __getitem__(self, idx: int) -> Tuple[str, torch.Tensor]:
+        """Fetches an image and its original size by index.
+
+        Args:
+            idx (int): Index of the image to fetch.
+
+        Returns:
+            Tuple[str, torch.Tensor]: Tuple containing the image file path, the image tensor, and its original size.
+        """
         image_file = self.image_files[idx]
         if self.task == "absolute":
             image = cv2.cvtColor(cv2.imread(str(image_file)), cv2.COLOR_BGR2RGB) / 255.0
@@ -65,15 +83,10 @@ class ImageDataset(Dataset):
         """Custom collate function for the dataset.
 
         Args:
-          data(List[Tuple[str): List of tuples containing image file path and transformed image tensor.
-          data: List[Tuple[str:
-          torch.Tensor]]:
-          data: List[Tuple[str:
-          data: List[Tuple[str:
+            data (List[Tuple[str, torch.Tensor]]): List of tuples containing image file path and transformed image tensor.
 
         Returns:
-          Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
-
+            Tuple[List[str], torch.Tensor, List[Tuple[int, int]]]: Tuple containing lists of image file paths, a batch of image tensors, and their original sizes.
         """
         image_files, images, original_sizes = zip(*data)
         if self.task == "absolute":
@@ -84,16 +97,16 @@ class ImageDataset(Dataset):
 
 
 class DepthEstimator:
-    """A class for estimating depth in images. The class uses the DPT model from Hugging Face for relative depth estimation (https://huggingface.co/Intel/dpt-large) and the ZoeDepth model for absolute (metric) depth estimation (https://github.com/LiheYoung/Depth-Anything/tree/1e1c8d373ae6383ef6490a5c2eb5ef29fd085993/metric_depth).
+    """A class for estimating depth in images.
+
+    The class uses the DPT model from Hugging Face for relative depth estimation
+    (https://huggingface.co/Intel/dpt-large) and the ZoeDepth model for absolute
+    (metric) depth estimation
+    (https://github.com/LiheYoung/Depth-Anything/tree/1e1c8d373ae6383ef6490a5c2eb5ef29fd085993/metric_depth).
 
     Args:
-      device(str): device to use for inference, defaults to
-    None
-      task(str): task to perform, either "relative" or
-    "absolute", defaults to "relative"
-
-    Returns:
-
+        device (str, optional): Device to use for inference. Defaults to None.
+        task (str): Task to perform, either "relative" or "absolute". Defaults to "relative".
     """
 
     def __init__(self, device=None, task="relative"):
@@ -110,13 +123,16 @@ class DepthEstimator:
             self._setup_relative_depth()
 
     def _setup_relative_depth(self):
-        """ """
+        """Sets up the model for relative depth estimation."""
         self.processor = DPTImageProcessor.from_pretrained("Intel/dpt-large")
         self.model = DPTForDepthEstimation.from_pretrained("Intel/dpt-large").to(self.device)
 
     def _setup_absolute_depth(self):
-        """ """
-        # donwload the model from https://huggingface.co/spaces/LiheYoung/Depth-Anything/resolve/main/checkpoints_metric_depth/depth_anything_metric_depth_outdoor.pt to models/depth_anything_metric_depth_outdoor.pt with request.get
+        """Sets up the model for absolute depth estimation.
+
+        Downloads the model if it does not exist locally.
+        """
+        # download the model from https://huggingface.co/spaces/LiheYoung/Depth-Anything/resolve/main/checkpoints_metric_depth/depth_anything_metric_depth_outdoor.pt to models/depth_anything_metric_depth_outdoor.pt with request.get
         # Path to the current file (e.g., __file__ in a module)
         current_file_path = Path(__file__)
         # Path to the current file's directory (often the package directory)
@@ -151,16 +167,13 @@ class DepthEstimator:
         self.model = build_model(config).to(self.device)
 
     def _process_images(self, image_files, images, original_sizes, dir_output):
-        """
+        """Processes images to estimate depth and save the results.
 
         Args:
-          image_files:
-          images:
-          original_sizes:
-          dir_output:
-
-        Returns:
-
+            image_files (List[str]): List of image file paths.
+            images (torch.Tensor): Batch of images.
+            original_sizes (List[Tuple[int, int]]): List of original sizes of the images.
+            dir_output (str): Directory to save the output depth maps.
         """
         inputs = (
             self.processor(images=images, return_tensors="pt").to(self.device) if self.task == "relative" else images
@@ -201,34 +214,16 @@ class DepthEstimator:
         batch_size: int = 1,
         max_workers: int = 4,
     ):
-        """Estimates relative depth in the images. Saves the depth maps in the specified
-        directory.
+        """Estimates depth in the images and saves the depth maps.
 
         Args:
-          dir_input(Union[str): directory containing input
-        images.
-          dir_image_output(Union[str): directory to save the
-        depth maps.
-          batch_size(int): batch size for inference,
-        defaults to 1
-          max_workers(int): maximum number of workers for
-        parallel processing, defaults to 4
-          dir_input: Union[str:
-          Path]:
-          dir_image_output: Union[str:
-          batch_size: int:  (Default value = 1)
-          max_workers: int:  (Default value = 4)
-          dir_input: Union[str:
-          dir_image_output: Union[str:
-          batch_size: int:  (Default value = 1)
-          max_workers: int:  (Default value = 4)
-          dir_input: Union[str:
-          dir_image_output: Union[str:
-          batch_size: int:  (Default value = 1)
-          max_workers: int:  (Default value = 4)
+            dir_input (Union[str, Path]): Directory containing input images or a single image file.
+            dir_image_output (Union[str, Path]): Directory to save the depth maps.
+            batch_size (int): Batch size for inference. Defaults to 1.
+            max_workers (int): Maximum number of workers for parallel processing. Defaults to 4.
 
-        Returns:
-
+        Raises:
+            ValueError: If dir_input is neither a file nor a directory.
         """
         # make directory
         dir_input = Path(dir_input)

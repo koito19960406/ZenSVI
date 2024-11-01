@@ -17,14 +17,17 @@ from omegaconf import OmegaConf
 logger = logging.getLogger("dinov2")
 
 
-def apply_scaling_rules_to_cfg(cfg):  # to fix
-    """
+def apply_scaling_rules_to_cfg(cfg):
+    """Applies scaling rules to the configuration.
 
     Args:
-      cfg:
+        cfg: The configuration object containing optimization settings.
 
     Returns:
+        The updated configuration object with applied scaling rules.
 
+    Raises:
+        NotImplementedError: If the scaling rule is not implemented.
     """
     if cfg.optim.scaling_rule == "sqrt_wrt_1024":
         base_lr = cfg.optim.base_lr
@@ -37,15 +40,15 @@ def apply_scaling_rules_to_cfg(cfg):  # to fix
 
 
 def write_config(cfg, output_dir, name="config.yaml"):
-    """
+    """Writes the configuration to a YAML file.
 
     Args:
-      cfg:
-      output_dir:
-      name: (Default value = "config.yaml")
+        cfg: The configuration object to be saved.
+        output_dir: The directory where the configuration file will be saved.
+        name: The name of the configuration file (default is "config.yaml").
 
     Returns:
-
+        The path to the saved configuration file.
     """
     logger.info(OmegaConf.to_yaml(cfg))
     saved_cfg_path = os.path.join(output_dir, name)
@@ -55,13 +58,13 @@ def write_config(cfg, output_dir, name="config.yaml"):
 
 
 def get_cfg_from_args(args):
-    """
+    """Generates a configuration object from command line arguments.
 
     Args:
-      args:
+        args: The command line arguments containing configuration options.
 
     Returns:
-
+        The merged configuration object.
     """
     args.output_dir = os.path.abspath(args.output_dir)
     args.opts += [f"train.output_dir={args.output_dir}"]
@@ -72,13 +75,13 @@ def get_cfg_from_args(args):
 
 
 def default_setup(args):
-    """
+    """Performs the default setup for distributed training.
 
     Args:
-      args:
+        args: The command line arguments containing setup options.
 
     Returns:
-
+        None
     """
     distributed.enable(overwrite=True)
     seed = getattr(args, "seed", 0)
@@ -94,13 +97,13 @@ def default_setup(args):
 
 
 def setup(args):
-    """Create configs and perform basic setups.
+    """Creates configurations and performs basic setups.
 
     Args:
-      args:
+        args: The command line arguments containing setup options.
 
     Returns:
-
+        The configuration object after setup.
     """
     cfg = get_cfg_from_args(args)
     os.makedirs(args.output_dir, exist_ok=True)

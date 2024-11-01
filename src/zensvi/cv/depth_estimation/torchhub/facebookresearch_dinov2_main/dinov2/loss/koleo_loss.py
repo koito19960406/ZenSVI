@@ -19,28 +19,33 @@ logger = logging.getLogger("dinov2")
 class KoLeoLoss(nn.Module):
     """Kozachenko-Leonenko entropic loss regularizer from Sablayrolles et al.
 
-    - 2018 - Spreading vectors for similarity search
+    This loss function is designed to encourage the spreading of vectors for similarity search.
+
+    References:
+        - Sablayrolles et al. (2018). Spreading vectors for similarity search.
 
     Args:
+        None
 
     Returns:
-
+        None
     """
 
     def __init__(self):
+        """Initializes the KoLeoLoss module and sets up the pairwise distance metric."""
         super().__init__()
         self.pdist = nn.PairwiseDistance(2, eps=1e-8)
 
     def pairwise_NNs_inner(self, x):
-        """Pairwise nearest neighbors for L2-normalized vectors.
+        """Computes pairwise nearest neighbors for L2-normalized vectors.
 
-        Uses Torch rather than Faiss to remain on GPU.
+        This method uses Torch instead of Faiss to remain on the GPU.
 
         Args:
-          x:
+            x (torch.Tensor): Input tensor of shape (B, D) where B is the batch size and D is the feature dimension.
 
         Returns:
-
+            torch.Tensor: Indices of the nearest neighbors for each vector in the input tensor.
         """
         # parwise dot products (= inverse distance)
         dots = torch.mm(x, x.t())
@@ -51,14 +56,14 @@ class KoLeoLoss(nn.Module):
         return I
 
     def forward(self, student_output, eps=1e-8):
-        """
+        """Computes the loss based on the student output.
 
         Args:
-          student_output(BxD): backbone output of student
-          eps: (Default value = 1e-8)
+            student_output (torch.Tensor): Backbone output of the student of shape (B, D).
+            eps (float, optional): A small value to avoid division by zero. Default is 1e-8.
 
         Returns:
-
+            torch.Tensor: The computed loss value.
         """
         with torch.cuda.amp.autocast(enabled=False):
             student_output = F.normalize(student_output, eps=eps, p=2, dim=-1)

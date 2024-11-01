@@ -139,7 +139,6 @@ class ImageTransformer:
         Returns:
             np.ndarray: Transformed image.
         """
-
         f = 0.5 * width * 1 / np.tan(0.5 * FOV / 180.0 * np.pi)
         cx = (width - 1) / 2.0
         cy = (height - 1) / 2.0

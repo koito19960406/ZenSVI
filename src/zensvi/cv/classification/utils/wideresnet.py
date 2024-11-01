@@ -16,26 +16,37 @@ model_urls = {
 
 
 def conv3x3(in_planes, out_planes, stride=1):
-    """
+    """3x3 convolution with padding.
 
     Args:
-      in_planes:
-      out_planes:
-      stride: (Default value = 1)
+        in_planes (int): Number of input channels
+        out_planes (int): Number of output channels
+        stride (int, optional): Stride of the convolution. Defaults to 1.
 
     Returns:
-
+        nn.Conv2d: 3x3 convolution layer
     """
-    "3x3 convolution with padding"
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False)
 
 
 class BasicBlock(nn.Module):
-    """ """
+    """Basic residual block for ResNet.
+
+    Attributes:
+        expansion (int): Expansion factor for the block
+    """
 
     expansion = 1
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
+        """Initialize basic block.
+
+        Args:
+            inplanes (int): Number of input channels
+            planes (int): Number of intermediate channels
+            stride (int, optional): Stride of first conv. Defaults to 1.
+            downsample (nn.Module, optional): Downsampling module. Defaults to None.
+        """
         super(BasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = nn.BatchNorm2d(planes)
@@ -46,13 +57,13 @@ class BasicBlock(nn.Module):
         self.stride = stride
 
     def forward(self, x):
-        """
+        """Forward pass.
 
         Args:
-          x:
+            x (torch.Tensor): Input tensor
 
         Returns:
-
+            torch.Tensor: Output tensor
         """
         residual = x
 
@@ -73,11 +84,23 @@ class BasicBlock(nn.Module):
 
 
 class Bottleneck(nn.Module):
-    """ """
+    """Bottleneck residual block for ResNet.
+
+    Attributes:
+        expansion (int): Expansion factor for the block
+    """
 
     expansion = 4
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
+        """Initialize bottleneck block.
+
+        Args:
+            inplanes (int): Number of input channels
+            planes (int): Number of intermediate channels
+            stride (int, optional): Stride of conv2. Defaults to 1.
+            downsample (nn.Module, optional): Downsampling module. Defaults to None.
+        """
         super(Bottleneck, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
@@ -90,13 +113,13 @@ class Bottleneck(nn.Module):
         self.stride = stride
 
     def forward(self, x):
-        """
+        """Forward pass.
 
         Args:
-          x:
+            x (torch.Tensor): Input tensor
 
         Returns:
-
+            torch.Tensor: Output tensor
         """
         residual = x
 
@@ -121,9 +144,16 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    """ """
+    """ResNet model architecture."""
 
     def __init__(self, block, layers, num_classes=1000):
+        """Initialize ResNet model.
+
+        Args:
+            block (nn.Module): Type of residual block to use
+            layers (list): Number of blocks in each layer
+            num_classes (int, optional): Number of output classes. Defaults to 1000.
+        """
         self.inplanes = 64
         super(ResNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
@@ -148,16 +178,16 @@ class ResNet(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
     def _make_layer(self, block, planes, blocks, stride=1):
-        """
+        """Create a layer of residual blocks.
 
         Args:
-          block:
-          planes:
-          blocks:
-          stride: (Default value = 1)
+            block (nn.Module): Type of residual block
+            planes (int): Number of output channels
+            blocks (int): Number of blocks in the layer
+            stride (int, optional): Stride of first block. Defaults to 1.
 
         Returns:
-
+            nn.Sequential: Sequential container of blocks
         """
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
@@ -181,13 +211,13 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        """
+        """Forward pass.
 
         Args:
-          x:
+            x (torch.Tensor): Input tensor
 
         Returns:
-
+            torch.Tensor: Output tensor
         """
         x = self.conv1(x)
         x = self.bn1(x)
@@ -207,14 +237,14 @@ class ResNet(nn.Module):
 
 
 def resnet18(pretrained=False, **kwargs):
-    """Constructs a ResNet-18 model.
+    """Construct a ResNet-18 model.
 
     Args:
-      pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
-      **kwargs:
+        pretrained (bool, optional): If True, returns model pre-trained on ImageNet. Defaults to False.
+        **kwargs: Additional arguments passed to ResNet constructor
 
     Returns:
-
+        ResNet: ResNet-18 model
     """
     model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
     if pretrained:
@@ -223,14 +253,14 @@ def resnet18(pretrained=False, **kwargs):
 
 
 def resnet34(pretrained=False, **kwargs):
-    """Constructs a ResNet-34 model.
+    """Construct a ResNet-34 model.
 
     Args:
-      pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
-      **kwargs:
+        pretrained (bool, optional): If True, returns model pre-trained on ImageNet. Defaults to False.
+        **kwargs: Additional arguments passed to ResNet constructor
 
     Returns:
-
+        ResNet: ResNet-34 model
     """
     model = ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
     if pretrained:
@@ -239,14 +269,14 @@ def resnet34(pretrained=False, **kwargs):
 
 
 def resnet50(pretrained=False, **kwargs):
-    """Constructs a ResNet-50 model.
+    """Construct a ResNet-50 model.
 
     Args:
-      pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
-      **kwargs:
+        pretrained (bool, optional): If True, returns model pre-trained on ImageNet. Defaults to False.
+        **kwargs: Additional arguments passed to ResNet constructor
 
     Returns:
-
+        ResNet: ResNet-50 model
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
@@ -255,14 +285,14 @@ def resnet50(pretrained=False, **kwargs):
 
 
 def resnet101(pretrained=False, **kwargs):
-    """Constructs a ResNet-101 model.
+    """Construct a ResNet-101 model.
 
     Args:
-      pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
-      **kwargs:
+        pretrained (bool, optional): If True, returns model pre-trained on ImageNet. Defaults to False.
+        **kwargs: Additional arguments passed to ResNet constructor
 
     Returns:
-
+        ResNet: ResNet-101 model
     """
     model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
     if pretrained:
@@ -271,14 +301,14 @@ def resnet101(pretrained=False, **kwargs):
 
 
 def resnet152(pretrained=False, **kwargs):
-    """Constructs a ResNet-152 model.
+    """Construct a ResNet-152 model.
 
     Args:
-      pretrained(bool, optional): If True, returns a model pre-trained on ImageNet (Default value = False)
-      **kwargs:
+        pretrained (bool, optional): If True, returns model pre-trained on ImageNet. Defaults to False.
+        **kwargs: Additional arguments passed to ResNet constructor
 
     Returns:
-
+        ResNet: ResNet-152 model
     """
     model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
     if pretrained:

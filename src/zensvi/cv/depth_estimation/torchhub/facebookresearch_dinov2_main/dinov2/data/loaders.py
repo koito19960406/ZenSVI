@@ -18,7 +18,7 @@ logger = logging.getLogger("dinov2")
 
 
 class SamplerType(Enum):
-    """ """
+    """Enumeration for different types of samplers."""
 
     DISTRIBUTED = 0
     EPOCH = 1
@@ -28,15 +28,13 @@ class SamplerType(Enum):
 
 
 def _make_bool_str(b: bool) -> str:
-    """
+    """Converts a boolean value to a string.
 
     Args:
-      b: bool:
-      b: bool:
-      b: bool:
+        b (bool): The boolean value to convert.
 
     Returns:
-
+        str: "yes" if b is True, "no" otherwise.
     """
     return "yes" if b else "no"
 
@@ -45,28 +43,24 @@ def _make_sample_transform(
     image_transform: Optional[Callable] = None,
     target_transform: Optional[Callable] = None,
 ):
-    """
+    """Creates a sample transformation function.
 
     Args:
-      image_transform: Optional[Callable]:  (Default value = None)
-      target_transform: Optional[Callable]:  (Default value = None)
-      image_transform: Optional[Callable]:  (Default value = None)
-      target_transform: Optional[Callable]:  (Default value = None)
-      image_transform: Optional[Callable]:  (Default value = None)
-      target_transform: Optional[Callable]:  (Default value = None)
+        image_transform (Optional[Callable]): A function to transform images. (Default is None)
+        target_transform (Optional[Callable]): A function to transform targets. (Default is None)
 
     Returns:
-
+        Callable: A function that applies the specified transformations to a sample.
     """
 
     def transform(sample):
-        """
+        """Applies transformations to a sample.
 
         Args:
-          sample:
+            sample: A tuple containing the image and target.
 
         Returns:
-
+            Tuple: Transformed image and target.
         """
         image, target = sample
         if image_transform is not None:
@@ -79,15 +73,16 @@ def _make_sample_transform(
 
 
 def _parse_dataset_str(dataset_str: str):
-    """
+    """Parses a dataset string into a class and keyword arguments.
 
     Args:
-      dataset_str: str:
-      dataset_str: str:
-      dataset_str: str:
+        dataset_str (str): The dataset string to parse.
 
     Returns:
+        Tuple: A tuple containing the dataset class and a dictionary of keyword arguments.
 
+    Raises:
+        ValueError: If the dataset name is unsupported.
     """
     tokens = dataset_str.split(":")
 
@@ -120,23 +115,12 @@ def make_dataset(
     """Creates a dataset with the specified parameters.
 
     Args:
-      dataset_str: A dataset string description (e.g. ImageNet:split=TRAIN).
-      transform: A transform to apply to images.
-      target_transform: A transform to apply to targets.
-      *:
-      dataset_str: str:
-      transform: Optional[Callable]:  (Default value = None)
-      target_transform: Optional[Callable]:  (Default value = None)
-      dataset_str: str:
-      transform: Optional[Callable]:  (Default value = None)
-      target_transform: Optional[Callable]:  (Default value = None)
-      dataset_str: str:
-      transform: Optional[Callable]:  (Default value = None)
-      target_transform: Optional[Callable]:  (Default value = None)
+        dataset_str (str): A dataset string description (e.g. ImageNet:split=TRAIN).
+        transform (Optional[Callable]): A transform to apply to images. (Default is None)
+        target_transform (Optional[Callable]): A transform to apply to targets. (Default is None)
 
     Returns:
-      : The created dataset.
-
+        Dataset: The created dataset.
     """
     logger.info(f'using dataset: "{dataset_str}"')
 
@@ -163,29 +147,22 @@ def _make_sampler(
     size: int = -1,
     advance: int = 0,
 ) -> Optional[Sampler]:
-    """
+    """Creates a sampler based on the specified parameters.
 
     Args:
-      *:
-      dataset:
-      type: Optional[SamplerType]:  (Default value = None)
-      shuffle: bool:  (Default value = False)
-      seed: int:  (Default value = 0)
-      size: int:  (Default value = -1)
-      advance: int:  (Default value = 0)
-      type: Optional[SamplerType]:  (Default value = None)
-      shuffle: bool:  (Default value = False)
-      seed: int:  (Default value = 0)
-      size: int:  (Default value = -1)
-      advance: int:  (Default value = 0)
-      type: Optional[SamplerType]:  (Default value = None)
-      shuffle: bool:  (Default value = False)
-      seed: int:  (Default value = 0)
-      size: int:  (Default value = -1)
-      advance: int:  (Default value = 0)
+        dataset: The dataset to sample from.
+        type (Optional[SamplerType]): The type of sampler to create. (Default is None)
+        shuffle (bool): Whether to shuffle the samples. (Default is False)
+        seed (int): The random seed to use. (Default is 0)
+        size (int): The number of samples to return. (Default is -1)
+        advance (int): How many samples to skip. (Default is 0)
 
     Returns:
+        Optional[Sampler]: The created sampler or None if no sampler is needed.
 
+    Raises:
+        ValueError: If the sampler size or advance is invalid.
+        NotImplementedError: If advance > 0 for epoch sampler.
     """
     sample_count = len(dataset)
 
@@ -261,54 +238,21 @@ def make_data_loader(
     """Creates a data loader with the specified parameters.
 
     Args:
-      dataset: A dataset (third party, LaViDa or WebDataset).
-      batch_size: The size of batches to generate.
-      num_workers: The number of workers to use.
-      shuffle: Whether to shuffle samples.
-      seed: The random seed to use.
-      sampler_type: Which sampler to use: EPOCH, INFINITE, SHARDED_INFINITE, SHARDED_INFINITE_NEW, DISTRIBUTED or None.
-      sampler_size: The number of images per epoch (when applicable) or -1 for the entire dataset.
-      sampler_advance: How many samples to skip (when applicable).
-      drop_last: Whether the last non-full batch of data should be dropped.
-      persistent_workers: maintain the workers Dataset instances alive after a dataset has been consumed once.
-      collate_fn: Function that performs batch collation
-      *:
-      batch_size: int:
-      num_workers: int:
-      shuffle: bool:  (Default value = True)
-      seed: int:  (Default value = 0)
-      sampler_type: Optional[SamplerType]:  (Default value = SamplerType.INFINITE)
-      sampler_size: int:  (Default value = -1)
-      sampler_advance: int:  (Default value = 0)
-      drop_last: bool:  (Default value = True)
-      persistent_workers: bool:  (Default value = False)
-      collate_fn: Optional[Callable[[List[T]]:
-      Any]]: (Default value = None)
-      batch_size: int:
-      num_workers: int:
-      shuffle: bool:  (Default value = True)
-      seed: int:  (Default value = 0)
-      sampler_type: Optional[SamplerType]:  (Default value = SamplerType.INFINITE)
-      sampler_size: int:  (Default value = -1)
-      sampler_advance: int:  (Default value = 0)
-      drop_last: bool:  (Default value = True)
-      persistent_workers: bool:  (Default value = False)
-      collate_fn: Optional[Callable[[List[T]]:
-      batch_size: int:
-      num_workers: int:
-      shuffle: bool:  (Default value = True)
-      seed: int:  (Default value = 0)
-      sampler_type: Optional[SamplerType]:  (Default value = SamplerType.INFINITE)
-      sampler_size: int:  (Default value = -1)
-      sampler_advance: int:  (Default value = 0)
-      drop_last: bool:  (Default value = True)
-      persistent_workers: bool:  (Default value = False)
-      collate_fn: Optional[Callable[[List[T]]:
+        dataset: A dataset (third party, LaViDa or WebDataset).
+        batch_size (int): The size of batches to generate.
+        num_workers (int): The number of workers to use.
+        shuffle (bool): Whether to shuffle samples. (Default is True)
+        seed (int): The random seed to use. (Default is 0)
+        sampler_type (Optional[SamplerType]): Which sampler to use. (Default is SamplerType.INFINITE)
+        sampler_size (int): The number of images per epoch or -1 for the entire dataset. (Default is -1)
+        sampler_advance (int): How many samples to skip. (Default is 0)
+        drop_last (bool): Whether the last non-full batch of data should be dropped. (Default is True)
+        persistent_workers (bool): Maintain the workers alive after a dataset has been consumed once. (Default is False)
+        collate_fn (Optional[Callable[[List[T]], Any]]): Function that performs batch collation. (Default is None)
 
     Returns:
-
+        DataLoader: The created data loader.
     """
-
     sampler = _make_sampler(
         dataset=dataset,
         type=sampler_type,

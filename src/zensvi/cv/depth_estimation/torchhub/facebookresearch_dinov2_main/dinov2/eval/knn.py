@@ -30,21 +30,15 @@ def get_args_parser(
     parents: Optional[List[argparse.ArgumentParser]] = None,
     add_help: bool = True,
 ):
-    """
+    """Creates an argument parser for the k-NN evaluation.
 
     Args:
-      description: Optional[str]:  (Default value = None)
-      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
-      add_help: bool:  (Default value = True)
-      description: Optional[str]:  (Default value = None)
-      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
-      add_help: bool:  (Default value = True)
-      description: Optional[str]:  (Default value = None)
-      parents: Optional[List[argparse.ArgumentParser]]:  (Default value = None)
-      add_help: bool:  (Default value = True)
+        description (Optional[str]): Description of the parser.
+        parents (Optional[List[argparse.ArgumentParser]]): List of parent parsers.
+        add_help (bool): Whether to add help options. Defaults to True.
 
     Returns:
-
+        argparse.ArgumentParser: Configured argument parser.
     """
     parents = parents or []
     setup_args_parser = get_setup_args_parser(parents=parents, add_help=False)
@@ -112,17 +106,21 @@ def get_args_parser(
 
 
 class KnnModule(torch.nn.Module):
-    """Gets knn of test features from all processes on a chunk of the train features.
+    """Module for k-NN classification using test features.
 
-    Each rank gets a chunk of the train features as well as a chunk of the test features.
-    In `compute_neighbors`, for each rank one after the other, its chunk of test features
-    is sent to all devices, partial knns are computed with each chunk of train features
-    then collated back on the original device.
+    This module computes the k-nearest neighbors of test features from all processes
+    on a chunk of the train features. Each rank gets a chunk of the train features
+    and a chunk of the test features. In `compute_neighbors`, for each rank, its chunk
+    of test features is sent to all devices, partial k-NNs are computed with each chunk
+    of train features, and then collated back on the original device.
 
     Args:
-
-    Returns:
-
+        train_features (torch.Tensor): Features of the training dataset.
+        train_labels (torch.Tensor): Labels of the training dataset.
+        nb_knn (list): List of k values for k-NN.
+        T (float): Temperature parameter for softmax.
+        device (torch.device): Device to perform computations on.
+        num_classes (int): Number of classes. Defaults to 1000.
     """
 
     def __init__(self, train_features, train_labels, nb_knn, T, device, num_classes=1000):
@@ -141,28 +139,28 @@ class KnnModule(torch.nn.Module):
         self.num_classes = num_classes
 
     def _get_knn_sims_and_labels(self, similarity, train_labels):
-        """
+        """Gets the top-k similarities and corresponding labels.
 
         Args:
-          similarity:
-          train_labels:
+            similarity (torch.Tensor): Similarity scores.
+            train_labels (torch.Tensor): Labels of the training dataset.
 
         Returns:
-
+            tuple: Top-k similarities and corresponding neighbor labels.
         """
         topk_sims, indices = similarity.topk(self.max_k, largest=True, sorted=True)
         neighbors_labels = torch.gather(train_labels, 1, indices)
         return topk_sims, neighbors_labels
 
     def _similarity_for_rank(self, features_rank, source_rank):
-        """
+        """Computes similarity for a specific rank.
 
         Args:
-          features_rank:
-          source_rank:
+            features_rank (torch.Tensor): Features of the current rank.
+            source_rank (int): Rank to compute similarity for.
 
         Returns:
-
+            tuple: Top-k similarities and corresponding neighbor labels.
         """
         # Send the features from `source_rank` to all ranks
         broadcast_shape = torch.tensor(features_rank.shape).to(self.device)
@@ -179,15 +177,15 @@ class KnnModule(torch.nn.Module):
         return self._get_knn_sims_and_labels(similarity_rank, candidate_labels)
 
     def _gather_all_knn_for_rank(self, topk_sims, neighbors_labels, target_rank):
-        """
+        """Gathers all k-NN results for a specific rank.
 
         Args:
-          topk_sims:
-          neighbors_labels:
-          target_rank:
+            topk_sims (torch.Tensor): Top-k similarities.
+            neighbors_labels (torch.Tensor): Neighbor labels.
+            target_rank (int): Rank to gather results for.
 
         Returns:
-
+            tuple or None: Gathered top-k similarities and labels, or None if not the target rank.
         """
         # Gather all neighbors for `target_rank`
         topk_sims_rank = retrieved_rank = None
@@ -207,13 +205,13 @@ class KnnModule(torch.nn.Module):
         return None
 
     def compute_neighbors(self, features_rank):
-        """
+        """Computes neighbors for the given features across all ranks.
 
         Args:
-          features_rank:
+            features_rank (torch.Tensor): Features of the current rank.
 
         Returns:
-
+            tuple: Top-k similarities and corresponding neighbor labels.
         """
         for rank in range(self.global_size):
             topk_sims, neighbors_labels = self._similarity_for_rank(features_rank, rank)
@@ -223,14 +221,13 @@ class KnnModule(torch.nn.Module):
         return topk_sims_rank, neighbors_labels_rank
 
     def forward(self, features_rank):
-        """Compute the results on all values of `self.nb_knn` neighbors from the full
-        `self.max_k`
+        """Computes the results on all values of `self.nb_knn` neighbors from the full `self.max_k`.
 
         Args:
-          features_rank:
+            features_rank (torch.Tensor): Features of the current rank.
 
         Returns:
-
+            dict: Probabilities for each k in `self.nb_knn`.
         """
         assert all(k <= self.max_k for k in self.nb_knn)
 
@@ -246,21 +243,25 @@ class KnnModule(torch.nn.Module):
 
 
 class DictKeysModule(torch.nn.Module):
-    """ """
+    """Module to extract specific keys from a dictionary of features.
+
+    Args:
+        keys (list): List of keys to extract from the features dictionary.
+    """
 
     def __init__(self, keys):
         super().__init__()
         self.keys = keys
 
     def forward(self, features_dict, targets):
-        """
+        """Extracts features and returns them along with targets.
 
         Args:
-          features_dict:
-          targets:
+            features_dict (dict): Dictionary of features.
+            targets (torch.Tensor): Target labels.
 
         Returns:
-
+            dict: Dictionary containing extracted features and targets.
         """
         for k in self.keys:
             features_dict = features_dict[k]
@@ -268,19 +269,18 @@ class DictKeysModule(torch.nn.Module):
 
 
 def create_module_dict(*, module, n_per_class_list, n_tries, nb_knn, train_features, train_labels):
-    """
+    """Creates a dictionary of modules for k-NN evaluation.
 
     Args:
-      *:
-      module:
-      n_per_class_list:
-      n_tries:
-      nb_knn:
-      train_features:
-      train_labels:
+        module (callable): Module constructor.
+        n_per_class_list (list): List of numbers to take per class.
+        n_tries (int): Number of tries for sampling.
+        nb_knn (list): List of k values for k-NN.
+        train_features (torch.Tensor): Features of the training dataset.
+        train_labels (torch.Tensor): Labels of the training dataset.
 
     Returns:
-
+        ModuleDictWithForward: Dictionary of modules with forward capabilities.
     """
     modules = {}
     mapping = create_class_indices_mapping(train_labels)
@@ -309,15 +309,15 @@ def create_module_dict(*, module, n_per_class_list, n_tries, nb_knn, train_featu
 
 
 def filter_train(mapping, n_per_class, seed):
-    """
+    """Filters training data based on class indices.
 
     Args:
-      mapping:
-      n_per_class:
-      seed:
+        mapping (dict): Mapping of class indices to their corresponding samples.
+        n_per_class (int): Number of samples to take per class.
+        seed (int): Random seed for reproducibility.
 
     Returns:
-
+        torch.Tensor: Indices of the filtered training samples.
     """
     torch.manual_seed(seed)
     final_indices = []
@@ -328,13 +328,13 @@ def filter_train(mapping, n_per_class, seed):
 
 
 def create_class_indices_mapping(labels):
-    """
+    """Creates a mapping of class labels to their indices.
 
     Args:
-      labels:
+        labels (torch.Tensor): Class labels.
 
     Returns:
-
+        dict: Mapping of unique labels to their corresponding indices.
     """
     unique_labels, inverse = torch.unique(labels, return_inverse=True)
     mapping = {unique_labels[i]: (inverse == i).nonzero() for i in range(len(unique_labels))}
@@ -342,17 +342,24 @@ def create_class_indices_mapping(labels):
 
 
 class ModuleDictWithForward(torch.nn.ModuleDict):
-    """ """
+    """ModuleDict that supports forward calls.
+
+    This class allows for calling all modules in the dictionary with the same input.
+
+    Args:
+        *args: Variable length argument list.
+        **kwargs: Arbitrary keyword arguments.
+    """
 
     def forward(self, *args, **kwargs):
-        """
+        """Calls each module in the dictionary with the provided arguments.
 
         Args:
-          *args:
-          **kwargs:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
-
+            dict: Dictionary of results from each module.
         """
         return {k: module(*args, **kwargs) for k, module in self._modules.items()}
 
@@ -370,23 +377,23 @@ def eval_knn(
     n_per_class_list=[-1],
     n_tries=1,
 ):
-    """
+    """Evaluates the k-NN classifier.
 
     Args:
-      model:
-      train_dataset:
-      val_dataset:
-      accuracy_averaging:
-      nb_knn:
-      temperature:
-      batch_size:
-      num_workers:
-      gather_on_cpu:
-      n_per_class_list: (Default value = [-1])
-      n_tries: (Default value = 1)
+        model (torch.nn.Module): The model to evaluate.
+        train_dataset (Dataset): The training dataset.
+        val_dataset (Dataset): The validation dataset.
+        accuracy_averaging (AccuracyAveraging): Method for averaging accuracy.
+        nb_knn (list): List of k values for k-NN.
+        temperature (float): Temperature parameter for softmax.
+        batch_size (int): Batch size for data loading.
+        num_workers (int): Number of workers for data loading.
+        gather_on_cpu (bool): Whether to gather features on CPU.
+        n_per_class_list (list): List of numbers to take per class. Defaults to [-1].
+        n_tries (int): Number of tries for sampling. Defaults to 1.
 
     Returns:
-
+        dict: Dictionary of evaluation results.
     """
     model = ModelWithNormalize(model)
 
@@ -467,29 +474,26 @@ def eval_knn_with_model(
     n_per_class_list=[-1],
     n_tries=1,
 ):
-    """
+    """Evaluates the k-NN classifier with a specified model.
 
     Args:
-      model:
-      output_dir:
-      train_dataset_str: (Default value = "ImageNet:split=TRAIN")
-      val_dataset_str: (Default value = "ImageNet:split=VAL")
-      nb_knn: (Default value = (10)
-      20:
-      100:
-      200):
-      temperature: (Default value = 0.07)
-      autocast_dtype: (Default value = torch.float)
-      accuracy_averaging: (Default value = AccuracyAveraging.MEAN_ACCURACY)
-      transform: (Default value = None)
-      gather_on_cpu: (Default value = False)
-      batch_size: (Default value = 256)
-      num_workers: (Default value = 5)
-      n_per_class_list: (Default value = [-1])
-      n_tries: (Default value = 1)
+        model (torch.nn.Module): The model to evaluate.
+        output_dir (str): Directory to save evaluation results.
+        train_dataset_str (str): String representation of the training dataset. Defaults to "ImageNet:split=TRAIN".
+        val_dataset_str (str): String representation of the validation dataset. Defaults to "ImageNet:split=VAL".
+        nb_knn (tuple): Tuple of k values for k-NN. Defaults to (10, 20, 100, 200).
+        temperature (float): Temperature parameter for softmax. Defaults to 0.07.
+        autocast_dtype (torch.dtype): Data type for autocasting. Defaults to torch.float.
+        accuracy_averaging (AccuracyAveraging): Method for averaging accuracy. Defaults to AccuracyAveraging.MEAN_ACCURACY.
+        transform (callable): Transform to apply to the dataset. Defaults to None.
+        gather_on_cpu (bool): Whether to gather features on CPU. Defaults to False.
+        batch_size (int): Batch size for data loading. Defaults to 256.
+        num_workers (int): Number of workers for data loading. Defaults to 5.
+        n_per_class_list (list): List of numbers to take per class. Defaults to [-1].
+        n_tries (int): Number of tries for sampling. Defaults to 1.
 
     Returns:
-
+        dict: Dictionary of evaluation results.
     """
     transform = transform or make_classification_eval_transform()
 
@@ -537,13 +541,13 @@ def eval_knn_with_model(
 
 
 def main(args):
-    """
+    """Main entry point for the k-NN evaluation script.
 
     Args:
-      args:
+        args: Command line arguments.
 
     Returns:
-
+        int: Exit status code.
     """
     model, autocast_dtype = setup_and_build_model(args)
     eval_knn_with_model(

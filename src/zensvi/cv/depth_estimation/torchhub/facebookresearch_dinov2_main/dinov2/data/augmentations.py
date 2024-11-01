@@ -14,7 +14,18 @@ logger = logging.getLogger("dinov2")
 
 
 class DataAugmentationDINO(object):
-    """ """
+    """Class for applying data augmentation techniques for DINO.
+
+    This class implements various data augmentation strategies including geometric transformations,
+    color distortions, and normalization for both global and local crops.
+
+    Attributes:
+        global_crops_scale (list): Scale range for global crops.
+        local_crops_scale (list): Scale range for local crops.
+        local_crops_number (int): Number of local crops to generate.
+        global_crops_size (int): Size of global crops.
+        local_crops_size (int): Size of local crops.
+    """
 
     def __init__(
         self,
@@ -24,6 +35,15 @@ class DataAugmentationDINO(object):
         global_crops_size=224,
         local_crops_size=96,
     ):
+        """Initializes the DataAugmentationDINO class.
+
+        Args:
+            global_crops_scale (list): Scale range for global crops.
+            local_crops_scale (list): Scale range for local crops.
+            local_crops_number (int): Number of local crops to generate.
+            global_crops_size (int, optional): Size of global crops. Defaults to 224.
+            local_crops_size (int, optional): Size of local crops. Defaults to 96.
+        """
         self.global_crops_scale = global_crops_scale
         self.local_crops_scale = local_crops_scale
         self.local_crops_number = local_crops_number
@@ -62,7 +82,7 @@ class DataAugmentationDINO(object):
             ]
         )
 
-        # color distorsions / blurring
+        # color distortions / blurring
         color_jittering = transforms.Compose(
             [
                 transforms.RandomApply(
@@ -97,6 +117,14 @@ class DataAugmentationDINO(object):
         self.local_transfo = transforms.Compose([color_jittering, local_transfo_extra, self.normalize])
 
     def __call__(self, image):
+        """Applies the data augmentation transformations to the input image.
+
+        Args:
+            image (PIL Image or Tensor): The input image to be augmented.
+
+        Returns:
+            dict: A dictionary containing the augmented global and local crops.
+        """
         output = {}
 
         # global crops:

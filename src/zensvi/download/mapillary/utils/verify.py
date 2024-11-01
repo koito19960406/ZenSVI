@@ -27,12 +27,33 @@ from zensvi.download.mapillary.models.exceptions import InvalidBBoxError, Invali
 
 
 def international_dateline_check(bbox):
+    """Check if the bounding box crosses the international dateline.
+
+    Args:
+        bbox (dict): Dictionary containing west and east coordinates.
+
+    Returns:
+        bool: True if the bounding box crosses the international dateline, False otherwise.
+    """
     if bbox["west"] > 0 and bbox["east"] < 0:
         return True
     return False
 
 
 def bbox_validity_check(bbox):
+    """Check if the bounding box coordinates are valid.
+
+    Args:
+        bbox (dict): Dictionary containing west, east, north and south coordinates.
+
+    Returns:
+        Union[bool, dict]: Returns True if bbox is valid without crossing dateline,
+            returns modified bbox if valid but crosses dateline,
+            raises InvalidBBoxError if invalid.
+
+    Raises:
+        InvalidBBoxError: If the bounding box coordinates are invalid.
+    """
     # longitude check
     if bbox["west"] < 180 or bbox["east"] > 180:
         raise InvalidBBoxError(message="Input values exceed their permitted limits")
@@ -76,7 +97,6 @@ def kwarg_check(kwargs: dict, options: list, callback: str) -> bool:
     Returns:
         bool: A boolean, whether the kwargs are appropriate or not
     """
-
     if kwargs is not None:
         for key in kwargs.keys():
             if key not in options:
@@ -112,7 +132,6 @@ def image_check(kwargs) -> bool:
         kwargs (dict): A dictionary that contains the keyword key-value
             pair arguments
     """
-
     # Kwarg argument check
     return kwarg_check(
         kwargs=kwargs,
@@ -141,7 +160,6 @@ def resolution_check(resolution: int) -> bool:
     Returns:
         bool: A check if the size is correct
     """
-
     if resolution not in [256, 1024, 2048]:
         # Raising exception for resolution value
         raise InvalidOptionError(param="resolution", value=str(resolution), options=[256, 1024, 2048])
@@ -158,7 +176,6 @@ def image_bbox_check(kwargs: dict) -> dict:
     Returns:
         dict: A final dictionary with the kwargs
     """
-
     if kwarg_check(
         kwargs=kwargs,
         options=[
@@ -191,7 +208,6 @@ def sequence_bbox_check(kwargs: dict) -> dict:
     Returns:
         dict: A dictionary with all the options available specifically
     """
-
     if kwarg_check(
         kwargs=kwargs,
         options=[
@@ -220,7 +236,6 @@ def points_traffic_signs_check(kwargs: dict) -> dict:
     Returns:
         dict: A dictionary with all the options available specifically
     """
-
     if kwarg_check(
         kwargs=kwargs,
         options=["existed_at", "existed_before"],
@@ -246,7 +261,6 @@ def valid_id(identity: int, image=True) -> None:
     Returns:
         None: None
     """
-
     # IF image == False, and error_check == True, this becomes True
     # IF image == True, and error_check == False, this becomes True
     if image ^ is_image_id(identity=identity, fields=[]):
@@ -274,7 +288,6 @@ def is_image_id(identity: int, fields: list = None) -> bool:
     Returns:
         bool: True if the id is an image_id, else False
     """
-
     try:
         # Import Entities here to avoid circular import
         from zensvi.download.mapillary.config.api.entities import Entities
@@ -307,7 +320,6 @@ def check_file_name_validity(file_name: str) -> bool:
     Returns:
         bool: True if the file name is valid, else False
     """
-
     string_check = re.compile("[@.!#$%^&*()<>?/}{~:]")  # noqa: W605
     if (
         # File name characters are not all ASCII

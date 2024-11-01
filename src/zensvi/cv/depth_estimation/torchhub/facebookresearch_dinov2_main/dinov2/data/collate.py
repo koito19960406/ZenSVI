@@ -17,18 +17,22 @@ def collate_data_and_cast(
     n_tokens=None,
     mask_generator=None,
 ):
-    """
+    """Collates data from samples and generates masks.
+
+    This function takes a list of samples and collates their global and local crops.
+    It also generates masks based on the specified mask ratio and probability.
 
     Args:
-      samples_list:
-      mask_ratio_tuple:
-      mask_probability:
-      dtype:
-      n_tokens: (Default value = None)
-      mask_generator: (Default value = None)
+        samples_list (list): A list of samples, where each sample contains global and local crops.
+        mask_ratio_tuple (tuple): A tuple containing the minimum and maximum mask ratios.
+        mask_probability (float): The probability of masking samples.
+        dtype (torch.dtype): The data type to which the collated crops should be cast.
+        n_tokens (int, optional): The number of tokens to consider for masking. Defaults to None.
+        mask_generator (callable, optional): A function to generate masks. Defaults to None.
 
     Returns:
-
+        dict: A dictionary containing the collated global crops, local crops, masks, mask indices,
+              masks weight, upper bound, and the number of masked patches.
     """
     # dtype = torch.half  # TODO: Remove
 

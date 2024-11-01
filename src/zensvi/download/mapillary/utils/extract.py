@@ -32,7 +32,6 @@ def extract_properties(geojson: dict, properties: list) -> dict:
         ... 89.781,"id":169629268373019,"is_pano": "True","sequence_id":"dqjuprkOwUnmdEVt5gx-Iw"}}]}
         ... , properties=['id']) # id most likely exists
     """
-
     extracted_fields = {}
 
     for entry in properties:

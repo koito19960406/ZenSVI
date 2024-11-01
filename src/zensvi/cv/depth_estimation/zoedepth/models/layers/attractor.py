@@ -27,70 +27,89 @@ import torch.nn as nn
 
 
 @torch.jit.script
-def exp_attractor(dx, alpha: float = 300, gamma: int = 2):
-    """Exponential attractor: dc = exp(-alpha*|dx|^gamma) * dx , where dx = a - c, a = attractor point, c = bin center, dc = shift in bin centermmary for exp_attractor
+def exp_attractor(dx: torch.Tensor, alpha: float = 300, gamma: int = 2) -> torch.Tensor:
+    """Calculates the exponential attractor.
+
+    The formula used is:
+    dc = exp(-alpha * |dx|^gamma) * dx,
+    where dx = a - c, a = attractor point, c = bin center, dc = shift in bin center.
 
     Args:
-      dx(torch.Tensor): The difference tensor dx = Ai - Cj, where Ai is the attractor point and Cj is the bin center.
-      alpha(float): Proportional Attractor strength. Determines the absolute strength. Lower alpha = greater attraction. Defaults to 300.
-      gamma(int): Exponential Attractor strength. Determines the "region of influence" and indirectly number of bin centers affected. Lower gamma = farther reach. Defaults to 2.
-      alpha: float:  (Default value = 300)
-      gamma: int:  (Default value = 2)
-      alpha: float:  (Default value = 300)
-      gamma: int:  (Default value = 2)
-      alpha: float:  (Default value = 300)
-      gamma: int:  (Default value = 2)
+        dx (torch.Tensor): The difference tensor dx = Ai - Cj,
+                           where Ai is the attractor point and Cj is the bin center.
+        alpha (float, optional): Proportional attractor strength.
+                                 Determines the absolute strength. Lower alpha = greater attraction.
+                                 Defaults to 300.
+        gamma (int, optional): Exponential attractor strength.
+                               Determines the "region of influence" and indirectly the number of bin centers affected.
+                               Lower gamma = farther reach. Defaults to 2.
 
     Returns:
-      torch.Tensor: Delta shifts - dc; New bin centers = Old bin centers + dc
-
+        torch.Tensor: Delta shifts - dc; New bin centers = Old bin centers + dc.
     """
     return torch.exp(-alpha * (torch.abs(dx) ** gamma)) * (dx)
 
 
 @torch.jit.script
-def inv_attractor(dx, alpha: float = 300, gamma: int = 2):
-    """Inverse attractor: dc = dx / (1 + alpha*dx^gamma), where dx = a - c, a = attractor point, c = bin center, dc = shift in bin center
+def inv_attractor(dx: torch.Tensor, alpha: float = 300, gamma: int = 2) -> torch.Tensor:
+    """Calculates the inverse attractor.
+
+    The formula used is:
+    dc = dx / (1 + alpha * dx^gamma),
+    where dx = a - c, a = attractor point, c = bin center, dc = shift in bin center.
     This is the default one according to the accompanying paper.
 
     Args:
-      dx(torch.Tensor): The difference tensor dx = Ai - Cj, where Ai is the attractor point and Cj is the bin center.
-      alpha(float): Proportional Attractor strength. Determines the absolute strength. Lower alpha = greater attraction. Defaults to 300.
-      gamma(int): Exponential Attractor strength. Determines the "region of influence" and indirectly number of bin centers affected. Lower gamma = farther reach. Defaults to 2.
-      alpha: float:  (Default value = 300)
-      gamma: int:  (Default value = 2)
-      alpha: float:  (Default value = 300)
-      gamma: int:  (Default value = 2)
-      alpha: float:  (Default value = 300)
-      gamma: int:  (Default value = 2)
+        dx (torch.Tensor): The difference tensor dx = Ai - Cj,
+                           where Ai is the attractor point and Cj is the bin center.
+        alpha (float, optional): Proportional attractor strength.
+                                 Determines the absolute strength. Lower alpha = greater attraction.
+                                 Defaults to 300.
+        gamma (int, optional): Exponential attractor strength.
+                               Determines the "region of influence" and indirectly the number of bin centers affected.
+                               Lower gamma = farther reach. Defaults to 2.
 
     Returns:
-      torch.Tensor: Delta shifts - dc; New bin centers = Old bin centers + dc
-
+        torch.Tensor: Delta shifts - dc; New bin centers = Old bin centers + dc.
     """
     return dx.div(1 + alpha * dx.pow(gamma))
 
 
 class AttractorLayer(nn.Module):
-    """ """
+    """Attractor layer for bin centers.
+
+    This layer computes the new bin centers based on attractor points and previous bin centers.
+    The bin centers are bounded on the interval (min_depth, max_depth).
+    """
 
     def __init__(
         self,
-        in_features,
-        n_bins,
-        n_attractors=16,
-        mlp_dim=128,
-        min_depth=1e-3,
-        max_depth=10,
-        alpha=300,
-        gamma=2,
-        kind="sum",
-        attractor_type="exp",
-        memory_efficient=False,
+        in_features: int,
+        n_bins: int,
+        n_attractors: int = 16,
+        mlp_dim: int = 128,
+        min_depth: float = 1e-3,
+        max_depth: float = 10,
+        alpha: float = 300,
+        gamma: int = 2,
+        kind: str = "sum",
+        attractor_type: str = "exp",
+        memory_efficient: bool = False,
     ):
-        """Attractor layer for bin centers.
+        """Initializes the AttractorLayer.
 
-        Bin centers are bounded on the interval (min_depth, max_depth)
+        Args:
+            in_features (int): Number of input features.
+            n_bins (int): Number of bins.
+            n_attractors (int, optional): Number of attractors. Defaults to 16.
+            mlp_dim (int, optional): Dimension of the MLP. Defaults to 128.
+            min_depth (float, optional): Minimum depth value. Defaults to 1e-3.
+            max_depth (float, optional): Maximum depth value. Defaults to 10.
+            alpha (float, optional): Proportional attractor strength. Defaults to 300.
+            gamma (int, optional): Exponential attractor strength. Defaults to 2.
+            kind (str, optional): Type of operation to perform on delta_c. Defaults to "sum".
+            attractor_type (str, optional): Type of attractor to use. Defaults to "exp".
+            memory_efficient (bool, optional): Whether to use memory-efficient computation. Defaults to False.
         """
         super().__init__()
 
@@ -111,19 +130,25 @@ class AttractorLayer(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-    def forward(self, x, b_prev, prev_b_embedding=None, interpolate=True, is_for_query=False):
-        """
+    def forward(
+        self,
+        x: torch.Tensor,
+        b_prev: torch.Tensor,
+        prev_b_embedding: torch.Tensor = None,
+        interpolate: bool = True,
+        is_for_query: bool = False,
+    ) -> tuple:
+        """Forward pass for the AttractorLayer.
 
         Args:
-          x(torch.Tensor): feature block; shape - n, c, h, w
-          b_prev(torch.Tensor): previous bin centers normed; shape - n, prev_nbins, h, w
-          prev_b_embedding: (Default value = None)
-          interpolate: (Default value = True)
-          is_for_query: (Default value = False)
+            x (torch.Tensor): Feature block; shape - (n, c, h, w).
+            b_prev (torch.Tensor): Previous bin centers normed; shape - (n, prev_nbins, h, w).
+            prev_b_embedding (torch.Tensor, optional): Previous bin embedding. Defaults to None.
+            interpolate (bool, optional): Whether to interpolate previous embeddings. Defaults to True.
+            is_for_query (bool, optional): Flag indicating if the layer is for query. Defaults to False.
 
         Returns:
-          torch.Tensor: new bin centers normed and scaled; shape - n, nbins, h, w
-
+            tuple: New bin centers normed and scaled; shape - (n, nbins, h, w).
         """
         if prev_b_embedding is not None:
             if interpolate:
@@ -169,25 +194,40 @@ class AttractorLayer(nn.Module):
 
 
 class AttractorLayerUnnormed(nn.Module):
-    """ """
+    """Attractor layer for unbounded bin centers.
+
+    This layer computes the new bin centers based on attractor points and previous bin centers.
+    The bin centers are unbounded.
+    """
 
     def __init__(
         self,
-        in_features,
-        n_bins,
-        n_attractors=16,
-        mlp_dim=128,
-        min_depth=1e-3,
-        max_depth=10,
-        alpha=300,
-        gamma=2,
-        kind="sum",
-        attractor_type="exp",
-        memory_efficient=False,
+        in_features: int,
+        n_bins: int,
+        n_attractors: int = 16,
+        mlp_dim: int = 128,
+        min_depth: float = 1e-3,
+        max_depth: float = 10,
+        alpha: float = 300,
+        gamma: int = 2,
+        kind: str = "sum",
+        attractor_type: str = "exp",
+        memory_efficient: bool = False,
     ):
-        """Attractor layer for bin centers.
+        """Initializes the AttractorLayerUnnormed.
 
-        Bin centers are unbounded
+        Args:
+            in_features (int): Number of input features.
+            n_bins (int): Number of bins.
+            n_attractors (int, optional): Number of attractors. Defaults to 16.
+            mlp_dim (int, optional): Dimension of the MLP. Defaults to 128.
+            min_depth (float, optional): Minimum depth value. Defaults to 1e-3.
+            max_depth (float, optional): Maximum depth value. Defaults to 10.
+            alpha (float, optional): Proportional attractor strength. Defaults to 300.
+            gamma (int, optional): Exponential attractor strength. Defaults to 2.
+            kind (str, optional): Type of operation to perform on delta_c. Defaults to "sum".
+            attractor_type (str, optional): Type of attractor to use. Defaults to "exp".
+            memory_efficient (bool, optional): Whether to use memory-efficient computation. Defaults to False.
         """
         super().__init__()
 
@@ -208,19 +248,25 @@ class AttractorLayerUnnormed(nn.Module):
             nn.Softplus(),
         )
 
-    def forward(self, x, b_prev, prev_b_embedding=None, interpolate=True, is_for_query=False):
-        """
+    def forward(
+        self,
+        x: torch.Tensor,
+        b_prev: torch.Tensor,
+        prev_b_embedding: torch.Tensor = None,
+        interpolate: bool = True,
+        is_for_query: bool = False,
+    ) -> tuple:
+        """Forward pass for the AttractorLayerUnnormed.
 
         Args:
-          x(torch.Tensor): feature block; shape - n, c, h, w
-          b_prev(torch.Tensor): previous bin centers normed; shape - n, prev_nbins, h, w
-          prev_b_embedding: (Default value = None)
-          interpolate: (Default value = True)
-          is_for_query: (Default value = False)
+            x (torch.Tensor): Feature block; shape - (n, c, h, w).
+            b_prev (torch.Tensor): Previous bin centers normed; shape - (n, prev_nbins, h, w).
+            prev_b_embedding (torch.Tensor, optional): Previous bin embedding. Defaults to None.
+            interpolate (bool, optional): Whether to interpolate previous embeddings. Defaults to True.
+            is_for_query (bool, optional): Flag indicating if the layer is for query. Defaults to False.
 
         Returns:
-          torch.Tensor: new bin centers unbounded; shape - n, nbins, h, w. Two outputs just to keep the API consistent with the normed version
-
+            tuple: New bin centers unbounded; shape - (n, nbins, h, w). Two outputs just to keep the API consistent with the normed version.
         """
         if prev_b_embedding is not None:
             if interpolate:

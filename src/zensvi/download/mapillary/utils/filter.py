@@ -27,23 +27,21 @@ logger = logging.getLogger("pipeline-logger")
 
 
 def pipeline_component(func, data: list, exception_message: str, args: list) -> list:
-    """A pipeline component which is respnonsible for sending functional arguments over
-    to the selected target function - throwing a warning in case of an exception
+    """A pipeline component which is responsible for sending functional arguments over
+    to the selected target function - throwing a warning in case of an exception.
 
     Args:
-        func (function): The filter to apply
-        data (list): The list of features to filter
-        exception_message (str): The exception message to print
-        args (list): Arguments
+        func: The filter function to apply
+        data: The list of features to filter
+        exception_message: The exception message to print
+        args: Arguments to pass to the filter function
 
     Returns:
-        list: The filtered feature list
+        The filtered feature list
 
-    Usage::
-
+    Example:
         >>> # internally used in mapillary.utils.pipeline
     """
-
     try:
         return func(data, *args)
     except TypeError as exception:
@@ -51,105 +49,21 @@ def pipeline_component(func, data: list, exception_message: str, args: list) -> 
         return []
 
 
-# def pipeline(data: dict, components: list) -> list:
-#     """A pipeline component that helps with making filtering easier. It provides access
-#     to different filtering mechanism by simplying letting users pass in what filter they
-#     want to apply, and the arguments for that filter.
-
-#     Args:
-#         data (dict): The GeoJSON to be filtered
-#         components (list): The list of filters to apply
-
-#     Returns:
-#         list: The filtered feature list
-
-#     Usage::
-
-#         >>> # assume variables 'data', 'kwargs'
-#         >>> pipeline(
-#         ...     data=data,
-#         ...     components=[
-#         ...         {"filter": "image_type", "tile": kwargs["image_type"]}
-#         ...         if "image_type" in kwargs
-#         ...         else {},
-#         ...         {"filter": "organization_id", "organization_ids": kwargs["org_id"]}
-#         ...         if "org_id" in kwargs
-#         ...         else {},
-#         ...         {
-#         ...             "filter": "haversine_dist",
-#         ...             "radius": kwargs["radius"],
-#         ...             "coords": [longitude, latitude],
-#         ...         }
-#         ...         if "radius" in kwargs
-#         ...         else 1000
-#         ...     ]
-#         ... )
-#     """
-
-#     # Python treats dict objects as passed reference, thus
-#     # in order to not modify the previous state, we make a local copy
-#     __data = data.copy()["features"]
-
-#     # A mapping of different filters possible
-#     function_mappings = {
-#         "filter_values": filter_values,
-#         "max_captured_at": max_captured_at,
-#         "min_captured_at": min_captured_at,
-#         "haversine_dist": haversine_dist,
-#         "image_type": image_type,
-#         "organization_id": organization_id,
-#         "features_in_bounding_box": features_in_bounding_box,
-#         "existed_at": existed_at,
-#         "existed_before": existed_before,
-#         "sequence_id": sequence_id,
-#         "compass_angle": compass_angle,
-#         "hits_by_look_at": hits_by_look_at,
-#         "in_shape": in_shape,
-#         # Simply add the mapping of a new function,
-#         # nothing else will really need to changed
-#     }
-
-#     # Going through each of the components
-#     for component in components:
-
-#         # If component is simply empty, continue to next
-#         # iteration
-#         if component == {}:
-#             continue
-
-#         # Send to pipeline component, return data to `__data`
-#         __data = pipeline_component(
-#             # Map function respectively using the function_mappings dictionary
-#             func=function_mappings[f'{component["filter"]}'],
-#             # Send over the data
-#             data=__data,
-#             # Specify the message on the exception thrown
-#             exception_message=f'[pipeline - {component["filter"]}] Filter not applied, ' "exception thrown",
-#             # Except the filter name, select the rest as args
-#             args=tuple(list(component.values())[1:]),
-#         )
-
-#     # Return the data
-#     return __data
-
-
 def max_captured_at(data: list, max_timestamp: str) -> list:
     """Selects only the feature items that are less than the max_timestamp.
 
     Args:
-        data (list): The feature list
-        max_timestamp (str): The UNIX timestamp as the max time
+        data: The feature list
+        max_timestamp: The UNIX timestamp as the max time
 
     Returns:
-        list: Filtered feature list
+        Filtered feature list
 
-    Usage::
-
+    Example:
         >>> max_captured_at([{'type': 'Feature', 'geometry':
         ... {'type': 'Point', 'coordinates': [30.98594605922699, 30.003757307208872]}, 'properties':
         ... { ... }, ...}], '2020-05-23')
     """
-
     return [
         feature for feature in data if feature["properties"]["captured_at"] <= date_to_unix_timestamp(max_timestamp)
     ]
@@ -159,19 +73,17 @@ def min_captured_at(data: list, min_timestamp: str) -> list:
     """Selects only the feature items that are less than the min_timestamp.
 
     Args:
-        data (list): The feature list
-        min_timestamp (str): The UNIX timestamp as the max time
+        data: The feature list
+        min_timestamp: The UNIX timestamp as the max time
 
     Returns:
-        list: Filtered feature list
+        Filtered feature list
 
-    Usage::
-
+    Example:
         >>> max_captured_at([{'type': 'Feature', 'geometry':
         ... {'type': 'Point', 'coordinates': [30.98594605922699, 30.003757307208872]}, 'properties':
         ... { ... }, ...}], '2020-05-23')
     """
-
     return [
         feature for feature in data if feature["properties"]["captured_at"] >= date_to_unix_timestamp(min_timestamp)
     ]
@@ -181,22 +93,25 @@ def features_in_bounding_box(data: list, bbox: dict) -> list:
     """Filter for extracting features only in a bounding box.
 
     Args:
-        data (list): the features list to be checked
-        bbox (dict): Bounding box coordinates
-
-            Example::
-                >>> {
-                ...     'west': 'BOUNDARY_FROM_WEST',
-                ...     'south': 'BOUNDARY_FROM_SOUTH',
-                ...     'east': 'BOUNDARY_FROM_EAST',
-                ...     'north': 'BOUNDARY_FROM_NORTH'
-                ... }
+        data: The features list to be checked
+        bbox: Bounding box coordinates dictionary containing:
+            west: Western boundary
+            south: Southern boundary
+            east: Eastern boundary
+            north: Northern boundary
 
     Returns:
-        list: Features that only exist within the bounding box selected
-        for the given features list provided in the BBox functon
-    """
+        Features that only exist within the specified bounding box
 
+    Example:
+        >>> bbox = {
+        ...     'west': -122.4194,
+        ...     'south': 37.7749,
+        ...     'east': -122.4089,
+        ...     'north': 37.7858
+        ... }
+        >>> features_in_bounding_box(data, bbox)
+    """
     # define an empty geojson as output
     output = []
 
@@ -219,48 +134,46 @@ def features_in_bounding_box(data: list, bbox: dict) -> list:
 
 def filter_values(data: list, values: list, property: str = "value") -> list:
     """Filter the features based on the existence of a specified value in one of the
-    property.
-
-    *TODO*: Need documentation that lists the 'values', specifically, it refers to
-    'value' *TODO*: under 'Detection', and 'Map feature', related to issue #65
+    properties.
 
     Args:
-        data (dict): The data to be filtered
-        values (list): A list of values to filter by
-        property (str): The specific parameter to look into
+        data: The data to be filtered
+        values: A list of values to filter by
+        property: The specific parameter to look into
 
     Returns:
-        dict: A feature list
-    """
+        A filtered feature list
 
+    Note:
+        *TODO*: Need documentation that lists the 'values', specifically, it refers to
+        'value' *TODO*: under 'Detection', and 'Map feature', related to issue #65
+    """
     return [feature for feature in data if feature["properties"].get(property) in values]
 
 
 def existed_at(data: list, existed_at: str) -> list:
-    """Whether the first_seen_at properly existed after a specified time period.
+    """Filter features that existed after a specified time period.
 
     Args:
-        data (list): The feature list
-        existed_at (str): The UNIX timestamp
+        data: The feature list
+        existed_at: The UNIX timestamp
 
     Returns:
-        list: The feature list
+        The filtered feature list
     """
-
     return [feature for feature in data if feature["properties"]["first_seen_at"] > date_to_unix_timestamp(existed_at)]
 
 
 def existed_before(data: list, existed_before: str) -> list:
-    """Whether the first_seen_at properly existed before a specified time period.
+    """Filter features that existed before a specified time period.
 
     Args:
-        data (list): The feature list
-        existed_before (str): The UNIX timestamp
+        data: The feature list
+        existed_before: The UNIX timestamp
 
     Returns:
-        list: A feature list
+        The filtered feature list
     """
-
     return [
         feature for feature in data if feature["properties"]["first_seen_at"] <= date_to_unix_timestamp(existed_before)
     ]
@@ -268,21 +181,20 @@ def existed_before(data: list, existed_before: str) -> list:
 
 def haversine_dist(data: dict, radius: float, coords: list, unit: str = "m") -> list:
     """Returns features that are only in the radius specified using the Haversine
-    distance, from the haversine package.
+    distance.
 
     Args:
-        data (dict): The data to be filtered
-        radius (float): Radius for coordinates to fall into
-        coords (list): The input coordinates (long, lat)
-        unit (str): Either 'ft', 'km', 'm', 'mi', 'nmi', see here
-            https://pypi.org/project/haversine/
-
-    https://pypi.org/project/haversine/
+        data: The data to be filtered
+        radius: Radius for coordinates to fall into
+        coords: The input coordinates as [longitude, latitude]
+        unit: Distance unit, one of 'ft', 'km', 'm', 'mi', 'nmi'
 
     Returns:
-        list: A feature list
-    """
+        A filtered feature list
 
+    Note:
+        Uses the haversine package: https://pypi.org/project/haversine/
+    """
     # Define an empty list
     output = []
 
@@ -303,18 +215,18 @@ def haversine_dist(data: dict, radius: float, coords: list, unit: str = "m") -> 
 
 
 def image_type(data: list, image_type: str) -> list:
-    """The parameter might be 'all' (both is_pano == true and false), 'pano' (is_pano ==
-    true only), or 'flat' (is_pano == false only)
+    """Filter images by their type (panoramic or flat).
 
     Args:
-        data (list): The data to be filtered
-        image_type (str): Either 'pano' (True), 'flat' (False), or 'all'
-            (None)
+        data: The data to be filtered
+        image_type: One of:
+            'pano': Only panoramic images (is_pano == true)
+            'flat': Only flat images (is_pano == false)
+            'all': Both types
 
     Returns:
-        list: A feature list
+        A filtered feature list
     """
-
     # Checking what kind of parameter is passed
     bool_for_pano_filtering = (
         # Return true if type == 'pano'
@@ -329,17 +241,15 @@ def image_type(data: list, image_type: str) -> list:
 
 
 def organization_id(data: list, organization_ids: list) -> list:
-    """Select only features that contain the specific organization_id.
+    """Select only features from specific organizations.
 
     Args:
-        data (dict): The data to be filtered
-        organization_ids (list): The oragnization id(s) to filter
-            through
+        data: The data to be filtered
+        organization_ids: List of organization IDs to filter by
 
     Returns:
-        dict: A feature list
+        A filtered feature list
     """
-
     return [
         # Feature only if
         feature
@@ -351,31 +261,31 @@ def organization_id(data: list, organization_ids: list) -> list:
 
 
 def sequence_id(data: list, ids: list) -> list:
-    """Filter out images that do not have the sequence_id in the list of ids.
+    """Filter images by their sequence IDs.
 
     Args:
-        data (list): The data to be filtered
-        ids (list): The sequence id(s) to filter through
+        data: The data to be filtered
+        ids: List of sequence IDs to filter by
 
     Returns:
-        list: A feature list
+        A filtered feature list
     """
-
     return [feature for feature in data if feature["properties"]["sequence_id"] in ids]
 
 
 def compass_angle(data: list, angles: tuple = (0.0, 360.0)) -> list:
-    """Filter out images that do not lie within compass angle range.
+    """Filter images by their compass angle range.
 
     Args:
-        data (list): The data to be filtered
-        angles: The compass angle range to filter through
-        angle (tuple of floats)
+        data: The data to be filtered
+        angles: Tuple of (min_angle, max_angle) in degrees
 
     Returns:
-        list: A feature list
-    """
+        A filtered feature list
 
+    Raises:
+        ValueError: If angles tuple is invalid
+    """
     if len(angles) != 2:
         raise ValueError("Angles must be a tuple of length 2")
     if angles[0] > angles[1]:
@@ -387,16 +297,15 @@ def compass_angle(data: list, angles: tuple = (0.0, 360.0)) -> list:
 
 
 def is_looking_at(image_feature: Feature, look_at_feature: Feature) -> bool:
-    """Return whether the image_feature is looking at the look_at_feature.
+    """Check if an image is looking at a specific feature.
 
     Args:
-        image_feature (dict): The feature set of the image
-        look_at_feature (dict): The feature that is being looked at
+        image_feature: The feature set of the image
+        look_at_feature: The feature that is being looked at
 
     Returns:
-        bool: Whether the diff is greater than 310, or less than 50
+        True if the image is looking at the feature, False otherwise
     """
-
     # Pano accessible via the `get_image_layer`
     # in config/api/vector_tiles.py
     if image_feature["properties"]["is_pano"]:
@@ -417,19 +326,15 @@ def is_looking_at(image_feature: Feature, look_at_feature: Feature) -> bool:
 
 
 def by_look_at_feature(image: dict, look_at_feature: Feature) -> bool:
-    """Filter through the given image features and return only features with the
-    look_at_feature.
+    """Check if an image is looking at a specific feature.
 
     Args:
-        image (dict): The feature dictionary
-        look_at_feature (A WGS84 GIS feature, TurfPy): Feature
-            description
+        image: The feature dictionary
+        look_at_feature: The feature to check if being looked at (WGS84 GIS feature)
 
     Returns:
-        bool: Whether the given feature is looking at the
-        `look_at_features`
+        True if the image is looking at the feature, False otherwise
     """
-
     # Converting the coordinates in coords
     coords = [image["geometry"]["coordinates"][0], image["geometry"]["coordinates"][1]]
 
@@ -443,23 +348,21 @@ def by_look_at_feature(image: dict, look_at_feature: Feature) -> bool:
 
 
 def hits_by_look_at(data: list, at: dict) -> list:
-    """Whether the given data have any feature that look at the `at` coordinates.
+    """Find features that look at specific coordinates.
 
     Args:
-        data (list): List of features with an Image entity
-        at (dict): The lng and lat coordinates
-
-            Example::
-
-                >>> {
-                ...     'lng': 'longitude',
-                ...     'lat': 'latitude'
-                ... }
+        data: List of features with an Image entity
+        at: Dictionary containing coordinates:
+            lng: longitude
+            lat: latitude
 
     Returns:
-        list: Filtered results of features only looking at `at`
-    """
+        List of features looking at the specified coordinates
 
+    Example:
+        >>> coords = {'lng': -122.4194, 'lat': 37.7749}
+        >>> hits_by_look_at(data, coords)
+    """
     # Converting the `at` into a Feature object from TurfPy
     at_feature = Feature(geometry=Point((at["lng"], at["lat"])))
 
@@ -467,17 +370,15 @@ def hits_by_look_at(data: list, at: dict) -> list:
 
 
 def in_shape(data: list, boundary) -> list:
-    """Whether the given feature list lies within the shape.
+    """Filter features that lie within a shape boundary.
 
     Args:
-        data (list): A feature list to be filtered
-        boundary: Shapely helper for determining existence of point
-            within a boundary
+        data: A feature list to be filtered
+        boundary: Shapely geometry object defining the boundary
 
     Returns:
-        list: A feature list
+        List of features that fall within the boundary
     """
-
     # Generating output format
     output = []
 
@@ -497,6 +398,26 @@ def in_shape(data: list, boundary) -> list:
 
 
 def pipeline(data: dict, components: list, **kwargs) -> list:
+    """Process features through multiple filters efficiently.
+
+    Args:
+        data: Dictionary containing features to filter
+        components: List of filter components to apply
+        **kwargs: Additional arguments including max_workers for parallel processing
+
+    Returns:
+        Filtered list of features
+
+    Example:
+        >>> pipeline(
+        ...     data=data,
+        ...     components=[
+        ...         {"filter": "image_type", "image_type": "pano"},
+        ...         {"filter": "organization_id", "organization_id": ["org1", "org2"]},
+        ...     ],
+        ...     max_workers=4
+        ... )
+    """
     __data = data.copy()["features"]
 
     # Initialize filter criteria with default values

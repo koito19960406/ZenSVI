@@ -36,7 +36,6 @@ def save_as_csv_controller(data: str, path: str, file_name: str) -> None:
     Returns:
         None: None
     """
-
     # Ensure that the geojson is a dictionary
     if isinstance(data, str):
         data = json.loads(data)
@@ -106,7 +105,6 @@ def save_as_geojson_controller(data: str, path: str, file_name: str) -> None:
     Returns:
         None: None
     """
-
     # Ensure that the geojson is a dictionary
     if isinstance(data, str):
         data = json.loads(data)

@@ -2,16 +2,16 @@ import torch.nn as nn
 
 
 def _make_scratch(in_shape, out_shape, groups=1, expand=False):
-    """
+    """Creates a scratch module with convolutional layers based on input and output shapes.
 
     Args:
-      in_shape:
-      out_shape:
-      groups: (Default value = 1)
-      expand: (Default value = False)
+        in_shape (tuple): Shape of the input tensor.
+        out_shape (int): Number of output channels for the convolutional layers.
+        groups (int, optional): Number of groups for the convolution. Defaults to 1.
+        expand (bool, optional): If True, expands the output shapes for the layers. Defaults to False.
 
     Returns:
-
+        nn.Module: A module containing the convolutional layers.
     """
     scratch = nn.Module()
 
@@ -70,13 +70,21 @@ def _make_scratch(in_shape, out_shape, groups=1, expand=False):
 
 
 class ResidualConvUnit(nn.Module):
-    """Residual convolution module."""
+    """Residual convolution module that applies two convolutional layers with an optional batch normalization.
+
+    Args:
+        features (int): Number of input and output features.
+        activation (callable): Activation function to be applied after each convolution.
+        bn (bool): If True, applies batch normalization after each convolution.
+    """
 
     def __init__(self, features, activation, bn):
-        """Init.
+        """Initializes the ResidualConvUnit.
 
         Args:
-            features (int): number of features
+            features (int): Number of features.
+            activation (callable): Activation function.
+            bn (bool): If True, apply batch normalization.
         """
         super().__init__()
 
@@ -113,16 +121,14 @@ class ResidualConvUnit(nn.Module):
         self.skip_add = nn.quantized.FloatFunctional()
 
     def forward(self, x):
-        """Forward pass.
+        """Forward pass through the residual convolution unit.
 
         Args:
-          x(tensor): input
+            x (tensor): Input tensor.
 
         Returns:
-          tensor: output
-
+            tensor: Output tensor after applying convolutions and skip connection.
         """
-
         out = self.activation(x)
         out = self.conv1(out)
         if self.bn:
@@ -140,7 +146,17 @@ class ResidualConvUnit(nn.Module):
 
 
 class FeatureFusionBlock(nn.Module):
-    """Feature fusion block."""
+    """Feature fusion block that combines features from multiple sources.
+
+    Args:
+        features (int): Number of input features.
+        activation (callable): Activation function to be applied.
+        deconv (bool): If True, uses deconvolution. Defaults to False.
+        bn (bool): If True, applies batch normalization. Defaults to False.
+        expand (bool): If True, expands the output features. Defaults to False.
+        align_corners (bool): If True, aligns corners during interpolation. Defaults to True.
+        size (tuple, optional): Target size for the output. Defaults to None.
+    """
 
     def __init__(
         self,
@@ -152,10 +168,16 @@ class FeatureFusionBlock(nn.Module):
         align_corners=True,
         size=None,
     ):
-        """Init.
+        """Initializes the FeatureFusionBlock.
 
         Args:
-            features (int): number of features
+            features (int): Number of features.
+            activation (callable): Activation function.
+            deconv (bool): If True, uses deconvolution.
+            bn (bool): If True, applies batch normalization.
+            expand (bool): If True, expands the output features.
+            align_corners (bool): If True, aligns corners during interpolation.
+            size (tuple, optional): Target size for the output.
         """
         super(FeatureFusionBlock, self).__init__()
 
@@ -187,15 +209,14 @@ class FeatureFusionBlock(nn.Module):
         self.size = size
 
     def forward(self, *xs, size=None):
-        """Forward pass.
+        """Forward pass through the feature fusion block.
 
         Args:
-          *xs:
-          size: (Default value = None)
+            *xs: Input tensors.
+            size (tuple, optional): Target size for the output. Defaults to None.
 
         Returns:
-          tensor: output
-
+            tensor: Output tensor after feature fusion and processing.
         """
         output = xs[0]
 
