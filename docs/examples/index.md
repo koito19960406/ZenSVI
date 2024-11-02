@@ -5,4 +5,5 @@
 :caption: Contents:
 
 test
+demo_GlobalStreetscapes
 ```
