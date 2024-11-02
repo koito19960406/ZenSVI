@@ -27,7 +27,7 @@ class TestSegmentation(TestBase):
             dir_image_output=image_output,
             dir_summary_output=summary_output,
             csv_format="wide",
-            max_workers=4,
+            max_workers=2,
         )
         # assert True if files in image_output and summary_output are not empty
         self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
@@ -41,7 +41,7 @@ class TestSegmentation(TestBase):
             dir_image_output=image_output,
             dir_summary_output=summary_output,
             csv_format="wide",
-            max_workers=4,
+            max_workers=2,
         )
         # assert True if files in image_output and summary_output are not empty
         self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
@@ -55,7 +55,7 @@ class TestSegmentation(TestBase):
             dir_image_output=image_output,
             dir_summary_output=summary_output,
             csv_format="wide",
-            max_workers=4,
+            max_workers=2,
         )
         # assert True if files in image_output and summary_output are not empty
         self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
@@ -69,7 +69,7 @@ class TestSegmentation(TestBase):
             dir_image_output=image_output,
             dir_summary_output=summary_output,
             csv_format="wide",
-            max_workers=4,
+            max_workers=2,
         )
         # assert True if files in image_output and summary_output are not empty
         self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
@@ -113,7 +113,7 @@ class TestSegmentation(TestBase):
             dir_image_output=image_output,
             dir_summary_output=summary_output,
             csv_format="wide",
-            max_workers=4,
+            max_workers=2,
         )
         # assert True if files in image_output and summary_output are not empty
         self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
@@ -144,7 +144,7 @@ class TestSegmentation(TestBase):
             dir_image_output=image_output,
             dir_summary_output=summary_output,
             csv_format="long",
-            max_workers=4,
+            max_workers=2,
         )
 
 

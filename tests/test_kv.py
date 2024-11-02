@@ -52,7 +52,7 @@ class TestKartaView(TestBase):
             print("Result exits, skipping")
             self.skipTest("Result exists")
         # download images
-        kv_downloader = KVDownloader(log_path=os.path.join(self.kv_output_test_downloader, "log.log"))
+        kv_downloader = KVDownloader(log_path=os.path.join(self.kv_output_test_downloader, "log.log"), max_workers=2000)
         kv_downloader.download_svi(self.kv_output_test_downloader, input_shp_file=self.kv_input_polygon)
 
         # assert True if there are files in the output directory (other than log.log)
@@ -67,7 +67,7 @@ class TestKartaView(TestBase):
             print("Result exits, skipping")
             self.skipTest("Result exists")
         # download metadata only
-        kv_downloader = KVDownloader(log_path=os.path.join(self.kv_output_test_polygon_metaonly, "log.log"))
+        kv_downloader = KVDownloader(log_path=os.path.join(self.kv_output_test_polygon_metaonly, "log.log"), max_workers=2000)
         # kv_downloader.download_svi(self.kv_output_test_polygon_metaonly, input_place_name="Singapore", metadata_only=True)
         kv_downloader.download_svi(
             self.kv_output_test_polygon_metaonly,
@@ -87,7 +87,7 @@ class TestKartaView(TestBase):
         #     print('Result exits, skipping')
         #     self.skipTest("Result exists")
         # download images
-        kv_downloader = KVDownloader(log_path=os.path.join(self.kv_output_test_multipolygon, "log.log"))
+        kv_downloader = KVDownloader(log_path=os.path.join(self.kv_output_test_multipolygon, "log.log"), max_workers=2000)
         kv_downloader.download_svi(self.kv_output_test_multipolygon, input_shp_file=self.kv_input_multipolygon)
         # assert True if there are files in the output directory (other than log.log)
         self.assertTrue(len(os.listdir(self.kv_output_test_multipolygon)) > 1)
@@ -102,7 +102,7 @@ class TestKartaView(TestBase):
         #     print('Result exits, skipping')
         #     self.skipTest("Result exists")
         # download images
-        kv_downloader = KVDownloader(log_path=os.path.join(self.kv_output_test_polygon, "log.log"))
+        kv_downloader = KVDownloader(log_path=os.path.join(self.kv_output_test_polygon, "log.log"), max_workers=2000)
         kv_downloader.download_svi(self.kv_output_test_polygon, input_shp_file=self.kv_input_polygon)
         # assert True if there are files in the output directory (other than log.log)
         self.assertTrue(len(os.listdir(self.kv_output_test_polygon)) > 1)

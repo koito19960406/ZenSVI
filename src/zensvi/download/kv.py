@@ -195,32 +195,38 @@ class KVDownloader(BaseDownloader):
         # Filter out the ids that have already been processed
         urls_df = urls_df[~urls_df["id"].isin(downloaded_ids)]  # Use isin for efficient operation
 
-        def worker(row, output_dir, cropped):
+        def worker(row, output_dir, cropped, max_retries=5):
             url, panoid = row.url, row.id
             user_agent = random.choice(self._user_agents)
             proxy = random.choice(self._proxies)
 
             image_name = f"{panoid}.png"  # Use id for file name
             image_path = output_dir / image_name
-            try:
-                response = requests.get(url, headers=user_agent, proxies=proxy, timeout=10)
-                if response.status_code == 200:
-                    with open(image_path, "wb") as f:
-                        f.write(response.content)
+            
+            for retry in range(max_retries):
+                try:
+                    response = requests.get(url, headers=user_agent, proxies=proxy, timeout=10)
+                    if response.status_code == 200:
+                        with open(image_path, "wb") as f:
+                            f.write(response.content)
 
-                    if cropped:
-                        img = Image.open(image_path)
-                        w, h = img.size
-                        img_cropped = img.crop((0, 0, w, h // 2))
-                        img_cropped.save(image_path)
-
-                else:
-                    if self.logger is not None:
-                        self.logger.log_failed_pids(panoid)
-            except Exception as e:
-                if self.logger is not None:
-                    self.logger.log_failed_pids(panoid)
-                print(f"Error: {e}")
+                        if cropped:
+                            img = Image.open(image_path)
+                            w, h = img.size
+                            img_cropped = img.crop((0, 0, w, h // 2))
+                            img_cropped.save(image_path)
+                        break
+                    else:
+                        if retry == max_retries - 1:  # Last retry
+                            if self.logger is not None:
+                                self.logger.log_failed_pids(panoid)
+                except Exception as e:
+                    if retry == max_retries - 1:  # Last retry
+                        if self.logger is not None:
+                            self.logger.log_failed_pids(panoid)
+                        print(f"Error: {e}")
+                    else:
+                        print(f"Retry {retry + 1}/{max_retries} failed: {e}")
 
         num_batches = (len(urls_df) + batch_size - 1) // batch_size
 
