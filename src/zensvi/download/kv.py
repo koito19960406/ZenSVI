@@ -202,7 +202,7 @@ class KVDownloader(BaseDownloader):
 
             image_name = f"{panoid}.png"  # Use id for file name
             image_path = output_dir / image_name
-            
+
             for retry in range(max_retries):
                 try:
                     response = requests.get(url, headers=user_agent, proxies=proxy, timeout=10)

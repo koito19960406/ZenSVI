@@ -60,7 +60,9 @@ class TestMapillary(TestBase):
             max_workers=200,
         )
         # mly_downloader.download_svi(self.mly_output_test_metadata, input_place_name="Singapore", metadata_only=True)
-        mly_downloader.download_svi(self.mly_output_test_metadata, input_shp_file=self.mly_input_polygon, metadata_only=True)
+        mly_downloader.download_svi(
+            self.mly_output_test_metadata, input_shp_file=self.mly_input_polygon, metadata_only=True
+        )
         # assert True if mly_pids.csv is not empty
         self.assertTrue(os.path.getsize(os.path.join(self.mly_output_test_metadata, "mly_pids.csv")) > 0)
 
@@ -91,7 +93,9 @@ class TestMapillary(TestBase):
         if os.path.exists(os.path.join(self.mly_output_test_kwargs, "mly_svi")):
             self.skipTest("Result exists")
         # download images
-        mly_downloader = MLYDownloader(self.mly_api_key, log_path=str(self.mly_output_test_kwargs / "log.log"), max_workers=200)
+        mly_downloader = MLYDownloader(
+            self.mly_api_key, log_path=str(self.mly_output_test_kwargs / "log.log"), max_workers=200
+        )
         kwarg = {
             "image_type": "flat",  # The tile image_type to be obtained, either as 'flat', 'pano' (panoramic), or 'all'.
             "min_captured_at": 1484549945000,  # The min date. Format from 'YYYY', to 'YYYY-MM-DDTHH:MM:SS'

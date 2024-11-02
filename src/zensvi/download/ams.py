@@ -264,14 +264,14 @@ class AMSDownloader(BaseDownloader):
 
         def process_pid(pid, max_retries=5):
             img_url = f"https://api.data.amsterdam.nl/panorama/panoramas/{pid}/"
-            
+
             for attempt in range(max_retries):
                 try:
                     proxy = random.choice(self._proxies)
                     headers = {"User-Agent": random.choice(self._user_agents)["user_agent"]}
                     response = requests.get(img_url, proxies=proxy, headers=headers)
                     data = json.loads(response.content)
-                    
+
                     if response.status_code == 200:
                         if not metadata_only:
                             self._save_image(pid, data, cropped)
