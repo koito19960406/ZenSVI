@@ -45,7 +45,7 @@ class PlacePulseClassificationModel(nn.Module):
         # Compute the weighted score for each image
         scores = torch.sum(probabilities * weights, dim=1)
         return scores
-    
+
     # def evaluate(self, batch):
     #     x, y = batch
     #     scores = self(x)  # Directly obtain scores from the model's forward pass

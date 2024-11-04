@@ -149,3 +149,6 @@ tests/data/**
 
 # models
 models/*
+
+# auxiliary
+test_download_folder.py

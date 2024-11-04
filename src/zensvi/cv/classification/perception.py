@@ -7,13 +7,16 @@ from PIL import Image
 import torch
 import pandas as pd
 import tqdm
+import sys
+import os
 
 from .utils.place_pulse import PlacePulseClassificationModel
+from .utils.Model_01 import Net
 from .base import BaseClassifier
 
 
 class ImageDataset(Dataset):
-    def __init__(self, image_files: List[Path]):
+    def __init__(self, image_files: List[Path], vit=False):
         self.image_files = [
             image_file
             for image_file in image_files
@@ -22,15 +25,27 @@ class ImageDataset(Dataset):
         ]
 
         # Image transformations
-        self.transform = transforms.Compose(
-            [
-                transforms.Resize((224, 224)),
-                transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),
-            ]
-        )
+        if vit:  # ViT model has a different image size
+            self.transform = transforms.Compose(
+                [
+                    transforms.Resize((384, 384)),
+                    transforms.ToTensor(),
+                    transforms.Normalize(
+                        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                    ),
+                ]
+
+            )
+        else:
+            self.transform = transforms.Compose(
+                [
+                    transforms.Resize((224, 224)),
+                    transforms.ToTensor(),
+                    transforms.Normalize(
+                        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                    ),
+                ]
+            )
 
     def __len__(self) -> int:
         return len(self.image_files)
@@ -201,16 +216,16 @@ class ClassifierPerceptionViT(BaseClassifier):
         self.perception_study = perception_study
 
         # directory that stores all the models
-        model_load_path = "./models"
+        model_load_path = "models"
 
         # map current models in huggingface
         model_dict = {
-            'safer': '/safety.pth',
-            'livelier': '/lively.pth',
-            'wealthy': '/wealthy.pth',
-            'more beautiful': '/beautiful.pth',
-            'more boring': '/boring.pth',
-            'more depressing': '/depressing.pth',
+            'safer': 'safety.pth',
+            'livelier': 'lively.pth',
+            'wealthy': 'wealthy.pth',
+            'more beautiful': 'beautiful.pth',
+            'more boring': 'boring.pth',
+            'more depressing': 'depressing.pth',
         }
 
         # Download model
@@ -219,10 +234,14 @@ class ClassifierPerceptionViT(BaseClassifier):
                           allow_patterns=[file_name, "README.md"], local_dir=Path(
                               __file__).parent.parent.parent.parent.parent / "models",
                           )
-        checkpoint_path = model_load_path + file_name
+        checkpoint_path = model_load_path + "/" + file_name
+
+        # add the path for model file
+        sys.path.append(os.path.dirname(os.path.abspath(
+            'src/zensvi/cv/classification/utils/Model_01.py')))
 
         # Now load the model
-        self.model = PlacePulseClassificationModelViT()
+        self.model = Net(num_classes=5)
         self.model = self.load_checkpoint(self.model, checkpoint_path)
         self.model.eval()
         self.model.to(self.device)
@@ -241,8 +260,7 @@ class ClassifierPerceptionViT(BaseClassifier):
             df.to_json(file_path, orient="records")
 
     def load_checkpoint(self, model, checkpoint_path):
-        checkpoint = torch.load(checkpoint_path, map_location=self.device)
-        model.load_state_dict(checkpoint)
+        model = torch.load(checkpoint_path, map_location=self.device)
         return model
 
     def classify(
@@ -264,7 +282,7 @@ class ClassifierPerceptionViT(BaseClassifier):
         :param save_format: Save format for the output, defaults to "json csv". Options are "json" and "csv". Please add a space between options.
         :type save_format: str, optional
         """
-        # Prepare output directories TODO
+        # Prepare output directories
         if dir_summary_output:
             Path(dir_summary_output).mkdir(parents=True, exist_ok=True)
 
@@ -291,7 +309,7 @@ class ClassifierPerceptionViT(BaseClassifier):
                 for p in Path(dir_input).rglob(ext)
             ]
 
-        dataset = ImageDataset(img_paths)
+        dataset = ImageDataset(img_paths, vit=True)
         dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
         results = []
@@ -303,6 +321,7 @@ class ClassifierPerceptionViT(BaseClassifier):
                 images = images.to(self.device, dtype=torch.float32)
 
                 custom_scores = self.model(images)
+                print(custom_scores)  # DEBUG
                 for image_file, score in zip(image_files, custom_scores):
                     results.append(
                         {
