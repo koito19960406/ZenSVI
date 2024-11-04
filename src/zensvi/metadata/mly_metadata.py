@@ -14,6 +14,8 @@ from timezonefinder import TimezoneFinder
 import polars as pl
 from shapely.wkb import dumps as wkb_dumps, loads as wkb_loads
 
+from zensvi.utils.log import Logger
+
 def _calculate_angle(line):
     if len(line) > 1:
         start, end = line[0], line[-1]

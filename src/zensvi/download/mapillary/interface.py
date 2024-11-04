@@ -334,7 +334,7 @@ def get_detections_with_map_feature_id(
 
 
 @auth()
-def image_thumbnail(image_id: str, resolution: int = 1024) -> str:
+def image_thumbnail(image_id: str, resolution: int = 1024, additional_fields=["all"]) -> str:
     """
     Gets the thumbnails of images from the API
 
@@ -355,7 +355,7 @@ def image_thumbnail(image_id: str, resolution: int = 1024) -> str:
         ... )
     """
 
-    return image.get_image_thumbnail_controller(image_id, resolution=resolution)
+    return image.get_image_thumbnail_controller(image_id, resolution, additional_fields)
 
 
 @auth()
