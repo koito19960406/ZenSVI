@@ -413,9 +413,9 @@ class SSLMetaArch(nn.Module):
         """Synchronizes the FSDP streams for the student and teacher models."""
         if self.need_to_synchronize_fsdp_streams:
             torch.cuda.synchronize()
-            self.student.dino_head._streams = (
-                self.teacher.dino_head._streams
-            ) = self.student.backbone._streams = self.teacher.backbone._streams
+            self.student.dino_head._streams = self.teacher.dino_head._streams = self.student.backbone._streams = (
+                self.teacher.backbone._streams
+            )
             self.need_to_synchronize_fsdp_streams = False
 
     def update_teacher(self, m):

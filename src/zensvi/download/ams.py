@@ -116,8 +116,8 @@ class AMSDownloader(BaseDownloader):
 
     def _get_raw_pids(self, lat, lon, buffer):
         """Get raw panorama IDs from the Amsterdam Street View API."""
-        url = f"https://api.data.amsterdam.nl/panorama/panoramas/?tags=mission-2022&near={lon},{lat}&radius={buffer}&srid=4326"
-        proxy = random.choice(self._user_agents)
+        url = f"https://api.data.amsterdam.nl/panorama/panoramas/?near={lon},{lat}&radius={buffer}&srid=4326"
+        proxy = random.choice(self._proxies)
         user_agent = random.choice(self._user_agents)
         headers = {"User-Agent": user_agent["user_agent"]}  # Extract the string from the dictionary
         response = requests.get(url, proxies=proxy, headers=headers)
@@ -134,7 +134,7 @@ class AMSDownloader(BaseDownloader):
         """Save an image to disk."""
         img_path = os.path.join(self.dir_output, f"{pid}.jpg")
         try:
-            proxy = random.choice(self._user_agents)
+            proxy = random.choice(self._proxies)
             headers = {"User-Agent": random.choice(self._user_agents)["user_agent"]}
             image = Image.open(
                 BytesIO(
@@ -262,30 +262,37 @@ class AMSDownloader(BaseDownloader):
         if start_date and end_date:
             pid_df = self._filter_pids_date(pid_df, start_date, end_date)
 
-        def process_pid(pid):
+        def process_pid(pid, max_retries=5):
             img_url = f"https://api.data.amsterdam.nl/panorama/panoramas/{pid}/"
-            proxy = random.choice(self._user_agents)
-            headers = {"User-Agent": random.choice(self._user_agents)["user_agent"]}
-            response = requests.get(img_url, proxies=proxy, headers=headers)
-            data = json.loads(response.content)
-            if response.status_code == 200:
-                if not metadata_only:
-                    self._save_image(pid, data, cropped)
 
-                return {
-                    "geometry": Point(data["geometry"]["coordinates"][:2]),
-                    "lat": data["geometry"]["coordinates"][1],
-                    "lon": data["geometry"]["coordinates"][0],
-                    "pano_id": data["pano_id"],
-                    "timestamp": data["timestamp"],
-                    "mission_year": data["mission_year"],
-                    "roll": data["roll"],
-                    "pitch": data["pitch"],
-                    "heading": data["heading"],
-                }
-            else:
-                print(f"Failed to download data for PID {pid}")
-                return None
+            for attempt in range(max_retries):
+                try:
+                    proxy = random.choice(self._proxies)
+                    headers = {"User-Agent": random.choice(self._user_agents)["user_agent"]}
+                    response = requests.get(img_url, proxies=proxy, headers=headers)
+                    data = json.loads(response.content)
+
+                    if response.status_code == 200:
+                        if not metadata_only:
+                            self._save_image(pid, data, cropped)
+
+                        return {
+                            "geometry": Point(data["geometry"]["coordinates"][:2]),
+                            "lat": data["geometry"]["coordinates"][1],
+                            "lon": data["geometry"]["coordinates"][0],
+                            "pano_id": data["pano_id"],
+                            "timestamp": data["timestamp"],
+                            "mission_year": data["mission_year"],
+                            "roll": data["roll"],
+                            "pitch": data["pitch"],
+                            "heading": data["heading"],
+                        }
+                except Exception as e:
+                    if attempt == max_retries - 1:  # Last attempt
+                        print(f"Failed to download data for PID {pid} after {max_retries} attempts: {str(e)}")
+                        return None
+                    continue
+            return None
 
         results = []
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
