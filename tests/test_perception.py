@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from zensvi.cv import ClassifierPerception
 from zensvi.cv import ClassifierPerceptionViT
+from test_base import TestBase
 
 
 class TestClassifierPerception(TestBase):
