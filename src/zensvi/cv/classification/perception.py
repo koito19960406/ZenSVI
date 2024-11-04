@@ -321,7 +321,6 @@ class ClassifierPerceptionViT(BaseClassifier):
                 images = images.to(self.device, dtype=torch.float32)
 
                 custom_scores = self.model(images)
-                print(custom_scores)  # DEBUG
                 for image_file, score in zip(image_files, custom_scores):
                     results.append(
                         {
