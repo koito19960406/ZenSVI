@@ -2,6 +2,17 @@ import torch.nn as nn
 
 
 def _make_scratch(in_shape, out_shape, groups=1, expand=False):
+    """Creates a scratch module with convolutional layers.
+
+    Args:
+        in_shape (tuple): Input shape for each layer.
+        out_shape (int): Output shape for the layers.
+        groups (int, optional): Number of groups for convolution. Defaults to 1.
+        expand (bool, optional): Whether to expand the output shapes. Defaults to False.
+
+    Returns:
+        nn.Module: A module containing the convolutional layers.
+    """
     scratch = nn.Module()
 
     out_shape1 = out_shape
@@ -12,53 +23,90 @@ def _make_scratch(in_shape, out_shape, groups=1, expand=False):
 
     if expand:
         out_shape1 = out_shape
-        out_shape2 = out_shape*2
-        out_shape3 = out_shape*4
+        out_shape2 = out_shape * 2
+        out_shape3 = out_shape * 4
         if len(in_shape) >= 4:
-            out_shape4 = out_shape*8
+            out_shape4 = out_shape * 8
 
     scratch.layer1_rn = nn.Conv2d(
-        in_shape[0], out_shape1, kernel_size=3, stride=1, padding=1, bias=False, groups=groups
+        in_shape[0],
+        out_shape1,
+        kernel_size=3,
+        stride=1,
+        padding=1,
+        bias=False,
+        groups=groups,
     )
     scratch.layer2_rn = nn.Conv2d(
-        in_shape[1], out_shape2, kernel_size=3, stride=1, padding=1, bias=False, groups=groups
+        in_shape[1],
+        out_shape2,
+        kernel_size=3,
+        stride=1,
+        padding=1,
+        bias=False,
+        groups=groups,
     )
     scratch.layer3_rn = nn.Conv2d(
-        in_shape[2], out_shape3, kernel_size=3, stride=1, padding=1, bias=False, groups=groups
+        in_shape[2],
+        out_shape3,
+        kernel_size=3,
+        stride=1,
+        padding=1,
+        bias=False,
+        groups=groups,
     )
     if len(in_shape) >= 4:
         scratch.layer4_rn = nn.Conv2d(
-            in_shape[3], out_shape4, kernel_size=3, stride=1, padding=1, bias=False, groups=groups
+            in_shape[3],
+            out_shape4,
+            kernel_size=3,
+            stride=1,
+            padding=1,
+            bias=False,
+            groups=groups,
         )
 
     return scratch
 
 
 class ResidualConvUnit(nn.Module):
-    """Residual convolution module.
-    """
+    """Residual convolution module."""
 
     def __init__(self, features, activation, bn):
-        """Init.
+        """Initializes the ResidualConvUnit.
 
         Args:
-            features (int): number of features
+            features (int): Number of features for the convolution layers.
+            activation (callable): Activation function to use.
+            bn (bool): Whether to use batch normalization.
         """
         super().__init__()
 
         self.bn = bn
 
-        self.groups=1
+        self.groups = 1
 
         self.conv1 = nn.Conv2d(
-            features, features, kernel_size=3, stride=1, padding=1, bias=True, groups=self.groups
-        )
-        
-        self.conv2 = nn.Conv2d(
-            features, features, kernel_size=3, stride=1, padding=1, bias=True, groups=self.groups
+            features,
+            features,
+            kernel_size=3,
+            stride=1,
+            padding=1,
+            bias=True,
+            groups=self.groups,
         )
 
-        if self.bn==True:
+        self.conv2 = nn.Conv2d(
+            features,
+            features,
+            kernel_size=3,
+            stride=1,
+            padding=1,
+            bias=True,
+            groups=self.groups,
+        )
+
+        if self.bn:
             self.bn1 = nn.BatchNorm2d(features)
             self.bn2 = nn.BatchNorm2d(features)
 
@@ -67,23 +115,22 @@ class ResidualConvUnit(nn.Module):
         self.skip_add = nn.quantized.FloatFunctional()
 
     def forward(self, x):
-        """Forward pass.
+        """Forward pass for the ResidualConvUnit.
 
         Args:
-            x (tensor): input
+            x (tensor): Input tensor.
 
         Returns:
-            tensor: output
+            tensor: Output tensor after applying convolutions and skip connection.
         """
-        
         out = self.activation(x)
         out = self.conv1(out)
-        if self.bn==True:
+        if self.bn:
             out = self.bn1(out)
-       
+
         out = self.activation(out)
         out = self.conv2(out)
-        if self.bn==True:
+        if self.bn:
             out = self.bn2(out)
 
         if self.groups > 1:
@@ -93,41 +140,67 @@ class ResidualConvUnit(nn.Module):
 
 
 class FeatureFusionBlock(nn.Module):
-    """Feature fusion block.
-    """
+    """Feature fusion block."""
 
-    def __init__(self, features, activation, deconv=False, bn=False, expand=False, align_corners=True, size=None):
-        """Init.
+    def __init__(
+        self,
+        features,
+        activation,
+        deconv=False,
+        bn=False,
+        expand=False,
+        align_corners=True,
+        size=None,
+    ):
+        """Initializes the FeatureFusionBlock.
 
         Args:
-            features (int): number of features
+            features (int): Number of features for the convolution layers.
+            activation (callable): Activation function to use.
+            deconv (bool, optional): Whether to use deconvolution. Defaults to False.
+            bn (bool, optional): Whether to use batch normalization. Defaults to False.
+            expand (bool, optional): Whether to expand the output features. Defaults to False.
+            align_corners (bool, optional): Whether to align corners in interpolation. Defaults to True.
+            size (tuple, optional): Size for interpolation. Defaults to None.
         """
         super(FeatureFusionBlock, self).__init__()
 
         self.deconv = deconv
         self.align_corners = align_corners
 
-        self.groups=1
+        self.groups = 1
 
         self.expand = expand
         out_features = features
-        if self.expand==True:
-            out_features = features//2
-        
-        self.out_conv = nn.Conv2d(features, out_features, kernel_size=1, stride=1, padding=0, bias=True, groups=1)
+        if self.expand:
+            out_features = features // 2
+
+        self.out_conv = nn.Conv2d(
+            features,
+            out_features,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            bias=True,
+            groups=1,
+        )
 
         self.resConfUnit1 = ResidualConvUnit(features, activation, bn)
         self.resConfUnit2 = ResidualConvUnit(features, activation, bn)
-        
+
         self.skip_add = nn.quantized.FloatFunctional()
 
-        self.size=size
+        self.size = size
 
     def forward(self, *xs, size=None):
-        """Forward pass.
+        """Forward pass for the FeatureFusionBlock.
+
+        Args:
+            *xs (tuple): Input tensors.
+            size (tuple, optional): Size for interpolation. Defaults to None.
 
         Returns:
-            tensor: output
+            tensor: Output tensor after feature fusion and convolution.
         """
         output = xs[0]
 
@@ -144,9 +217,7 @@ class FeatureFusionBlock(nn.Module):
         else:
             modifier = {"size": size}
 
-        output = nn.functional.interpolate(
-            output, **modifier, mode="bilinear", align_corners=self.align_corners
-        )
+        output = nn.functional.interpolate(output, **modifier, mode="bilinear", align_corners=self.align_corners)
 
         output = self.out_conv(output)
 

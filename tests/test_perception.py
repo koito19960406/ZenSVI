@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
+import os
 import unittest
 import os
 from pathlib import Path
 from zensvi.cv import ClassifierPerception
 from zensvi.cv import ClassifierPerceptionViT
 from test_base import TestBase
+
+from zensvi.cv import ClassifierPerception
 
 
 class TestClassifierPerception(TestBase):
@@ -19,7 +22,7 @@ class TestClassifierPerception(TestBase):
     #     shutil.rmtree(self.output, ignore_errors=True)
 
     def test_classify_directory(self):
-        classifier = ClassifierPerception(perception_study = 'more boring')
+        classifier = ClassifierPerception(perception_study="more boring")
         image_input = "tests/data/input/images"
         dir_summary_output = str(Path(self.output) / "directory/summary")
         classifier.classify(
@@ -30,7 +33,7 @@ class TestClassifierPerception(TestBase):
         self.assertTrue(os.listdir(dir_summary_output))
 
     def test_classify_single_image(self):
-        classifier = ClassifierPerception(perception_study = 'more boring')
+        classifier = ClassifierPerception(perception_study="more boring")
         image_input = "tests/data/input/images/test1.jpg"
         dir_summary_output = str(Path(self.output) / "single/summary")
         classifier.classify(
@@ -42,7 +45,7 @@ class TestClassifierPerception(TestBase):
     def test_classify_with_mps_device(self):
         device = "mps"
         classifier = ClassifierPerception(
-            perception_study = 'more boring', device=device)
+            perception_study="more boring", device=device)
         image_input = "tests/data/input/images"
         dir_summary_output = str(Path(self.output) / "mps/summary")
         classifier.classify(

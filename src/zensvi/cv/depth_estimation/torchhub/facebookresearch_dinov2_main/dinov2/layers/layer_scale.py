@@ -9,11 +9,25 @@
 from typing import Union
 
 import torch
-from torch import Tensor
-from torch import nn
+from torch import Tensor, nn
 
 
 class LayerScale(nn.Module):
+    """Applies layer scaling to the input tensor.
+
+    This module scales the input tensor by a learnable parameter (gamma),
+    which can be initialized to a specific value. The scaling can be done
+    in-place or not, depending on the `inplace` parameter.
+
+    Attributes:
+        gamma (nn.Parameter): The learnable scaling parameter.
+
+    Args:
+        dim (int): The dimension of the input tensor.
+        init_values (Union[float, Tensor], optional): Initial value(s) for gamma. Defaults to 1e-5.
+        inplace (bool, optional): If True, performs the operation in-place. Defaults to False.
+    """
+
     def __init__(
         self,
         dim: int,
@@ -25,4 +39,12 @@ class LayerScale(nn.Module):
         self.gamma = nn.Parameter(init_values * torch.ones(dim))
 
     def forward(self, x: Tensor) -> Tensor:
+        """Forward pass for the LayerScale module.
+
+        Args:
+            x (Tensor): The input tensor to be scaled.
+
+        Returns:
+            Tensor: The scaled tensor.
+        """
         return x.mul_(self.gamma) if self.inplace else x * self.gamma

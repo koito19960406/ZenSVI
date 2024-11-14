@@ -1,11 +1,9 @@
-import json
-import unittest
-import os
-from pathlib import Path
 import shutil
+import unittest
+
+from test_base import TestBase
 
 from zensvi.cv import Segmenter
-from test_base import TestBase
 
 
 class TestSegmentation(TestBase):
@@ -29,13 +27,10 @@ class TestSegmentation(TestBase):
             dir_image_output=image_output,
             dir_summary_output=summary_output,
             csv_format="wide",
-            max_workers=4,
+            max_workers=2,
         )
         # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            len(list(image_output.glob("*"))) > 0
-            and len(list(summary_output.glob("*"))) > 0
-        )
+        self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
 
     def test_mapillary_semantic(self):
         segmenter = Segmenter(dataset="mapillary", task="semantic")
@@ -46,13 +41,10 @@ class TestSegmentation(TestBase):
             dir_image_output=image_output,
             dir_summary_output=summary_output,
             csv_format="wide",
-            max_workers=4,
+            max_workers=2,
         )
         # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            len(list(image_output.glob("*"))) > 0
-            and len(list(summary_output.glob("*"))) > 0
-        )
+        self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
 
     def test_cityscapes_panoptic(self):
         segmenter = Segmenter(dataset="cityscapes", task="panoptic")
@@ -63,13 +55,10 @@ class TestSegmentation(TestBase):
             dir_image_output=image_output,
             dir_summary_output=summary_output,
             csv_format="wide",
-            max_workers=4,
+            max_workers=2,
         )
         # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            len(list(image_output.glob("*"))) > 0
-            and len(list(summary_output.glob("*"))) > 0
-        )
+        self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
 
     def test_cityscapes_semantic(self):
         segmenter = Segmenter(dataset="cityscapes", task="semantic")
@@ -80,13 +69,10 @@ class TestSegmentation(TestBase):
             dir_image_output=image_output,
             dir_summary_output=summary_output,
             csv_format="wide",
-            max_workers=4,
+            max_workers=2,
         )
         # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            len(list(image_output.glob("*"))) > 0
-            and len(list(summary_output.glob("*"))) > 0
-        )
+        self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
 
     def test_large_image(self):
         segmenter = Segmenter(dataset="mapillary", task="panoptic")
@@ -100,10 +86,7 @@ class TestSegmentation(TestBase):
             max_workers=1,
         )
         # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            len(list(image_output.glob("*"))) > 0
-            and len(list(summary_output.glob("*"))) > 0
-        )
+        self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
 
     def test_single_image(self):
         segmenter = Segmenter(dataset="mapillary", task="panoptic")
@@ -118,10 +101,7 @@ class TestSegmentation(TestBase):
             max_workers=1,
         )
         # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            len(list(image_output.glob("*"))) > 0
-            and len(list(summary_output.glob("*"))) > 0
-        )
+        self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
 
     def test_mps_device(self):
         device = "mps"
@@ -133,13 +113,10 @@ class TestSegmentation(TestBase):
             dir_image_output=image_output,
             dir_summary_output=summary_output,
             csv_format="wide",
-            max_workers=4,
+            max_workers=2,
         )
         # assert True if files in image_output and summary_output are not empty
-        self.assertTrue(
-            len(list(image_output.glob("*"))) > 0
-            and len(list(summary_output.glob("*"))) > 0
-        )
+        self.assertTrue(len(list(image_output.glob("*"))) > 0 and len(list(summary_output.glob("*"))) > 0)
 
     def test_calculate_pixel_ratio_post_process(self):
         segmenter = Segmenter(dataset="mapillary", task="panoptic")
@@ -167,7 +144,7 @@ class TestSegmentation(TestBase):
             dir_image_output=image_output,
             dir_summary_output=summary_output,
             csv_format="long",
-            max_workers=4,
+            max_workers=2,
         )
 
 

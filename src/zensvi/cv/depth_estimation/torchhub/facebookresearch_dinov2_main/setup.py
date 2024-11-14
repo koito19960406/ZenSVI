@@ -4,12 +4,11 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-from pathlib import Path
 import re
+from pathlib import Path
 from typing import List, Tuple
 
-from setuptools import setup, find_packages
-
+from setuptools import find_packages, setup
 
 NAME = "dinov2"
 DESCRIPTION = "PyTorch code and models for the DINOv2 self-supervised learning method."
@@ -27,7 +26,19 @@ except FileNotFoundError:
     long_description = DESCRIPTION
 
 
-def get_requirements(path: str = HERE / "requirements.txt") -> Tuple[List[str], List[str]]:
+def get_requirements(
+    path: str = HERE / "requirements.txt",
+) -> Tuple[List[str], List[str]]:
+    """Retrieve the package requirements from a specified file.
+
+    Args:
+        path (str): The path to the requirements file.
+                    Defaults to HERE / "requirements.txt".
+
+    Returns:
+        Tuple[List[str], List[str]]: A tuple containing a list of
+        requirements and a list of extra index URLs.
+    """
     requirements = []
     extra_indices = []
     with open(path) as f:
@@ -41,6 +52,14 @@ def get_requirements(path: str = HERE / "requirements.txt") -> Tuple[List[str], 
 
 
 def get_package_version() -> str:
+    """Get the package version from the __init__.py file.
+
+    Returns:
+        str: The package version.
+
+    Raises:
+        RuntimeError: If the package version cannot be determined.
+    """
     with open(HERE / "dinov2/__init__.py") as f:
         result = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", f.read(), re.M)
         if result:

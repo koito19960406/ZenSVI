@@ -1,9 +1,9 @@
-import unittest
 import os
-from pathlib import Path
+import unittest
+
+from test_base import TestBase
 
 from zensvi.cv import ClassifierReflection
-from test_base import TestBase
 
 
 class TestClassifierReflection(TestBase):

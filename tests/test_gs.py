@@ -1,6 +1,8 @@
 import unittest
-from zensvi.download import GSDownloader
+
 from test_base import TestBase
+
+from zensvi.download import GSDownloader
 
 
 class TestGS(TestBase):

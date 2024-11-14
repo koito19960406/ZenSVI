@@ -1,27 +1,30 @@
 from pathlib import Path
 from typing import List, Tuple, Union
-from torch.utils.data import Dataset, DataLoader
-from huggingface_hub import hf_hub_download
-from torchvision import transforms
-from PIL import Image
-import torch
-import pandas as pd
-import tqdm
 
-from .utils.global_streetscapes import (
-    quality_dict2idx,
-    GlobalStreetScapesClassificationModel,
-)
+import pandas as pd
+import torch
+import tqdm
+from huggingface_hub import hf_hub_download
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
+
 from .base import BaseClassifier
+from .utils.global_streetscapes import GlobalStreetScapesClassificationModel, quality_dict2idx
 
 
 class ImageDataset(Dataset):
+    """Dataset class for loading and transforming images.
+
+    Args:
+        image_files (List[Path]): List of paths to image files.
+    """
+
     def __init__(self, image_files: List[Path]):
         self.image_files = [
             image_file
             for image_file in image_files
-            if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"]
-            and not image_file.name.startswith(".")
+            if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"] and not image_file.name.startswith(".")
         ]
 
         # Image transformations
@@ -29,9 +32,7 @@ class ImageDataset(Dataset):
             [
                 transforms.Resize((224, 224)),
                 transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),  # ImageNet normalization
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),  # ImageNet normalization
             ]
         )
 
@@ -45,11 +46,8 @@ class ImageDataset(Dataset):
 
         return str(image_file), img
 
-    def collate_fn(
-        self, data: List[Tuple[str, torch.Tensor]]
-    ) -> Tuple[List[str], torch.Tensor]:
-        """
-        Custom collate function for the dataset.
+    def collate_fn(self, data: List[Tuple[str, torch.Tensor]]) -> Tuple[List[str], torch.Tensor]:
+        """Custom collate function for the dataset.
 
         Args:
             data (List[Tuple[str, torch.Tensor]]): List of tuples containing image file path and transformed image tensor.
@@ -63,12 +61,11 @@ class ImageDataset(Dataset):
 
 
 class ClassifierQuality(BaseClassifier):
-    """
-    A classifier for identifying quality.
+    """A classifier for identifying quality. The model is from Hou et al (2024) (https://github.com/ualsg/global-streetscapes).
 
-    :param device: The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
-        If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
-    :type device: str, optional
+    Args:
+        device (str, optional): The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
+            If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
     """
 
     def __init__(self, device=None):
@@ -82,9 +79,7 @@ class ClassifierQuality(BaseClassifier):
             local_dir=Path(__file__).parent.parent.parent.parent.parent / "models",
         )
 
-        checkpoint = torch.load(
-            checkpoint_path, map_location=lambda storage, loc: storage
-        )
+        checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
 
         # Extract the number of classes
         num_classes = checkpoint["state_dict"]["model.classifier.5.weight"].shape[0]
@@ -96,9 +91,15 @@ class ClassifierQuality(BaseClassifier):
         self.model.eval()
         self.model.to(self.device)
 
-    def _save_results_to_file(
-        self, results, dir_output, file_name, save_format="csv json"
-    ):
+    def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json"):
+        """Save classification results to file in specified formats.
+
+        Args:
+            results (List[dict]): List of dictionaries containing classification results.
+            dir_output (Path): Directory to save output files.
+            file_name (str): Base name for output files.
+            save_format (str, optional): Space-separated string of formats to save. Defaults to "csv json".
+        """
         df = pd.DataFrame(results)
         dir_output = Path(dir_output)
         dir_output.mkdir(parents=True, exist_ok=True)
@@ -116,17 +117,17 @@ class ClassifierQuality(BaseClassifier):
         batch_size=1,
         save_format="json csv",
     ) -> List[str]:
-        """
-        Classifies images based on quality. The output file can be saved in JSON and/or CSV format and will contain quality for each image. The quality categories are "good", "slghtly poor", and "very poor".
+        """Classifies images based on quality.
 
-        :param dir_input: directory containing input images.
-        :type dir_input: Union[str, Path]
-        :param dir_summary_output: directory to save summary output.
-        :type dir_summary_output: Union[str, Path, None]
-        :param batch_size: batch size for inference, defaults to 1
-        :type batch_size: int, optional
-        :param save_format: save format for the output, defaults to "json csv". Options are "json" and "csv". Please add a space between options.
-        :type save_format: str, optional
+        Args:
+            dir_input (Union[str, Path]): Directory containing input images or path to a single image.
+            dir_summary_output (Union[str, Path]): Directory to save summary output.
+            batch_size (int, optional): Batch size for inference. Defaults to 1.
+            save_format (str, optional): Space-separated string of formats to save results.
+                Options are "json" and/or "csv". Defaults to "json csv".
+
+        Returns:
+            List[str]: List of classification results.
         """
         # Prepare output directories
         if dir_summary_output:
@@ -156,9 +157,7 @@ class ClassifierQuality(BaseClassifier):
             ]
 
         dataset = ImageDataset(img_paths)
-        dataloader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=False, collate_fn=dataset.collate_fn
-        )
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=dataset.collate_fn)
 
         results = []
         # Using torch.no_grad() to avoid unnecessary gradient computations during inference
@@ -168,14 +167,10 @@ class ClassifierQuality(BaseClassifier):
                     "filename_key": str(Path(image_file).stem),
                     "quality": quality_dict2idx["index2label"][pred.item()],
                 }
-                for image_files, images in tqdm.tqdm(
-                    dataloader, desc="Classifying quality"
-                )
+                for image_files, images in tqdm.tqdm(dataloader, desc="Classifying quality")
                 for image_file, pred in zip(
                     image_files,
-                    torch.max(
-                        self.model(images.to(self.device, dtype=torch.float32)), 1
-                    )[1],
+                    torch.max(self.model(images.to(self.device, dtype=torch.float32)), 1)[1],
                 )
             ]
 

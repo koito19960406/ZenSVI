@@ -9,23 +9,21 @@
 #   https://github.com/rwightman/pytorch-image-models/tree/master/timm/layers/patch_embed.py
 
 import logging
-from typing import Callable, List, Any, Tuple, Dict
+from typing import Any, Callable, Dict, List, Tuple
 
 import torch
-from torch import nn, Tensor
+from torch import Tensor, nn
 
 from .attention import Attention, MemEffAttention
 from .drop_path import DropPath
 from .layer_scale import LayerScale
 from .mlp import Mlp
 
-
 logger = logging.getLogger("dinov2")
 
 
 try:
-    from xformers.ops import fmha
-    from xformers.ops import scaled_index_add, index_select_cat
+    from xformers.ops import fmha, index_select_cat, scaled_index_add
 
     XFORMERS_AVAILABLE = True
 except ImportError:
@@ -34,6 +32,23 @@ except ImportError:
 
 
 class Block(nn.Module):
+    """Block of the DINO model.
+
+    This class implements a block that consists of attention and feed-forward layers
+    with residual connections and layer normalization.
+
+    Attributes:
+        norm1 (nn.Module): The first layer normalization.
+        attn (Attention): The attention layer.
+        ls1 (LayerScale): The first layer scale.
+        drop_path1 (DropPath): The first drop path layer.
+        norm2 (nn.Module): The second layer normalization.
+        mlp (Mlp): The feed-forward layer.
+        ls2 (LayerScale): The second layer scale.
+        drop_path2 (DropPath): The second drop path layer.
+        sample_drop_ratio (float): The drop path ratio for stochastic depth.
+    """
+
     def __init__(
         self,
         dim: int,
@@ -51,8 +66,25 @@ class Block(nn.Module):
         attn_class: Callable[..., nn.Module] = Attention,
         ffn_layer: Callable[..., nn.Module] = Mlp,
     ) -> None:
+        """Initializes the Block.
+
+        Args:
+            dim (int): Dimension of the input features.
+            num_heads (int): Number of attention heads.
+            mlp_ratio (float, optional): Ratio of the hidden dimension in the MLP. Defaults to 4.0.
+            qkv_bias (bool, optional): Whether to include bias in QKV layers. Defaults to False.
+            proj_bias (bool, optional): Whether to include bias in projection layers. Defaults to True.
+            ffn_bias (bool, optional): Whether to include bias in feed-forward layers. Defaults to True.
+            drop (float, optional): Dropout rate. Defaults to 0.0.
+            attn_drop (float, optional): Dropout rate for attention. Defaults to 0.0.
+            init_values (optional): Initial values for layer scaling. Defaults to None.
+            drop_path (float, optional): Drop path rate. Defaults to 0.0.
+            act_layer (Callable[..., nn.Module], optional): Activation layer. Defaults to nn.GELU.
+            norm_layer (Callable[..., nn.Module], optional): Normalization layer. Defaults to nn.LayerNorm.
+            attn_class (Callable[..., nn.Module], optional): Attention class. Defaults to Attention.
+            ffn_layer (Callable[..., nn.Module], optional): Feed-forward layer class. Defaults to Mlp.
+        """
         super().__init__()
-        # print(f"biases: qkv: {qkv_bias}, proj: {proj_bias}, ffn: {ffn_bias}")
         self.norm1 = norm_layer(dim)
         self.attn = attn_class(
             dim,
@@ -80,10 +112,35 @@ class Block(nn.Module):
         self.sample_drop_ratio = drop_path
 
     def forward(self, x: Tensor) -> Tensor:
+        """Forward pass through the block.
+
+        Args:
+            x (Tensor): Input tensor.
+
+        Returns:
+            Tensor: Output tensor after passing through the block.
+        """
+
         def attn_residual_func(x: Tensor) -> Tensor:
+            """Applies attention and layer scaling.
+
+            Args:
+                x (Tensor): Input tensor.
+
+            Returns:
+                Tensor: Output tensor after attention and layer scaling.
+            """
             return self.ls1(self.attn(self.norm1(x)))
 
         def ffn_residual_func(x: Tensor) -> Tensor:
+            """Applies feed-forward network and layer scaling.
+
+            Args:
+                x (Tensor): Input tensor.
+
+            Returns:
+                Tensor: Output tensor after feed-forward network and layer scaling.
+            """
             return self.ls2(self.mlp(self.norm2(x)))
 
         if self.training and self.sample_drop_ratio > 0.1:
@@ -112,6 +169,16 @@ def drop_add_residual_stochastic_depth(
     residual_func: Callable[[Tensor], Tensor],
     sample_drop_ratio: float = 0.0,
 ) -> Tensor:
+    """Applies stochastic depth to the residual connection.
+
+    Args:
+        x (Tensor): Input tensor.
+        residual_func (Callable[[Tensor], Tensor]): Function to compute the residual.
+        sample_drop_ratio (float, optional): Probability of dropping a sample. Defaults to 0.0.
+
+    Returns:
+        Tensor: Output tensor after applying stochastic depth.
+    """
     # 1) extract subset using permutation
     b, n, d = x.shape
     sample_subset_size = max(int(b * (1 - sample_drop_ratio)), 1)
@@ -132,6 +199,15 @@ def drop_add_residual_stochastic_depth(
 
 
 def get_branges_scales(x, sample_drop_ratio=0.0):
+    """Generates random indices and scale factors for stochastic depth.
+
+    Args:
+        x (Tensor): Input tensor.
+        sample_drop_ratio (float, optional): Probability of dropping a sample. Defaults to 0.0.
+
+    Returns:
+        Tuple: A tuple containing the random indices and the scale factor.
+    """
     b, n, d = x.shape
     sample_subset_size = max(int(b * (1 - sample_drop_ratio)), 1)
     brange = (torch.randperm(b, device=x.device))[:sample_subset_size]
@@ -140,13 +216,29 @@ def get_branges_scales(x, sample_drop_ratio=0.0):
 
 
 def add_residual(x, brange, residual, residual_scale_factor, scaling_vector=None):
+    """Adds the residual to the input tensor.
+
+    Args:
+        x (Tensor): Input tensor.
+        brange (Tensor): Indices for the batch.
+        residual (Tensor): Residual tensor to add.
+        residual_scale_factor (float): Scale factor for the residual.
+        scaling_vector (optional): Scaling vector for the residual. Defaults to None.
+
+    Returns:
+        Tensor: Output tensor after adding the residual.
+    """
     if scaling_vector is None:
         x_flat = x.flatten(1)
         residual = residual.flatten(1)
         x_plus_residual = torch.index_add(x_flat, 0, brange, residual.to(dtype=x.dtype), alpha=residual_scale_factor)
     else:
         x_plus_residual = scaled_index_add(
-            x, brange, residual.to(dtype=x.dtype), scaling=scaling_vector, alpha=residual_scale_factor
+            x,
+            brange,
+            residual.to(dtype=x.dtype),
+            scaling=scaling_vector,
+            alpha=residual_scale_factor,
         )
     return x_plus_residual
 
@@ -155,8 +247,14 @@ attn_bias_cache: Dict[Tuple, Any] = {}
 
 
 def get_attn_bias_and_cat(x_list, branges=None):
-    """
-    this will perform the index select, cat the tensors, and provide the attn_bias from cache
+    """Performs index selection, concatenation of tensors, and provides attention bias from cache.
+
+    Args:
+        x_list (List[Tensor]): List of input tensors.
+        branges (optional): Indices for batch selection. Defaults to None.
+
+    Returns:
+        Tuple: A tuple containing the attention bias and concatenated tensors.
     """
     batch_sizes = [b.shape[0] for b in branges] if branges is not None else [x.shape[0] for x in x_list]
     all_shapes = tuple((b, x.shape[1]) for b, x in zip(batch_sizes, x_list))
@@ -184,6 +282,17 @@ def drop_add_residual_stochastic_depth_list(
     sample_drop_ratio: float = 0.0,
     scaling_vector=None,
 ) -> Tensor:
+    """Applies stochastic depth to a list of tensors.
+
+    Args:
+        x_list (List[Tensor]): List of input tensors.
+        residual_func (Callable[[Tensor, Any], Tensor]): Function to compute the residual.
+        sample_drop_ratio (float, optional): Probability of dropping a sample. Defaults to 0.0.
+        scaling_vector (optional): Scaling vector for the residual. Defaults to None.
+
+    Returns:
+        Tensor: List of output tensors after applying stochastic depth.
+    """
     # 1) generate random set of indices for dropping samples in the batch
     branges_scales = [get_branges_scales(x, sample_drop_ratio=sample_drop_ratio) for x in x_list]
     branges = [s[0] for s in branges_scales]
@@ -202,39 +311,88 @@ def drop_add_residual_stochastic_depth_list(
 
 
 class NestedTensorBlock(Block):
+    """Nested tensor block for handling lists of tensors.
+
+    This class extends the Block class to support operations on nested tensors.
+
+    Attributes:
+        attn (MemEffAttention): The memory-efficient attention layer.
+    """
+
     def forward_nested(self, x_list: List[Tensor]) -> List[Tensor]:
-        """
-        x_list contains a list of tensors to nest together and run
+        """Processes a list of tensors through the nested block.
+
+        Args:
+            x_list (List[Tensor]): List of input tensors.
+
+        Returns:
+            List[Tensor]: List of output tensors after processing.
         """
         assert isinstance(self.attn, MemEffAttention)
 
         if self.training and self.sample_drop_ratio > 0.0:
 
             def attn_residual_func(x: Tensor, attn_bias=None) -> Tensor:
+                """Applies attention with bias.
+
+                Args:
+                    x (Tensor): Input tensor.
+                    attn_bias (optional): Attention bias. Defaults to None.
+
+                Returns:
+                    Tensor: Output tensor after applying attention.
+                """
                 return self.attn(self.norm1(x), attn_bias=attn_bias)
 
             def ffn_residual_func(x: Tensor, attn_bias=None) -> Tensor:
+                """Applies feed-forward network.
+
+                Args:
+                    x (Tensor): Input tensor.
+                    attn_bias (optional): Attention bias. Defaults to None.
+
+                Returns:
+                    Tensor: Output tensor after applying feed-forward network.
+                """
                 return self.mlp(self.norm2(x))
 
             x_list = drop_add_residual_stochastic_depth_list(
                 x_list,
                 residual_func=attn_residual_func,
                 sample_drop_ratio=self.sample_drop_ratio,
-                scaling_vector=self.ls1.gamma if isinstance(self.ls1, LayerScale) else None,
+                scaling_vector=(self.ls1.gamma if isinstance(self.ls1, LayerScale) else None),
             )
             x_list = drop_add_residual_stochastic_depth_list(
                 x_list,
                 residual_func=ffn_residual_func,
                 sample_drop_ratio=self.sample_drop_ratio,
-                scaling_vector=self.ls2.gamma if isinstance(self.ls1, LayerScale) else None,
+                scaling_vector=(self.ls2.gamma if isinstance(self.ls1, LayerScale) else None),
             )
             return x_list
         else:
 
             def attn_residual_func(x: Tensor, attn_bias=None) -> Tensor:
+                """Applies attention with layer scaling.
+
+                Args:
+                    x (Tensor): Input tensor.
+                    attn_bias (optional): Attention bias. Defaults to None.
+
+                Returns:
+                    Tensor: Output tensor after applying attention.
+                """
                 return self.ls1(self.attn(self.norm1(x), attn_bias=attn_bias))
 
             def ffn_residual_func(x: Tensor, attn_bias=None) -> Tensor:
+                """Applies feed-forward network with layer scaling.
+
+                Args:
+                    x (Tensor): Input tensor.
+                    attn_bias (optional): Attention bias. Defaults to None.
+
+                Returns:
+                    Tensor: Output tensor after applying feed-forward network.
+                """
                 return self.ls2(self.mlp(self.norm2(x)))
 
             attn_bias, x = get_attn_bias_and_cat(x_list)
@@ -243,6 +401,14 @@ class NestedTensorBlock(Block):
             return attn_bias.split(x)
 
     def forward(self, x_or_x_list):
+        """Forward pass for either a single tensor or a list of tensors.
+
+        Args:
+            x_or_x_list (Union[Tensor, List[Tensor]]): Input tensor or list of tensors.
+
+        Returns:
+            Union[Tensor, List[Tensor]]: Output tensor or list of output tensors.
+        """
         if isinstance(x_or_x_list, Tensor):
             return super().forward(x_or_x_list)
         elif isinstance(x_or_x_list, list):

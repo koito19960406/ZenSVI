@@ -7,28 +7,48 @@
 import logging
 from typing import Dict, Optional
 
+import dinov2.distributed as distributed
 import torch
+from dinov2.data import DatasetWithEnumeratedTargets, SamplerType, make_data_loader
+from dinov2.logging import MetricLogger
 from torch import nn
 from torchmetrics import MetricCollection
-
-from dinov2.data import DatasetWithEnumeratedTargets, SamplerType, make_data_loader
-import dinov2.distributed as distributed
-from dinov2.logging import MetricLogger
-
 
 logger = logging.getLogger("dinov2")
 
 
 class ModelWithNormalize(torch.nn.Module):
+    """Model wrapper that normalizes the output of the given model.
+
+    Args:
+        model (nn.Module): The model to be wrapped.
+    """
+
     def __init__(self, model):
         super().__init__()
         self.model = model
 
     def forward(self, samples):
+        """Forward pass through the model with normalization.
+
+        Args:
+            samples (torch.Tensor): Input samples to the model.
+
+        Returns:
+            torch.Tensor: Normalized output from the model.
+        """
         return nn.functional.normalize(self.model(samples), dim=1, p=2)
 
 
 class ModelWithIntermediateLayers(nn.Module):
+    """Model that extracts features from intermediate layers.
+
+    Args:
+        feature_model (nn.Module): The feature extraction model.
+        n_last_blocks (int): Number of last blocks to extract features from.
+        autocast_ctx: Autocast context for mixed precision.
+    """
+
     def __init__(self, feature_model, n_last_blocks, autocast_ctx):
         super().__init__()
         self.feature_model = feature_model
@@ -37,6 +57,14 @@ class ModelWithIntermediateLayers(nn.Module):
         self.autocast_ctx = autocast_ctx
 
     def forward(self, images):
+        """Forward pass to get features from intermediate layers.
+
+        Args:
+            images (torch.Tensor): Input images to the model.
+
+        Returns:
+            torch.Tensor: Extracted features from the specified layers.
+        """
         with torch.inference_mode():
             with self.autocast_ctx():
                 features = self.feature_model.get_intermediate_layers(
@@ -54,6 +82,19 @@ def evaluate(
     device: torch.device,
     criterion: Optional[nn.Module] = None,
 ):
+    """Evaluate the model on the given data loader.
+
+    Args:
+        model (nn.Module): The model to evaluate.
+        data_loader: Data loader for the evaluation dataset.
+        postprocessors (Dict[str, nn.Module]): Postprocessing modules for metrics.
+        metrics (Dict[str, MetricCollection]): Metrics to compute.
+        device (torch.device): Device to perform evaluation on.
+        criterion (Optional[nn.Module]): Loss function for evaluation (default is None).
+
+    Returns:
+        Tuple[Dict[str, float], Dict[str, float]]: A tuple containing the metric logger stats and computed metrics.
+    """
     model.eval()
     if criterion is not None:
         criterion.eval()
@@ -85,6 +126,14 @@ def evaluate(
 
 
 def all_gather_and_flatten(tensor_rank):
+    """Gather tensors from all ranks and flatten the result.
+
+    Args:
+        tensor_rank (torch.Tensor): The tensor to gather from all ranks.
+
+    Returns:
+        torch.Tensor: Flattened tensor containing data from all ranks.
+    """
     tensor_all_ranks = torch.empty(
         distributed.get_global_size(),
         *tensor_rank.shape,
@@ -97,6 +146,18 @@ def all_gather_and_flatten(tensor_rank):
 
 
 def extract_features(model, dataset, batch_size, num_workers, gather_on_cpu=False):
+    """Extract features from the dataset using the specified model.
+
+    Args:
+        model (nn.Module): The model to extract features from.
+        dataset: The dataset to extract features from.
+        batch_size (int): Batch size for data loading.
+        num_workers (int): Number of workers for data loading.
+        gather_on_cpu (bool, optional): Whether to gather results on CPU (default is False).
+
+    Returns:
+        Tuple[torch.Tensor, torch.Tensor]: Extracted features and corresponding labels.
+    """
     dataset_with_enumerated_targets = DatasetWithEnumeratedTargets(dataset)
     sample_count = len(dataset_with_enumerated_targets)
     data_loader = make_data_loader(
@@ -112,6 +173,17 @@ def extract_features(model, dataset, batch_size, num_workers, gather_on_cpu=Fals
 
 @torch.inference_mode()
 def extract_features_with_dataloader(model, data_loader, sample_count, gather_on_cpu=False):
+    """Extract features using a data loader.
+
+    Args:
+        model (nn.Module): The model to extract features from.
+        data_loader: Data loader for the dataset.
+        sample_count (int): Total number of samples in the dataset.
+        gather_on_cpu (bool, optional): Whether to gather results on CPU (default is False).
+
+    Returns:
+        Tuple[torch.Tensor, torch.Tensor]: Extracted features and corresponding labels.
+    """
     gather_device = torch.device("cpu") if gather_on_cpu else torch.device("cuda")
     metric_logger = MetricLogger(delimiter="  ")
     features, all_labels = None, None
