@@ -7,7 +7,7 @@ license = "CC BY-SA 4.0"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9,<3.12"
 Pillow = ">=10.0.0"
 geopandas = ">=0.10.0"
 numpy = "^1.21.0"
@@ -50,18 +50,23 @@ torch = "^2.3"
 pyarrow = "^16.0.0"
 polars-lts-cpu = "^0.20.23"
 torchvision = "*"
+faiss-cpu = "^1.9.0"
+img2vec-pytorch = "^1.0.1"
+open3d = "^0.18.0"
+scikit-learn = "^1.5.2"
+addict = "^2.4.0"
 
 [tool.poetry.dev-dependencies]
 bleach = "^3.3.0"
 certifi = "^2021.5.30"
 chardet = "^4.0.0"
-coverage = "^5.5"
+coverage = "*"
 future = "^0.18.2"
 hypothesis = "^6.14.0"
 idna = "^2.10"
 iniconfig = "^1.1.1"
 pkginfo = "^1.7.0"
-pluggy = "^0.13.1"
+pluggy = "^1.0.0"
 py = "^1.10.0"
 pyparsing = "^2.4.7"
 six = "^1.16.0"
@@ -73,7 +78,10 @@ black = "^22.3.0"
 isort = "^5.10.1"
 flake8 = "^4.0.1"
 pydocstyle = "^6.1.1"
-pytest = "^7.1.2"
+pytest = "^8.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest-cov = "^6.0.0"
 
 [tool.black]
 line-length = 120
@@ -90,6 +98,9 @@ extend-ignore = "E203, W503"
 [tool.pydocstyle]
 convention = "google"
 add-ignore = ["D100", "D104", "D415", "D107", "D205", "D105"]
+
+[tool.pytest.ini_options]
+addopts = "--cov-config=.coveragerc"
 
 [aool.poetry.group.dev.dependencies]
 myst-nb = {version = "^1.0.0", python = "^3.9"}

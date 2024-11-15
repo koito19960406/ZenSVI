@@ -1,0 +1,32 @@
+[run]
+omit =
+    # Ignore any tests
+    */tests/*
+    # Ignore virtual environment folders
+    */venv/*
+    */env/*
+    # Ignore cache directories
+    */__pycache__/*
+    */.pytest_cache/*
+    # Add your custom folders to ignore
+    */migrations/*
+    */docs/*
+    */examples/*
+    */mapillary/*
+    */utils/*
+    */depth_anything/*
+    */zoedepth/*
+
+
+[report]
+# Exclude lines from coverage
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    pass
+    raise AssertionError
+
+[html]
+directory = coverage_html_report
