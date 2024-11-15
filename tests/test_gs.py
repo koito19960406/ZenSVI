@@ -1,5 +1,6 @@
 import signal
 from contextlib import contextmanager
+import shutil
 
 import pytest
 
@@ -27,9 +28,19 @@ def time_limit(seconds):
         signal.alarm(0)  # Disable the alarm
 
 
+@pytest.fixture(autouse=True)
+def cleanup_after_test(output_dir):
+    """Fixture to clean up downloaded files after each test"""
+    yield
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+
+
 @pytest.fixture
 def output_dir(base_output_dir, ensure_dir):
     output_dir = base_output_dir / "gs_download"
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
     ensure_dir(output_dir)
     return output_dir
 

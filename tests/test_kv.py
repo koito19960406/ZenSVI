@@ -1,14 +1,25 @@
 import geopandas as gp
 import pandas as pd
 import pytest
+import shutil
 
 from zensvi.download.kartaview import download_functions as kv
 from zensvi.download.kv import KVDownloader
 
 
+@pytest.fixture(autouse=True)
+def cleanup_after_test(output):
+    """Fixture to clean up downloaded files after each test"""
+    yield
+    if output.exists():
+        shutil.rmtree(output)
+
+
 @pytest.fixture
 def output(base_output_dir, ensure_dir):
     output_dir = base_output_dir / "kv_output"
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
     ensure_dir(output_dir)
     return output_dir
 

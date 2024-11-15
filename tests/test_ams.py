@@ -1,12 +1,23 @@
+import shutil
 import pandas as pd
 import pytest
 
 from zensvi.download.ams import AMSDownloader
 
 
+@pytest.fixture(autouse=True)
+def cleanup_after_test(output_dir):
+    """Fixture to clean up downloaded files after each test"""
+    yield
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+
+
 @pytest.fixture
 def output_dir(base_output_dir, ensure_dir):
     output_dir = base_output_dir / "ams_svi"
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
     ensure_dir(output_dir)
     return output_dir
 
