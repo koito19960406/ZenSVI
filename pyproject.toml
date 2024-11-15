@@ -101,6 +101,8 @@ add-ignore = ["D100", "D104", "D415", "D107", "D205", "D105"]
 
 [tool.pytest.ini_options]
 addopts = "--cov-config=.coveragerc"
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
 
 [aool.poetry.group.dev.dependencies]
 myst-nb = {version = "^1.0.0", python = "^3.9"}

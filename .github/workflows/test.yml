@@ -1,14 +1,11 @@
 name: Tests
-
 on: [push, pull_request]
-
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ['3.9', '3.10', '3.11']
-
     steps:
     - uses: actions/checkout@v4
     
@@ -17,22 +14,30 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     
+    - name: Install Poetry
+      run: |
+        pip install poetry
+    
+    - name: Cache Poetry virtualenv
+      uses: actions/cache@v3
+      id: cache
+      with:
+        path: ./.venv
+        key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+    
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        poetry install --no-interaction
     
     - name: Run tests with coverage
       run: |
-        pytest --cov=src/zensvi --cov-report=xml
+        poetry run pytest --cov=src/zensvi --cov-report=xml
       env:
         MLY_API_KEY: ${{ secrets.MLY_API_KEY }}
         GSV_API_KEY: ${{ secrets.GSV_API_KEY }}
     
     - name: Upload coverage reports to Codecov
       run: |
-        # Replace `linux` below with the appropriate OS
-        # Options are `alpine`, `linux`, `macos`, `windows`
         curl -Os https://cli.codecov.io/latest/linux/codecov
         chmod +x codecov
         ./codecov --verbose upload-process --fail-on-error -t ${{ secrets.CODECOV_TOKEN }} -n 'service'-${{ github.run_id }} -F service -f coverage-service.xml
