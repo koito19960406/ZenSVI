@@ -1,6 +1,8 @@
-import pytest
 import signal
 from contextlib import contextmanager
+
+import pytest
+
 from zensvi.download import GSDownloader
 
 

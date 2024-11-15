@@ -1,7 +1,8 @@
-import pytest
 import platform
-import torch
 from pathlib import Path
+
+import pytest
+import torch
 
 
 @pytest.fixture(scope="session")

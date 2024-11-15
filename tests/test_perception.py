@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 from pathlib import Path
-from zensvi.cv import ClassifierPerception
-from zensvi.cv import ClassifierPerceptionViT
 
 import pytest
+
+from zensvi.cv import ClassifierPerception, ClassifierPerceptionViT
 
 
 @pytest.fixture

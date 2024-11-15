@@ -1,6 +1,8 @@
+from collections import namedtuple
+
 import pytest
 import torch
-from collections import namedtuple
+
 from zensvi.cv import Embeddings
 
 

@@ -1,4 +1,5 @@
 import pytest
+
 from zensvi.cv import Segmenter
 
 

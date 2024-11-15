@@ -1,7 +1,9 @@
-import pytest
 import json
 import os
+
 import pandas as pd
+import pytest
+
 from zensvi.download import MLYDownloader
 from zensvi.download.mapillary import interface
 
