@@ -1,5 +1,4 @@
 # Core dependencies
-python>=3.9,<3.12
 Pillow>=10.0.0
 geopandas>=0.10.0
 numpy>=1.21.0
