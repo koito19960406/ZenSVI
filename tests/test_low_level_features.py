@@ -16,10 +16,10 @@ def output_dir(base_output_dir, ensure_dir):
     return output_dir
 
 
-def test_low_level(output, input_dir):
+def test_low_level(output_dir, input_dir):
     image_input = str(input_dir / "images")
-    image_output = output / "images"
-    summary_output = output / "summary"
+    image_output = output_dir / "images"
+    summary_output = output_dir / "summary"
     get_low_level_features(
         image_input,
         dir_image_output=image_output,
