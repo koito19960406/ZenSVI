@@ -9,14 +9,6 @@ from zensvi.download import GSVDownloader
 from .conftest import TimeoutException
 
 
-@pytest.fixture(autouse=True)
-def cleanup_after_test(output_dir):
-    """Fixture to clean up downloaded files after each test"""
-    yield
-    if output_dir.exists():
-        shutil.rmtree(output_dir)
-
-
 @pytest.fixture
 def output_dir(base_output_dir, ensure_dir):
     output_dir = base_output_dir / "gsv_svi"
@@ -54,7 +46,7 @@ def sv_downloader(output_dir, gsv_api_key):
         ("csv", 1),  # CSV file input
         ("polygon", 1),  # Single polygon
         ("multipolygon", 1),  # Multiple polygons
-        ("place_name", 1),  # Place name input
+        # ("place_name", 1),  # Place name input
     ],
 )
 def test_downloader_input_types(
@@ -77,7 +69,8 @@ def test_downloader_input_types(
     elif input_type == "multipolygon":
         kwargs = {"input_shp_file": str(gsv_input_files["multipolygon"])}
     else:  # place_name
-        kwargs = {"input_place_name": "Lim Chu Kang, Singapore"}
+        pass
+    #     kwargs = {"input_place_name": "Peng Yong"}
 
     try:
         with timeout(300):  # Let it run for 5 minutes

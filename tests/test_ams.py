@@ -8,18 +8,11 @@ from zensvi.download.ams import AMSDownloader
 from .conftest import TimeoutException
 
 
-@pytest.fixture(autouse=True)
-def cleanup_after_test(output_dir):
-    """Fixture to clean up downloaded files after each test"""
-    yield
-    if output_dir.exists():
-        shutil.rmtree(output_dir)
-
-
-@pytest.fixture
+@pytest.fixture(scope="function")  # Explicitly set function scope
 def output_dir(base_output_dir, ensure_dir):
     output_dir = base_output_dir / "ams_svi"
     if output_dir.exists():
+        print(f"Cleaning up existing {output_dir} before test function")  # Optional: for debugging
         shutil.rmtree(output_dir)
     ensure_dir(output_dir)
     return output_dir
@@ -33,7 +26,7 @@ def sv_downloader(output_dir):
 def test_download_asv(output_dir, sv_downloader, timeout):
     try:
         with timeout(300):  # Let it run for 5 minutes
-            sv_downloader.download_svi(output_dir, lat=52.356768, lon=4.907408, buffer=10)
+            sv_downloader.download_svi(output_dir, lat=52.356768, lon=4.907408, buffer=50)
     except TimeoutException:
         pass  # Allow timeout, we'll check results next
 
@@ -55,7 +48,7 @@ def test_download_asv_metadata_only(output_dir, sv_downloader, timeout):
 def test_csv_download_asv(output_dir, sv_downloader, input_dir, timeout):
     try:
         with timeout(300):  # Let it run for 5 minutes
-            sv_downloader.download_svi(output_dir, input_csv_file=input_dir / "test_ams.csv", buffer=10)
+            sv_downloader.download_svi(output_dir, input_csv_file=input_dir / "test_ams.csv", buffer=50)
     except TimeoutException:
         pass  # Allow timeout, we'll check results next
 
@@ -67,7 +60,7 @@ def test_shp_download_asv(output_dir, sv_downloader, input_dir, timeout):
     for file in file_list:
         try:
             with timeout(300):  # Let it run for 5 minutes
-                sv_downloader.download_svi(output_dir, input_shp_file=input_dir / file, buffer=10)
+                sv_downloader.download_svi(output_dir, input_shp_file=input_dir / file, buffer=50)
         except TimeoutException:
             pass  # Allow timeout, we'll check results next
 

@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 
 import pytest
@@ -5,14 +6,17 @@ import pytest
 from zensvi import visualization
 
 
-@pytest.fixture
-def output(base_output_dir, ensure_dir):
-    output_dir = base_output_dir / "visualization"
+@pytest.fixture(scope="function")  # Explicitly set function scope
+def output_dir(base_output_dir, ensure_dir):
+    output_dir = base_output_dir / "kv_svi"
+    if output_dir.exists():
+        print(f"Cleaning up existing {output_dir} before test function")  # Optional: for debugging
+        shutil.rmtree(output_dir)
     ensure_dir(output_dir)
     return output_dir
 
 
-def test_plot_map(output, input_dir):
+def test_plot_map(output_dir, input_dir):
     path_pid = str(input_dir / "visualization/gsv_pids.csv")
     dir_input = str(input_dir / "visualization/cityscapes_semantic_summary")
     csv_file_pattern = "pixel_ratios.csv"
@@ -21,7 +25,7 @@ def test_plot_map(output, input_dir):
 
     for variable in variable_name_list:
         for plot_type in plot_type_list:
-            path_output = str(output / f"plot_map_{variable}_{plot_type}.png")
+            path_output = str(output_dir / f"plot_map_{variable}_{plot_type}.png")
             fig, ax = visualization.plot_map(
                 path_pid,
                 dir_input=dir_input,
@@ -40,13 +44,13 @@ def test_plot_map(output, input_dir):
             assert output_path.exists() and output_path.stat().st_size > 0
 
 
-def test_plot_map_edge_color(output, input_dir):
+def test_plot_map_edge_color(output_dir, input_dir):
     path_pid = str(input_dir / "visualization/gsv_pids.csv")
     dir_input = str(input_dir / "visualization/cityscapes_semantic_summary")
     csv_file_pattern = "pixel_ratios.csv"
     variable_name = "sky"
     plot_type = "hexagon"
-    path_output = str(output / "plot_map_edge_color.png")
+    path_output = str(output_dir / "plot_map_edge_color.png")
     fig, ax = visualization.plot_map(
         path_pid,
         dir_input=dir_input,
@@ -66,12 +70,12 @@ def test_plot_map_edge_color(output, input_dir):
     assert output_path.exists() and output_path.stat().st_size > 0
 
 
-def test_plot_map_batch(output, input_dir):
+def test_plot_map_batch(output_dir, input_dir):
     path_pid = str(input_dir / "visualization/gsv_pids.csv")
     dir_input = str(input_dir / "visualization/cityscapes_semantic_summary")
     variable_name = "sky"
     plot_type = "hexagon"
-    path_output = str(output / "plot_map_batch.png")
+    path_output = str(output_dir / "plot_map_batch.png")
     fig, ax = visualization.plot_map(
         path_pid,
         pid_column="panoid",
@@ -90,11 +94,11 @@ def test_plot_map_batch(output, input_dir):
     assert output_path.exists() and output_path.stat().st_size > 0
 
 
-def test_plot_image(output, input_dir):
+def test_plot_image(output_dir, input_dir):
     dir_image_input = str(input_dir / "visualization/images/batch_1")
     dir_csv_input = str(input_dir / "visualization/cityscapes_semantic_summary")
     csv_file_pattern = "pixel_ratios.csv"
-    path_output = str(output / "plot_image.png")
+    path_output = str(output_dir / "plot_image.png")
     fig, ax = visualization.plot_image(
         dir_image_input,
         2,
@@ -111,10 +115,10 @@ def test_plot_image(output, input_dir):
     assert output_path.exists() and output_path.stat().st_size > 0
 
 
-def test_plot_image_image_file_pattern(output, input_dir):
+def test_plot_image_image_file_pattern(output_dir, input_dir):
     dir_image_input = str(input_dir / "visualization/mapillary_panoptic")
     image_file_pattern = "*_blend.png"
-    path_output = str(output / "plot_image_image_file_pattern.png")
+    path_output = str(output_dir / "plot_image_image_file_pattern.png")
     fig, ax = visualization.plot_image(
         dir_image_input,
         2,
@@ -131,10 +135,10 @@ def test_plot_image_image_file_pattern(output, input_dir):
     assert output_path.exists() and output_path.stat().st_size > 0
 
 
-def test_plot_image_sort_by(output, input_dir):
+def test_plot_image_sort_by(output_dir, input_dir):
     dir_image_input = str(input_dir / "visualization/mapillary_panoptic")
     image_file_pattern = "*_blend.png"
-    path_output = str(output / "plot_image_sort_by.png")
+    path_output = str(output_dir / "plot_image_sort_by.png")
     fig, ax = visualization.plot_image(
         dir_image_input,
         2,
@@ -154,9 +158,9 @@ def test_plot_image_sort_by(output, input_dir):
     assert output_path.exists() and output_path.stat().st_size > 0
 
 
-def test_plot_image_batch(output, input_dir):
+def test_plot_image_batch(output_dir, input_dir):
     dir_image_input = str(input_dir / "visualization/images")
-    path_output = str(output / "plot_image_batch.png")
+    path_output = str(output_dir / "plot_image_batch.png")
     fig, ax = visualization.plot_image(
         dir_image_input,
         2,
@@ -175,10 +179,10 @@ def test_plot_image_batch(output, input_dir):
     assert output_path.exists() and output_path.stat().st_size > 0
 
 
-def test_plot_kde(output, input_dir):
+def test_plot_kde(output_dir, input_dir):
     path_input = str(input_dir / "visualization/cityscapes_semantic_summary/batch_1/pixel_ratios.csv")
     columns = ["sky", "building", "vegetation", "road", "sidewalk"]
-    path_output = str(output / "plot_kde.png")
+    path_output = str(output_dir / "plot_kde.png")
     fig, ax = visualization.plot_kde(
         path_input,
         columns,
@@ -195,7 +199,7 @@ def test_plot_kde(output, input_dir):
     assert output_path.exists() and output_path.stat().st_size > 0
 
 
-def test_plot_kde_long(output, input_dir):
+def test_plot_kde_long(output_dir, input_dir):
     path_input = str(input_dir / "visualization/classification/places365/long/summary/results.csv")
     columns = [
         "residential_neighborhood",
@@ -204,7 +208,7 @@ def test_plot_kde_long(output, input_dir):
         "hospital",
         "building_facade",
     ]
-    path_output = str(output / "plot_kde_long.png")
+    path_output = str(output_dir / "plot_kde_long.png")
     fig, ax = visualization.plot_kde(
         path_input,
         columns,
@@ -221,10 +225,10 @@ def test_plot_kde_long(output, input_dir):
     assert output_path.exists() and output_path.stat().st_size > 0
 
 
-def test_plot_kde_batch(output, input_dir):
+def test_plot_kde_batch(output_dir, input_dir):
     dir_input = str(input_dir / "visualization/cityscapes_semantic_summary")
     columns = ["sky", "building", "vegetation", "road", "sidewalk"]
-    path_output = str(output / "plot_kde_batch.png")
+    path_output = str(output_dir / "plot_kde_batch.png")
     fig, ax = visualization.plot_kde(
         dir_input,
         columns,
@@ -241,8 +245,8 @@ def test_plot_kde_batch(output, input_dir):
     assert output_path.exists() and output_path.stat().st_size > 0
 
 
-def test_map_year(output, input_dir):
-    path_output = str(output / "plot_map_year.png")
+def test_map_year(output_dir, input_dir):
+    path_output = str(output_dir / "plot_map_year.png")
     visualization.plot_map(
         str(input_dir / "visualization/gsv_pids.csv"),
         pid_column="panoid",
@@ -257,10 +261,10 @@ def test_map_year(output, input_dir):
     assert output_path.exists() and output_path.stat().st_size > 0
 
 
-def test_plot_hist(output, input_dir):
+def test_plot_hist(output_dir, input_dir):
     dir_input = str(input_dir / "visualization/cityscapes_semantic_summary")
     columns = ["sky", "building", "vegetation", "road", "sidewalk"]
-    path_output = str(output / "plot_hist.png")
+    path_output = str(output_dir / "plot_hist.png")
     fig, ax = visualization.plot_hist(
         dir_input,
         columns,

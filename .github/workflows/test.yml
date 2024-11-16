@@ -13,7 +13,7 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-        cache: 'pip' # Enable pip caching
+        cache: 'pip'
     
     - name: Cache Poetry
       uses: actions/cache@v3
@@ -35,11 +35,29 @@ jobs:
         restore-keys: |
           venv-${{ runner.os }}-${{ matrix.python-version }}-
     
+    - name: Cache model files
+      uses: actions/cache@v3
+      id: cache-models
+      with:
+        path: |
+          ~/.cache/huggingface  # Hugging Face models
+          ~/.cache/torch/hub    # PyTorch hub models
+          models/               # Local model directory
+        key: models-${{ runner.os }}-${{ hashFiles('src/zensvi/cv/**/*.py') }}
+        restore-keys: |
+          models-${{ runner.os }}-
+    
     - name: Install dependencies
       if: steps.cache-venv.outputs.cache-hit != 'true'
       run: |
         poetry config virtualenvs.in-project true
         poetry install --no-interaction
+    
+    - name: Create model directories
+      run: |
+        mkdir -p models
+        mkdir -p ~/.cache/huggingface
+        mkdir -p ~/.cache/torch/hub
     
     - name: Run tests with coverage
       run: |
@@ -47,6 +65,7 @@ jobs:
       env:
         MLY_API_KEY: ${{ secrets.MLY_API_KEY }}
         GSV_API_KEY: ${{ secrets.GSV_API_KEY }}
+        CI: true
     
     - name: Cache Codecov uploader
       uses: actions/cache@v3

@@ -11,16 +11,8 @@ from zensvi.download.mapillary import interface
 from .conftest import TimeoutException
 
 
-@pytest.fixture(autouse=True)
-def cleanup_after_test(output):
-    """Fixture to clean up downloaded files after each test"""
-    yield
-    if output.exists():
-        shutil.rmtree(output)
-
-
-@pytest.fixture
-def output(base_output_dir, ensure_dir):
+@pytest.fixture(scope="function")  # Explicitly set function scope
+def output_dir(base_output_dir, ensure_dir):  # Changed from 'output' to 'output_dir'
     output_dir = base_output_dir / "mly_output"
     if output_dir.exists():
         shutil.rmtree(output_dir)
@@ -45,8 +37,8 @@ def mly_input_files(input_dir):
     }
 
 
-def test_interface(output, mly_input_files, mly_api_key, timeout):
-    output_file = output / "test_interface.json"
+def test_interface(output_dir, mly_input_files, mly_api_key, timeout):
+    output_file = output_dir / "test_interface.json"
     if output_file.exists():
         pytest.skip("Result exists")
 
@@ -58,7 +50,7 @@ def test_interface(output, mly_input_files, mly_api_key, timeout):
             assert len(output_data.to_dict()) > 0
     except TimeoutException:
         # Check if any files were created
-        assert len(list(output.iterdir())) > 0, "No files downloaded within 5 minutes"
+        assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
 
 
 @pytest.mark.parametrize(
@@ -71,9 +63,11 @@ def test_interface(output, mly_input_files, mly_api_key, timeout):
         ("place_name", 1),  # Place name input
     ],
 )
-def test_downloader_input_types(output, mly_input_files, input_dir, mly_api_key, input_type, expected_files, timeout):
+def test_downloader_input_types(
+    output_dir, mly_input_files, input_dir, mly_api_key, input_type, expected_files, timeout
+):
     """Test downloading with different input types"""
-    output_dir = output / f"test_{input_type}"
+    output_dir = output_dir / f"test_{input_type}"
     mly_downloader = MLYDownloader(mly_api_key, log_path=output_dir / "log.log", max_workers=1)
 
     # Set up input parameters based on type
@@ -105,8 +99,8 @@ def test_downloader_input_types(output, mly_input_files, input_dir, mly_api_key,
     assert len(files) >= expected_files, f"No files downloaded within 5 minutes for {input_type}"
 
 
-def test_downloader_metadata_only(output, mly_input_files, mly_api_key, timeout):
-    output_dir = output / "test_metadata"
+def test_downloader_metadata_only(output_dir, mly_input_files, mly_api_key, timeout):
+    output_dir = output_dir / "test_metadata"
     if (output_dir / "mly_pids.csv").exists():
         pytest.skip("Result exists")
 
@@ -125,8 +119,8 @@ def test_downloader_metadata_only(output, mly_input_files, mly_api_key, timeout)
         assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
 
 
-def test_downloader_with_buffer(output, mly_api_key, timeout):
-    output_dir = output / "test_buffer"
+def test_downloader_with_buffer(output_dir, mly_api_key, timeout):
+    output_dir = output_dir / "test_buffer"
     try:
         with timeout(300):  # Let it run for 5 minutes
             mly_downloader = MLYDownloader(mly_api_key, max_workers=1)
@@ -137,8 +131,8 @@ def test_downloader_with_buffer(output, mly_api_key, timeout):
     assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
 
 
-def test_downloader_kwargs(output, mly_input_files, mly_api_key, timeout):
-    output_dir = output / "test_kwargs"
+def test_downloader_kwargs(output_dir, mly_input_files, mly_api_key, timeout):
+    output_dir = output_dir / "test_kwargs"
     if (output_dir / "mly_svi").exists():
         pytest.skip("Result exists")
 
@@ -159,8 +153,8 @@ def test_downloader_kwargs(output, mly_input_files, mly_api_key, timeout):
     assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
 
 
-def test_error_handling(output, mly_api_key, timeout):
-    output_dir = output / "test_errors"
+def test_error_handling(output_dir, mly_api_key, timeout):
+    output_dir = output_dir / "test_errors"
     mly_downloader = MLYDownloader(mly_api_key, log_path=output_dir / "log.log")
 
     try:

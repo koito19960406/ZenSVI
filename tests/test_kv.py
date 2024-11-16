@@ -10,18 +10,11 @@ from zensvi.download.kv import KVDownloader
 from .conftest import TimeoutException
 
 
-@pytest.fixture(autouse=True)
-def cleanup_after_test(output):
-    """Fixture to clean up downloaded files after each test"""
-    yield
-    if output.exists():
-        shutil.rmtree(output)
-
-
-@pytest.fixture
-def output(base_output_dir, ensure_dir):
-    output_dir = base_output_dir / "kv_output"
+@pytest.fixture(scope="function")  # Explicitly set function scope
+def output_dir(base_output_dir, ensure_dir):
+    output_dir = base_output_dir / "kv_svi"
     if output_dir.exists():
+        print(f"Cleaning up existing {output_dir} before test function")  # Optional: for debugging
         shutil.rmtree(output_dir)
     ensure_dir(output_dir)
     return output_dir
@@ -35,8 +28,8 @@ def kv_input_files(input_dir):
     }
 
 
-def test_interface(output, kv_input_files, timeout):
-    output_file = output / "test_interface.csv"
+def test_interface(output_dir, kv_input_files, timeout):
+    output_file = output_dir / "test_interface.csv"
     if output_file.exists():
         pytest.skip("Result exists")
 
@@ -49,7 +42,7 @@ def test_interface(output, kv_input_files, timeout):
             assert len(output_data) > 0
     except TimeoutException:
         # Fall back to checking if any files exist
-        assert len(list(output.iterdir())) > 0, "No files downloaded within 5 minutes"
+        assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
 
 
 @pytest.mark.parametrize(
@@ -62,9 +55,9 @@ def test_interface(output, kv_input_files, timeout):
         ("place_name", 1),  # Place name input
     ],
 )
-def test_downloader_input_types(output, kv_input_files, input_dir, input_type, expected_files, timeout):
+def test_downloader_input_types(output_dir, kv_input_files, input_dir, input_type, expected_files, timeout):
     """Test downloading with different input types"""
-    output_dir = output / f"test_{input_type}"
+    output_dir = output_dir / f"test_{input_type}"
     kv_downloader = KVDownloader(log_path=output_dir / "log.log", max_workers=1)
 
     # Set up input parameters based on type
@@ -94,8 +87,8 @@ def test_downloader_input_types(output, kv_input_files, input_dir, input_type, e
     assert len(files) >= expected_files, f"No files downloaded within 5 minutes for {input_type}"
 
 
-def test_downloader_metadata_only(output, kv_input_files, timeout):
-    output_dir = output / "test_metadata_only"
+def test_downloader_metadata_only(output_dir, kv_input_files, timeout):
+    output_dir = output_dir / "test_metadata_only"
     kv_downloader = KVDownloader(log_path=output_dir / "log.log", max_workers=1)
 
     try:
@@ -108,8 +101,8 @@ def test_downloader_metadata_only(output, kv_input_files, timeout):
         assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
 
 
-def test_downloader_with_buffer(output, timeout):
-    output_dir = output / "test_buffer"
+def test_downloader_with_buffer(output_dir, timeout):
+    output_dir = output_dir / "test_buffer"
     kv_downloader = KVDownloader(log_path=output_dir / "log.log", max_workers=1)
 
     try:
@@ -121,8 +114,8 @@ def test_downloader_with_buffer(output, timeout):
     assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
 
 
-def test_downloader_date_filter(output, kv_input_files, timeout):
-    output_dir = output / "test_date_filter"
+def test_downloader_date_filter(output_dir, kv_input_files, timeout):
+    output_dir = output_dir / "test_date_filter"
     kv_downloader = KVDownloader(log_path=output_dir / "log.log", max_workers=1)
 
     try:
@@ -145,8 +138,8 @@ def test_downloader_date_filter(output, kv_input_files, timeout):
         assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
 
 
-def test_downloader_batch_processing(output, kv_input_files, timeout):
-    output_dir = output / "test_batch"
+def test_downloader_batch_processing(output_dir, kv_input_files, timeout):
+    output_dir = output_dir / "test_batch"
     kv_downloader = KVDownloader(log_path=output_dir / "log.log", max_workers=1)
 
     try:
@@ -161,8 +154,8 @@ def test_downloader_batch_processing(output, kv_input_files, timeout):
     assert (output_dir / "kv_svi").exists(), "SVI directory not created within 5 minutes"
 
 
-def test_downloader_cropped_images(output, kv_input_files, timeout):
-    output_dir = output / "test_cropped"
+def test_downloader_cropped_images(output_dir, kv_input_files, timeout):
+    output_dir = output_dir / "test_cropped"
     kv_downloader = KVDownloader(log_path=output_dir / "log.log", max_workers=1)
 
     try:
@@ -183,8 +176,8 @@ def test_downloader_cropped_images(output, kv_input_files, timeout):
         assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
 
 
-def test_error_handling(output, timeout):
-    output_dir = output / "test_errors"
+def test_error_handling(output_dir, timeout):
+    output_dir = output_dir / "test_errors"
     kv_downloader = KVDownloader(log_path=output_dir / "log.log")
 
     try:

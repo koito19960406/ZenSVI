@@ -1,5 +1,6 @@
 import multiprocessing
 import platform
+import shutil
 from pathlib import Path
 
 import pytest
@@ -69,3 +70,12 @@ def all_devices(request):
     if device == "mps" and platform.system() != "Darwin":
         pytest.skip("MPS device only available on Mac")
     return device
+
+
+@pytest.fixture(autouse=True, scope="function")
+def cleanup_after_test(output_dir):
+    """Fixture to clean up downloaded files after each test function"""
+    yield  # Wait for the test function to complete
+    if output_dir.exists():
+        print(f"Cleaning up {output_dir} after test function")  # Optional: for debugging
+        shutil.rmtree(output_dir)

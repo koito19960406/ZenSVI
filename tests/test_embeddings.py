@@ -1,3 +1,4 @@
+import shutil
 from collections import namedtuple
 
 import pytest
@@ -6,9 +7,12 @@ import torch
 from zensvi.cv import Embeddings
 
 
-@pytest.fixture
-def output(base_output_dir, ensure_dir):
-    output_dir = base_output_dir / "embeddings"
+@pytest.fixture(scope="function")  # Explicitly set function scope
+def output_dir(base_output_dir, ensure_dir):
+    output_dir = base_output_dir / "kv_svi"
+    if output_dir.exists():
+        print(f"Cleaning up existing {output_dir} before test function")  # Optional: for debugging
+        shutil.rmtree(output_dir)
     ensure_dir(output_dir)
     return output_dir
 
@@ -20,9 +24,9 @@ def cuda(request):
     return request.param
 
 
-def test_embeddings(output, input_dir, cuda):
+def test_embeddings(output_dir, input_dir, cuda):
     embedding = Embeddings(model_name="alexnet", cuda=cuda)
-    image_output = output / f"cuda_{cuda}/images"
+    image_output = output_dir / f"cuda_{cuda}/images"
 
     embs = embedding.generate_embedding(
         str(input_dir / "images"),
@@ -33,9 +37,9 @@ def test_embeddings(output, input_dir, cuda):
     assert embs is not None
 
 
-def test_search_similar_images(output, input_dir, cuda):
+def test_search_similar_images(output_dir, input_dir, cuda):
     embedding = Embeddings(model_name="alexnet", cuda=cuda)
-    image_output = output / f"cuda_{cuda}/images"
+    image_output = output_dir / f"cuda_{cuda}/images"
 
     embs = embedding.generate_embedding(
         str(input_dir / "images"),
@@ -56,7 +60,7 @@ def test_search_similar_images(output, input_dir, cuda):
     assert similar_images is not None
 
 
-def test_all_models(output, input_dir, cuda):
+def test_all_models(output_dir, input_dir, cuda):
     _Model = namedtuple("Model", ["name", "layer", "layer_output_size"])
     models_dict = {
         "resnet-18": _Model("resnet18", "avgpool", 512),
@@ -74,7 +78,7 @@ def test_all_models(output, input_dir, cuda):
     }
     for model_name in models_dict.keys():
         embedding = Embeddings(model_name=model_name, cuda=cuda)
-        image_output = output / f"cuda_{cuda}/{model_name}"
+        image_output = output_dir / f"cuda_{cuda}/{model_name}"
 
         embs = embedding.generate_embedding(
             str(input_dir / "images"),
