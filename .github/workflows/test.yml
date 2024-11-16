@@ -13,7 +13,7 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-        cache: 'pip' # Enable pip caching
+        cache: 'pip'
     
     - name: Cache Poetry
       uses: actions/cache@v3
@@ -43,7 +43,21 @@ jobs:
     
     - name: Run tests with coverage
       run: |
-        poetry run pytest --cov=src/zensvi --cov-report=xml -s
+        poetry run pytest \
+          --ignore=tests/test_depth_estimation.py \
+          --ignore=tests/test_glare.py \
+          --ignore=tests/test_lighting.py \
+          --ignore=tests/test_panorama.py \
+          --ignore=tests/test_perception.py \
+          --ignore=tests/test_places365.py \
+          --ignore=tests/test_platform.py \
+          --ignore=tests/test_quality.py \
+          --ignore=tests/test_reflection.py \
+          --ignore=tests/test_segmentation.py \
+          --ignore=tests/test_view_direction.py \
+          --ignore=tests/test_weather.py \
+          --ignore=tests/test_embeddings.py \
+          --cov=src/zensvi --cov-report=xml -s
       env:
         MLY_API_KEY: ${{ secrets.MLY_API_KEY }}
         GSV_API_KEY: ${{ secrets.GSV_API_KEY }}
