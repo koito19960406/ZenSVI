@@ -19,7 +19,7 @@ def test_classify_directory(output, input_dir, all_devices):
     classifier.estimate_depth(
         image_input,
         dir_image_output=dir_image_output,
-        batch_size=3,
+        batch_size=1,
     )
     assert len(list(Path(dir_image_output).iterdir())) > 0
 
