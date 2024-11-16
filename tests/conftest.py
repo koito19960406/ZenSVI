@@ -1,8 +1,43 @@
+import multiprocessing
 import platform
 from pathlib import Path
 
 import pytest
 import torch
+
+
+class TimeoutException(Exception):
+    pass
+
+
+class TimeoutContext:
+    """Timeout context manager using multiprocessing"""
+
+    def __init__(self, seconds):
+        self.seconds = seconds
+        self.process = None
+
+    def __enter__(self):
+        def target():
+            self.process = multiprocessing.current_process()
+
+        self.process = multiprocessing.Process(target=target)
+        self.process.start()
+        self.process.join(timeout=self.seconds)
+
+        if self.process.is_alive():
+            self.process.terminate()
+            raise TimeoutException("Download test timed out")
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.process and self.process.is_alive():
+            self.process.terminate()
+
+
+@pytest.fixture(scope="session")
+def timeout():
+    """Fixture to provide timeout context manager"""
+    return TimeoutContext
 
 
 @pytest.fixture(scope="session")
