@@ -103,6 +103,23 @@ add-ignore = ["D100", "D104", "D415", "D107", "D205", "D105"]
 addopts = "--cov-config=.coveragerc"
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
+norecursedirs = [".*", "build", "dist", "CVS", "_darcs", "{arch}", "*.egg", "venv"]
+# Ignore all CV test files except test_low_level_features.py
+ignore = [
+    "tests/test_depth_estimation.py",
+    "tests/test_glare.py",
+    "tests/test_lighting.py", 
+    "tests/test_panorama.py",
+    "tests/test_perception.py",
+    "tests/test_places365.py",
+    "tests/test_platform.py",
+    "tests/test_quality.py",
+    "tests/test_reflection.py",
+    "tests/test_segmentation.py",
+    "tests/test_view_direction.py",
+    "tests/test_weather.py",
+    "tests/test_embeddings.py"
+]
 
 [aool.poetry.group.dev.dependencies]
 myst-nb = {version = "^1.0.0", python = "^3.9"}

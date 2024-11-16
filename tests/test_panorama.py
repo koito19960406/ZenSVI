@@ -8,7 +8,7 @@ from zensvi.cv import ClassifierPanorama
 
 @pytest.fixture(scope="function")  # Explicitly set function scope
 def output_dir(base_output_dir, ensure_dir):
-    output_dir = base_output_dir / "kv_svi"
+    output_dir = base_output_dir / "panorama"
     if output_dir.exists():
         print(f"Cleaning up existing {output_dir} before test function")  # Optional: for debugging
         shutil.rmtree(output_dir)
