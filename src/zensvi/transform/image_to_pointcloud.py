@@ -68,8 +68,8 @@ class PointCloudProcessor:
             self.logger.log_args("PointCloudProcessor._load_images", data=data)
         images = {}
         for image_id in data["id"].unique():
-            depth_path = self.depth_folder / f"{image_id}_depth.png"
-            color_path = self.image_folder / f"{image_id}_color.jpg"
+            depth_path = self.depth_folder / f"{image_id}.jpg"
+            color_path = self.image_folder / f"{image_id}.jpg"
             if depth_path.exists() and color_path.exists():
                 images[image_id] = {
                     "depth": np.array(Image.open(depth_path).convert("L")),
