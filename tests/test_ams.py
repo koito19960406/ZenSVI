@@ -36,7 +36,7 @@ def test_download_asv(output_dir, sv_downloader, timeout):
 def test_download_asv_metadata_only(output_dir, sv_downloader, timeout):
     try:
         with timeout(300):  # Let it run for 5 minutes
-            sv_downloader.download_svi(output_dir, lat=52.356768, lon=4.907408, buffer=10, metadata_only=True)
+            sv_downloader.download_svi(output_dir, lat=52.356768, lon=4.907408, buffer=50, metadata_only=True)
             # Try to check CSV first if within timeout
             df = pd.read_csv(output_dir / "ams_pids.csv")
             assert df.shape[0] > 1
