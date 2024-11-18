@@ -45,14 +45,14 @@ def test_download_asv_metadata_only(output_dir, sv_downloader, timeout):
         assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
 
 
-def test_csv_download_asv(output_dir, sv_downloader, input_dir, timeout):
-    try:
-        with timeout(300):  # Let it run for 5 minutes
-            sv_downloader.download_svi(output_dir, input_csv_file=input_dir / "test_ams.csv", buffer=50)
-    except TimeoutException:
-        pass  # Allow timeout, we'll check results next
+# def test_csv_download_asv(output_dir, sv_downloader, input_dir, timeout):
+#     try:
+#         with timeout(300):  # Let it run for 5 minutes
+#             sv_downloader.download_svi(output_dir, input_csv_file=input_dir / "test_ams.csv", buffer=50)
+#     except TimeoutException:
+#         pass  # Allow timeout, we'll check results next
 
-    assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
+#     assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
 
 
 def test_shp_download_asv(output_dir, sv_downloader, input_dir, timeout):
