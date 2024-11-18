@@ -305,7 +305,9 @@ class AMSDownloader(BaseDownloader):
                 result = future.result()
                 if result is not None:
                     results.append(result)
-
+        if len(results) == 0:
+            print("No data downloaded. Please check the input parameters.")
+            return
         final_df = gpd.GeoDataFrame(results, crs="EPSG:4326", geometry="geometry")
         final_df.to_csv(os.path.join(self.dir_output, "ams_pids.csv"), index=False)
         print(f"Metadata saved to {os.path.join(self.dir_output, 'ams_pids.csv')}")
