@@ -117,7 +117,7 @@ class AMSDownloader(BaseDownloader):
     def _get_raw_pids(self, lat, lon, buffer):
         """Get raw panorama IDs from the Amsterdam Street View API."""
         url = f"https://api.data.amsterdam.nl/panorama/panoramas/?near={lon},{lat}&radius={buffer}&srid=4326"
-        
+
         for attempt in range(10):
             try:
                 proxy = random.choice(self._proxies)
