@@ -28,5 +28,23 @@ exclude_lines =
     pass
     raise AssertionError
 
+omit =
+    # Ignore any tests
+    */tests/*
+    # Ignore virtual environment folders
+    */venv/*
+    */env/*
+    # Ignore cache directories
+    */__pycache__/*
+    */.pytest_cache/*
+    # Add your custom folders to ignore
+    */migrations/*
+    */docs/*
+    */examples/*
+    */mapillary/*
+    */utils/*
+    */depth_anything/*
+    */zoedepth/*
+
 [html]
 directory = coverage_html_report

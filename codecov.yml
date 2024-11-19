@@ -1,0 +1,47 @@
+# codecov.yml
+coverage:
+  status:
+    project:
+      default:
+        target: auto  # This will use the coverage of the base branch as the target
+        threshold: 1% # Allow coverage to drop by 1% while still passing
+    patch:
+      default:
+        target: auto
+        threshold: 1%
+
+ignore:
+  # Ignore any tests
+  - "tests/"
+  - "**/tests/**/*"
+  
+  # Ignore virtual environment folders
+  - "venv/"
+  - "env/"
+  
+  # Ignore cache directories
+  - "**/__pycache__/"
+  - "**/.pytest_cache/"
+  
+  # Custom folders to ignore
+  - "**/mapillary/**/*"
+  - "**/utils/**/*"
+  - "**/depth_anything/**/*"
+  - "**/zoedepth/**/*"
+
+# Configure how coverage reports appear in PRs
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: false
+
+# Exclude specific lines or patterns (equivalent to your exclude_lines)
+parsers:
+  python:
+    exclude_lines:
+      - pragma: no cover
+      - def __repr__
+      - raise NotImplementedError
+      - if __name__ == .__main__.:
+      - pass
+      - raise AssertionError
