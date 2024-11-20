@@ -24,10 +24,12 @@ ignore:
   - "**/.pytest_cache/"
   
   # Custom folders to ignore
-  - "**/mapillary/**/*"
-  - "**/utils/**/*"
-  - "**/depth_anything/**/*"
-  - "**/zoedepth/**/*"
+  - "src/zensvi/utils/**/*"
+  - "src/zensvi/download/mapillary/**/*"
+  - "src/zensvi/download/utils/**/*"
+  - "src/zensvi/cv/depth_estimation/depth_anything/**/*"
+  - "src/zensvi/cv/depth_estimation/zoedepth/**/*"
+  - "src/zensvi/cv/depth_estimation/torchhub/**/*"
 
 # Configure how coverage reports appear in PRs
 comment:
