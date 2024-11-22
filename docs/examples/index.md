@@ -7,4 +7,5 @@
 test
 demo_GlobalStreetscapes
 demo_Point_Cloud
+demo_Embeddings
 ```
