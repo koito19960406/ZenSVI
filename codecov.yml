@@ -1,4 +1,3 @@
-# codecov.yml
 coverage:
   status:
     project:
@@ -12,16 +11,16 @@ coverage:
 
 ignore:
   # Ignore any tests
-  - "tests/"
+  - "tests/*"
   - "**/tests/**/*"
   
   # Ignore virtual environment folders
-  - "venv/"
-  - "env/"
+  - "venv/*"
+  - "env/*"
   
   # Ignore cache directories
-  - "**/__pycache__/"
-  - "**/.pytest_cache/"
+  - "**/__pycache__/*"
+  - "**/.pytest_cache/*"
   
   # Custom folders to ignore
   - "src/zensvi/utils/**/*"
@@ -31,13 +30,11 @@ ignore:
   - "src/zensvi/cv/depth_estimation/zoedepth/**/*"
   - "src/zensvi/cv/depth_estimation/torchhub/**/*"
 
-# Configure how coverage reports appear in PRs
 comment:
   layout: "reach, diff, flags, files"
   behavior: default
   require_changes: false
 
-# Exclude specific lines or patterns (equivalent to your exclude_lines)
 parsers:
   python:
     exclude_lines:
