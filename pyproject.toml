@@ -10,7 +10,6 @@ readme = "README.md"
 python = "^3.9"
 Pillow = ">=10.0.0"
 geopandas = ">=0.10.0"
-geopy = "^2.2.0"
 numpy = "^1.21.0"
 opencv-python = ">=4.5.3"
 osmnx = "^1.1.1"
@@ -70,11 +69,34 @@ sortedcontainers = "^2.4.0"
 twine = "^1.13.0"
 urllib3 = "^2.0.0"
 webencodings = "^0.5.1"
+black = "^22.3.0"
+isort = "^5.10.1"
+flake8 = "^4.0.1"
+pydocstyle = "^6.1.1"
+pytest = "^7.1.2"
+
+[tool.black]
+line-length = 120
+target-version = ['py39']
+
+[tool.isort]
+profile = "black"
+line_length = 120
+
+[tool.flake8]
+max-line-length = 120
+extend-ignore = "E203, W503"
+
+[tool.pydocstyle]
+convention = "google"
+add-ignore = ["D100", "D104", "D415", "D107", "D205", "D105"]
 
 [aool.poetry.group.dev.dependencies]
 myst-nb = {version = "^1.0.0", python = "^3.9"}
 sphinx-autoapi = "^3.0.0"
 sphinx-rtd-theme = "^2.0.0"
+sphinxcontrib-bibtex = "*"
+furo = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

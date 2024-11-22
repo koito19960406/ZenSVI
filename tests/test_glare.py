@@ -1,10 +1,10 @@
-import unittest
 import os
-import shutil
+import unittest
 from pathlib import Path
 
-from zensvi.cv import ClassifierGlare
 from test_base import TestBase
+
+from zensvi.cv import ClassifierGlare
 
 
 class TestClassifierGlare(TestBase):

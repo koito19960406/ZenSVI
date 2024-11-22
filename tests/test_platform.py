@@ -1,9 +1,10 @@
-import unittest
 import os
+import unittest
 from pathlib import Path
 
-from zensvi.cv import ClassifierPlatform
 from test_base import TestBase
+
+from zensvi.cv import ClassifierPlatform
 
 
 class TestClassifierPlatform(TestBase):

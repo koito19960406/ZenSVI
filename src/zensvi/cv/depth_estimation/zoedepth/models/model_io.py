@@ -24,25 +24,32 @@
 
 import torch
 
+
 def load_state_dict(model, state_dict):
-    """Load state_dict into model, handling DataParallel and DistributedDataParallel. Also checks for "model" key in state_dict.
+    """Load state_dict into model, handling DataParallel and DistributedDataParallel.
 
-    DataParallel prefixes state_dict keys with 'module.' when saving.
-    If the model is not a DataParallel model but the state_dict is, then prefixes are removed.
-    If the model is a DataParallel model but the state_dict is not, then prefixes are added.
+    This function checks for the "model" key in the state_dict. DataParallel prefixes
+    state_dict keys with 'module.' when saving. If the model is not a DataParallel model
+    but the state_dict is, then prefixes are removed. If the model is a DataParallel model
+    but the state_dict is not, then prefixes are added.
+
+    Args:
+        model (torch.nn.Module): The model to load the state_dict into.
+        state_dict (dict): The state dictionary containing model weights.
+
+    Returns:
+        torch.nn.Module: The model with loaded state_dict.
     """
-    state_dict = state_dict.get('model', state_dict)
-    # if model is a DataParallel model, then state_dict keys are prefixed with 'module.'
+    state_dict = state_dict.get("model", state_dict)
 
-    do_prefix = isinstance(
-        model, (torch.nn.DataParallel, torch.nn.parallel.DistributedDataParallel))
+    do_prefix = isinstance(model, (torch.nn.DataParallel, torch.nn.parallel.DistributedDataParallel))
     state = {}
     for k, v in state_dict.items():
-        if k.startswith('module.') and not do_prefix:
+        if k.startswith("module.") and not do_prefix:
             k = k[7:]
 
-        if not k.startswith('module.') and do_prefix:
-            k = 'module.' + k
+        if not k.startswith("module.") and do_prefix:
+            k = "module." + k
 
         state[k] = v
 
@@ -52,41 +59,62 @@ def load_state_dict(model, state_dict):
 
 
 def load_wts(model, checkpoint_path):
-    ckpt = torch.load(checkpoint_path, map_location='cpu')
+    """Load weights from a checkpoint file into the model.
+
+    Args:
+        model (torch.nn.Module): The model to load weights into.
+        checkpoint_path (str): The path to the checkpoint file.
+
+    Returns:
+        torch.nn.Module: The model with loaded weights.
+    """
+    ckpt = torch.load(checkpoint_path, map_location="cpu")
     return load_state_dict(model, ckpt)
 
 
 def load_state_dict_from_url(model, url, **kwargs):
-    state_dict = torch.hub.load_state_dict_from_url(url, map_location='cpu', **kwargs)
+    """Load state_dict from a URL into the model.
+
+    Args:
+        model (torch.nn.Module): The model to load the state_dict into.
+        url (str): The URL to load the state_dict from.
+        **kwargs: Additional arguments for loading the state_dict.
+
+    Returns:
+        torch.nn.Module: The model with loaded state_dict.
+    """
+    state_dict = torch.hub.load_state_dict_from_url(url, map_location="cpu", **kwargs)
     return load_state_dict(model, state_dict)
 
 
 def load_state_from_resource(model, resource: str):
-    """Loads weights to the model from a given resource. A resource can be of following types:
+    """Loads weights to the model from a given resource.
+
+    A resource can be of the following types:
         1. URL. Prefixed with "url::"
-                e.g. url::http(s)://url.resource.com/ckpt.pt
-
+           e.g. url::http(s)://url.resource.com/ckpt.pt
         2. Local path. Prefixed with "local::"
-                e.g. local::/path/to/ckpt.pt
-
+           e.g. local::/path/to/ckpt.pt
 
     Args:
-        model (torch.nn.Module): Model
-        resource (str): resource string
+        model (torch.nn.Module): The model to load weights into.
+        resource (str): The resource string indicating the source of weights.
 
     Returns:
-        torch.nn.Module: Model with loaded weights
+        torch.nn.Module: The model with loaded weights.
+
+    Raises:
+        ValueError: If the resource type is invalid.
     """
     print(f"Using pretrained resource {resource}")
 
-    if resource.startswith('url::'):
-        url = resource.split('url::')[1]
+    if resource.startswith("url::"):
+        url = resource.split("url::")[1]
         return load_state_dict_from_url(model, url, progress=True)
 
-    elif resource.startswith('local::'):
-        path = resource.split('local::')[1]
+    elif resource.startswith("local::"):
+        path = resource.split("local::")[1]
         return load_wts(model, path)
-        
+
     else:
         raise ValueError("Invalid resource type, only url:: and local:: are supported")
-    

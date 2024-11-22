@@ -1,9 +1,10 @@
-import unittest
 import os
+import unittest
 from pathlib import Path
 
-from zensvi.cv import ClassifierPlaces365
 from test_base import TestBase
+
+from zensvi.cv import ClassifierPlaces365
 
 
 class TestClassifierPlaces365(TestBase):

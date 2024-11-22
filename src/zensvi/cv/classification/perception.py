@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import List, Tuple, Union
+<<<<<<< HEAD
 from torch.utils.data import Dataset, DataLoader
 from huggingface_hub import hf_hub_download, snapshot_download
 from torchvision import transforms
@@ -12,19 +13,41 @@ import os
 
 from .utils.place_pulse import PlacePulseClassificationModel
 from .utils.Model_01 import Net
+=======
+
+import pandas as pd
+import torch
+import tqdm
+from huggingface_hub import hf_hub_download
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
+
+>>>>>>> 935dc586c86922f8d6f03516e2ccd709ab41b2d5
 from .base import BaseClassifier
+from .utils.place_pulse import PlacePulseClassificationModel
 
 
 class ImageDataset(Dataset):
+<<<<<<< HEAD
     def __init__(self, image_files: List[Path], vit=False):
+=======
+    """Dataset class for loading and preprocessing images.
+
+    Args:
+        image_files (List[Path]): List of paths to image files.
+    """
+
+    def __init__(self, image_files: List[Path]):
+>>>>>>> 935dc586c86922f8d6f03516e2ccd709ab41b2d5
         self.image_files = [
             image_file
             for image_file in image_files
-            if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"]
-            and not image_file.name.startswith(".")
+            if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"] and not image_file.name.startswith(".")
         ]
 
         # Image transformations
+<<<<<<< HEAD
         if vit:  # ViT model has a different image size
             self.transform = transforms.Compose(
                 [
@@ -46,6 +69,15 @@ class ImageDataset(Dataset):
                     ),
                 ]
             )
+=======
+        self.transform = transforms.Compose(
+            [
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ]
+        )
+>>>>>>> 935dc586c86922f8d6f03516e2ccd709ab41b2d5
 
     def __len__(self) -> int:
         return len(self.image_files)
@@ -57,17 +89,14 @@ class ImageDataset(Dataset):
 
         return str(image_file), img
 
-    def collate_fn(
-        self, data: List[Tuple[str, torch.Tensor]]
-    ) -> Tuple[List[str], torch.Tensor]:
-        """
-        Custom collate function for the dataset.
+    def collate_fn(self, data: List[Tuple[str, torch.Tensor]]) -> Tuple[List[str], torch.Tensor]:
+        """Custom collate function for the dataset.
 
         Args:
-            data (List[Tuple[str, torch.Tensor]]): List of tuples containing image file path and transformed image tensor.
+            data (List[Tuple[str, torch.Tensor]]): List of tuples containing image file paths and transformed image tensors.
 
         Returns:
-            Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
+            Tuple[List[str], torch.Tensor]: Tuple containing a list of image file paths and a batch of stacked image tensors.
         """
         image_files, images = zip(*data)
         images = torch.stack(images)  # Stack images to create a batch
@@ -75,14 +104,14 @@ class ImageDataset(Dataset):
 
 
 class ClassifierPerception(BaseClassifier):
-    """
-    A classifier for evaluating the perception of streetscape based on a given study.
+    """A classifier for evaluating the perception of streetscape based on a given study.
 
-    :param device: The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
-        If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
-    :param perception_study: The specific perception study for which the model is trained, including "safer", "livelier", "wealthier", "more beautiful", "more boring", "more depressing". This affects the checkpoint file used.
-    :type device: str, optional
-    :type perception_study: str
+    Args:
+        perception_study (str): The specific perception study for which the model is trained, including
+            "safer", "livelier", "wealthier", "more beautiful", "more boring", "more depressing".
+            This affects the checkpoint file used.
+        device (str, optional): The device that the model should be loaded onto. Options are "cpu", "cuda",
+            or "mps". If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
     """
 
     def __init__(self, perception_study, device=None):
@@ -104,9 +133,15 @@ class ClassifierPerception(BaseClassifier):
         self.model.eval()
         self.model.to(self.device)
 
-    def _save_results_to_file(
-        self, results, dir_output, file_name, save_format="csv json"
-    ):
+    def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json"):
+        """Save results to file in specified format.
+
+        Args:
+            results (List[dict]): List of dictionaries containing results to save
+            dir_output (Union[str, Path]): Directory to save output files
+            file_name (str): Base name for output files
+            save_format (str, optional): Format(s) to save results in. Defaults to "csv json".
+        """
         df = pd.DataFrame(results)
         dir_output = Path(dir_output)
         dir_output.mkdir(parents=True, exist_ok=True)
@@ -118,6 +153,15 @@ class ClassifierPerception(BaseClassifier):
             df.to_json(file_path, orient="records")
 
     def load_checkpoint(self, model, checkpoint_path):
+        """Load model weights from checkpoint file.
+
+        Args:
+            model (torch.nn.Module): Model to load weights into
+            checkpoint_path (Union[str, Path]): Path to checkpoint file
+
+        Returns:
+            torch.nn.Module: Model with loaded weights
+        """
         checkpoint = torch.load(checkpoint_path, map_location=self.device)
         model.load_state_dict(checkpoint)
         return model
@@ -129,17 +173,17 @@ class ClassifierPerception(BaseClassifier):
         batch_size=1,
         save_format="json csv",
     ) -> List[str]:
-        """
-        Classifies images based on human perception of streetscapes from the specified perception study. The output file can be saved in JSON and/or CSV format and will contain the final perception score for each image.
+        """Classifies images based on human perception of streetscapes from the specified perception study.
 
-        :param dir_input: Directory containing input images.
-        :type dir_input: Union[str, Path]
-        :param dir_summary_output: Directory to save summary output. If None, output is not saved.
-        :type dir_summary_output: Union[str, Path, None]
-        :param batch_size: Batch size for inference, defaults to 1.
-        :type batch_size: int, optional
-        :param save_format: Save format for the output, defaults to "json csv". Options are "json" and "csv". Please add a space between options.
-        :type save_format: str, optional
+        Args:
+            dir_input (Union[str, Path]): Directory containing input images.
+            dir_summary_output (Union[str, Path]): Directory to save summary output. If None, output is not saved.
+            batch_size (int, optional): Batch size for inference. Defaults to 1.
+            save_format (str, optional): Save format for the output. Options are "json" and "csv".
+                Add a space between options. Defaults to "json csv".
+
+        Returns:
+            List[dict]: List of dictionaries containing perception scores for each image.
         """
         # Prepare output directories
         if dir_summary_output:

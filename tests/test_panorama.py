@@ -1,9 +1,10 @@
-import unittest
 import os
+import unittest
 from pathlib import Path
 
-from zensvi.cv import ClassifierPanorama
 from test_base import TestBase
+
+from zensvi.cv import ClassifierPanorama
 
 
 class TestClassifierPanorama(TestBase):

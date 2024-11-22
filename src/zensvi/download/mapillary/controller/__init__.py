@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.controller.__init__
+"""mapillary.controller.__init__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This package contains all the business logic implementations of interfaces used within the
