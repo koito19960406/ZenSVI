@@ -6,4 +6,5 @@
 
 test
 demo_GlobalStreetscapes
+demo_Embeddings
 ```
