@@ -1,17 +1,11 @@
 #!/usr/bin/env python3
 
+import unittest
 import os
-<<<<<<< HEAD
 from pathlib import Path
 from zensvi.cv import ClassifierPerception
 from zensvi.cv import ClassifierPerceptionViT
-=======
-import unittest
-
 from test_base import TestBase
->>>>>>> 935dc586c86922f8d6f03516e2ccd709ab41b2d5
-
-from zensvi.cv import ClassifierPerception
 
 
 class TestClassifierPerception(TestBase):
@@ -25,15 +19,9 @@ class TestClassifierPerception(TestBase):
     #     shutil.rmtree(self.output, ignore_errors=True)
 
     def test_classify_directory(self):
-<<<<<<< HEAD
         classifier = ClassifierPerception(perception_study = 'more boring')
         image_input = "tests/data/input/images"
         dir_summary_output = str(Path(self.output) / "directory/summary")
-=======
-        classifier = ClassifierPerception(perception_study="more boring")
-        image_input = str(self.input_dir / "images")
-        dir_summary_output = str(self.output / "directory/summary")
->>>>>>> 935dc586c86922f8d6f03516e2ccd709ab41b2d5
         classifier.classify(
             image_input,
             dir_summary_output=dir_summary_output,
@@ -42,15 +30,9 @@ class TestClassifierPerception(TestBase):
         self.assertTrue(os.listdir(dir_summary_output))
 
     def test_classify_single_image(self):
-<<<<<<< HEAD
         classifier = ClassifierPerception(perception_study = 'more boring')
         image_input = "tests/data/input/images/test1.jpg"
         dir_summary_output = str(Path(self.output) / "single/summary")
-=======
-        classifier = ClassifierPerception(perception_study="more boring")
-        image_input = str(self.input_dir / "images/test1.jpg")
-        dir_summary_output = str(self.output / "single/summary")
->>>>>>> 935dc586c86922f8d6f03516e2ccd709ab41b2d5
         classifier.classify(
             image_input,
             dir_summary_output=dir_summary_output,
@@ -59,16 +41,10 @@ class TestClassifierPerception(TestBase):
 
     def test_classify_with_mps_device(self):
         device = "mps"
-<<<<<<< HEAD
         classifier = ClassifierPerception(
             perception_study = 'more boring', device=device)
         image_input = "tests/data/input/images"
         dir_summary_output = str(Path(self.output) / "mps/summary")
-=======
-        classifier = ClassifierPerception(perception_study="more boring", device=device)
-        image_input = str(self.input_dir / "images")
-        dir_summary_output = str(self.output / "mps/summary")
->>>>>>> 935dc586c86922f8d6f03516e2ccd709ab41b2d5
         classifier.classify(
             image_input,
             dir_summary_output=dir_summary_output,
