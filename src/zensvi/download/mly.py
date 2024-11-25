@@ -251,11 +251,11 @@ class MLYDownloader(BaseDownloader):
             "lon",
             "lat",
         ]
-        
+
         # Add organization_id to columns_to_keep if it exists in the DataFrame
         if "organization_id" in pid.columns:
             columns_to_keep.append("organization_id")
-        
+
         pid = pid[columns_to_keep]
 
         pid.to_csv(path_pid, index=False)
@@ -304,7 +304,9 @@ class MLYDownloader(BaseDownloader):
             return
 
         def worker(panoid, resolution):
-            result = mly.image_thumbnail(panoid, resolution=resolution, additional_fields=additional_fields)
+            result = mly.image_thumbnail(
+                panoid, resolution=resolution, additional_fields=additional_fields
+            )
             return panoid, result
 
         results = {}
@@ -337,10 +339,12 @@ class MLYDownloader(BaseDownloader):
                         continue
 
             if len(results) > 0:
-                df = pd.DataFrame.from_dict(results, orient="index").reset_index(drop=True).rename(
-                    columns={f"thumb_{resolution}_url": "url"}
+                df = (
+                    pd.DataFrame.from_dict(results, orient="index")
+                    .reset_index(drop=True)
+                    .rename(columns={f"thumb_{resolution}_url": "url"})
                 )
-                df = df[['id'] + [col for col in df.columns if col != 'id']]
+                df = df[["id"] + [col for col in df.columns if col != "id"]]
                 df.to_csv(
                     f"{dir_cache_urls}/checkpoint_batch_{checkpoint_start_index+i+1}.csv",
                     index=False,
@@ -373,8 +377,8 @@ class MLYDownloader(BaseDownloader):
         urls_df = pd.read_csv(self.pids_url)
         urls_df["id"] = urls_df["id"].astype("int64")
         # merge pid_df and urls_df, keeping only one instance of duplicated columns
-        urls_df = urls_df.merge(pid_df, on="id", how="left", suffixes=('', '_drop'))
-        urls_df = urls_df.loc[:, ~urls_df.columns.str.endswith('_drop')]
+        urls_df = urls_df.merge(pid_df, on="id", how="left", suffixes=("", "_drop"))
+        urls_df = urls_df.loc[:, ~urls_df.columns.str.endswith("_drop")]
         # filter out the rows by date
         urls_df = self._filter_pids_date(urls_df, start_date, end_date)
 
@@ -464,7 +468,7 @@ class MLYDownloader(BaseDownloader):
         end_date=None,
         metadata_only=False,
         use_cache=True,
-        additional_fields=["all"], 
+        additional_fields=["all"],
         **kwargs,
     ):
         """
@@ -587,10 +591,6 @@ class MLYDownloader(BaseDownloader):
                     buffer=buffer,
                     **kwargs,
                 )
-        # stop if metadata_only is True
-        if metadata_only:
-            print("The metadata has been downloaded")
-            return
 
         # create a folder within self.dir_output
         self.panorama_output = self.dir_output / "mly_svi"
@@ -598,7 +598,15 @@ class MLYDownloader(BaseDownloader):
 
         # get urls
         if path_pid.exists():
-            self._get_urls_mly(path_pid, resolution=resolution, additional_fields=additional_fields)
+            self._get_urls_mly(
+                path_pid, resolution=resolution, additional_fields=additional_fields
+            )
+
+            # stop if metadata_only is True
+            if metadata_only:
+                print("The metadata has been downloaded")
+                return
+
             # download images
             self._download_images_mly(
                 path_pid, cropped, batch_size, start_date, end_date
@@ -612,5 +620,3 @@ class MLYDownloader(BaseDownloader):
         if self.dir_cache.exists():
             shutil.rmtree(self.dir_cache)
             print("The cache directory has been deleted")
-
-
