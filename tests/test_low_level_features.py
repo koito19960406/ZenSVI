@@ -2,27 +2,23 @@ import json
 import unittest
 import os
 from pathlib import Path
-import shutil
 import pandas as pd
+from test_base import TestBase
 
 from zensvi.cv import get_low_level_features
 
 
-class TestLowLevel(unittest.TestCase):
+class TestLowLevel(TestBase):
     @classmethod
-    def setUpClass(self):
-        self.output_dir = Path("tests/data/output/low_level")
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        pass
-
-    def tearDown(self):
-        # recursively remove the output directory
-        shutil.rmtree(self.output_dir)
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.output = cls.base_output_dir / "low_level"
+        cls.ensure_dir(cls.output)
 
     def test_low_level(self):
-        image_input = "tests/data/input/images"
-        image_output = self.output_dir / "images"
-        summary_output = self.output_dir / "summary"
+        image_input = str(self.input_dir / "images")
+        image_output = self.output / "images"
+        summary_output = self.output / "summary"
         get_low_level_features(
             image_input,
             dir_image_output=image_output,

@@ -14,6 +14,8 @@ from timezonefinder import TimezoneFinder
 import polars as pl
 from shapely.wkb import dumps as wkb_dumps, loads as wkb_loads
 
+from zensvi.utils.log import Logger
+
 def _calculate_angle(line):
     if len(line) > 1:
         start, end = line[0], line[-1]
@@ -165,9 +167,13 @@ class MLYMetadata:
     :type path_input: Union[str, Path]
     """
 
-    def __init__(self, path_input: Union[str, Path]):
+    def __init__(self, path_input: Union[str, Path], log_path: Union[str, Path] = None):
         self._tf_instance = TimezoneFinder()
         self.path_input = Path(path_input)
+        if log_path is not None:
+            self.logger = Logger(log_path)
+        else:
+            self.logger = None
         self.df = pl.read_csv(self.path_input)
         self.metadata = None
         # get street network in the extent of the dataset with OSMnx
@@ -702,6 +708,18 @@ class MLYMetadata:
         :return: A DataFrame containing the computed metadata.
         :rtype: pd.DataFrame
         """
+        if self.logger is not None:
+            # record the arguments
+            self.logger.log_args(
+                "MLYMetadata compute_metadata",
+                unit=unit,
+                grid_resolution=grid_resolution,
+                coverage_buffer=coverage_buffer,
+                indicator_list=indicator_list,
+                path_output=path_output,
+                max_distance=max_distance
+            )
+            
         # set coverage buffer as a class attribute
         self.coverage_buffer = coverage_buffer
 

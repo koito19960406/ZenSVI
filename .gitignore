@@ -145,7 +145,10 @@ dmypy.json
 cache/
 
 # test data for local testing
-tests/data/*
+tests/data/**
 
 # models
 models/*
+
+# auxiliary
+test_download_folder.py

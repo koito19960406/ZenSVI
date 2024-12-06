@@ -6,6 +6,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 from typing import Union
 
+from zensvi.utils.log import Logger
+
 
 def _xyz2lonlat(xyz):
     """
@@ -65,7 +67,12 @@ class ImageTransformer:
         TypeError: If the input or output directories are not specified as string or Path objects.
     """
 
-    def __init__(self, dir_input, dir_output):
+    def __init__(
+        self,
+        dir_input: Union[str, Path],
+        dir_output: Union[str, Path],
+        log_path: Union[str, Path] = None,
+    ):
         if isinstance(dir_input, str):
             dir_input = Path(dir_input)
         elif not isinstance(dir_input, Path):
@@ -76,6 +83,12 @@ class ImageTransformer:
             raise TypeError("dir_output must be a str or Path object.")
         self._dir_input = dir_input
         self._dir_output = dir_output
+        # initialize the logger
+        self.log_path = log_path
+        if self.log_path is not None:
+            self.logger = Logger(log_path)
+        else:
+            self.logger = None
 
     @property
     def dir_input(self):
@@ -236,21 +249,26 @@ class ImageTransformer:
         D = int(2 * R)
         cx, cy = R, R
 
+        # Create a meshgrid of coordinates
         x, y = np.meshgrid(np.arange(D), np.arange(D))
         r = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
         theta = np.arctan2(y - cy, x - cx)
 
-        xp = np.floor((theta + np.pi) * cols / (2 * np.pi)).astype(int)
-        yp = np.floor(2 * np.tan(r / (2 * R)) * rows).astype(int)
+        # Calculate the new positions in the source image
+        xp = np.floor((theta + np.pi) * cols / (2 * np.pi)).astype(np.int32)
+        yp = np.floor(rows * np.sin(r / R) / np.sin(1)).astype(np.int32)
 
         # Clip the values of yp and xp to be within the valid range
         yp = np.clip(yp, 0, rows - 1)
         xp = np.clip(xp, 0, cols - 1)
 
-        mask = r < R
+        # Create a mask for the valid fisheye region
+        mask = r <= R
 
-        new_img = np.zeros((D, D, c), dtype=np.uint8)
-        new_img.fill(255)
+        # Initialize a new image and fill it with a white background
+        new_img = np.full((D, D, c), 255, dtype=np.uint8)
+
+        # Use advanced indexing to map the original pixels to the new image
         new_img[y[mask], x[mask]] = img[yp[mask], xp[mask]]
 
         return new_img
@@ -293,6 +311,7 @@ class ImageTransformer:
         phi: Union[int, float] = 0,
         aspects: tuple = (9, 16),
         show_size: Union[int, float] = 100,
+        use_upper_half: bool = False,
     ):
         """
         Applies specified transformations to all images in the input directory and saves them in the output directory.
@@ -305,6 +324,7 @@ class ImageTransformer:
             phi (Union[int, float], optional): Tilt angle for the 'perspective' style in degrees.
             aspects (tuple, optional): Aspect ratio of the output images represented as a tuple.
             show_size (Union[int, float], optional): Base size to calculate the dimensions of the output images.
+            use_upper_half (bool, optional): If True, only the upper half of the image is used for fisheye transformations.
 
         Raises:
             ValueError: If an invalid style is specified in style_list.
@@ -314,6 +334,18 @@ class ImageTransformer:
             automatically splits style_list into individual styles and processes each style, creating appropriate subdirectories
             in the output directory for each style.
         """
+        if self.logger is not None:
+            # record the arguments
+            self.logger.log_args(
+                "transform_images",
+                style_list=style_list,
+                FOV=FOV,
+                theta=theta,
+                phi=phi,
+                aspects=aspects,
+                show_size=show_size,
+                use_upper_half=use_upper_half
+            )
         # raise an error if the style_list is a list
         if isinstance(style_list, list):
             raise ValueError(
@@ -354,6 +386,8 @@ class ImageTransformer:
 
         def run(path_input, path_output, show_size, style, theta, aspects, FOV):
             img_raw = cv2.imread(str(path_input), cv2.IMREAD_COLOR)
+            if use_upper_half:
+                img_raw = img_raw[:img_raw.shape[0]//2, :]
             if style == "equidistant_fisheye":
                 if not path_output.exists():
                     img_new = self.equidistant_fisheye(img_raw)
@@ -395,29 +429,29 @@ class ImageTransformer:
                         )
                         cv2.imwrite(str(path_output_raw), img_new)
 
-        def process_image(
-            dir_input, dir_output, name, show_size, style, theta, aspects, FOV
-        ):
-            path_input = dir_input / name.name
-            path_output = dir_output / (name.stem + ".png")
-            return path_input, path_output, show_size, style, theta, aspects, FOV
+        def process_image(dir_input, dir_output, file_path, show_size, style, theta, aspects, FOV):
+            relative_path = file_path.relative_to(dir_input)
+            path_output = dir_output / relative_path.with_suffix('.png')
+            path_output.parent.mkdir(parents=True, exist_ok=True)
+            return file_path, path_output, show_size, style, theta, aspects, FOV
 
-        # check if self.dir_input is a directory. If not, then check if it's str or Path, if so, then store in a list
+        # Recursive function to get all image files
+        def get_image_files(directory):
+            for item in directory.iterdir():
+                if item.is_file() and item.suffix.lower() in image_extensions:
+                    yield item
+                elif item.is_dir():
+                    yield from get_image_files(item)
+
+        # Check if self.dir_input is a directory or a single file
         if not self.dir_input.is_dir():
-            if (
-                isinstance(self.dir_input, str) or isinstance(self.dir_input, Path)
-            ) and ("." + str(self.dir_input).split(".")[-1] in image_extensions):
-                dir_input = [self.dir_input]
-                # get parent directory of self.dir_input
+            if isinstance(self.dir_input, (str, Path)) and self.dir_input.suffix.lower() in image_extensions:
+                dir_input = [Path(self.dir_input)]
                 self.dir_input = Path(self.dir_input).parent
             else:
-                raise ValueError("Please input a valid directory path.")
+                raise ValueError("Please input a valid directory path or image file.")
         else:
-            dir_input = [
-                name
-                for name in self.dir_input.rglob("*")
-                if name.suffix.lower() in image_extensions
-            ]
+            dir_input = list(get_image_files(self.dir_input))
 
         for current_style in style_list:
             dir_output = Path(self.dir_output) / current_style
@@ -430,7 +464,7 @@ class ImageTransformer:
                         *process_image(
                             self.dir_input,
                             dir_output,
-                            name,
+                            file_path,
                             show_size,
                             current_style,
                             theta,
@@ -438,7 +472,7 @@ class ImageTransformer:
                             FOV,
                         ),
                     )
-                    for name in dir_input
+                    for file_path in dir_input
                 ]
                 for future in tqdm(
                     as_completed(futures),

@@ -7,4 +7,4 @@ from .platform import ClassifierPlatform
 from .quality import ClassifierQuality
 from .reflection import ClassifierReflection
 from .view_direction import ClassifierViewDirection
-from .perception import ClassifierPerception
+from .perception import ClassifierPerception, ClassifierPerceptionViT
