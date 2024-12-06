@@ -50,6 +50,10 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+pytest*/
+
+# vscode
+.vscode/
 
 # Translations
 *.mo
@@ -145,7 +149,11 @@ dmypy.json
 cache/
 
 # test data for local testing
-tests/data/**
+tests/data/*
+!tests/data/input/
 
 # models
 models/*
+
+# auxiliary
+test_download_folder.py

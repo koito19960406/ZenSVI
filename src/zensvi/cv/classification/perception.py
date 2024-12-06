@@ -1,15 +1,18 @@
+import os
+import sys
 from pathlib import Path
 from typing import List, Tuple, Union
 
 import pandas as pd
 import torch
 import tqdm
-from huggingface_hub import hf_hub_download
+from huggingface_hub import hf_hub_download, snapshot_download
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 
 from .base import BaseClassifier
+from .utils.Model_01 import Net
 from .utils.place_pulse import PlacePulseClassificationModel
 
 
@@ -20,7 +23,7 @@ class ImageDataset(Dataset):
         image_files (List[Path]): List of paths to image files.
     """
 
-    def __init__(self, image_files: List[Path]):
+    def __init__(self, image_files: List[Path], vit=False):
         self.image_files = [
             image_file
             for image_file in image_files
@@ -35,6 +38,22 @@ class ImageDataset(Dataset):
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ]
         )
+        if vit:  # ViT model has a different image size
+            self.transform = transforms.Compose(
+                [
+                    transforms.Resize((384, 384)),
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                ]
+            )
+        else:
+            self.transform = transforms.Compose(
+                [
+                    transforms.Resize((224, 224)),
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                ]
+            )
 
     def __len__(self) -> int:
         return len(self.image_files)
@@ -85,7 +104,7 @@ class ClassifierPerception(BaseClassifier):
 
         # Now load the model
         self.model = PlacePulseClassificationModel(num_classes=5)
-        self.model = self.load_checkpoint(self.model, checkpoint_path)
+        self.model = self._load_checkpoint(self.model, checkpoint_path)
         self.model.eval()
         self.model.to(self.device)
 
@@ -108,7 +127,7 @@ class ClassifierPerception(BaseClassifier):
             file_path = dir_output / f"{file_name}.json"
             df.to_json(file_path, orient="records")
 
-    def load_checkpoint(self, model, checkpoint_path):
+    def _load_checkpoint(self, model, checkpoint_path):
         """Load model weights from checkpoint file.
 
         Args:
@@ -169,6 +188,153 @@ class ClassifierPerception(BaseClassifier):
             ]
 
         dataset = ImageDataset(img_paths)
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+
+        results = []
+        with torch.no_grad():
+            for image_files, images in tqdm.tqdm(
+                dataloader,
+                desc=f"Evaluating human perception of study: {self.perception_study}",
+            ):
+                images = images.to(self.device, dtype=torch.float32)
+
+                custom_scores = self.model(images)
+                for image_file, score in zip(image_files, custom_scores):
+                    results.append(
+                        {
+                            "filename_key": str(Path(image_file).stem),
+                            f"{self.perception_study}": score.item(),
+                        }
+                    )
+
+        # Save the results to JSON and/or CSV
+        self._save_results_to_file(
+            results,
+            dir_summary_output,
+            "results",
+            save_format=save_format,
+        )
+        return results
+
+
+class ClassifierPerceptionViT(BaseClassifier):
+    """A classifier for evaluating the perception of streetscape based on a given study
+    using Ouyang (2023) Visual Transformer.
+
+    Args:
+        perception_study (str): The specific perception study for which the model is trained, including
+            "safer", "livelier", "wealthier", "more beautiful", "more boring", "more depressing".
+            This affects the checkpoint file used.
+        device (str, optional): The device that the model should be loaded onto. Options are "cpu", "cuda",
+            or "mps". If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
+    """
+
+    def __init__(self, perception_study, device=None):
+        super().__init__(device)
+        self.device = self._get_device(device)
+        self.perception_study = perception_study
+
+        # directory that stores all the models
+        model_load_path = "models"
+
+        # map current models in huggingface
+        model_dict = {
+            "safer": "safety.pth",
+            "livelier": "lively.pth",
+            "wealthy": "wealthy.pth",
+            "more beautiful": "beautiful.pth",
+            "more boring": "boring.pth",
+            "more depressing": "depressing.pth",
+        }
+
+        # Download model
+        file_name = model_dict[perception_study]
+        snapshot_download(
+            repo_id="Jiani11/human-perception-place-pulse",
+            allow_patterns=[file_name, "README.md"],
+            local_dir=Path(__file__).parent.parent.parent.parent.parent / "models",
+        )
+        checkpoint_path = model_load_path + "/" + file_name
+
+        # add the path for model file
+        sys.path.append(os.path.dirname(os.path.abspath("src/zensvi/cv/classification/utils/Model_01.py")))
+
+        # Now load the model
+        self.model = Net(num_classes=5)
+        self.model = self._load_checkpoint(self.model, checkpoint_path)
+        self.model.eval()
+        self.model.to(self.device)
+
+    def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json"):
+        """Save results to file in specified format.
+
+        Args:
+            results (List[dict]): List of dictionaries containing results to save
+            dir_output (Union[str, Path]): Directory to save output files
+            file_name (str): Base name for output files
+            save_format (str, optional): Format(s) to save results in. Defaults to "csv json".
+        """
+        df = pd.DataFrame(results)
+        dir_output = Path(dir_output)
+        dir_output.mkdir(parents=True, exist_ok=True)
+        if "csv" in save_format:
+            file_path = dir_output / f"{file_name}.csv"
+            df.to_csv(file_path, index=False)
+        if "json" in save_format:
+            file_path = dir_output / f"{file_name}.json"
+            df.to_json(file_path, orient="records")
+
+    def _load_checkpoint(self, model, checkpoint_path):
+        model = torch.load(checkpoint_path, map_location=self.device)
+        return model
+
+    def classify(
+        self,
+        dir_input: Union[str, Path],
+        dir_summary_output: Union[str, Path],
+        batch_size=1,
+        save_format="json csv",
+    ) -> List[str]:
+        """Classifies images based on human perception of streetscapes from the specified perception study.
+
+        Args:
+            dir_input (Union[str, Path]): Directory containing input images.
+            dir_summary_output (Union[str, Path]): Directory to save summary output. If None, output is not saved.
+            batch_size (int, optional): Batch size for inference. Defaults to 1.
+            save_format (str, optional): Save format for the output. Options are "json" and "csv".
+                Add a space between options. Defaults to "json csv".
+
+        Returns:
+            List[dict]: List of dictionaries containing perception scores for each image.
+        """
+        # Prepare output directories
+        if dir_summary_output:
+            Path(dir_summary_output).mkdir(parents=True, exist_ok=True)
+
+        # get all the images in dir_input
+        if Path(dir_input).is_file():
+            img_paths = [Path(dir_input)]
+        else:
+            img_paths = [
+                p
+                for ext in [
+                    "*.jpg",
+                    "*.jpeg",
+                    "*.png",
+                    "*.gif",
+                    "*.bmp",
+                    "*.tiff",
+                    "*.JPG",
+                    "*.JPEG",
+                    "*.PNG",
+                    "*.GIF",
+                    "*.BMP",
+                    "*.TIFF",
+                ]
+                for p in Path(dir_input).rglob(ext)
+            ]
+
+        dataset = ImageDataset(img_paths, vit=True)
         dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
         results = []

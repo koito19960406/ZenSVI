@@ -163,7 +163,7 @@ class DepthEstimator:
         with open(checkpoint_path_vit, "wb") as f:
             f.write(response_vit.content)
 
-        config = get_config("zoedepth", mode="infer", pretrained_resource="local::" + checkpoint_path)
+        config = get_config("zoedepth", mode="infer", pretrained_resource="local::" + str(checkpoint_path))
         self.model = build_model(config).to(self.device)
 
     def _process_images(self, image_files, images, original_sizes, dir_output):

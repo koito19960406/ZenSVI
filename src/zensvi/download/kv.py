@@ -37,6 +37,8 @@ class KVDownloader(BaseDownloader):
         self._max_workers = max_workers
         # initialize the logger
         if log_path is not None:
+            # make log directory
+            Path(log_path).parent.mkdir(parents=True, exist_ok=True)
             self.logger = Logger(log_path)
         else:
             self.logger = None

@@ -348,9 +348,9 @@ class GSVDownloader(BaseDownloader):
             # read shapefile
             gp = GeoProcessor(
                 gdf,
-                distance=self.distance,
-                grid=self.grid,
-                grid_size=self.grid_size,
+                distance=self._distance,
+                grid=self._grid,
+                grid_size=self._grid_size,
                 **kwargs,
             )
             df = gp.get_lat_lon()

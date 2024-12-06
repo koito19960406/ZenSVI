@@ -1,0 +1,67 @@
+name: Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Cache Poetry
+      uses: actions/cache@v3
+      with:
+        path: ~/.local
+        key: poetry-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+    
+    - name: Install Poetry
+      if: steps.cache-poetry.outputs.cache-hit != 'true'
+      run: |
+        pip install poetry
+    
+    - name: Cache Poetry virtualenv
+      uses: actions/cache@v3
+      id: cache-venv
+      with:
+        path: ./.venv
+        key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          venv-${{ runner.os }}-${{ matrix.python-version }}-
+    
+    - name: Install dependencies
+      if: steps.cache-venv.outputs.cache-hit != 'true'
+      run: |
+        poetry config virtualenvs.in-project true
+        poetry install --no-interaction
+    
+    - name: Run tests with coverage
+      run: |
+        poetry run pytest \
+          --cov=src/zensvi --cov-report=xml -s
+      env:
+        MLY_API_KEY: ${{ secrets.MLY_API_KEY }}
+        GSV_API_KEY: ${{ secrets.GSV_API_KEY }}
+    
+    - name: Cache Codecov uploader
+      uses: actions/cache@v3
+      id: cache-codecov
+      with:
+        path: ./codecov
+        key: codecov-uploader-${{ runner.os }}
+    
+    - name: Download Codecov uploader
+      if: steps.cache-codecov.outputs.cache-hit != 'true'
+      run: |
+        curl -Os https://cli.codecov.io/latest/linux/codecov
+        chmod +x codecov
+    
+    - name: Upload coverage reports to Codecov
+      run: |
+        ./codecov --verbose upload-process --fail-on-error -t ${{ secrets.CODECOV_TOKEN }} -n 'service'-${{ github.run_id }} -F service -f coverage-service.xml

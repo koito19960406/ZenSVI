@@ -117,13 +117,23 @@ class AMSDownloader(BaseDownloader):
     def _get_raw_pids(self, lat, lon, buffer):
         """Get raw panorama IDs from the Amsterdam Street View API."""
         url = f"https://api.data.amsterdam.nl/panorama/panoramas/?near={lon},{lat}&radius={buffer}&srid=4326"
-        proxy = random.choice(self._proxies)
-        user_agent = random.choice(self._user_agents)
-        headers = {"User-Agent": user_agent["user_agent"]}  # Extract the string from the dictionary
-        response = requests.get(url, proxies=proxy, headers=headers)
-        data = json.loads(response.content)
-        panoramas = data["_embedded"]["panoramas"]
-        return [item["pano_id"] for item in panoramas]
+
+        for attempt in range(10):
+            try:
+                proxy = random.choice(self._proxies)
+                user_agent = random.choice(self._user_agents)
+                headers = {"User-Agent": user_agent["user_agent"]}  # Extract the string from the dictionary
+                response = requests.get(url, proxies=proxy, headers=headers)
+                response.raise_for_status()
+                data = json.loads(response.content)
+                panoramas = data["_embedded"]["panoramas"]
+                return [item["pano_id"] for item in panoramas]
+            except Exception as e:
+                if attempt == 9:  # Last attempt
+                    warnings.warn(f"Failed to get panorama IDs after 5 attempts: {e}")
+                    return []
+                print(f"Attempt {attempt + 1} failed: {e}")
+                continue
 
     def _filter_pids_date(self, pid_df, start_date, end_date):
         """Filter panorama IDs by date."""
@@ -305,7 +315,10 @@ class AMSDownloader(BaseDownloader):
                 result = future.result()
                 if result is not None:
                     results.append(result)
+        if len(results) == 0:
+            print("No data downloaded. Please check the input parameters.")
+            return
 
-        final_df = gpd.GeoDataFrame(results, crs="EPSG:4326")
+        final_df = gpd.GeoDataFrame(results, crs="EPSG:4326", geometry="geometry")
         final_df.to_csv(os.path.join(self.dir_output, "ams_pids.csv"), index=False)
         print(f"Metadata saved to {os.path.join(self.dir_output, 'ams_pids.csv')}")

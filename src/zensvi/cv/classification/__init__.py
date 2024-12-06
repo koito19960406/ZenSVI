@@ -1,7 +1,7 @@
 from .glare import ClassifierGlare
 from .lighting import ClassifierLighting
 from .panorama import ClassifierPanorama
-from .perception import ClassifierPerception
+from .perception import ClassifierPerception, ClassifierPerceptionViT
 from .places365 import ClassifierPlaces365
 from .platform import ClassifierPlatform
 from .quality import ClassifierQuality
@@ -14,6 +14,7 @@ __all__ = [
     "ClassifierLighting",
     "ClassifierPanorama",
     "ClassifierPerception",
+    "ClassifierPerceptionViT",
     "ClassifierPlaces365",
     "ClassifierPlatform",
     "ClassifierQuality",
