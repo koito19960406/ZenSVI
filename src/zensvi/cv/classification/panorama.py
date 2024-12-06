@@ -1,27 +1,34 @@
 from pathlib import Path
 from typing import List, Tuple, Union
-from torch.utils.data import Dataset, DataLoader
-from huggingface_hub import hf_hub_download
-from torchvision import transforms
-from PIL import Image
-import torch
-import pandas as pd
-import tqdm
 
-from .utils.global_streetscapes import (
-    panorama_dict2idx,
-    GlobalStreetScapesClassificationModel,
-)
+import pandas as pd
+import torch
+import tqdm
+from huggingface_hub import hf_hub_download
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
+
 from .base import BaseClassifier
+from .utils.global_streetscapes import GlobalStreetScapesClassificationModel, panorama_dict2idx
 
 
 class ImageDataset(Dataset):
+    """A dataset class for loading and preprocessing images.
+
+    Args:
+        image_files (List[Path]): List of paths to image files.
+
+    Attributes:
+        image_files (List[Path]): Filtered list of valid image file paths.
+        transform (transforms.Compose): Composition of image transformations to apply.
+    """
+
     def __init__(self, image_files: List[Path]):
         self.image_files = [
             image_file
             for image_file in image_files
-            if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"]
-            and not image_file.name.startswith(".")
+            if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"] and not image_file.name.startswith(".")
         ]
 
         # Image transformations
@@ -29,33 +36,41 @@ class ImageDataset(Dataset):
             [
                 transforms.Resize((224, 224)),
                 transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),  # ImageNet normalization
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),  # ImageNet normalization
             ]
         )
 
     def __len__(self) -> int:
+        """Returns the number of images in the dataset.
+
+        Returns:
+            int: Number of images.
+        """
         return len(self.image_files)
 
     def __getitem__(self, idx: int) -> Tuple[str, torch.Tensor]:
+        """Gets an image and its file path at the given index.
+
+        Args:
+            idx (int): Index of the image to retrieve.
+
+        Returns:
+            Tuple[str, torch.Tensor]: Tuple containing the image file path as string and the preprocessed image tensor.
+        """
         image_file = self.image_files[idx]
         img = Image.open(image_file)  # Open image directly using PIL
         img = self.transform(img)  # Apply transformations
 
         return str(image_file), img
 
-    def collate_fn(
-        self, data: List[Tuple[str, torch.Tensor]]
-    ) -> Tuple[List[str], torch.Tensor]:
-        """
-        Custom collate function for the dataset.
+    def collate_fn(self, data: List[Tuple[str, torch.Tensor]]) -> Tuple[List[str], torch.Tensor]:
+        """Custom collate function for the dataset.
 
         Args:
-            data (List[Tuple[str, torch.Tensor]]): List of tuples containing image file path and transformed image tensor.
+            data (List[Tuple[str, torch.Tensor]]): List of tuples containing image file paths and transformed image tensors.
 
         Returns:
-            Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
+            Tuple[List[str], torch.Tensor]: Tuple containing a list of image file paths and a batch of stacked image tensors.
         """
         image_files, images = zip(*data)
         images = torch.stack(images)  # Stack images to create a batch
@@ -63,28 +78,28 @@ class ImageDataset(Dataset):
 
 
 class ClassifierPanorama(BaseClassifier):
-    """
-    A classifier for identifying panorama.
+    """A classifier for identifying panorama. The model is from Hou et al (2024) (https://github.com/ualsg/global-streetscapes).
 
-    :param device: The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
-        If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
-    :type device: str, optional
+    Args:
+        device (str, optional): The device that the model should be loaded onto.
+            Options are "cpu", "cuda", or "mps". If `None`, the model tries to use
+            a GPU if available; otherwise, falls back to CPU.
     """
 
     def __init__(self, device=None):
         super().__init__(device)
         self.device = self._get_device(device)
 
-        file_name = "pano_status_inverse/45c8eac3-7d0f-4b20-8f3e-9b7969279544_pano_status_pano_status_inverse_checkpoint.ckpt"
+        file_name = (
+            "pano_status_inverse/45c8eac3-7d0f-4b20-8f3e-9b7969279544_pano_status_pano_status_inverse_checkpoint.ckpt"
+        )
         checkpoint_path = hf_hub_download(
             repo_id="pihalf/gss-models",
             filename=file_name,
             local_dir=Path(__file__).parent.parent.parent.parent.parent / "models",
         )
 
-        checkpoint = torch.load(
-            checkpoint_path, map_location=lambda storage, loc: storage
-        )
+        checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
 
         # Extract the number of classes
         num_classes = checkpoint["state_dict"]["model.classifier.5.weight"].shape[0]
@@ -96,9 +111,16 @@ class ClassifierPanorama(BaseClassifier):
         self.model.eval()
         self.model.to(self.device)
 
-    def _save_results_to_file(
-        self, results, dir_output, file_name, save_format="csv json"
-    ):
+    def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json"):
+        """Saves classification results to file(s) in specified format(s).
+
+        Args:
+            results (List[dict]): List of dictionaries containing classification results.
+            dir_output (Union[str, Path]): Directory to save output files.
+            file_name (str): Base name for output files (without extension).
+            save_format (str, optional): Space-separated string of formats to save in.
+                Options are "csv" and "json". Defaults to "csv json".
+        """
         df = pd.DataFrame(results)
         dir_output = Path(dir_output)
         dir_output.mkdir(parents=True, exist_ok=True)
@@ -116,17 +138,19 @@ class ClassifierPanorama(BaseClassifier):
         batch_size=1,
         save_format="json csv",
     ) -> List[str]:
-        """
-        Classifies images based on panorama. The output file can be saved in JSON and/or CSV format and will contain panorama for each image. The panorama categories are "True" and "False".
+        """Classifies images based on panorama. The output file can be saved in JSON
+        and/or CSV format and will contain panorama for each image. The panorama
+        categories are "True" and "False".
 
-        :param dir_input: directory containing input images.
-        :type dir_input: Union[str, Path]
-        :param dir_summary_output: directory to save summary output.
-        :type dir_summary_output: Union[str, Path, None]
-        :param batch_size: batch size for inference, defaults to 1
-        :type batch_size: int, optional
-        :param save_format: save format for the output, defaults to "json csv". Options are "json" and "csv". Please add a space between options.
-        :type save_format: str, optional
+        Args:
+            dir_input (Union[str, Path]): Directory containing input images.
+            dir_summary_output (Union[str, Path]): Directory to save summary output.
+            batch_size (int, optional): Batch size for inference. Defaults to 1.
+            save_format (str, optional): Save format for the output. Options are "json" and "csv".
+                Add a space between options. Defaults to "json csv".
+
+        Returns:
+            List[str]: List of panorama classifications for each image.
         """
         # Prepare output directories
         if dir_summary_output:
@@ -156,9 +180,7 @@ class ClassifierPanorama(BaseClassifier):
             ]
 
         dataset = ImageDataset(img_paths)
-        dataloader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=False, collate_fn=dataset.collate_fn
-        )
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=dataset.collate_fn)
 
         results = []
         # Using torch.no_grad() to avoid unnecessary gradient computations during inference
@@ -168,14 +190,10 @@ class ClassifierPanorama(BaseClassifier):
                     "filename_key": str(Path(image_file).stem),
                     "panorama": panorama_dict2idx["index2label"][pred.item()],
                 }
-                for image_files, images in tqdm.tqdm(
-                    dataloader, desc="Classifying panorama"
-                )
+                for image_files, images in tqdm.tqdm(dataloader, desc="Classifying panorama")
                 for image_file, pred in zip(
                     image_files,
-                    torch.max(
-                        self.model(images.to(self.device, dtype=torch.float32)), 1
-                    )[1],
+                    torch.max(self.model(images.to(self.device, dtype=torch.float32)), 1)[1],
                 )
             ]
 

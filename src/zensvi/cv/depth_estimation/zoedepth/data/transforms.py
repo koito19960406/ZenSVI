@@ -31,10 +31,13 @@ import numpy as np
 
 class RandomFliplr(object):
     """Horizontal flip of the sample with given probability.
+
+    Attributes:
+        probability (float): Probability of flipping the sample horizontally.
     """
 
     def __init__(self, probability=0.5):
-        """Init.
+        """Initializes RandomFliplr with a specified probability.
 
         Args:
             probability (float, optional): Flip probability. Defaults to 0.5.
@@ -42,6 +45,14 @@ class RandomFliplr(object):
         self.__probability = probability
 
     def __call__(self, sample):
+        """Flips the sample horizontally with the specified probability.
+
+        Args:
+            sample (dict): The input sample containing images and other data.
+
+        Returns:
+            dict: The modified sample, potentially with flipped images.
+        """
         prob = random.random()
 
         if prob < self.__probability:
@@ -53,14 +64,15 @@ class RandomFliplr(object):
 
 
 def apply_min_size(sample, size, image_interpolation_method=cv2.INTER_AREA):
-    """Rezise the sample to ensure the given size. Keeps aspect ratio.
+    """Resize the sample to ensure the given size while keeping the aspect ratio.
 
     Args:
-        sample (dict): sample
-        size (tuple): image size
+        sample (dict): The input sample containing images and other data.
+        size (tuple): Desired image size (height, width).
+        image_interpolation_method (int, optional): Interpolation method for resizing. Defaults to cv2.INTER_AREA.
 
     Returns:
-        tuple: new size
+        tuple: The new size of the sample after resizing.
     """
     shape = list(sample["disparity"].shape)
 
@@ -77,13 +89,9 @@ def apply_min_size(sample, size, image_interpolation_method=cv2.INTER_AREA):
     shape[1] = math.ceil(scale * shape[1])
 
     # resize
-    sample["image"] = cv2.resize(
-        sample["image"], tuple(shape[::-1]), interpolation=image_interpolation_method
-    )
+    sample["image"] = cv2.resize(sample["image"], tuple(shape[::-1]), interpolation=image_interpolation_method)
 
-    sample["disparity"] = cv2.resize(
-        sample["disparity"], tuple(shape[::-1]), interpolation=cv2.INTER_NEAREST
-    )
+    sample["disparity"] = cv2.resize(sample["disparity"], tuple(shape[::-1]), interpolation=cv2.INTER_NEAREST)
     sample["mask"] = cv2.resize(
         sample["mask"].astype(np.float32),
         tuple(shape[::-1]),
@@ -96,6 +104,11 @@ def apply_min_size(sample, size, image_interpolation_method=cv2.INTER_AREA):
 
 class RandomCrop(object):
     """Get a random crop of the sample with the given size (width, height).
+
+    Attributes:
+        size (tuple): Desired output size (height, width).
+        resize_if_needed (bool): Whether to resize the sample if it's smaller than the desired size.
+        image_interpolation_method (int): Interpolation method for resizing.
     """
 
     def __init__(
@@ -105,33 +118,39 @@ class RandomCrop(object):
         resize_if_needed=False,
         image_interpolation_method=cv2.INTER_AREA,
     ):
-        """Init.
+        """Initializes the RandomCrop object with specified dimensions and options.
 
         Args:
-            width (int): output width
-            height (int): output height
-            resize_if_needed (bool, optional): If True, sample might be upsampled to ensure
-                that a crop of size (width, height) is possbile. Defaults to False.
+            width (int): The desired output width of the crop.
+            height (int): The desired output height of the crop.
+            resize_if_needed (bool, optional): If True, the sample may be upsampled to ensure
+                that a crop of size (width, height) is possible. Defaults to False.
+            image_interpolation_method (int, optional): The interpolation method to use for resizing.
+                Defaults to cv2.INTER_AREA.
         """
         self.__size = (height, width)
         self.__resize_if_needed = resize_if_needed
         self.__image_interpolation_method = image_interpolation_method
 
     def __call__(self, sample):
+        """Crops the sample randomly to the specified size.
 
+        Args:
+            sample (dict): The input sample containing images and other data.
+
+        Returns:
+            dict: The modified sample with the random crop applied.
+
+        Raises:
+            Exception: If the output size is larger than the input size and resizing is not allowed.
+        """
         shape = sample["disparity"].shape
 
         if self.__size[0] > shape[0] or self.__size[1] > shape[1]:
             if self.__resize_if_needed:
-                shape = apply_min_size(
-                    sample, self.__size, self.__image_interpolation_method
-                )
+                shape = apply_min_size(sample, self.__size, self.__image_interpolation_method)
             else:
-                raise Exception(
-                    "Output size {} bigger than input size {}.".format(
-                        self.__size, shape
-                    )
-                )
+                raise Exception("Output size {} bigger than input size {}.".format(self.__size, shape))
 
         offset = (
             np.random.randint(shape[0] - self.__size[0] + 1),
@@ -144,8 +163,8 @@ class RandomCrop(object):
 
             if len(sample[k].shape) >= 2:
                 sample[k] = v[
-                    offset[0]: offset[0] + self.__size[0],
-                    offset[1]: offset[1] + self.__size[1],
+                    offset[0] : offset[0] + self.__size[0],
+                    offset[1] : offset[1] + self.__size[1],
                 ]
 
         return sample
@@ -153,6 +172,16 @@ class RandomCrop(object):
 
 class Resize(object):
     """Resize sample to given size (width, height).
+
+    Attributes:
+        width (int): Desired output width.
+        height (int): Desired output height.
+        resize_target (bool): Whether to resize the full sample (image, mask, target).
+        keep_aspect_ratio (bool): Whether to keep the aspect ratio of the input sample.
+        multiple_of (int): Constrain output width and height to be a multiple of this parameter.
+        resize_method (str): Method of resizing (lower_bound, upper_bound, minimal).
+        image_interpolation_method (int): Interpolation method for resizing.
+        letter_box (bool): Whether to apply letterbox padding.
     """
 
     def __init__(
@@ -166,28 +195,17 @@ class Resize(object):
         image_interpolation_method=cv2.INTER_AREA,
         letter_box=False,
     ):
-        """Init.
+        """Initializes Resize with specified dimensions and options.
 
         Args:
-            width (int): desired output width
-            height (int): desired output height
-            resize_target (bool, optional):
-                True: Resize the full sample (image, mask, target).
-                False: Resize image only.
-                Defaults to True.
-            keep_aspect_ratio (bool, optional):
-                True: Keep the aspect ratio of the input sample.
-                Output sample might not have the given width and height, and
-                resize behaviour depends on the parameter 'resize_method'.
-                Defaults to False.
-            ensure_multiple_of (int, optional):
-                Output width and height is constrained to be multiple of this parameter.
-                Defaults to 1.
-            resize_method (str, optional):
-                "lower_bound": Output will be at least as large as the given size.
-                "upper_bound": Output will be at max as large as the given size. (Output size might be smaller than given size.)
-                "minimal": Scale as least as possible.  (Output size might be smaller than given size.)
-                Defaults to "lower_bound".
+            width (int): Desired output width.
+            height (int): Desired output height.
+            resize_target (bool, optional): True to resize the full sample (image, mask, target). Defaults to True.
+            keep_aspect_ratio (bool, optional): True to keep the aspect ratio of the input sample. Defaults to False.
+            ensure_multiple_of (int, optional): Output width and height is constrained to be multiple of this parameter. Defaults to 1.
+            resize_method (str, optional): Method of resizing. Defaults to "lower_bound".
+            image_interpolation_method (int, optional): Interpolation method for resizing. Defaults to cv2.INTER_AREA.
+            letter_box (bool, optional): Whether to apply letterbox padding. Defaults to False.
         """
         self.__width = width
         self.__height = height
@@ -200,19 +218,36 @@ class Resize(object):
         self.__letter_box = letter_box
 
     def constrain_to_multiple_of(self, x, min_val=0, max_val=None):
+        """Constrain a value to be a multiple of a specified number.
+
+        Args:
+            x (int): The value to constrain.
+            min_val (int, optional): Minimum value. Defaults to 0.
+            max_val (int, optional): Maximum value. Defaults to None.
+
+        Returns:
+            int: The constrained value.
+        """
         y = (np.round(x / self.__multiple_of) * self.__multiple_of).astype(int)
 
         if max_val is not None and y > max_val:
-            y = (np.floor(x / self.__multiple_of)
-                 * self.__multiple_of).astype(int)
+            y = (np.floor(x / self.__multiple_of) * self.__multiple_of).astype(int)
 
         if y < min_val:
-            y = (np.ceil(x / self.__multiple_of)
-                 * self.__multiple_of).astype(int)
+            y = (np.ceil(x / self.__multiple_of) * self.__multiple_of).astype(int)
 
         return y
 
     def get_size(self, width, height):
+        """Determine the new size based on the specified resizing parameters.
+
+        Args:
+            width (int): Original width.
+            height (int): Original height.
+
+        Returns:
+            tuple: The new size (new_width, new_height).
+        """
         # determine new height and width
         scale_height = self.__height / height
         scale_width = self.__width / width
@@ -235,7 +270,7 @@ class Resize(object):
                     # fit height
                     scale_width = scale_height
             elif self.__resize_method == "minimal":
-                # scale as least as possbile
+                # scale as least as possible
                 if abs(1 - scale_width) < abs(1 - scale_height):
                     # fit width
                     scale_height = scale_width
@@ -243,44 +278,46 @@ class Resize(object):
                     # fit height
                     scale_width = scale_height
             else:
-                raise ValueError(
-                    f"resize_method {self.__resize_method} not implemented"
-                )
+                raise ValueError(f"resize_method {self.__resize_method} not implemented")
 
         if self.__resize_method == "lower_bound":
-            new_height = self.constrain_to_multiple_of(
-                scale_height * height, min_val=self.__height
-            )
-            new_width = self.constrain_to_multiple_of(
-                scale_width * width, min_val=self.__width
-            )
+            new_height = self.constrain_to_multiple_of(scale_height * height, min_val=self.__height)
+            new_width = self.constrain_to_multiple_of(scale_width * width, min_val=self.__width)
         elif self.__resize_method == "upper_bound":
-            new_height = self.constrain_to_multiple_of(
-                scale_height * height, max_val=self.__height
-            )
-            new_width = self.constrain_to_multiple_of(
-                scale_width * width, max_val=self.__width
-            )
+            new_height = self.constrain_to_multiple_of(scale_height * height, max_val=self.__height)
+            new_width = self.constrain_to_multiple_of(scale_width * width, max_val=self.__width)
         elif self.__resize_method == "minimal":
             new_height = self.constrain_to_multiple_of(scale_height * height)
             new_width = self.constrain_to_multiple_of(scale_width * width)
         else:
-            raise ValueError(
-                f"resize_method {self.__resize_method} not implemented")
+            raise ValueError(f"resize_method {self.__resize_method} not implemented")
 
         return (new_width, new_height)
 
     def make_letter_box(self, sample):
+        """Apply letterbox padding to the sample.
+
+        Args:
+            sample (np.ndarray): The input sample to be padded.
+
+        Returns:
+            np.ndarray: The padded sample.
+        """
         top = bottom = (self.__height - sample.shape[0]) // 2
         left = right = (self.__width - sample.shape[1]) // 2
-        sample = cv2.copyMakeBorder(
-            sample, top, bottom, left, right, cv2.BORDER_CONSTANT, None, 0)
+        sample = cv2.copyMakeBorder(sample, top, bottom, left, right, cv2.BORDER_CONSTANT, None, 0)
         return sample
 
     def __call__(self, sample):
-        width, height = self.get_size(
-            sample["image"].shape[1], sample["image"].shape[0]
-        )
+        """Resize the sample to the specified dimensions.
+
+        Args:
+            sample (dict): The input sample containing images and other data.
+
+        Returns:
+            dict: The modified sample with resized images.
+        """
+        width, height = self.get_size(sample["image"].shape[1], sample["image"].shape[0])
 
         # resize sample
         sample["image"] = cv2.resize(
@@ -301,14 +338,10 @@ class Resize(object):
                 )
 
                 if self.__letter_box:
-                    sample["disparity"] = self.make_letter_box(
-                        sample["disparity"])
+                    sample["disparity"] = self.make_letter_box(sample["disparity"])
 
             if "depth" in sample:
-                sample["depth"] = cv2.resize(
-                    sample["depth"], (width,
-                                      height), interpolation=cv2.INTER_NEAREST
-                )
+                sample["depth"] = cv2.resize(sample["depth"], (width, height), interpolation=cv2.INTER_NEAREST)
 
                 if self.__letter_box:
                     sample["depth"] = self.make_letter_box(sample["depth"])
@@ -328,18 +361,32 @@ class Resize(object):
 
 
 class ResizeFixed(object):
+    """Resize the sample to a fixed size.
+
+    Attributes:
+        size (tuple): Desired output size (height, width).
+    """
+
     def __init__(self, size):
+        """Initializes ResizeFixed with a specified size.
+
+        Args:
+            size (tuple): Desired output size (height, width).
+        """
         self.__size = size
 
     def __call__(self, sample):
-        sample["image"] = cv2.resize(
-            sample["image"], self.__size[::-1], interpolation=cv2.INTER_LINEAR
-        )
+        """Resize the sample to the fixed size.
 
-        sample["disparity"] = cv2.resize(
-            sample["disparity"], self.__size[::-
-                                             1], interpolation=cv2.INTER_NEAREST
-        )
+        Args:
+            sample (dict): The input sample containing images and other data.
+
+        Returns:
+            dict: The modified sample with resized images.
+        """
+        sample["image"] = cv2.resize(sample["image"], self.__size[::-1], interpolation=cv2.INTER_LINEAR)
+
+        sample["disparity"] = cv2.resize(sample["disparity"], self.__size[::-1], interpolation=cv2.INTER_NEAREST)
 
         sample["mask"] = cv2.resize(
             sample["mask"].astype(np.float32),
@@ -353,11 +400,16 @@ class ResizeFixed(object):
 
 class Rescale(object):
     """Rescale target values to the interval [0, max_val].
+
     If input is constant, values are set to max_val / 2.
+
+    Attributes:
+        max_val (float): Max output value.
+        use_mask (bool): Whether to only operate on valid pixels (mask == True).
     """
 
     def __init__(self, max_val=1.0, use_mask=True):
-        """Init.
+        """Initializes Rescale with specified parameters.
 
         Args:
             max_val (float, optional): Max output value. Defaults to 1.0.
@@ -367,6 +419,14 @@ class Rescale(object):
         self.__use_mask = use_mask
 
     def __call__(self, sample):
+        """Rescale the disparity values in the sample.
+
+        Args:
+            sample (dict): The input sample containing images and other data.
+
+        Returns:
+            dict: The modified sample with rescaled disparity values.
+        """
         disp = sample["disparity"]
 
         if self.__use_mask:
@@ -381,47 +441,78 @@ class Rescale(object):
         max_val = np.max(disp[mask])
 
         if max_val > min_val:
-            sample["disparity"][mask] = (
-                (disp[mask] - min_val) / (max_val - min_val) * self.__max_val
-            )
+            sample["disparity"][mask] = (disp[mask] - min_val) / (max_val - min_val) * self.__max_val
         else:
-            sample["disparity"][mask] = np.ones_like(
-                disp[mask]) * self.__max_val / 2.0
+            sample["disparity"][mask] = np.ones_like(disp[mask]) * self.__max_val / 2.0
 
         return sample
 
 
 # mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
 class NormalizeImage(object):
-    """Normlize image by given mean and std.
+    """Normalize image by given mean and std.
+
+    Attributes:
+        mean (np.ndarray): Mean values for normalization.
+        std (np.ndarray): Standard deviation values for normalization.
     """
 
     def __init__(self, mean, std):
+        """Initializes NormalizeImage with specified mean and std.
+
+        Args:
+            mean (np.ndarray): Mean values for normalization.
+            std (np.ndarray): Standard deviation values for normalization.
+        """
         self.__mean = mean
         self.__std = std
 
     def __call__(self, sample):
+        """Normalize the image in the sample.
+
+        Args:
+            sample (dict): The input sample containing images and other data.
+
+        Returns:
+            dict: The modified sample with normalized images.
+        """
         sample["image"] = (sample["image"] - self.__mean) / self.__std
 
         return sample
 
 
 class DepthToDisparity(object):
-    """Convert depth to disparity. Removes depth from sample.
+    """Convert depth to disparity.
+
+    Removes depth from sample.
+
+    Attributes:
+        eps (float): Small value to avoid division by zero.
     """
 
     def __init__(self, eps=1e-4):
+        """Initializes DepthToDisparity with a specified epsilon.
+
+        Args:
+            eps (float, optional): Small value to avoid division by zero. Defaults to 1e-4.
+        """
         self.__eps = eps
 
     def __call__(self, sample):
+        """Convert depth values to disparity in the sample.
+
+        Args:
+            sample (dict): The input sample containing images and other data.
+
+        Returns:
+            dict: The modified sample with disparity values.
+        """
         assert "depth" in sample
 
         sample["mask"][sample["depth"] < self.__eps] = False
 
         sample["disparity"] = np.zeros_like(sample["depth"])
-        sample["disparity"][sample["depth"] >= self.__eps] = (
-            1.0 / sample["depth"][sample["depth"] >= self.__eps]
-        )
+        sample["disparity"][sample["depth"] >= self.__eps] = 1.0 / sample["depth"][sample["depth"] >= self.__eps]
 
         del sample["depth"]
 
@@ -429,26 +520,38 @@ class DepthToDisparity(object):
 
 
 class DisparityToDepth(object):
-    """Convert disparity to depth. Removes disparity from sample.
+    """Convert disparity to depth.
+
+    Removes disparity from sample.
+
+    Attributes:
+        eps (float): Small value to avoid division by zero.
     """
 
     def __init__(self, eps=1e-4):
+        """Initializes DisparityToDepth with a specified epsilon.
+
+        Args:
+            eps (float, optional): Small value to avoid division by zero. Defaults to 1e-4.
+        """
         self.__eps = eps
 
     def __call__(self, sample):
+        """Convert disparity values to depth in the sample.
+
+        Args:
+            sample (dict): The input sample containing images and other data.
+
+        Returns:
+            dict: The modified sample with depth values.
+        """
         assert "disparity" in sample
 
         disp = np.abs(sample["disparity"])
         sample["mask"][disp < self.__eps] = False
 
-        # print(sample["disparity"])
-        # print(sample["mask"].sum())
-        # exit()
-
         sample["depth"] = np.zeros_like(disp)
-        sample["depth"][disp >= self.__eps] = (
-            1.0 / disp[disp >= self.__eps]
-        )
+        sample["depth"][disp >= self.__eps] = 1.0 / disp[disp >= self.__eps]
 
         del sample["disparity"]
 
@@ -456,13 +559,21 @@ class DisparityToDepth(object):
 
 
 class PrepareForNet(object):
-    """Prepare sample for usage as network input.
-    """
+    """Prepare sample for usage as network input."""
 
     def __init__(self):
+        """Initializes PrepareForNet."""
         pass
 
     def __call__(self, sample):
+        """Prepare the sample for network input by transposing and converting data types.
+
+        Args:
+            sample (dict): The input sample containing images and other data.
+
+        Returns:
+            dict: The modified sample ready for network input.
+        """
         image = np.transpose(sample["image"], (2, 0, 1))
         sample["image"] = np.ascontiguousarray(image).astype(np.float32)
 

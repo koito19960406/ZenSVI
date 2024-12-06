@@ -2,18 +2,26 @@
 # author: yujunhou
 # contact: hou.yujun@u.nus.edu
 
-import requests
 import geopandas as gp
 import pandas as pd
+import requests
 
 
 def get_data_from_url(url):
+    """Get data from a KartaView API URL.
+
+    Args:
+        url (str): The KartaView API URL to query.
+
+    Returns:
+        dict: The JSON response data if successful, None otherwise.
+    """
     try:
         r = requests.get(url, timeout=None)
         while r.status_code != 200:
             r = requests.get(url, timeout=None)  # try again
-        if r.json()['status']['apiCode'] == 600:
-            data = r.json()['result']['data']  # get a JSON format of the response
+        if r.json()["status"]["apiCode"] == 600:
+            data = r.json()["result"]["data"]  # get a JSON format of the response
             return data
         else:
             return None
@@ -22,6 +30,14 @@ def get_data_from_url(url):
 
 
 def data_to_dataframe(data):
+    """Convert JSON data to a pandas DataFrame.
+
+    Args:
+        data (dict): JSON data from KartaView API.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the data.
+    """
     try:
         df = pd.DataFrame(data)
         return df
@@ -30,14 +46,20 @@ def data_to_dataframe(data):
 
 
 def get_points_in_sequence(sequenceId):
+    """Get all photo points in a KartaView sequence.
+
+    Args:
+        sequenceId (str): ID of the KartaView sequence.
+
+    Returns:
+        geopandas.GeoDataFrame: GeoDataFrame containing photo points, or empty DataFrame if no data.
+    """
     try:
         url = f"https://api.openstreetcam.org/2.0/sequence/{sequenceId}/photos?itemsPerPage=1000000&join=user,photo,photos,attachment,attachments"
         data = get_data_from_url(url)
         if data:
             df = data_to_dataframe(data)
-            points = gp.GeoDataFrame(
-                df, geometry=gp.points_from_xy(df.lng, df.lat)
-            )
+            points = gp.GeoDataFrame(df, geometry=gp.points_from_xy(df.lng, df.lat))
             return points
         else:
             empty_df = pd.DataFrame()
@@ -47,9 +69,20 @@ def get_points_in_sequence(sequenceId):
 
 
 def clip_points_with_shape(points, shape):
+    """Clip points to within a shape boundary.
+
+    Args:
+        points (geopandas.GeoDataFrame): GeoDataFrame containing points.
+        shape (geopandas.GeoDataFrame): GeoDataFrame containing boundary shape.
+
+    Returns:
+        geopandas.GeoDataFrame: Points clipped to shape boundary.
+    """
     try:
         if not points.empty:
-            points = gp.clip(points, shape.geometry.unary_union)  # clip the points with the union of all polygons in the shape gdf
+            points = gp.clip(
+                points, shape.geometry.unary_union
+            )  # clip the points with the union of all polygons in the shape gdf
             return points
         else:
             return points
@@ -58,11 +91,24 @@ def clip_points_with_shape(points, shape):
 
 
 def get_sequences_in_shape(shape):
+    """Get all KartaView sequences within a shape boundary.
+
+    Args:
+        shape (geopandas.GeoDataFrame): GeoDataFrame containing boundary shape.
+
+    Returns:
+        pd.DataFrame: DataFrame containing sequence data.
+    """
     try:
         ls = []  # empty list to collect sequences
         shape = shape.explode(ignore_index=True)  # explode the shape gdf in case there's any multipolygon in any row
         for _, row in shape.iterrows():
-            minx, miny, maxx, maxy = row.geometry.bounds[0], row.geometry.bounds[1], row.geometry.bounds[2], row.geometry.bounds[3]  # find the extent of each polygon geometry
+            minx, miny, maxx, maxy = (
+                row.geometry.bounds[0],
+                row.geometry.bounds[1],
+                row.geometry.bounds[2],
+                row.geometry.bounds[3],
+            )  # find the extent of each polygon geometry
             url = f"https://api.openstreetcam.org/2.0/sequence/?bRight={miny},{maxx}&tLeft={maxy},{minx}&itemsPerPage=1000000"  # use the extent to query for sequences existing in the extent
             data = get_data_from_url(url)
             if data:
@@ -78,39 +124,60 @@ def get_sequences_in_shape(shape):
 
 
 def get_points_in_shape(shape):
+    """Get all KartaView photo points within a shape boundary.
+
+    Args:
+        shape (geopandas.GeoDataFrame): GeoDataFrame containing boundary shape.
+
+    Returns:
+        pd.DataFrame: DataFrame containing photo points and sequence metadata.
+    """
     try:
         df_seqs = get_sequences_in_shape(shape)
         if df_seqs.empty:
-            print('No data from KartaView.')
+            print("No data from KartaView.")
             return
         else:
             ls_gdf = []
             for _, seq in df_seqs.iterrows():
-                sequenceId = seq['id']
+                sequenceId = seq["id"]
                 points = get_points_in_sequence(sequenceId)
                 points = clip_points_with_shape(points, shape)
                 ls_gdf.append(points)
             points_all = pd.concat(ls_gdf).reset_index(drop=True)
             if not points_all.empty:
-                points_all = points_all.drop(columns=['cameraParameters', 'geometry']).rename(columns={'lng': 'lon'}).join(
-                    df_seqs[
-                        ['id',
-                            'address',
-                            'cameraParameters',
-                            'countryCode',
-                            'deviceName',
-                            'distance',
-                            'sequenceType']
-                    ].set_index('id').rename(columns={'distance': 'distanceSeq'}),
-                    on='sequenceId',
-                    how='left'
+                points_all = (
+                    points_all.drop(columns=["cameraParameters", "geometry"])
+                    .rename(columns={"lng": "lon"})
+                    .join(
+                        df_seqs[
+                            [
+                                "id",
+                                "address",
+                                "cameraParameters",
+                                "countryCode",
+                                "deviceName",
+                                "distance",
+                                "sequenceType",
+                            ]
+                        ]
+                        .set_index("id")
+                        .rename(columns={"distance": "distanceSeq"}),
+                        on="sequenceId",
+                        how="left",
+                    )
                 )  # append the sequence metadata to each point based on sequence ID
-                points_all = points_all.drop_duplicates(subset=['id'])  # remove duplicated points, if any
+                points_all = points_all.drop_duplicates(subset=["id"])  # remove duplicated points, if any
             nSeqs = 0
             if not points_all.empty:
-                nSeqs = points_all['sequenceId'].nunique()
-            print(f'Download complete, collected', nSeqs,
-                'sequences', len(points_all), 'points')
+                nSeqs = points_all["sequenceId"].nunique()
+            print(
+                "Download complete, collected",
+                nSeqs,
+                "sequences",
+                len(points_all),
+                "points",
+            )
             return points_all
     except Exception as e:
         print(f"Error: {e}")

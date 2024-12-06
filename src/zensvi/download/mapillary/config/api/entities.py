@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.config.api.entities
+"""mapillary.config.api.entities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This module contains the class implementation of the Entities API endpoints
@@ -19,21 +17,21 @@ import datetime
 import logging
 import typing
 
-# # Utils
-from zensvi.download.mapillary.utils.time import is_iso8601_datetime_format
+from zensvi.download.mapillary.models.config import Config
 
 # # Models
 # # # Exception Handling
 from zensvi.download.mapillary.models.exceptions import InvalidFieldError, InvalidNumberOfArguments
-from zensvi.download.mapillary.models.config import Config
 from zensvi.download.mapillary.models.logger import Logger
+
+# # Utils
+from zensvi.download.mapillary.utils.time import is_iso8601_datetime_format
 
 logger: logging.Logger = Logger.setup_logger(name="mapillary.config.api.entities")
 
 
 class Entities:
-    """
-    Each API call requires specifying the fields of the Entity you're interested in explicitly.
+    """Each API call requires specifying the fields of the Entity you're interested in explicitly.
     A sample image by ID request which returns the id and a computed geometry could look as
     below. For each entity available fields are listed in the relevant sections. All IDs are
     unique and the underlying metadata for each entity is accessible at
@@ -55,9 +53,8 @@ class Entities:
 
     @staticmethod
     def get_image(image_id: str, fields: list) -> str:
-        """
-        Represents the metadata of the image on the Mapillary platform with
-        the following properties.
+        """Represents the metadata of the image on the Mapillary platform with the
+        following properties.
 
         Usage::
 
@@ -89,7 +86,6 @@ class Entities:
             21. sfm_cluster - { id: string, url: string } - URL to the point cloud
             22. width - int, width of the original image uploaded
         """
-
         fields = Entities.__field_validity(
             given_fields=fields,
             actual_fields=Entities.get_image_fields(),
@@ -99,12 +95,9 @@ class Entities:
         return f"https://graph.mapillary.com/{image_id}/?fields={','.join(fields)}"
 
     @staticmethod
-    def get_images(
-        image_ids: typing.Union[typing.List[str], typing.List[int]], fields: list
-    ) -> str:
-        """
-        Represents the metadata of the image on the Mapillary platform with
-        the following properties.
+    def get_images(image_ids: typing.Union[typing.List[str], typing.List[int]], fields: list) -> str:
+        """Represents the metadata of the image on the Mapillary platform with the
+        following properties.
 
         Usage::
 
@@ -145,7 +138,6 @@ class Entities:
 
             InvalidNumberOfArguments - if the number of ids passed is 0 or greater than 50
         """
-
         # TODO: while this function should not be responsible to check if
         # all of the IDs passed are image_ids or detections_ids, this comment
         # should be to remind that this logic should belong elsewhere or to integrated
@@ -172,15 +164,12 @@ class Entities:
         start_captured_at: typing.Optional[datetime.datetime] = None,
         end_captured_at: typing.Optional[datetime.datetime] = None,
         limit: typing.Optional[int] = None,
-        organization_id: typing.Union[
-            typing.Optional[int], typing.Optional[str]
-        ] = None,
+        organization_id: typing.Union[typing.Optional[int], typing.Optional[str]] = None,
         sequence_id: typing.Optional[typing.List[int]] = None,
         fields: typing.Optional[list] = [],
     ) -> str:
-        """
-        Represents the metadata of the image on the Mapillary platform with
-        the following properties.
+        """Represents the metadata of the image on the Mapillary platform with the
+        following properties.
 
         Output Format::
 
@@ -225,49 +214,54 @@ class Entities:
             'https://graph.mapillary.com/search/images?bbox=-180,-90,180,90&start_time=&end_time'
             '=&limit=100&organization_id=1234567890&sequence_id=1234567890' # endpoint
 
-        :param bbox: float,float,float,float: filter images in the bounding box. Specify in this
+        Args:
+            bbox (typing.Union[typing.List[float], typing.Tuple[float, float, float, float],):
+                float,float,float,float: filter images in the bounding
+                box. Specify in this
+            start_captured_at: filter images captured after. Specify in
+                the ISO 8601 format.
+            start_time (typing.Union[typing.Optional[datetime.datetime], typing.Optional[str]])
+            end_captured_at: filter images captured before. Same format
+                as
+            end_time (typing.Union[typing.Optional[datetime.datetime], typing.Optional[str]])
+            limit (typing.Optional[int]): limit the number of images
+                returned. Max and default is 2000. The 'default'
+            organization_id (typing.Optional[int]): filter images
+                contributed to the specified organization Id.
+            sequence_id (typing.Optional[typing.List[int], int]): filter
+                images in the specified sequence Ids (separated by
+                commas),
+            fields (typing.Optional[typing.List[str]]): filter the
+                fields returned. For example, "['atomic_scale',
+                'altitude',
         order: left, bottom, right, top (or minLon, minLat, maxLon, maxLat).
-        :type bbox: typing.Union[typing.List[float], typing.Tuple[float, float, float, float],
         list, tuple]
 
-        :param start_captured_at: filter images captured after. Specify in the ISO 8601 format.
         For example: "2022-08-16T16:42:46Z".
-        :type start_time: typing.Union[typing.Optional[datetime.datetime], typing.Optional[str]]
         :default start_captured_at: None
 
-        :param end_captured_at: filter images captured before. Same format as
         "start_captured_at".
-        :type end_time: typing.Union[typing.Optional[datetime.datetime], typing.Optional[str]]
         :default end_captured_at: None
 
-        :param limit: limit the number of images returned. Max and default is 2000. The 'default'
         here means the default value of `limit` assumed on the server's end if the limit param
         is not passed. In other words, if the `limit` parameter is set to `None`, the server will
         assume the `limit` parameter to be 2000, which is the same as setting the `limit`
         parameter to 2000 explicitly.
-        :type limit: typing.Optional[int]
         :default limit: None
 
-        :param organization_id: filter images contributed to the specified organization Id.
-        :type organization_id: typing.Optional[int]
         :default organization_id: None
 
-        :param sequence_id: filter images in the specified sequence Ids (separated by commas),
         For example, "[1234567890,1234567891,1234567892]".
-        :type sequence_id: typing.Optional[typing.List[int], int]
         :default sequence_id: None
 
-        :param fields: filter the fields returned. For example, "['atomic_scale', 'altitude',
         'camera_parameters']". For more information, see
         https://www.mapillary.com/developer/api-documentation/#image. To get list of all possible
         fields, please use Entities.get_image_fields()
-        :type fields: typing.Optional[typing.List[str]]
         :default fields: []
 
-        :return: endpoint for searching an image
-        :rtype: str
+        Returns:
+            str: endpoint for searching an image
         """
-
         fields = Entities.__field_validity(
             given_fields=fields,
             actual_fields=Entities.get_image_fields(),
@@ -355,13 +349,11 @@ class Entities:
 
     @staticmethod
     def get_image_fields() -> list:
-        """
-        Gets list of possible image fields
+        """Gets list of possible image fields.
 
-        :return: Image field list
-        :rtype: list
+        Returns:
+            list: Image field list
         """
-
         return [
             "altitude",
             "atomic_scale",
@@ -389,9 +381,8 @@ class Entities:
 
     @staticmethod
     def get_map_feature(map_feature_id: str, fields: list) -> str:
-        """
-        These are objects with a location which have been derived from
-        multiple detections in multiple images.
+        """These are objects with a location which have been derived from multiple
+        detections in multiple images.
 
         Usage::
 
@@ -408,26 +399,20 @@ class Entities:
             5. geometry - GeoJSON Point geometry
             6. images - list of IDs, which images this map feature was derived from
         """
-
         fields = Entities.__field_validity(
             given_fields=fields,
             actual_fields=Entities.get_map_feature_fields(),
             endpoint="https://graph.mapillary.com/:map_feature_id?fields=",
         )
-
-        return (
-            f"https://graph.mapillary.com/{map_feature_id}/?fields={','.join(fields)}"
-        )
+        return f"https://graph.mapillary.com/{map_feature_id}/?fields={','.join(fields)}"
 
     @staticmethod
     def get_map_feature_fields() -> list:
-        """
-        Gets map feature fields
+        """Gets map feature fields.
 
-        :return: Possible map feature fields
-        :rtype: list
+        Returns:
+            list: Possible map feature fields
         """
-
         return [
             "first_seen_at",
             "last_seen_at",
@@ -442,11 +427,9 @@ class Entities:
         image_id: str,
         fields: list,
     ) -> str:
-        """
-        Represent an object detected in a single image. For convenience
-        this version of the API serves detections as collections. They can be
-        requested as a collection on the resource (e.g. image) they contribute
-        or belong to.
+        """Represent an object detected in a single image. For convenience this version
+        of the API serves detections as collections. They can be requested as a
+        collection on the resource (e.g. image) they contribute or belong to.
 
         Usage::
 
@@ -460,7 +443,6 @@ class Entities:
             3. image - object, image the detection belongs to
             4. value - string, what kind of object the detection represents
         """
-
         fields = Entities.__field_validity(
             given_fields=fields,
             actual_fields=Entities.get_detection_with_image_id_fields(),
@@ -471,13 +453,11 @@ class Entities:
 
     @staticmethod
     def get_detection_with_image_id_fields() -> list:
-        """
-        Gets list of possible detections for image ids
+        """Gets list of possible detections for image ids.
 
-        :return: Possible detection parameters
-        :rtype: list
+        Returns:
+            list: Possible detection parameters
         """
-
         return ["created_at", "geometry", "image", "value"]
 
     @staticmethod
@@ -485,11 +465,9 @@ class Entities:
         map_feature_id: str,
         fields: list,
     ) -> str:
-        """
-        Represent an object detected in a single image. For convenience
-        this version of the API serves detections as collections. They can be
-        requested as a collection on the resource (e.g. map feature) they
-        contribute or belong to.
+        """Represent an object detected in a single image. For convenience this version
+        of the API serves detections as collections. They can be requested as a
+        collection on the resource (e.g. map feature) they contribute or belong to.
 
         Usage::
 
@@ -503,7 +481,6 @@ class Entities:
             3. image - object, image the detection belongs to
             4. value - string, what kind of object the detection represents
         """
-
         fields = Entities.__field_validity(
             given_fields=fields,
             actual_fields=Entities.get_detection_with_map_feature_id_fields(),
@@ -514,13 +491,11 @@ class Entities:
 
     @staticmethod
     def get_detection_with_map_feature_id_fields() -> list:
-        """
-        Gets list of possible field parameters for map features
+        """Gets list of possible field parameters for map features.
 
-        :return: Map feature detection fields
-        :rtype: list
+        Returns:
+            list: Map feature detection fields
         """
-
         return ["created_at", "geometry", "image", "value"]
 
     @staticmethod
@@ -528,9 +503,7 @@ class Entities:
         organization_id: str,
         fields: list,
     ) -> str:
-        """
-        Represents an organization which can own the imagery if users
-        upload to it
+        """Represents an organization which can own the imagery if users upload to it.
 
         Usage::
 
@@ -542,34 +515,28 @@ class Entities:
             2. name - nice name
             3. description - public description of the organization
         """
-
         fields = Entities.__field_validity(
             given_fields=fields,
             actual_fields=Entities.get_organization_id_fields(),
             endpoint="https://graph.mapillary.com/:organization_id?fields=",
         )
 
-        return (
-            f"https://graph.mapillary.com/{organization_id}/?fields={','.join(fields)}"
-        )
+        return f"https://graph.mapillary.com/{organization_id}/?fields={','.join(fields)}"
 
     @staticmethod
     def get_organization_id_fields() -> list:
-        """
-        Gets list of possible organization id fields
+        """Gets list of possible organization id fields.
 
-        :return: Possible organization fields
-        :rtype: list
+        Returns:
+            list: Possible organization fields
         """
-
         return ["slug", "name", "description"]
 
     @staticmethod
     def get_sequence(
         sequence_id: str,
     ) -> str:
-        """
-        Represents a sequence of Image IDs ordered by capture time
+        """Represents a sequence of Image IDs ordered by capture time.
 
         Usage::
 
@@ -580,32 +547,26 @@ class Entities:
 
             1. id - ID of the image belonging to the sequence
         """
-
         return f"https://graph.mapillary.com/image_ids?sequence_id={sequence_id}"
 
     @staticmethod
-    def __field_validity(
-        given_fields: list, actual_fields: list, endpoint: str
-    ) -> list:
+    def __field_validity(given_fields: list, actual_fields: list, endpoint: str) -> list:
+        """Checks if the given_fields are the actual correct fields for the given
+        endpoint Compares against the list provided in `actual_fields`
+
+        Args:
+            given_fields (list): The fields given as argument to check
+                in
+            actual_fields (list): The fields to check against
+            endpoint (str): The endpoint that is being targeted
+
+        Raises:
+            InvalidFieldError: Raised when an API endpoint is passed
+                invalid field elements
+
+        Returns:
+            list: The given_fields if everything is correct
         """
-        Checks if the given_fields are the actual correct fields for the given endpoint
-        Compares against the list provided in `actual_fields`
-
-        :param given_fields: The fields given as argument to check in
-        :type given_fields: list
-
-        :param actual_fields: The fields to check against
-        :type actual_fields: list
-
-        :param endpoint: The endpoint that is being targeted
-        :type endpoint: str
-
-        :raises InvalidFieldError: Raised when an API endpoint is passed invalid field elements
-
-        :return: The given_fields if everything is correct
-        :rtype: list
-        """
-
         if len(given_fields) == 0:
             return given_fields  # empty list: []
 
@@ -638,4 +599,3 @@ class Entities:
 
         # If no error occurred, and all the fields are correct, return the given_fields
         return given_fields
-

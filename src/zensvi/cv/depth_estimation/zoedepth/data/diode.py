@@ -32,40 +32,61 @@ from torchvision import transforms
 
 
 class ToTensor(object):
+    """Convert images and depth maps to PyTorch tensors and apply resizing.
+
+    This class normalizes the image and resizes it to a fixed height while
+    maintaining the aspect ratio.
+
+    Attributes:
+        normalize (callable): A function to normalize the image.
+        resize (torchvision.transforms.Resize): A transform to resize the image.
+    """
+
     def __init__(self):
-        # self.normalize = transforms.Normalize(
-        #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        self.normalize = lambda x : x
+        self.normalize = lambda x: x
         self.resize = transforms.Resize(480)
 
     def __call__(self, sample):
-        image, depth = sample['image'], sample['depth']
+        """Convert the sample images and depth maps to tensors and resize them.
+
+        Args:
+            sample (dict): A dictionary containing "image" and "depth".
+
+        Returns:
+            dict: A dictionary containing the transformed "image", "depth", and the dataset name.
+        """
+        image, depth = sample["image"], sample["depth"]
         image = self.to_tensor(image)
         image = self.normalize(image)
         depth = self.to_tensor(depth)
 
         image = self.resize(image)
 
-        return {'image': image, 'depth': depth, 'dataset': "diode"}
+        return {"image": image, "depth": depth, "dataset": "diode"}
 
     def to_tensor(self, pic):
+        """Convert a PIL image or NumPy array to a PyTorch tensor.
 
+        Args:
+            pic (PIL.Image or np.ndarray): The image to convert.
+
+        Returns:
+            torch.Tensor: The converted image as a tensor.
+        """
         if isinstance(pic, np.ndarray):
             img = torch.from_numpy(pic.transpose((2, 0, 1)))
             return img
 
-        #         # handle PIL Image
-        if pic.mode == 'I':
+        if pic.mode == "I":
             img = torch.from_numpy(np.array(pic, np.int32, copy=False))
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             img = torch.from_numpy(np.array(pic, np.int16, copy=False))
         else:
-            img = torch.ByteTensor(
-                torch.ByteStorage.from_buffer(pic.tobytes()))
-        # PIL image mode: 1, L, P, I, F, RGB, YCbCr, RGBA, CMYK
-        if pic.mode == 'YCbCr':
+            img = torch.ByteTensor(torch.ByteStorage.from_buffer(pic.tobytes()))
+
+        if pic.mode == "YCbCr":
             nchannel = 3
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             nchannel = 1
         else:
             nchannel = len(pic.mode)
@@ -80,19 +101,35 @@ class ToTensor(object):
 
 
 class DIODE(Dataset):
+    """Dataset class for loading DIODE images and depth maps.
+
+    This class loads images and their corresponding depth maps and masks from
+    the specified directory.
+
+    Attributes:
+        image_files (list): List of image file paths.
+        depth_files (list): List of depth file paths.
+        depth_mask_files (list): List of depth mask file paths.
+        transform (ToTensor): Transform to apply to the images and depth maps.
+    """
+
     def __init__(self, data_dir_root):
         import glob
 
-        # image paths are of the form <data_dir_root>/scene_#/scan_#/*.png
-        self.image_files = glob.glob(
-            os.path.join(data_dir_root, '*', '*', '*.png'))
-        self.depth_files = [r.replace(".png", "_depth.npy")
-                            for r in self.image_files]
-        self.depth_mask_files = [
-            r.replace(".png", "_depth_mask.npy") for r in self.image_files]
+        self.image_files = glob.glob(os.path.join(data_dir_root, "*", "*", "*.png"))
+        self.depth_files = [r.replace(".png", "_depth.npy") for r in self.image_files]
+        self.depth_mask_files = [r.replace(".png", "_depth_mask.npy") for r in self.image_files]
         self.transform = ToTensor()
 
     def __getitem__(self, idx):
+        """Retrieve an image and its corresponding depth and mask.
+
+        Args:
+            idx (int): Index of the item to retrieve.
+
+        Returns:
+            dict: A dictionary containing the transformed image, depth, and valid mask.
+        """
         image_path = self.image_files[idx]
         depth_path = self.depth_files[idx]
         depth_mask_path = self.depth_mask_files[idx]
@@ -101,12 +138,7 @@ class DIODE(Dataset):
         depth = np.load(depth_path)  # in meters
         valid = np.load(depth_mask_path)  # binary
 
-        # depth[depth > 8] = -1
-        # depth = depth[..., None]
-
         sample = dict(image=image, depth=depth, valid=valid)
-
-        # return sample
         sample = self.transform(sample)
 
         if idx == 0:
@@ -115,11 +147,24 @@ class DIODE(Dataset):
         return sample
 
     def __len__(self):
+        """Return the total number of images in the dataset.
+
+        Returns:
+            int: The number of images in the dataset.
+        """
         return len(self.image_files)
 
 
 def get_diode_loader(data_dir_root, batch_size=1, **kwargs):
+    """Create a DataLoader for the DIODE dataset.
+
+    Args:
+        data_dir_root (str): The root directory containing the DIODE dataset.
+        batch_size (int, optional): Number of samples per batch. Defaults to 1.
+        **kwargs: Additional arguments for DataLoader.
+
+    Returns:
+        DataLoader: A DataLoader for the DIODE dataset.
+    """
     dataset = DIODE(data_dir_root)
     return DataLoader(dataset, batch_size, **kwargs)
-
-# get_diode_loader(data_dir_root="datasets/diode/val/outdoor")

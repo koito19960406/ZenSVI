@@ -22,7 +22,6 @@
 
 # File author: Shariq Farooq Bhat
 
-import os
 
 import numpy as np
 import torch
@@ -32,40 +31,61 @@ from torchvision import transforms
 
 
 class ToTensor(object):
+    """Convert images and depth maps to PyTorch tensors and apply resizing.
+
+    Args:
+        resize_shape (tuple): The shape to resize the images to.
+
+    """
+
     def __init__(self, resize_shape):
         # self.normalize = transforms.Normalize(
         #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        self.normalize = lambda x : x
+        self.normalize = lambda x: x
         self.resize = transforms.Resize(resize_shape)
 
     def __call__(self, sample):
-        image, depth = sample['image'], sample['depth']
+        """Convert the sample images and depth maps to tensors and resize them.
+
+        Args:
+            sample (dict): A dictionary containing "image" and "depth".
+
+        Returns:
+            dict: A dictionary containing the converted and resized "image", "depth", and the dataset name.
+        """
+        image, depth = sample["image"], sample["depth"]
         image = self.to_tensor(image)
         image = self.normalize(image)
         depth = self.to_tensor(depth)
 
         image = self.resize(image)
 
-        return {'image': image, 'depth': depth, 'dataset': "ddad"}
+        return {"image": image, "depth": depth, "dataset": "ddad"}
 
     def to_tensor(self, pic):
+        """Convert a PIL image or numpy array to a PyTorch tensor.
 
+        Args:
+            pic (PIL Image or np.ndarray): The image to convert.
+
+        Returns:
+            torch.Tensor: The converted image as a tensor.
+        """
         if isinstance(pic, np.ndarray):
             img = torch.from_numpy(pic.transpose((2, 0, 1)))
             return img
 
-        #         # handle PIL Image
-        if pic.mode == 'I':
+        # Handle PIL Image
+        if pic.mode == "I":
             img = torch.from_numpy(np.array(pic, np.int32, copy=False))
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             img = torch.from_numpy(np.array(pic, np.int16, copy=False))
         else:
-            img = torch.ByteTensor(
-                torch.ByteStorage.from_buffer(pic.tobytes()))
+            img = torch.ByteTensor(torch.ByteStorage.from_buffer(pic.tobytes()))
         # PIL image mode: 1, L, P, I, F, RGB, YCbCr, RGBA, CMYK
-        if pic.mode == 'YCbCr':
+        if pic.mode == "YCbCr":
             nchannel = 3
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             nchannel = 1
         else:
             nchannel = len(pic.mode)
@@ -80,25 +100,37 @@ class ToTensor(object):
 
 
 class DDAD(Dataset):
-    def __init__(self, data_dir_root, resize_shape):
-        import glob
+    """Dataset class for loading images and depth maps from the DDAD dataset.
 
+    Args:
+        data_dir_root (str): The root directory containing the dataset.
+        resize_shape (tuple): The shape to resize the images to.
+
+    """
+
+    def __init__(self, data_dir_root, resize_shape):
         # image paths are of the form <data_dir_root>/{outleft, depthmap}/*.png
-        
         # self.image_files = glob.glob(os.path.join(data_dir_root, '*.png'))
         # self.depth_files = [r.replace("_rgb.png", "_depth.npy")
         #                     for r in self.image_files]
         self.image_files, self.depth_files = [], []
-        with open('/mnt/bn/liheyang/MTL-SA-1B/dataset/splits/ddad/val.txt', 'r') as f:
+        with open("/mnt/bn/liheyang/MTL-SA-1B/dataset/splits/ddad/val.txt", "r") as f:
             lines = f.read().splitlines()
         for line in lines:
-            self.image_files.append(line.split(' ')[0])
-            self.depth_files.append(line.split(' ')[1])
-        
+            self.image_files.append(line.split(" ")[0])
+            self.depth_files.append(line.split(" ")[1])
+
         self.transform = ToTensor(resize_shape)
 
     def __getitem__(self, idx):
+        """Retrieve an image and its corresponding depth map from the dataset.
 
+        Args:
+            idx (int): The index of the sample to retrieve.
+
+        Returns:
+            dict: A dictionary containing the image and depth tensor.
+        """
         image_path = self.image_files[idx]
         depth_path = self.depth_files[idx]
 
@@ -117,9 +149,25 @@ class DDAD(Dataset):
         return sample
 
     def __len__(self):
+        """Return the total number of samples in the dataset.
+
+        Returns:
+            int: The number of samples in the dataset.
+        """
         return len(self.image_files)
 
 
 def get_ddad_loader(data_dir_root, resize_shape, batch_size=1, **kwargs):
+    """Create a DataLoader for the DDAD dataset.
+
+    Args:
+        data_dir_root (str): The root directory containing the dataset.
+        resize_shape (tuple): The shape to resize the images to.
+        batch_size (int, optional): The number of samples per batch. Defaults to 1.
+        **kwargs: Additional arguments to pass to the DataLoader.
+
+    Returns:
+        DataLoader: A DataLoader for the DDAD dataset.
+    """
     dataset = DDAD(data_dir_root, resize_shape)
     return DataLoader(dataset, batch_size, **kwargs)

@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.utils.format
+"""mapillary.utils.format
 ======================
 
 This module deals with converting data to and from different file formats.
@@ -15,9 +13,10 @@ This module deals with converting data to and from different file formats.
 import base64
 import json
 import typing
-import mapbox_vector_tile
 from collections.abc import MutableMapping
 from typing import Union
+
+import mapbox_vector_tile
 
 # Local imports
 # # Models
@@ -25,8 +24,7 @@ from zensvi.download.mapillary.models.geojson import Coordinates, GeoJSON
 
 
 def feature_to_geojson(json_data: dict) -> dict:
-    """
-    Converts feature into a GeoJSON, returns output
+    """Converts feature into a GeoJSON, returns output.
 
     From::
 
@@ -38,13 +36,12 @@ def feature_to_geojson(json_data: dict) -> dict:
         >>> {'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'geometry': {'type':
         ... 'Point','coordinates': [30.98594605922699, 30.003757307208872]}, 'properties': {}}]}
 
-    :param json_data: The feature as a JSON
-    :type json_data: dict
+    Args:
+        json_data (dict): The feature as a JSON
 
-    :return: The formatted GeoJSON
-    :rtype: dict
+    Returns:
+        dict: The formatted GeoJSON
     """
-
     # The geometry property will always be present
     keys = [key for key in json_data.keys() if key != "geometry"]
 
@@ -63,24 +60,19 @@ def join_geojson_with_keys(
     geojson_dest: dict,
     geojson_dest_key: str,
 ) -> dict:
-    """
-    Combines two GeoJSONS based on the similarity of their specified keys, similar to
-    the SQL join functionality
+    """Combines two GeoJSONS based on the similarity of their specified keys, similar to
+    the SQL join functionality.
 
-    :param geojson_src: The starting GeoJSO source
-    :type geojson_src: dict
+    Args:
+        geojson_src (dict): The starting GeoJSO source
+        geojson_src_key (str): The key in properties specified for the
+            GeoJSON source
+        geojson_dest (dict): The GeoJSON to merge into
+        geojson_dest_key (dict): The key in properties specified for the
+            GeoJSON to merge into
 
-    :param geojson_src_key: The key in properties specified for the GeoJSON source
-    :type geojson_src_key: str
-
-    :param geojson_dest: The GeoJSON to merge into
-    :type geojson_dest: dict
-
-    :param geojson_dest_key: The key in properties specified for the GeoJSON to merge into
-    :type geojson_dest_key: dict
-
-    :return: The merged GeoJSON
-    :rtype: dict
+    Returns:
+        dict: The merged GeoJSON
 
     Usage::
 
@@ -91,7 +83,6 @@ def join_geojson_with_keys(
         ...     geojson_dest_key='id'
         ... )
     """
-
     # Go through the feature set in the src geojson
     for from_features in geojson_src["features"]:
 
@@ -107,9 +98,7 @@ def join_geojson_with_keys(
                 continue
 
             # Checking if two IDs match up
-            if int(from_features["properties"][geojson_src_key]) == int(
-                into_features["properties"][geojson_dest_key]
-            ):
+            if int(from_features["properties"][geojson_src_key]) == int(into_features["properties"][geojson_dest_key]):
 
                 # Firstly, extract the properties that exist in the
                 # src_geojson for that feature
@@ -125,16 +114,13 @@ def join_geojson_with_keys(
                     # Going through the new properties in the features of dest_geojson
                     if new_property not in old_properties:
                         # Put the new_feature
-                        from_features["properties"][new_property] = old_properties[
-                            "properties"
-                        ][new_property]
+                        from_features["properties"][new_property] = old_properties["properties"][new_property]
 
     return geojson_src
 
 
 def geojson_to_features_list(json_data: dict) -> list:
-    """
-    Converts a decoded output GeoJSON to a list of feature objects
+    """Converts a decoded output GeoJSON to a list of feature objects.
 
     The purpose of this formatting utility is to obtain a list of individual features for
     decoded tiles that can be later extended to the output GeoJSON
@@ -150,20 +136,18 @@ def geojson_to_features_list(json_data: dict) -> list:
         >>> [{'type': 'Feature', 'geometry': {'type': 'Point',
         ... 'coordinates': [30.98594605922699, 30.003757307208872]}, 'properties': {}}]
 
-    :param json_data: The given json data
-    :type json_data: dict
+    Args:
+        json_data (dict): The given json data
 
-    :return: The feature list
-    :rtype: list
+    Returns:
+        list: The feature list
     """
-
     return json_data["features"]
 
 
 def merged_features_list_to_geojson(features_list: list) -> str:
-    """
-    Converts a processed features list (i.e. a features list with all the needed features merged
-    from multiple tiles) into a fully-featured GeoJSON
+    """Converts a processed features list (i.e. a features list with all the needed
+    features merged from multiple tiles) into a fully-featured GeoJSON.
 
     From::
 
@@ -176,27 +160,26 @@ def merged_features_list_to_geojson(features_list: list) -> str:
         ... {'type': 'Point','coordinates': [30.98594605922699, 30.003757307208872]},
         ... 'properties': {}}, ...]}
 
-    :param features_list: a list of processed features merged from different tiles within a bbox
-    :type features_list: list
+    Args:
+        features_list (list): a list of processed features merged from
+            different tiles within a bbox
 
-    :return: GeoJSON string formatted with all the extra commas removed.
-    :rtype: str
+    Returns:
+        str: GeoJSON string formatted with all the extra commas removed.
     """
-
     return json.dumps({"type": "FeatureCollection", "features": features_list})
 
 
 def detection_features_to_geojson(feature_list: list) -> dict:
-    """
-    Converts a preprocessed list (i.e, features from the detections of either images or
-    map_features from multiple segments) into a fully featured GeoJSON
+    """Converts a preprocessed list (i.e, features from the detections of either images
+    or map_features from multiple segments) into a fully featured GeoJSON.
 
-    :param feature_list: A list of processed features merged from different segments within a
-        detection
-    :type feature_list: list
+    Args:
+        feature_list (list): A list of processed features merged from
+            different segments within a detection
 
-    :return: GeoJSON formatted as expected in a detection format
-    :rtype: dict
+    Returns:
+        dict: GeoJSON formatted as expected in a detection format
 
     Example::
 
@@ -214,7 +197,6 @@ def detection_features_to_geojson(feature_list: list) -> dict:
         ... 'GjUKBm1weS1vchIVEgIAABgDIg0JhiekKBoqAABKKQAPGgR0eXBlIgkKB3BvbHlnb24ogCB4AQ==',
         ... 'value': 'regulatory--no-parking--g2', 'id': '1942105415944115' } }, ... ]}
     """
-
     resulting_geojson = {
         # FeatureCollection type
         "type": "FeatureCollection",
@@ -225,26 +207,22 @@ def detection_features_to_geojson(feature_list: list) -> dict:
                 # Type is 'Feature'
                 "type": "Feature",
                 # Let 'geometry' be the `image` key, defaults to {} is `image` not in feature
-                "geometry": {
-                    "type": "Point",
-                    "coordinates": feature["image"]["geometry"]["coordinates"],
-                }
-                if "image" in feature
-                else {},
+                "geometry": (
+                    {
+                        "type": "Point",
+                        "coordinates": feature["image"]["geometry"]["coordinates"],
+                    }
+                    if "image" in feature
+                    else {}
+                ),
                 # Property list
                 "possible_none_properties": {
                     # Only if "image" was specified in the `fields` of the endpoint, else None
-                    "image_id": feature["image"]["id"]
-                    if "image" in "feature"
-                    else None,
+                    "image_id": (feature["image"]["id"] if "image" in "feature" else None),
                     # Only if "created_at" was specified in the `fields` of the endpoint, else None
-                    "created_at": feature["created_at"]
-                    if "created_at" in feature
-                    else None,
+                    "created_at": (feature["created_at"] if "created_at" in feature else None),
                     # Only if "geometry" was specified in the `fields` of the endpoint, else None
-                    "pixel_geometry": feature["geometry"]
-                    if "geometry" in feature
-                    else None,
+                    "pixel_geometry": (feature["geometry"] if "geometry" in feature else None),
                     # Only if "value" was specified in the `fields` of the endpoint, else None
                     "value": feature["value"] if "value" in feature else None,
                     # "id" is always available in the response
@@ -280,9 +258,8 @@ def detection_features_to_geojson(feature_list: list) -> dict:
 
 
 def flatten_geojson(geojson: dict) -> list:
-    """
-    Flattens a GeoJSON dictionary to a dictionary with only the relevant keys.
-    This is useful for writing to a CSV file.
+    """Flattens a GeoJSON dictionary to a dictionary with only the relevant keys. This
+    is useful for writing to a CSV file.
 
     Output Structure::
 
@@ -298,11 +275,11 @@ def flatten_geojson(geojson: dict) -> list:
         ...     "image_id": "IMAGE_ID"
         ... }
 
-    :param geojson: The GeoJSON to flatten
-    :type geojson: dict
+    Args:
+        geojson (dict): The GeoJSON to flatten
 
-    :return: A flattened GeoJSON
-    :rtype: dict
+    Returns:
+        dict: A flattened GeoJSON
 
     Note,
         1. The `geometry` key is always present in the output
@@ -319,7 +296,6 @@ def flatten_geojson(geojson: dict) -> list:
 
     *TODO*: Further testing needed with different geometries, e.g., Polygon, etc.
     """
-
     for feature in geojson["features"]:
         # Check if the geometry is a Point
         if feature["geometry"]["type"] == "Point":
@@ -328,16 +304,12 @@ def flatten_geojson(geojson: dict) -> list:
             feature["properties"]["latitude"] = feature["geometry"]["coordinates"][1]
 
     # Return the flattened geojson
-    return [
-        {"geometry": _feature["geometry"], **_feature["properties"]}
-        for _feature in geojson["features"]
-    ]
+    return [{"geometry": _feature["geometry"], **_feature["properties"]} for _feature in geojson["features"]]
 
 
 def geojson_to_polygon(geojson: dict) -> GeoJSON:
-    """
-    Converts a GeoJSON into a collection of only geometry coordinates for the purpose of
-    checking whether a given coordinate point exists within a shapely polygon
+    """Converts a GeoJSON into a collection of only geometry coordinates for the purpose
+    of checking whether a given coordinate point exists within a shapely polygon.
 
     From::
 
@@ -408,13 +380,12 @@ def geojson_to_polygon(geojson: dict) -> GeoJSON:
         ...     ]
         ... }
 
-    :param geojson: The input GeoJSON
-    :type geojson: dict
+    Args:
+        geojson (dict): The input GeoJSON
 
-    :return: A geojson of the format mentioned under 'To'
-    :rtype: dict
+    Returns:
+        dict: A geojson of the format mentioned under 'To'
     """
-
     return GeoJSON(
         geojson={
             "type": "FeatureCollection",
@@ -443,8 +414,7 @@ def flatten_dictionary(
     parent_key: str = "",
     sep: str = "_",
 ) -> dict:
-    """
-    Flattens dictionaries
+    """Flattens dictionaries.
 
     From::
 
@@ -458,19 +428,14 @@ def flatten_dictionary(
         ... {'type':'Polygon', 'coordinates': [[[2402, 2776], [2408, 2776]]]}, 'properties':
         ... {}, 'id': 1,'type': 3}]}
 
-    :param data: The dictionary itself
-    :type data: dict
+    Args:
+        data (dict): The dictionary itself
+        parent_key (str): The root key to start from
+        sep (str): The separator
 
-    :param parent_key: The root key to start from
-    :type parent_key: str
-
-    :param sep: The separator
-    :type sep: str
-
-    :return: A flattened dictionary
-    :rtype: dict
+    Returns:
+        dict: A flattened dictionary
     """
-
     # Final results
     items = []
 
@@ -498,8 +463,7 @@ def flatten_dictionary(
 
 
 def normalize_list(coordinates: list, width: int = 4096, height: int = 4096) -> list:
-    """
-    Normalizes a list of coordinates with the respective width and the height
+    """Normalizes a list of coordinates with the respective width and the height.
 
     From::
 
@@ -510,19 +474,16 @@ def normalize_list(coordinates: list, width: int = 4096, height: int = 4096) -> 
         >>> normalize_list(coordinates)
         ... # [[[0.58642578125, 0.677734375], [0.587890625, 0.677734375]]]
 
-    :param coordinates: The coordinate list to normalize
-    :type coordinates: list
+    Args:
+        coordinates (list): The coordinate list to normalize
+        width (int): The width of the coordinates to normalize with,
+            defaults to 4096
+        height (int): The height of the coordinates to normalize with,
+            defaults to 4096
 
-    :param width: The width of the coordinates to normalize with, defaults to 4096
-    :type width: int
-
-    :param height: The height of the coordinates to normalize with, defaults to 4096
-    :type height: int
-
-    :return: The normalized list
-    :rtype: list
+    Returns:
+        list: The normalized list
     """
-
     # Extracting the list from the coordinates
     coordinates = coordinates[0]
 
@@ -547,29 +508,21 @@ def normalize_list(coordinates: list, width: int = 4096, height: int = 4096) -> 
     return [new_coordinates]
 
 
-def decode_pixel_geometry(
-    base64_string: str, normalized: bool = True, width: int = 4096, height: int = 4096
-) -> dict:
+def decode_pixel_geometry(base64_string: str, normalized: bool = True, width: int = 4096, height: int = 4096) -> dict:
+    """Decodes the pixel geometry, and return the coordinates, which can be specified to
+    be normalized.
+
+    Args:
+        base64_string (str): The pixel geometry encoded as a vector tile
+        normalized (bool): If normalization is required, defaults to
+            True
+        width (int): The width of the pixel geometry, defaults to 4096
+        height (int): The height of the pixel geometry, defaults to 4096
+
+    Returns:
+        list: A dictionary with coordinates as key, and value as the
+        normalized list
     """
-    Decodes the pixel geometry, and return the coordinates, which can be specified to be
-    normalized
-
-    :param base64_string: The pixel geometry encoded as a vector tile
-    :type base64_string: str
-
-    :param normalized: If normalization is required, defaults to True
-    :type normalized: bool
-
-    :param width: The width of the pixel geometry, defaults to 4096
-    :type width: int
-
-    :param height: The height of the pixel geometry, defaults to 4096
-    :type height: int
-
-    :return: A dictionary with coordinates as key, and value as the normalized list
-    :rtype: list
-    """
-
     # The data retrieved after being decoded as base64
     data = base64.decodebytes(base64_string.encode("utf-8"))
 
@@ -609,21 +562,15 @@ def decode_pixel_geometry_in_geojson(
     width: int = 4096,
     height: int = 4096,
 ) -> GeoJSON:
+    """Decodes all the pixel_geometry.
+
+    Args:
+        geojson: The GeoJSON representation to be decoded
+        normalized (bool): If normalization is required, defaults to
+            True
+        width (int): The width of the pixel geometry, defaults to 4096
+        height (int): The height of the pixel geometry, defaults to 4096
     """
-    Decodes all the pixel_geometry
-
-    :param geojson: The GeoJSON representation to be decoded
-
-    :param normalized: If normalization is required, defaults to True
-    :type normalized: bool
-
-    :param width: The width of the pixel geometry, defaults to 4096
-    :type width: int
-
-    :param height: The height of the pixel geometry, defaults to 4096
-    :type height: int
-    """
-
     # If geojson is of type GeoJSON, convert to dict
     if isinstance(geojson, GeoJSON):
         geojson: dict = geojson.to_dict()
@@ -650,16 +597,14 @@ def decode_pixel_geometry_in_geojson(
 
 
 def coord_or_list_to_dict(data: Union[Coordinates, list, dict]) -> dict:
+    """Converts a Coordinates object or a coordinates list to a dictionary.
+
+    Args:
+        data (Union[Coordinates, list]): The coordinates to convert
+
+    Returns:
+        dict: The dictionary representation of the coordinates
     """
-    Converts a Coordinates object or a coordinates list to a dictionary
-
-    :param data: The coordinates to convert
-    :type data: Union[Coordinates, list]
-
-    :return: The dictionary representation of the coordinates
-    :rtype: dict
-    """
-
     if isinstance(data, dict):
         return data
 
@@ -677,11 +622,8 @@ def coord_or_list_to_dict(data: Union[Coordinates, list, dict]) -> dict:
     return data_copy
 
 
-def polygon_feature_to_bbox_list(
-    polygon: dict, is_bbox_list_required: bool = True
-) -> typing.Union[list, dict]:
-    """
-    Converts a polygon to a bounding box
+def polygon_feature_to_bbox_list(polygon: dict, is_bbox_list_required: bool = True) -> typing.Union[list, dict]:
+    """Converts a polygon to a bounding box.
 
     The polygon below has been obtained from https://geojson.io/. If you have a polygon,
     with only 4 array elements, then simply take the first element and append it to the
@@ -723,18 +665,17 @@ def polygon_feature_to_bbox_list(
         >>> bbox
         ... [62.22656249999999, 48.1640625, 38.41055825094609, 45.336701909968134]
 
-    :param polygon: The polygon to convert
-    :type polygon: dict
+    Args:
+        polygon (dict): The polygon to convert
+        is_bbox_list_required (bool): Flag if bbox is required as a
+            list. If true, returns a list,
 
-    :param is_bbox_list_required: Flag if bbox is required as a list. If true, returns a list,
     else returns a dict
-    :type is_bbox_list_required: bool
     :default is_bbox_list_required: True
 
-    :return: The bounding box
-    :rtype: typing.Union[list, dict]
+    Returns:
+        typing.Union[list, dict]: The bounding box
     """
-
     west = polygon["geometry"]["coordinates"][0][1][0]
     south = polygon["geometry"]["coordinates"][0][0][0]
     east = polygon["geometry"]["coordinates"][0][0][1]
@@ -747,8 +688,7 @@ def polygon_feature_to_bbox_list(
 
 
 def bbox_to_polygon(bbox: typing.Union[list, dict]) -> dict:
-    """
-    Converts a bounding box dictionary to a polygon
+    """Converts a bounding box dictionary to a polygon.
 
     Usage::
 
@@ -787,13 +727,12 @@ def bbox_to_polygon(bbox: typing.Union[list, dict]) -> dict:
         ...        ]
         ... })
 
-    :param bbox: The bounding box to convert
-    :type bbox: dict
+    Args:
+        bbox (dict): The bounding box to convert
 
-    :return: The polygon
-    :rtype: dict
+    Returns:
+        dict: The polygon
     """
-
     # Initializing the polygon
     polygon = {
         "type": "Feature",

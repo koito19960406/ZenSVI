@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.utils.extract
+"""mapillary.utils.extract
 =======================
 
 This module deals with extracting multiple fields nested within a GeoJSON packet.
@@ -13,17 +11,14 @@ This module deals with extracting multiple fields nested within a GeoJSON packet
 
 
 def extract_properties(geojson: dict, properties: list) -> dict:
-    """
-    Extracts specific properties from a complete GeoJSON
+    """Extracts specific properties from a complete GeoJSON.
 
-    :param geojson: GeoJSON object
-    :type geojson: dict
+    Args:
+        geojson (dict): GeoJSON object
+        properties (list): A list of properties to extract
 
-    :param properties: A list of properties to extract
-    :type properties: list
-
-    :return: The extracted fields as a dict
-    :rtype: dict
+    Returns:
+        dict: The extracted fields as a dict
 
     Usage::
 
@@ -37,7 +32,6 @@ def extract_properties(geojson: dict, properties: list) -> dict:
         ... 89.781,"id":169629268373019,"is_pano": "True","sequence_id":"dqjuprkOwUnmdEVt5gx-Iw"}}]}
         ... , properties=['id']) # id most likely exists
     """
-
     extracted_fields = {}
 
     for entry in properties:

@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.models.api.entities
+"""mapillary.models.api.entities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This module contains the Adapter design for the Entities API of Mapillary API v4.
@@ -13,12 +11,17 @@ For more information, please check out https://www.mapillary.com/developer/api-d
 - License: MIT LICENSE
 """
 
+import typing
+
 # Package imports
 import mercantile
-import typing
+
+# Library imports
+from requests import HTTPError
 from vt2geojson.tools import vt_bytes_to_geojson
 
-# Local imports
+# # Config
+from zensvi.download.mapillary.config.api.general import General
 
 # # Models
 from zensvi.download.mapillary.models.client import Client
@@ -26,16 +29,11 @@ from zensvi.download.mapillary.models.client import Client
 # # Exception Handling
 from zensvi.download.mapillary.models.exceptions import InvalidOptionError, LiteralEnforcementException
 
-# # Config
-from zensvi.download.mapillary.config.api.general import General
-
-# Library imports
-from requests import HTTPError
+# Local imports
 
 
 class GeneralAdapter(object):
-    """
-    General adaptor for using the API calls defined for the general module
+    """General adaptor for using the API calls defined for the general module
     (mapillary.config.api.general)
 
     The GeneralAdaptor provides functions for getting preprocessed data from the API, through the
@@ -60,7 +58,7 @@ class GeneralAdapter(object):
     ]
 
     def __init__(self, *args: object) -> None:
-        """Initializing GeneralAdaptor constuctor"""
+        """Initializing GeneralAdaptor constuctor."""
         super().__init__(*args)
 
         # client object to deal with session and requests
@@ -79,22 +77,16 @@ class GeneralAdapter(object):
         latitude: float,
         layer: str = "image",
     ) -> dict:
+        """Get the tiles for a given image.
+
+        Args:
+            zoom (int): Zoom level of the image.
+            longitude (float): Longitude of the image
+            latitude (float): Latitude of the image
+
+        Returns:
+            dict: A dictionary containing the tiles for the image.
         """
-        Get the tiles for a given image.
-
-        :param zoom: Zoom level of the image.
-        :type zoom: int
-
-        :param longitude: Longitude of the image
-        :type longitude: float
-
-        :param latitude: Latitude of the image
-        :type latitude: float
-
-        :return: A dictionary containing the tiles for the image.
-        :rtype: dict
-        """
-
         # Perform validation checks
         self.__validation_checks(
             zoom=zoom,
@@ -119,20 +111,15 @@ class GeneralAdapter(object):
         latitude: float,
         layer: str = "image",
     ) -> dict:
-        """
-        Get the image type for a given image.
+        """Get the image type for a given image.
 
-        :param zoom: The zoom to get the image type for.
-        :type zoom: int
+        Args:
+            zoom (int): The zoom to get the image type for.
+            longitude (float): The longitude of the image.
+            latitude (float): The latitude of the image.
 
-        :param longitude: The longitude of the image.
-        :type longitude: float
-
-        :param latitude: The latitude of the image.
-        :type latitude: float
-
-        :return: A dictionary containing the image type for the image.
-        :rtype: dict
+        Returns:
+            dict: A dictionary containing the image type for the image.
         """
         # Perform validation checks
         self.__validation_checks(
@@ -159,20 +146,16 @@ class GeneralAdapter(object):
         latitude: float,
         layer: str = "image",
     ):
-        """
-        Get the map features for a given coordinate set
+        """Get the map features for a given coordinate set.
 
-        :param zoom: The zoom value to get the map features for
-        :type zoom: int
+        Args:
+            zoom (int): The zoom value to get the map features for
+            longitude (float): The longitude of the image
+            latitude (float): The latitude of the image
 
-        :param longitude: The longitude of the image
-        :type longitude: float
-
-        :param latitude: The latitude of the image
-        :type latitude: float
-
-        :return: A dictionary containing the map features for the image.
-        :rtype: dict
+        Returns:
+            dict: A dictionary containing the map features for the
+            image.
         """
         # Perform validation checks
         self.__validation_checks(
@@ -191,23 +174,17 @@ class GeneralAdapter(object):
             layer=layer,
         )
 
-    def fetch_map_features_traffic_tiles(
-        self, zoom: int, longitude: float, latitude: float, layer: str
-    ):
-        """
-        Get the map feature traffic for a given coordinate set
+    def fetch_map_features_traffic_tiles(self, zoom: int, longitude: float, latitude: float, layer: str):
+        """Get the map feature traffic for a given coordinate set.
 
-        :param zoom: The zoom value to get the map features for
-        :type zoom: int
+        Args:
+            zoom (int): The zoom value to get the map features for
+            longitude (float): The longitude of the image
+            latitude (float): The latitude of the image
 
-        :param longitude: The longitude of the image
-        :type longitude: float
-
-        :param latitude: The latitude of the image
-        :type latitude: float
-
-        :return: A dictionary containing the map features for the image.
-        :rtype: dict
+        Returns:
+            dict: A dictionary containing the map features for the
+            image.
         """
         # Perform validation checks
         self.__validation_checks(
@@ -236,9 +213,7 @@ class GeneralAdapter(object):
         is_computed: bool = False,
     ) -> any:
         try:
-            tile: mercantile.Tile = mercantile.tile(
-                lng=longitude, lat=latitude, zoom=zoom
-            )
+            tile: mercantile.Tile = mercantile.tile(lng=longitude, lat=latitude, zoom=zoom)
 
             return vt_bytes_to_geojson(
                 # Parameters appropriately
@@ -266,22 +241,19 @@ class GeneralAdapter(object):
         layer: str = "images",
         is_computed: bool = False,
     ) -> str:
+        """Preprocess the API string for the given tile.
+
+        Args:
+            tile (mercantile.Tile): The tile to preprocess the API
+                string for.
+            layer (str): The feature type to preprocess the API string
+                for.
+            is_computed (bool): Whether the API string is for a computed
+                image or not.
+
+        Returns:
+            str: The preprocessed API string.
         """
-        Preprocess the API string for the given tile.
-
-        :param tile: The tile to preprocess the API string for.
-        :type tile: mercantile.Tile
-
-        :param layer: The feature type to preprocess the API string for.
-        :type layer: str
-
-        :param is_computed: Whether the API string is for a computed image or not.
-        :type is_computed: bool
-
-        :return: The preprocessed API string.
-        :rtype: str
-        """
-
         if layer == "images":
             # Get the API string for the tile
             if is_computed:
@@ -343,52 +315,42 @@ class GeneralAdapter(object):
         longitude: float,
         latitude: float,
     ):
+        """Range checking for the parameters of longitude, latitude, layer, zoom.
+
+        Args:
+            longitude (float): The longitude of the coordinates
+            latitude (float): The latitude of the coordinates
+
+        Returns:
+            dict: A GeoJSON for that specific layer and the specified
+            zoom level
         """
-        Range checking for the parameters of longitude, latitude, layer, zoom
-
-        :param longitude: The longitude of the coordinates
-        :type longitude: float
-
-        :param latitude: The latitude of the coordinates
-        :type latitude: float
-
-        :return: A GeoJSON for that specific layer and the specified zoom level
-        :rtype: dict
-        """
-
         # Lng, Lat ranges, https://docs.mapbox.com/help/glossary/lat-lon/
 
         # If lng not in the range [-180, 180], inclusive
         if longitude <= -180 or longitude >= 180:
             # Raise exception
-            raise InvalidOptionError(
-                param="longitude", value=longitude, options=[-180, 180]
-            )
+            raise InvalidOptionError(param="longitude", value=longitude, options=[-180, 180])
 
         # If lat not in the range [-90, 90], inclusive
         if latitude <= -90 or latitude >= 90:
             # Raise exception
-            raise InvalidOptionError(
-                param="latitude", value=latitude, options=[-180, 180]
-            )
+            raise InvalidOptionError(param="latitude", value=latitude, options=[-180, 180])
 
     def __zoom_range_check(self, layer: str, zoom: int):
+        """Checks for the correct zoom values for te specified layer.
 
+        Args:
+            layer (str): Either 'overview', 'sequence', 'image', or
+                'map'
+            zoom (int): The zoom levels,
+
+        Raises:
+            InvalidOptionError: Invalid option passed
+
+        Returns:
+            dict: A GeoJSON for the return object
         """
-        Checks for the correct zoom values for te specified layer
-
-        :param layer: Either 'overview', 'sequence', 'image', or 'map'
-        :type layer: str
-
-        :param zoom: The zoom levels,
-        :type zoom: int
-
-        :raises InvalidOptionError: Invalid option passed
-
-        :return: A GeoJSON for the return object
-        :rtype: dict
-        """
-
         # If zoom is not in the valid range of values
         if zoom < self.__min_zoom or zoom > self.__max_zoom:
             # Raise an exception for the invalid values passed
@@ -452,22 +414,17 @@ class GeneralAdapter(object):
         layer: str,
         layer_options: typing.List[str] = [],
     ) -> None:
-        """
-        Validation checks for the parameters of longitude, latitude, layer, zoom
+        """Validation checks for the parameters of longitude, latitude, layer, zoom.
 
-        :param longitude: The longitude of the coordinates
-        :type longitude: float
+        Args:
+            longitude (float): The longitude of the coordinates
+            latitude (float): The latitude of the coordinates
+            zoom (int): The zoom levels,
+            layer (str): Either 'overview', 'sequence', 'image',
+                'map_feature', or 'traffic_sign'
 
-        :param latitude: The latitude of the coordinates
-        :type latitude: float
-
-        :param zoom: The zoom levels,
-        :type zoom: int
-
-        :param layer: Either 'overview', 'sequence', 'image', 'map_feature', or 'traffic_sign'
-        :type layer: str
-
-        :raises InvalidOptionError: Invalid option passed
+        Raises:
+            InvalidOptionError: Invalid option passed
         """
         # Check if the correct literals were passed to the function
         LiteralEnforcementException.enforce_literal(

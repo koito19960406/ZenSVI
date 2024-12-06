@@ -7,41 +7,71 @@
 #   https://github.com/facebookresearch/dino/blob/main/vision_transformer.py
 #   https://github.com/rwightman/pytorch-image-models/tree/master/timm/models/vision_transformer.py
 
-from functools import partial
-import math
 import logging
-from typing import Sequence, Tuple, Union, Callable
+import math
+from functools import partial
+from typing import Callable, Sequence, Tuple, Union
 
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint
+from dinov2.layers import MemEffAttention, Mlp
+from dinov2.layers import NestedTensorBlock as Block
+from dinov2.layers import PatchEmbed, SwiGLUFFNFused
 from torch.nn.init import trunc_normal_
-
-from dinov2.layers import Mlp, PatchEmbed, SwiGLUFFNFused, MemEffAttention, NestedTensorBlock as Block
-
 
 logger = logging.getLogger("dinov2")
 
 
 def named_apply(fn: Callable, module: nn.Module, name="", depth_first=True, include_root=False) -> nn.Module:
+    """Applies a function to a module and its children.
+
+    Args:
+        fn (Callable): The function to apply.
+        module (nn.Module): The module to apply the function to.
+        name (str, optional): The name of the module. Defaults to "".
+        depth_first (bool, optional): If True, apply function to children before the module itself. Defaults to True.
+        include_root (bool, optional): If True, include the root module in the application. Defaults to False.
+
+    Returns:
+        nn.Module: The module after applying the function.
+    """
     if not depth_first and include_root:
         fn(module=module, name=name)
     for child_name, child_module in module.named_children():
         child_name = ".".join((name, child_name)) if name else child_name
-        named_apply(fn=fn, module=child_module, name=child_name, depth_first=depth_first, include_root=True)
+        named_apply(
+            fn=fn,
+            module=child_module,
+            name=child_name,
+            depth_first=depth_first,
+            include_root=True,
+        )
     if depth_first and include_root:
         fn(module=module, name=name)
     return module
 
 
 class BlockChunk(nn.ModuleList):
+    """A chunk of transformer blocks."""
+
     def forward(self, x):
+        """Forward pass through the chunk of blocks.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor after passing through the blocks.
+        """
         for b in self:
             x = b(x)
         return x
 
 
 class DinoVisionTransformer(nn.Module):
+    """Vision Transformer model for DINO."""
+
     def __init__(
         self,
         img_size=224,
@@ -66,30 +96,30 @@ class DinoVisionTransformer(nn.Module):
         interpolate_antialias=False,
         interpolate_offset=0.1,
     ):
-        """
+        """Initializes the DinoVisionTransformer.
+
         Args:
-            img_size (int, tuple): input image size
-            patch_size (int, tuple): patch size
-            in_chans (int): number of input channels
-            embed_dim (int): embedding dimension
-            depth (int): depth of transformer
-            num_heads (int): number of attention heads
-            mlp_ratio (int): ratio of mlp hidden dim to embedding dim
-            qkv_bias (bool): enable bias for qkv if True
-            proj_bias (bool): enable bias for proj in attn if True
-            ffn_bias (bool): enable bias for ffn if True
-            drop_path_rate (float): stochastic depth rate
-            drop_path_uniform (bool): apply uniform drop rate across blocks
-            weight_init (str): weight init scheme
-            init_values (float): layer-scale init values
-            embed_layer (nn.Module): patch embedding layer
-            act_layer (nn.Module): MLP activation layer
-            block_fn (nn.Module): transformer block class
-            ffn_layer (str): "mlp", "swiglu", "swiglufused" or "identity"
-            block_chunks: (int) split block sequence into block_chunks units for FSDP wrap
-            num_register_tokens: (int) number of extra cls tokens (so-called "registers")
-            interpolate_antialias: (str) flag to apply anti-aliasing when interpolating positional embeddings
-            interpolate_offset: (float) work-around offset to apply when interpolating positional embeddings
+            img_size (int, optional): Input image size. Defaults to 224.
+            patch_size (int, optional): Patch size. Defaults to 16.
+            in_chans (int, optional): Number of input channels. Defaults to 3.
+            embed_dim (int, optional): Embedding dimension. Defaults to 768.
+            depth (int, optional): Depth of transformer. Defaults to 12.
+            num_heads (int, optional): Number of attention heads. Defaults to 12.
+            mlp_ratio (float, optional): Ratio of MLP hidden dimension to embedding dimension. Defaults to 4.0.
+            qkv_bias (bool, optional): Enable bias for QKV if True. Defaults to True.
+            ffn_bias (bool, optional): Enable bias for FFN if True. Defaults to True.
+            proj_bias (bool, optional): Enable bias for projection in attention if True. Defaults to True.
+            drop_path_rate (float, optional): Stochastic depth rate. Defaults to 0.0.
+            drop_path_uniform (bool, optional): Apply uniform drop rate across blocks. Defaults to False.
+            init_values (float, optional): Layer-scale initialization values. Defaults to None.
+            embed_layer (nn.Module, optional): Patch embedding layer. Defaults to PatchEmbed.
+            act_layer (nn.Module, optional): MLP activation layer. Defaults to nn.GELU.
+            block_fn (nn.Module, optional): Transformer block class. Defaults to Block.
+            ffn_layer (str, optional): Type of FFN layer. Options: "mlp", "swiglu", "swiglufused", or "identity". Defaults to "mlp".
+            block_chunks (int, optional): Split block sequence into block_chunks units for FSDP wrap. Defaults to 1.
+            num_register_tokens (int, optional): Number of extra CLS tokens (so-called "registers"). Defaults to 0.
+            interpolate_antialias (bool, optional): Flag to apply anti-aliasing when interpolating positional embeddings. Defaults to False.
+            interpolate_offset (float, optional): Work-around offset to apply when interpolating positional embeddings. Defaults to 0.1.
         """
         super().__init__()
         norm_layer = partial(nn.LayerNorm, eps=1e-6)
@@ -103,7 +133,12 @@ class DinoVisionTransformer(nn.Module):
         self.interpolate_antialias = interpolate_antialias
         self.interpolate_offset = interpolate_offset
 
-        self.patch_embed = embed_layer(img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
+        self.patch_embed = embed_layer(
+            img_size=img_size,
+            patch_size=patch_size,
+            in_chans=in_chans,
+            embed_dim=embed_dim,
+        )
         num_patches = self.patch_embed.num_patches
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
@@ -128,6 +163,15 @@ class DinoVisionTransformer(nn.Module):
             logger.info("using Identity layer as FFN")
 
             def f(*args, **kwargs):
+                """Identity function for FFN layer.
+
+                Args:
+                    *args: Variable length argument list.
+                    **kwargs: Arbitrary keyword arguments.
+
+                Returns:
+                    nn.Identity: Identity layer.
+                """
                 return nn.Identity()
 
             ffn_layer = f
@@ -170,6 +214,7 @@ class DinoVisionTransformer(nn.Module):
         self.init_weights()
 
     def init_weights(self):
+        """Initializes the weights of the model."""
         trunc_normal_(self.pos_embed, std=0.02)
         nn.init.normal_(self.cls_token, std=1e-6)
         if self.register_tokens is not None:
@@ -177,6 +222,16 @@ class DinoVisionTransformer(nn.Module):
         named_apply(init_weights_vit_timm, self)
 
     def interpolate_pos_encoding(self, x, w, h):
+        """Interpolates the positional encoding based on input dimensions.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+            w (int): Width of the input.
+            h (int): Height of the input.
+
+        Returns:
+            torch.Tensor: Interpolated positional encoding.
+        """
         previous_dtype = x.dtype
         npatch = x.shape[1] - 1
         N = self.pos_embed.shape[1] - 1
@@ -192,24 +247,31 @@ class DinoVisionTransformer(nn.Module):
         # see discussion at https://github.com/facebookresearch/dino/issues/8
         # DINOv2 with register modify the interpolate_offset from 0.1 to 0.0
         w0, h0 = w0 + self.interpolate_offset, h0 + self.interpolate_offset
-        # w0, h0 = w0 + 0.1, h0 + 0.1
-        
+
         sqrt_N = math.sqrt(N)
         sx, sy = float(w0) / sqrt_N, float(h0) / sqrt_N
         patch_pos_embed = nn.functional.interpolate(
             patch_pos_embed.reshape(1, int(sqrt_N), int(sqrt_N), dim).permute(0, 3, 1, 2),
             scale_factor=(sx, sy),
-            # (int(w0), int(h0)), # to solve the upsampling shape issue
             mode="bicubic",
-            antialias=self.interpolate_antialias
+            antialias=self.interpolate_antialias,
         )
-        
+
         assert int(w0) == patch_pos_embed.shape[-2]
         assert int(h0) == patch_pos_embed.shape[-1]
         patch_pos_embed = patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
         return torch.cat((class_pos_embed.unsqueeze(0), patch_pos_embed), dim=1).to(previous_dtype)
 
     def prepare_tokens_with_masks(self, x, masks=None):
+        """Prepares input tokens with optional masks.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+            masks (torch.Tensor, optional): Masks to apply. Defaults to None.
+
+        Returns:
+            torch.Tensor: Prepared tokens.
+        """
         B, nc, w, h = x.shape
         x = self.patch_embed(x)
         if masks is not None:
@@ -231,6 +293,15 @@ class DinoVisionTransformer(nn.Module):
         return x
 
     def forward_features_list(self, x_list, masks_list):
+        """Processes a list of inputs through the transformer blocks.
+
+        Args:
+            x_list (list): List of input tensors.
+            masks_list (list): List of masks corresponding to the inputs.
+
+        Returns:
+            list: List of outputs from the transformer blocks.
+        """
         x = [self.prepare_tokens_with_masks(x, masks) for x, masks in zip(x_list, masks_list)]
         for blk in self.blocks:
             x = blk(x)
@@ -251,6 +322,15 @@ class DinoVisionTransformer(nn.Module):
         return output
 
     def forward_features(self, x, masks=None):
+        """Processes the input through the transformer blocks.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+            masks (torch.Tensor, optional): Masks to apply. Defaults to None.
+
+        Returns:
+            dict: Output containing normalized class token, register tokens, patch tokens, prenormalized output, and masks.
+        """
         if isinstance(x, list):
             return self.forward_features_list(x, masks)
 
@@ -269,8 +349,16 @@ class DinoVisionTransformer(nn.Module):
         }
 
     def _get_intermediate_layers_not_chunked(self, x, n=1):
+        """Retrieves intermediate layers from the transformer blocks.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+            n (int, optional): Number of last blocks to take. Defaults to 1.
+
+        Returns:
+            list: List of intermediate outputs.
+        """
         x = self.prepare_tokens_with_masks(x)
-        # If n is an int, take the n last blocks. If it's a list, take them
         output, total_block_len = [], len(self.blocks)
         blocks_to_take = range(total_block_len - n, total_block_len) if isinstance(n, int) else n
         for i, blk in enumerate(self.blocks):
@@ -281,9 +369,17 @@ class DinoVisionTransformer(nn.Module):
         return output
 
     def _get_intermediate_layers_chunked(self, x, n=1):
+        """Retrieves intermediate layers from chunked transformer blocks.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+            n (int, optional): Number of last blocks to take. Defaults to 1.
+
+        Returns:
+            list: List of intermediate outputs.
+        """
         x = self.prepare_tokens_with_masks(x)
         output, i, total_block_len = [], 0, len(self.blocks[-1])
-        # If n is an int, take the n last blocks. If it's a list, take them
         blocks_to_take = range(total_block_len - n, total_block_len) if isinstance(n, int) else n
         for block_chunk in self.blocks:
             for blk in block_chunk[i:]:  # Passing the nn.Identity()
@@ -302,6 +398,18 @@ class DinoVisionTransformer(nn.Module):
         return_class_token: bool = False,
         norm=True,
     ) -> Tuple[Union[torch.Tensor, Tuple[torch.Tensor]]]:
+        """Gets intermediate layers from the transformer.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+            n (Union[int, Sequence], optional): Number of layers or specific layers to take. Defaults to 1.
+            reshape (bool, optional): If True, reshape the output. Defaults to False.
+            return_class_token (bool, optional): If True, return the class token along with outputs. Defaults to False.
+            norm (bool, optional): If True, apply normalization to outputs. Defaults to True.
+
+        Returns:
+            Tuple[Union[torch.Tensor, Tuple[torch.Tensor]]]: Outputs from the transformer.
+        """
         if self.chunked_blocks:
             outputs = self._get_intermediate_layers_chunked(x, n)
         else:
@@ -309,7 +417,7 @@ class DinoVisionTransformer(nn.Module):
         if norm:
             outputs = [self.norm(out) for out in outputs]
         class_tokens = [out[:, 0] for out in outputs]
-        outputs = [out[:, 1 + self.num_register_tokens:] for out in outputs]
+        outputs = [out[:, 1 + self.num_register_tokens :] for out in outputs]
         if reshape:
             B, _, w, h = x.shape
             outputs = [
@@ -321,6 +429,16 @@ class DinoVisionTransformer(nn.Module):
         return tuple(outputs)
 
     def forward(self, *args, is_training=False, **kwargs):
+        """Forward pass through the model.
+
+        Args:
+            *args: Variable length argument list.
+            is_training (bool, optional): If True, return training output. Defaults to False.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            dict or torch.Tensor: Output from the model.
+        """
         ret = self.forward_features(*args, **kwargs)
         if is_training:
             return ret
@@ -329,7 +447,12 @@ class DinoVisionTransformer(nn.Module):
 
 
 def init_weights_vit_timm(module: nn.Module, name: str = ""):
-    """ViT weight initialization, original timm impl (for reproducibility)"""
+    """Initializes weights for ViT model.
+
+    Args:
+        module (nn.Module): The module to initialize.
+        name (str, optional): Name of the module. Defaults to "".
+    """
     if isinstance(module, nn.Linear):
         trunc_normal_(module.weight, std=0.02)
         if module.bias is not None:
@@ -337,6 +460,16 @@ def init_weights_vit_timm(module: nn.Module, name: str = ""):
 
 
 def vit_small(patch_size=16, num_register_tokens=0, **kwargs):
+    """Creates a small Vision Transformer model.
+
+    Args:
+        patch_size (int, optional): Patch size. Defaults to 16.
+        num_register_tokens (int, optional): Number of extra CLS tokens. Defaults to 0.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        DinoVisionTransformer: The constructed model.
+    """
     model = DinoVisionTransformer(
         patch_size=patch_size,
         embed_dim=384,
@@ -351,6 +484,16 @@ def vit_small(patch_size=16, num_register_tokens=0, **kwargs):
 
 
 def vit_base(patch_size=16, num_register_tokens=0, **kwargs):
+    """Creates a base Vision Transformer model.
+
+    Args:
+        patch_size (int, optional): Patch size. Defaults to 16.
+        num_register_tokens (int, optional): Number of extra CLS tokens. Defaults to 0.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        DinoVisionTransformer: The constructed model.
+    """
     model = DinoVisionTransformer(
         patch_size=patch_size,
         embed_dim=768,
@@ -365,6 +508,16 @@ def vit_base(patch_size=16, num_register_tokens=0, **kwargs):
 
 
 def vit_large(patch_size=16, num_register_tokens=0, **kwargs):
+    """Creates a large Vision Transformer model.
+
+    Args:
+        patch_size (int, optional): Patch size. Defaults to 16.
+        num_register_tokens (int, optional): Number of extra CLS tokens. Defaults to 0.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        DinoVisionTransformer: The constructed model.
+    """
     model = DinoVisionTransformer(
         patch_size=patch_size,
         embed_dim=1024,
@@ -379,8 +532,15 @@ def vit_large(patch_size=16, num_register_tokens=0, **kwargs):
 
 
 def vit_giant2(patch_size=16, num_register_tokens=0, **kwargs):
-    """
-    Close to ViT-giant, with embed-dim 1536 and 24 heads => embed-dim per head 64
+    """Creates a giant Vision Transformer model.
+
+    Args:
+        patch_size (int, optional): Patch size. Defaults to 16.
+        num_register_tokens (int, optional): Number of extra CLS tokens. Defaults to 0.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        DinoVisionTransformer: The constructed model.
     """
     model = DinoVisionTransformer(
         patch_size=patch_size,

@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.models.config
+"""mapillary.models.config
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 This module contains the Config class which sets up some global variables fo the duration of
@@ -20,8 +18,7 @@ Logger.setup_logger(name="mapillary.models.config")
 
 
 class Config:
-    """
-    Config setup for the SDK
+    """Config setup for the SDK.
 
     Different parts of the SDK react differently depending on what is set
 
@@ -29,9 +26,10 @@ class Config:
 
         >>> from mapillary.models.config import Config
 
-    :param use_strict: If set to True, the SDK will raise an exception if an invalid arguments
+    Args:
+        use_strict (bool): If set to True, the SDK will raise an
+            exception if an invalid arguments
     are sent to the functions in config.api calls. If set to False, the SDK will just log a warning.
-    :type use_strict: bool
     :default use_strict: True
     """
 
@@ -43,8 +41,5 @@ class Config:
     use_strict = True
 
     def __init__(self, use_strict: bool = True) -> None:
-        """
-        Initialize the Config class
-        """
-
+        """Initialize the Config class."""
         self.use_strict = use_strict

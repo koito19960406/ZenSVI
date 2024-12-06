@@ -24,12 +24,11 @@
 
 import json
 import os
-
-from .easydict import EasyDict as edict
-
-from .arg_utils import infer_type
 import pathlib
 import platform
+
+from .arg_utils import infer_type
+from .easydict import EasyDict as edict
 
 ROOT = pathlib.Path(__file__).parent.parent.resolve()
 
@@ -38,12 +37,12 @@ HOME_DIR = os.path.expanduser("./data")
 COMMON_CONFIG = {
     "save_dir": os.path.expanduser("./depth_anything_finetune"),
     "project": "ZoeDepth",
-    "tags": '',
+    "tags": "",
     "notes": "",
     "gpu": None,
     "root": ".",
     "uid": None,
-    "print_losses": False
+    "print_losses": False,
 }
 
 DATASETS_CONFIG = {
@@ -59,16 +58,14 @@ DATASETS_CONFIG = {
         "data_path_eval": os.path.join(HOME_DIR, "Kitti/raw_data"),
         "gt_path_eval": os.path.join(HOME_DIR, "Kitti/data_depth_annotated_zoedepth"),
         "filenames_file_eval": "./train_test_inputs/kitti_eigen_test_files_with_gt.txt",
-
         "min_depth_eval": 1e-3,
         "max_depth_eval": 80,
-
         "do_random_rotate": True,
         "degree": 1.0,
         "do_kb_crop": True,
         "garg_crop": True,
         "eigen_crop": False,
-        "use_right": False
+        "use_right": False,
     },
     "kitti_test": {
         "dataset": "kitti",
@@ -82,21 +79,19 @@ DATASETS_CONFIG = {
         "data_path_eval": os.path.join(HOME_DIR, "Kitti/raw_data"),
         "gt_path_eval": os.path.join(HOME_DIR, "Kitti/data_depth_annotated_zoedepth"),
         "filenames_file_eval": "./train_test_inputs/kitti_eigen_test_files_with_gt.txt",
-
         "min_depth_eval": 1e-3,
         "max_depth_eval": 80,
-
         "do_random_rotate": False,
         "degree": 1.0,
         "do_kb_crop": True,
         "garg_crop": True,
         "eigen_crop": False,
-        "use_right": False
+        "use_right": False,
     },
     "nyu": {
         "dataset": "nyu",
         "avoid_boundary": False,
-        "min_depth": 1e-3,   # originally 0.1
+        "min_depth": 1e-3,  # originally 0.1
         "max_depth": 10,
         "data_path": os.path.join(HOME_DIR, "nyu"),
         "gt_path": os.path.join(HOME_DIR, "nyu"),
@@ -110,12 +105,11 @@ DATASETS_CONFIG = {
         "max_depth_eval": 10,
         "min_depth_diff": -10,
         "max_depth_diff": 10,
-
         "do_random_rotate": True,
         "degree": 1.0,
         "do_kb_crop": False,
         "garg_crop": False,
-        "eigen_crop": True
+        "eigen_crop": True,
     },
     "ibims": {
         "dataset": "ibims",
@@ -126,7 +120,7 @@ DATASETS_CONFIG = {
         "min_depth_eval": 0,
         "max_depth_eval": 10,
         "min_depth": 1e-3,
-        "max_depth": 10
+        "max_depth": 10,
     },
     "sunrgbd": {
         "dataset": "sunrgbd",
@@ -137,7 +131,7 @@ DATASETS_CONFIG = {
         "min_depth_eval": 0,
         "max_depth_eval": 8,
         "min_depth": 1e-3,
-        "max_depth": 10
+        "max_depth": 10,
     },
     "diml_indoor": {
         "dataset": "diml_indoor",
@@ -148,7 +142,7 @@ DATASETS_CONFIG = {
         "min_depth_eval": 0,
         "max_depth_eval": 10,
         "min_depth": 1e-3,
-        "max_depth": 10
+        "max_depth": 10,
     },
     "diml_outdoor": {
         "dataset": "diml_outdoor",
@@ -159,7 +153,7 @@ DATASETS_CONFIG = {
         "min_depth_eval": 2,
         "max_depth_eval": 80,
         "min_depth": 1e-3,
-        "max_depth": 80
+        "max_depth": 80,
     },
     "diode_indoor": {
         "dataset": "diode_indoor",
@@ -170,7 +164,7 @@ DATASETS_CONFIG = {
         "min_depth_eval": 1e-3,
         "max_depth_eval": 10,
         "min_depth": 1e-3,
-        "max_depth": 10
+        "max_depth": 10,
     },
     "diode_outdoor": {
         "dataset": "diode_outdoor",
@@ -181,7 +175,7 @@ DATASETS_CONFIG = {
         "min_depth_eval": 1e-3,
         "max_depth_eval": 80,
         "min_depth": 1e-3,
-        "max_depth": 80
+        "max_depth": 80,
     },
     "hypersim_test": {
         "dataset": "hypersim_test",
@@ -192,7 +186,7 @@ DATASETS_CONFIG = {
         "min_depth_eval": 1e-3,
         "max_depth_eval": 80,
         "min_depth": 1e-3,
-        "max_depth": 10
+        "max_depth": 10,
     },
     "vkitti": {
         "dataset": "vkitti",
@@ -203,7 +197,7 @@ DATASETS_CONFIG = {
         "min_depth_eval": 1e-3,
         "max_depth_eval": 80,
         "min_depth": 1e-3,
-        "max_depth": 80
+        "max_depth": 80,
     },
     "vkitti2": {
         "dataset": "vkitti2",
@@ -230,7 +224,7 @@ DATASETS_CONFIG = {
 }
 
 ALL_INDOOR = ["nyu", "ibims", "sunrgbd", "diode_indoor", "hypersim_test"]
-ALL_OUTDOOR = ["kitti", "diml_outdoor", "diode_outdoor",  "vkitti2", "ddad"]
+ALL_OUTDOOR = ["kitti", "diml_outdoor", "diode_outdoor", "vkitti2", "ddad"]
 ALL_EVAL_DATASETS = ALL_INDOOR + ALL_OUTDOOR
 
 COMMON_TRAINING_CONFIG = {
@@ -241,21 +235,37 @@ COMMON_TRAINING_CONFIG = {
     "use_shared_dict": False,
     "shared_dict": None,
     "use_amp": False,
-
     "aug": True,
     "random_crop": False,
     "random_translate": False,
     "translate_prob": 0.2,
     "max_translation": 100,
-
     "validate_every": 0.25,
     "log_images_every": 0.1,
     "prefetch": False,
 }
 
 
-def flatten(config, except_keys=('bin_conf')):
+def flatten(config, except_keys=("bin_conf")):
+    """Flatten a nested configuration dictionary.
+
+    Args:
+        config (dict): The configuration dictionary to flatten.
+        except_keys (tuple, optional): Keys to exclude from flattening. Defaults to ("bin_conf").
+
+    Returns:
+        dict: A flattened configuration dictionary.
+    """
+
     def recurse(inp):
+        """Recursively yield key-value pairs from a nested dictionary.
+
+        Args:
+            inp (dict): The input dictionary to recurse through.
+
+        Yields:
+            tuple: Key-value pairs from the dictionary.
+        """
         if isinstance(inp, dict):
             for key, value in inp.items():
                 if key in except_keys:
@@ -269,16 +279,16 @@ def flatten(config, except_keys=('bin_conf')):
 
 
 def split_combined_args(kwargs):
-    """Splits the arguments that are combined with '__' into multiple arguments.
-       Combined arguments should have equal number of keys and values.
-       Keys are separated by '__' and Values are separated with ';'.
-       For example, '__n_bins__lr=256;0.001'
+    """Splits combined arguments into individual key-value pairs.
+
+    Combined arguments should have equal number of keys and values. Keys are separated
+    by '__' and values are separated with ';'. For example, '__n_bins__lr=256;0.001'.
 
     Args:
-        kwargs (dict): key-value pairs of arguments where key-value is optionally combined according to the above format. 
+        kwargs (dict): Key-value pairs of arguments where key-value is optionally combined.
 
     Returns:
-        dict: Parsed dict with the combined arguments split into individual key-value pairs.
+        dict: Parsed dictionary with the combined arguments split into individual key-value pairs.
     """
     new_kwargs = dict(kwargs)
     for key, value in kwargs.items():
@@ -286,34 +296,47 @@ def split_combined_args(kwargs):
             keys = key.split("__")[1:]
             values = value.split(";")
             assert len(keys) == len(
-                values), f"Combined arguments should have equal number of keys and values. Keys are separated by '__' and Values are separated with ';'. For example, '__n_bins__lr=256;0.001. Given (keys,values) is ({keys}, {values})"
+                values
+            ), f"Combined arguments should have equal number of keys and values. Keys are separated by '__' and Values are separated with ';'. For example, '__n_bins__lr=256;0.001. Given (keys,values) is ({keys}, {values})"
             for k, v in zip(keys, values):
                 new_kwargs[k] = v
     return new_kwargs
 
 
 def parse_list(config, key, dtype=int):
-    """Parse a list of values for the key if the value is a string. The values are separated by a comma. 
-    Modifies the config in place.
+    """Parse a list of values for a given key in the configuration.
+
+    If the value is a string, it is split by commas and converted to a list of the specified type.
+
+    Args:
+        config (dict): The configuration dictionary.
+        key (str): The key to parse.
+        dtype (type, optional): The type to convert the values to. Defaults to int.
+
+    Raises:
+        AssertionError: If the key's value is not a list of the specified type.
     """
     if key in config:
         if isinstance(config[key], str):
-            config[key] = list(map(dtype, config[key].split(',')))
-        assert isinstance(config[key], list) and all([isinstance(e, dtype) for e in config[key]]
-                                                     ), f"{key} should be a list of values dtype {dtype}. Given {config[key]} of type {type(config[key])} with values of type {[type(e) for e in config[key]]}."
+            config[key] = list(map(dtype, config[key].split(",")))
+        assert isinstance(config[key], list) and all(
+            [isinstance(e, dtype) for e in config[key]]
+        ), f"{key} should be a list of values dtype {dtype}. Given {config[key]} of type {type(config[key])} with values of type {[type(e) for e in config[key]]}."
 
 
 def get_model_config(model_name, model_version=None):
-    """Find and parse the .json config file for the model.
+    """Find and parse the .json config file for the specified model.
 
     Args:
-        model_name (str): name of the model. The config file should be named config_{model_name}[_{model_version}].json under the models/{model_name} directory.
-        model_version (str, optional): Specific config version. If specified config_{model_name}_{model_version}.json is searched for and used. Otherwise config_{model_name}.json is used. Defaults to None.
+        model_name (str): Name of the model. The config file should be named config_{model_name}[_{model_version}].json under the models/{model_name} directory.
+        model_version (str, optional): Specific config version. If specified, config_{model_name}_{model_version}.json is searched for and used. Otherwise, config_{model_name}.json is used. Defaults to None.
 
     Returns:
-        easydict: the config dictionary for the model.
+        easydict: The config dictionary for the model, or None if the config file does not exist.
     """
-    config_fname = f"config_{model_name}_{model_version}.json" if model_version is not None else f"config_{model_name}.json"
+    config_fname = (
+        f"config_{model_name}_{model_version}.json" if model_version is not None else f"config_{model_name}.json"
+    )
     config_file = os.path.join(ROOT, "models", model_name, config_fname)
     if not os.path.exists(config_file):
         return None
@@ -332,46 +355,71 @@ def get_model_config(model_name, model_version=None):
 
 
 def update_model_config(config, mode, model_name, model_version=None, strict=False):
+    """Update the configuration with model-specific settings.
+
+    Args:
+        config (dict): The current configuration dictionary.
+        mode (str): The mode of operation (e.g., "train", "infer").
+        model_name (str): The name of the model.
+        model_version (str, optional): The version of the model. Defaults to None.
+        strict (bool, optional): If True, raises an error if the model config is not found. Defaults to False.
+
+    Returns:
+        dict: The updated configuration dictionary.
+
+    Raises:
+        ValueError: If strict is True and the model config is not found.
+    """
     model_config = get_model_config(model_name, model_version)
     if model_config is not None:
-        config = {**config, **
-                  flatten({**model_config.model, **model_config[mode]})}
+        config = {**config, **flatten({**model_config.model, **model_config[mode]})}
     elif strict:
         raise ValueError(f"Config file for model {model_name} not found.")
     return config
 
 
 def check_choices(name, value, choices):
-    # return  # No checks in dev branch
+    """Check if a value is within a set of choices.
+
+    Args:
+        name (str): The name of the parameter being checked.
+        value: The value to check.
+        choices (list): A list of valid choices.
+
+    Raises:
+        ValueError: If the value is not in the list of choices.
+    """
     if value not in choices:
         raise ValueError(f"{name} {value} not in supported choices {choices}")
 
 
-KEYS_TYPE_BOOL = ["use_amp", "distributed", "use_shared_dict", "same_lr", "aug", "three_phase",
-                  "prefetch", "cycle_momentum"]  # Casting is not necessary as their int casted values in config are 0 or 1
+KEYS_TYPE_BOOL = [
+    "use_amp",
+    "distributed",
+    "use_shared_dict",
+    "same_lr",
+    "aug",
+    "three_phase",
+    "prefetch",
+    "cycle_momentum",
+]  # Casting is not necessary as their int casted values in config are 0 or 1
 
 
-def get_config(model_name, mode='train', dataset=None, **overwrite_kwargs):
-    """Main entry point to get the config for the model.
+def get_config(model_name, mode="train", dataset=None, **overwrite_kwargs):
+    """Main entry point to get the configuration for the specified model.
 
     Args:
-        model_name (str): name of the desired model.
+        model_name (str): Name of the desired model.
         mode (str, optional): "train" or "infer". Defaults to 'train'.
         dataset (str, optional): If specified, the corresponding dataset configuration is loaded as well. Defaults to None.
-    
-    Keyword Args: key-value pairs of arguments to overwrite the default config.
-
-    The order of precedence for overwriting the config is (Higher precedence first):
-        # 1. overwrite_kwargs
-        # 2. "config_version": Config file version if specified in overwrite_kwargs. The corresponding config loaded is config_{model_name}_{config_version}.json
-        # 3. "version_name": Default Model version specific config specified in overwrite_kwargs. The corresponding config loaded is config_{model_name}_{version_name}.json
-        # 4. common_config: Default config for all models specified in COMMON_CONFIG
+        **overwrite_kwargs: Key-value pairs of arguments to overwrite the default configuration.
 
     Returns:
         easydict: The config dictionary for the model.
+
+    Raises:
+        ValueError: If the model name, mode, or dataset is not valid.
     """
-
-
     check_choices("Model", model_name, ["zoedepth", "zoedepth_nk"])
     check_choices("Mode", mode, ["train", "infer", "eval"])
     if mode == "train":
@@ -404,34 +452,44 @@ def get_config(model_name, mode='train', dataset=None, **overwrite_kwargs):
     parse_list(config, "n_attractors")
 
     # adjust n_bins for each bin configuration if bin_conf is given and n_bins is passed in overwrite_kwargs
-    if 'bin_conf' in config and 'n_bins' in overwrite_kwargs:
-        bin_conf = config['bin_conf']  # list of dicts
-        n_bins = overwrite_kwargs['n_bins']
+    if "bin_conf" in config and "n_bins" in overwrite_kwargs:
+        bin_conf = config["bin_conf"]  # list of dicts
+        n_bins = overwrite_kwargs["n_bins"]
         new_bin_conf = []
         for conf in bin_conf:
-            conf['n_bins'] = n_bins
+            conf["n_bins"] = n_bins
             new_bin_conf.append(conf)
-        config['bin_conf'] = new_bin_conf
+        config["bin_conf"] = new_bin_conf
 
     if mode == "train":
         orig_dataset = dataset
         if dataset == "mix":
-            dataset = 'nyu'  # Use nyu as default for mix. Dataset config is changed accordingly while loading the dataloader
+            dataset = (
+                "nyu"  # Use nyu as default for mix. Dataset config is changed accordingly while loading the dataloader
+            )
         if dataset is not None:
-            config['project'] = f"MonoDepth3-{orig_dataset}"  # Set project for wandb
+            config["project"] = f"MonoDepth3-{orig_dataset}"  # Set project for wandb
 
     if dataset is not None:
-        config['dataset'] = dataset
+        config["dataset"] = dataset
         config = {**DATASETS_CONFIG[dataset], **config}
-        
 
-    config['model'] = model_name
+    config["model"] = model_name
     typed_config = {k: infer_type(v) for k, v in config.items()}
     # add hostname to config
-    config['hostname'] = platform.node()
+    config["hostname"] = platform.node()
     return edict(typed_config)
 
 
 def change_dataset(config, new_dataset):
+    """Change the dataset in the configuration.
+
+    Args:
+        config (dict): The current configuration dictionary.
+        new_dataset (str): The name of the new dataset to load.
+
+    Returns:
+        dict: The updated configuration dictionary with the new dataset.
+    """
     config.update(DATASETS_CONFIG[new_dataset])
     return config

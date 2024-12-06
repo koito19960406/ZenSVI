@@ -8,11 +8,20 @@ import logging
 
 from . import vision_transformer as vits
 
-
 logger = logging.getLogger("dinov2")
 
 
 def build_model(args, only_teacher=False, img_size=224):
+    """Builds a model based on the provided arguments.
+
+    Args:
+        args: The arguments containing model configuration.
+        only_teacher (bool, optional): If True, only the teacher model is returned. Defaults to False.
+        img_size (int, optional): The size of the input images. Defaults to 224.
+
+    Returns:
+        tuple: A tuple containing the student model, teacher model, and the embedding dimension.
+    """
     args.arch = args.arch.removesuffix("_memeff")
     if "vit" in args.arch:
         vit_kwargs = dict(
@@ -38,4 +47,13 @@ def build_model(args, only_teacher=False, img_size=224):
 
 
 def build_model_from_cfg(cfg, only_teacher=False):
+    """Builds a model from the given configuration.
+
+    Args:
+        cfg: The configuration object containing model parameters.
+        only_teacher (bool, optional): If True, only the teacher model is returned. Defaults to False.
+
+    Returns:
+        tuple: A tuple containing the student model, teacher model, and the embedding dimension.
+    """
     return build_model(cfg.student, only_teacher=only_teacher, img_size=cfg.crops.global_crops_size)

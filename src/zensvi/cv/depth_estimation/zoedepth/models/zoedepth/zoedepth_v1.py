@@ -26,41 +26,83 @@ import itertools
 
 import torch
 import torch.nn as nn
-from ..depth_model import DepthModel
-from ..base_models.midas import MidasCore
+
 from ..base_models.depth_anything import DepthAnythingCore
+from ..depth_model import DepthModel
 from ..layers.attractor import AttractorLayer, AttractorLayerUnnormed
 from ..layers.dist_layers import ConditionalLogBinomial
-from ..layers.localbins_layers import (Projector, SeedBinRegressor,
-                                            SeedBinRegressorUnnormed)
+from ..layers.localbins_layers import Projector, SeedBinRegressor, SeedBinRegressorUnnormed
 from ..model_io import load_state_from_resource
 
 
 class ZoeDepth(DepthModel):
-    def __init__(self, core,  n_bins=64, bin_centers_type="softplus", bin_embedding_dim=128, min_depth=1e-3, max_depth=10,
-                 n_attractors=[16, 8, 4, 1], attractor_alpha=300, attractor_gamma=2, attractor_kind='sum', attractor_type='exp', min_temp=5, max_temp=50, train_midas=True,
-                 midas_lr_factor=10, encoder_lr_factor=10, pos_enc_lr_factor=10, inverse_midas=False, **kwargs):
-        """ZoeDepth model. This is the version of ZoeDepth that has a single metric head
+    """ZoeDepth model with a single metric head for depth estimation.
+
+    This model utilizes a core midas model to extract "relative" features and processes them to generate depth estimates.
+
+    Attributes:
+        core (DepthAnythingCore): The base midas model used for extraction of "relative" features.
+        n_bins (int): Number of bin centers.
+        bin_centers_type (str): Type of activation for bin centers. Options are "normed" or "softplus".
+        bin_embedding_dim (int): Dimension of the bin embedding.
+        min_depth (float): Lower bound for normed bin centers.
+        max_depth (float): Upper bound for normed bin centers.
+        n_attractors (List[int]): Number of bin attractors at decoder layers.
+        attractor_alpha (int): Proportional attractor strength.
+        attractor_gamma (int): Exponential attractor strength.
+        attractor_kind (str): Attraction aggregation method, either "sum" or "mean".
+        attractor_type (str): Type of attractor to use; either "inv" (Inverse attractor) or "exp" (Exponential attractor).
+        min_temp (int): Lower bound for temperature of output probability distribution.
+        max_temp (int): Upper bound for temperature of output probability distribution.
+        train_midas (bool): Whether to train the core midas model.
+        midas_lr_factor (int): Learning rate reduction factor for the base midas model except its encoder and positional encodings.
+        encoder_lr_factor (int): Learning rate reduction factor for the encoder in the midas model.
+        pos_enc_lr_factor (int): Learning rate reduction factor for positional encodings in the base midas model.
+    """
+
+    def __init__(
+        self,
+        core,
+        n_bins=64,
+        bin_centers_type="softplus",
+        bin_embedding_dim=128,
+        min_depth=1e-3,
+        max_depth=10,
+        n_attractors=[16, 8, 4, 1],
+        attractor_alpha=300,
+        attractor_gamma=2,
+        attractor_kind="sum",
+        attractor_type="exp",
+        min_temp=5,
+        max_temp=50,
+        train_midas=True,
+        midas_lr_factor=10,
+        encoder_lr_factor=10,
+        pos_enc_lr_factor=10,
+        inverse_midas=False,
+        **kwargs,
+    ):
+        """Initializes the ZoeDepth model.
 
         Args:
-            core (models.base_models.midas.MidasCore): The base midas model that is used for extraction of "relative" features
+            core (DepthAnythingCore): The base midas model used for extraction of "relative" features.
             n_bins (int, optional): Number of bin centers. Defaults to 64.
-            bin_centers_type (str, optional): "normed" or "softplus". Activation type used for bin centers. For "normed" bin centers, linear normalization trick is applied. This results in bounded bin centers.
-                                               For "softplus", softplus activation is used and thus are unbounded. Defaults to "softplus".
-            bin_embedding_dim (int, optional): bin embedding dimension. Defaults to 128.
+            bin_centers_type (str, optional): Type of activation for bin centers. Options are "normed" or "softplus". Defaults to "softplus".
+            bin_embedding_dim (int, optional): Dimension of the bin embedding. Defaults to 128.
             min_depth (float, optional): Lower bound for normed bin centers. Defaults to 1e-3.
             max_depth (float, optional): Upper bound for normed bin centers. Defaults to 10.
             n_attractors (List[int], optional): Number of bin attractors at decoder layers. Defaults to [16, 8, 4, 1].
-            attractor_alpha (int, optional): Proportional attractor strength. Refer to models.layers.attractor for more details. Defaults to 300.
-            attractor_gamma (int, optional): Exponential attractor strength. Refer to models.layers.attractor for more details. Defaults to 2.
-            attractor_kind (str, optional): Attraction aggregation "sum" or "mean". Defaults to 'sum'.
-            attractor_type (str, optional): Type of attractor to use; "inv" (Inverse attractor) or "exp" (Exponential attractor). Defaults to 'exp'.
+            attractor_alpha (int, optional): Proportional attractor strength. Defaults to 300.
+            attractor_gamma (int, optional): Exponential attractor strength. Defaults to 2.
+            attractor_kind (str, optional): Attraction aggregation method, either "sum" or "mean". Defaults to 'sum'.
+            attractor_type (str, optional): Type of attractor to use; either "inv" (Inverse attractor) or "exp" (Exponential attractor). Defaults to 'exp'.
             min_temp (int, optional): Lower bound for temperature of output probability distribution. Defaults to 5.
             max_temp (int, optional): Upper bound for temperature of output probability distribution. Defaults to 50.
-            train_midas (bool, optional): Whether to train "core", the base midas model. Defaults to True.
-            midas_lr_factor (int, optional): Learning rate reduction factor for base midas model except its encoder and positional encodings. Defaults to 10.
-            encoder_lr_factor (int, optional): Learning rate reduction factor for the encoder in midas model. Defaults to 10.
+            train_midas (bool, optional): Whether to train the core midas model. Defaults to True.
+            midas_lr_factor (int, optional): Learning rate reduction factor for the base midas model except its encoder and positional encodings. Defaults to 10.
+            encoder_lr_factor (int, optional): Learning rate reduction factor for the encoder in the midas model. Defaults to 10.
             pos_enc_lr_factor (int, optional): Learning rate reduction factor for positional encodings in the base midas model. Defaults to 10.
+            inverse_midas (bool, optional): Whether to invert the midas depth map. Defaults to False.
         """
         super().__init__()
 
@@ -77,17 +119,13 @@ class ZoeDepth(DepthModel):
         self.inverse_midas = inverse_midas
 
         if self.encoder_lr_factor <= 0:
-            self.core.freeze_encoder(
-                freeze_rel_pos=self.pos_enc_lr_factor <= 0)
+            self.core.freeze_encoder(freeze_rel_pos=self.pos_enc_lr_factor <= 0)
 
         N_MIDAS_OUT = 32
         btlnck_features = self.core.output_channels[0]
         num_out_features = self.core.output_channels[1:]
 
-        # print('core output channels:', self.core.output_channels)
-        
-        self.conv2 = nn.Conv2d(btlnck_features, btlnck_features,
-                               kernel_size=1, stride=1, padding=0)  # btlnck conv
+        self.conv2 = nn.Conv2d(btlnck_features, btlnck_features, kernel_size=1, stride=1, padding=0)  # bottleneck conv
 
         if bin_centers_type == "normed":
             SeedBinRegressorLayer = SeedBinRegressor
@@ -102,57 +140,62 @@ class ZoeDepth(DepthModel):
             SeedBinRegressorLayer = SeedBinRegressorUnnormed
             Attractor = AttractorLayer
         else:
-            raise ValueError(
-                "bin_centers_type should be one of 'normed', 'softplus', 'hybrid1', 'hybrid2'")
+            raise ValueError("bin_centers_type should be one of 'normed', 'softplus', 'hybrid1', 'hybrid2'")
 
         self.seed_bin_regressor = SeedBinRegressorLayer(
-            btlnck_features, n_bins=n_bins, min_depth=min_depth, max_depth=max_depth)
+            btlnck_features, n_bins=n_bins, min_depth=min_depth, max_depth=max_depth
+        )
         self.seed_projector = Projector(btlnck_features, bin_embedding_dim)
-        self.projectors = nn.ModuleList([
-            Projector(num_out, bin_embedding_dim)
-            for num_out in num_out_features
-        ])
-        self.attractors = nn.ModuleList([
-            Attractor(bin_embedding_dim, n_bins, n_attractors=n_attractors[i], min_depth=min_depth, max_depth=max_depth,
-                      alpha=attractor_alpha, gamma=attractor_gamma, kind=attractor_kind, attractor_type=attractor_type)
-            for i in range(len(num_out_features))
-        ])
+        self.projectors = nn.ModuleList([Projector(num_out, bin_embedding_dim) for num_out in num_out_features])
+        self.attractors = nn.ModuleList(
+            [
+                Attractor(
+                    bin_embedding_dim,
+                    n_bins,
+                    n_attractors=n_attractors[i],
+                    min_depth=min_depth,
+                    max_depth=max_depth,
+                    alpha=attractor_alpha,
+                    gamma=attractor_gamma,
+                    kind=attractor_kind,
+                    attractor_type=attractor_type,
+                )
+                for i in range(len(num_out_features))
+            ]
+        )
 
         last_in = N_MIDAS_OUT + 1  # +1 for relative depth
 
         # use log binomial instead of softmax
         self.conditional_log_binomial = ConditionalLogBinomial(
-            last_in, bin_embedding_dim, n_classes=n_bins, min_temp=min_temp, max_temp=max_temp)
+            last_in,
+            bin_embedding_dim,
+            n_classes=n_bins,
+            min_temp=min_temp,
+            max_temp=max_temp,
+        )
 
     def forward(self, x, return_final_centers=False, denorm=False, return_probs=False, **kwargs):
-        """
-        Args:
-            x (torch.Tensor): Input image tensor of shape (B, C, H, W)
-            return_final_centers (bool, optional): Whether to return the final bin centers. Defaults to False.
-            denorm (bool, optional): Whether to denormalize the input image. This reverses ImageNet normalization as midas normalization is different. Defaults to False.
-            return_probs (bool, optional): Whether to return the output probability distribution. Defaults to False.
-        
-        Returns:
-            dict: Dictionary containing the following keys:
-                - rel_depth (torch.Tensor): Relative depth map of shape (B, H, W)
-                - metric_depth (torch.Tensor): Metric depth map of shape (B, 1, H, W)
-                - bin_centers (torch.Tensor): Bin centers of shape (B, n_bins). Present only if return_final_centers is True
-                - probs (torch.Tensor): Output probability distribution of shape (B, n_bins, H, W). Present only if return_probs is True
+        """Forward pass for the ZoeDepth model.
 
+        Args:
+            x (torch.Tensor): Input tensor of shape (B, C, H, W).
+            return_final_centers (bool, optional): Whether to return final bin centers. Defaults to False.
+            denorm (bool, optional): Whether to denormalize the output. Defaults to False.
+            return_probs (bool, optional): Whether to return the output probability distribution. Defaults to False.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            dict: A dictionary containing:
+                - metric_depth (torch.Tensor): Metric depth map of shape (B, 1, H, W).
+                - bin_centers (torch.Tensor, optional): Bin centers of shape (B, n_bins) if return_final_centers is True.
+                - probs (torch.Tensor, optional): Output probability distribution of shape (B, n_bins, H, W) if return_probs is True.
         """
-        # print('input shape', x.shape)
-        
         b, c, h, w = x.shape
-        # print("input shape:", x.shape)
         self.orig_input_width = w
         self.orig_input_height = h
         rel_depth, out = self.core(x, denorm=denorm, return_rel_depth=True)
-        # print("output shapes", rel_depth.shape, out.shape)
-        # print('rel_depth shape:', rel_depth.shape)
-        # print('out type:', type(out))
-        # for k in range(len(out)):
-        #     print(k, out[k].shape)
-        
+
         outconv_activation = out[0]
         btlnck = out[1]
         x_blocks = out[2:]
@@ -161,9 +204,8 @@ class ZoeDepth(DepthModel):
         x = x_d0
         _, seed_b_centers = self.seed_bin_regressor(x)
 
-        if self.bin_centers_type == 'normed' or self.bin_centers_type == 'hybrid2':
-            b_prev = (seed_b_centers - self.min_depth) / \
-                (self.max_depth - self.min_depth)
+        if self.bin_centers_type == "normed" or self.bin_centers_type == "hybrid2":
+            b_prev = (seed_b_centers - self.min_depth) / (self.max_depth - self.min_depth)
         else:
             b_prev = seed_b_centers
 
@@ -172,8 +214,7 @@ class ZoeDepth(DepthModel):
         # unroll this loop for better performance
         for projector, attractor, x in zip(self.projectors, self.attractors, x_blocks):
             b_embedding = projector(x)
-            b, b_centers = attractor(
-                b_embedding, b_prev, prev_b_embedding, interpolate=True)
+            b, b_centers = attractor(b_embedding, b_prev, prev_b_embedding, interpolate=True)
             b_prev = b.clone()
             prev_b_embedding = b_embedding.clone()
 
@@ -182,77 +223,100 @@ class ZoeDepth(DepthModel):
         if self.inverse_midas:
             # invert depth followed by normalization
             rel_depth = 1.0 / (rel_depth + 1e-6)
-            rel_depth = (rel_depth - rel_depth.min()) / \
-                (rel_depth.max() - rel_depth.min())
+            rel_depth = (rel_depth - rel_depth.min()) / (rel_depth.max() - rel_depth.min())
         # concat rel depth with last. First interpolate rel depth to last size
         rel_cond = rel_depth.unsqueeze(1)
-        rel_cond = nn.functional.interpolate(
-            rel_cond, size=last.shape[2:], mode='bilinear', align_corners=True)
+        rel_cond = nn.functional.interpolate(rel_cond, size=last.shape[2:], mode="bilinear", align_corners=True)
         last = torch.cat([last, rel_cond], dim=1)
 
-        b_embedding = nn.functional.interpolate(
-            b_embedding, last.shape[-2:], mode='bilinear', align_corners=True)
+        b_embedding = nn.functional.interpolate(b_embedding, last.shape[-2:], mode="bilinear", align_corners=True)
         x = self.conditional_log_binomial(last, b_embedding)
 
-        # Now depth value is Sum px * cx , where cx are bin_centers from the last bin tensor
-        # print(x.shape, b_centers.shape)
-        b_centers = nn.functional.interpolate(
-            b_centers, x.shape[-2:], mode='bilinear', align_corners=True)
+        b_centers = nn.functional.interpolate(b_centers, x.shape[-2:], mode="bilinear", align_corners=True)
         out = torch.sum(x * b_centers, dim=1, keepdim=True)
 
         # Structure output dict
         output = dict(metric_depth=out)
         if return_final_centers or return_probs:
-            output['bin_centers'] = b_centers
+            output["bin_centers"] = b_centers
 
         if return_probs:
-            output['probs'] = x
+            output["probs"] = x
 
         return output
 
     def get_lr_params(self, lr):
-        """
-        Learning rate configuration for different layers of the model
+        """Configures learning rates for different layers of the model.
+
         Args:
-            lr (float) : Base learning rate
+            lr (float): Base learning rate.
+
         Returns:
-            list : list of parameters to optimize and their learning rates, in the format required by torch optimizers.
+            list: List of parameters to optimize and their learning rates, in the format required by torch optimizers.
         """
         param_conf = []
         if self.train_midas:
             if self.encoder_lr_factor > 0:
-                param_conf.append({'params': self.core.get_enc_params_except_rel_pos(
-                ), 'lr': lr / self.encoder_lr_factor})
+                param_conf.append(
+                    {
+                        "params": self.core.get_enc_params_except_rel_pos(),
+                        "lr": lr / self.encoder_lr_factor,
+                    }
+                )
 
             if self.pos_enc_lr_factor > 0:
                 param_conf.append(
-                    {'params': self.core.get_rel_pos_params(), 'lr': lr / self.pos_enc_lr_factor})
+                    {
+                        "params": self.core.get_rel_pos_params(),
+                        "lr": lr / self.pos_enc_lr_factor,
+                    }
+                )
 
-            # midas_params = self.core.core.scratch.parameters()
             midas_params = self.core.core.depth_head.parameters()
             midas_lr_factor = self.midas_lr_factor
-            param_conf.append(
-                {'params': midas_params, 'lr': lr / midas_lr_factor})
+            param_conf.append({"params": midas_params, "lr": lr / midas_lr_factor})
 
         remaining_modules = []
         for name, child in self.named_children():
-            if name != 'core':
+            if name != "core":
                 remaining_modules.append(child)
-        remaining_params = itertools.chain(
-            *[child.parameters() for child in remaining_modules])
+        remaining_params = itertools.chain(*[child.parameters() for child in remaining_modules])
 
-        param_conf.append({'params': remaining_params, 'lr': lr})
+        param_conf.append({"params": remaining_params, "lr": lr})
 
         return param_conf
 
     @staticmethod
-    def build(midas_model_type="DPT_BEiT_L_384", pretrained_resource=None, use_pretrained_midas=False, train_midas=False, freeze_midas_bn=True, **kwargs):
-        # core = MidasCore.build(midas_model_type=midas_model_type, use_pretrained_midas=use_pretrained_midas,
-        #                        train_midas=train_midas, fetch_features=True, freeze_bn=freeze_midas_bn, **kwargs)
-        
-        core = DepthAnythingCore.build(midas_model_type=midas_model_type, use_pretrained_midas=use_pretrained_midas,
-                                       train_midas=train_midas, fetch_features=True, freeze_bn=freeze_midas_bn, **kwargs)
-        
+    def build(
+        midas_model_type="DPT_BEiT_L_384",
+        pretrained_resource=None,
+        use_pretrained_midas=False,
+        train_midas=False,
+        freeze_midas_bn=True,
+        **kwargs,
+    ):
+        """Builds the ZoeDepth model.
+
+        Args:
+            midas_model_type (str, optional): Type of midas model to use. Defaults to "DPT_BEiT_L_384".
+            pretrained_resource (str, optional): Path to pretrained model resource. Defaults to None.
+            use_pretrained_midas (bool, optional): Whether to use a pretrained midas model. Defaults to False.
+            train_midas (bool, optional): Whether to train the midas model. Defaults to False.
+            freeze_midas_bn (bool, optional): Whether to freeze batch normalization layers in the midas model. Defaults to True.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            ZoeDepth: An instance of the ZoeDepth model.
+        """
+        core = DepthAnythingCore.build(
+            midas_model_type=midas_model_type,
+            use_pretrained_midas=use_pretrained_midas,
+            train_midas=train_midas,
+            fetch_features=True,
+            freeze_bn=freeze_midas_bn,
+            **kwargs,
+        )
+
         model = ZoeDepth(core, **kwargs)
         if pretrained_resource:
             assert isinstance(pretrained_resource, str), "pretrained_resource must be a string"
@@ -261,4 +325,12 @@ class ZoeDepth(DepthModel):
 
     @staticmethod
     def build_from_config(config):
+        """Builds the ZoeDepth model from a configuration dictionary.
+
+        Args:
+            config (dict): Configuration dictionary containing model parameters.
+
+        Returns:
+            ZoeDepth: An instance of the ZoeDepth model.
+        """
         return ZoeDepth.build(**config)

@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v1.0.0 (TBD)
+- **AMSDownloader Introduced**: New downloader for Amsterdam Street View Images (SVI). Usage: `from zensvi.download import AMSDownloader`.
+- **PointCloudProcessor Added**: New module to convert Street View Images to point clouds. Usage: `from zensvi.transform import PointCloudProcessor`.
+- **Embeddings Module Added**: New functionality for generating image embeddings. Usage: `from zensvi.cv import Embeddings`.
+
+## v0.12.0 (15/05/2024)
+- **ClassifierPerception Introduced**: New classifier for perception-based image analysis. Usage: `from zensvi.cv import ClassifierPerception`.
+
 ## v0.11.0 (27/04/2024)
 - **Metadata Module Added**: New module for metadata processing. Usage: `from zensvi import metadata`.
 - **ClassifierGlare, ClassifierLighting, ClassifierPanorama, ClassifierPlatform, ClassifierQuality, ClassifierReflection, ClassifierViewDirection, ClassifierWeather Introduced**: New classifiers for various image quality attributes. Usage: `from zensvi.cv import ClassifierGlare, ClassifierLighting, ClassifierPanorama, ClassifierPlatform, ClassifierQuality, ClassifierReflection, ClassifierViewDirection, ClassifierWeather`.

@@ -36,24 +36,59 @@ import torch.nn as nn
 import torch.optim as optim
 import wandb
 from tqdm import tqdm
-
 from zoedepth.utils.config import flatten
 from zoedepth.utils.misc import RunningAverageDict, colorize, colors
 
 
 def is_rank_zero(args):
+    """Check if the current process is the rank zero process.
+
+    Args:
+        args: The arguments containing rank information.
+
+    Returns:
+        bool: True if the rank is zero, False otherwise.
+    """
     return args.rank == 0
 
 
 class BaseTrainer:
+    """Base Trainer class for training a model.
+
+    This class provides the necessary methods and attributes to train a depth estimation model.
+
+    Args:
+        config (dict): Configuration object containing training parameters.
+        model (torch.nn.Module): The model to be trained.
+        train_loader (torch.utils.data.DataLoader): DataLoader for the training dataset.
+        test_loader (torch.utils.data.DataLoader, optional): DataLoader for the testing dataset. Defaults to None.
+        device (torch.device, optional): Device to run the model on. Defaults to None, which will use CUDA if available.
+
+    Attributes:
+        config (dict): Configuration parameters for training.
+        metric_criterion (str): The metric criterion used for evaluation.
+        device (torch.device): The device on which the model is trained.
+        model (torch.nn.Module): The model to be trained.
+        train_loader (torch.utils.data.DataLoader): DataLoader for the training dataset.
+        test_loader (torch.utils.data.DataLoader, optional): DataLoader for the testing dataset.
+        optimizer (torch.optim.Optimizer): The optimizer for training the model.
+        scheduler (torch.optim.lr_scheduler): The learning rate scheduler for the optimizer.
+    """
+
     def __init__(self, config, model, train_loader, test_loader=None, device=None):
-        """ Base Trainer class for training a model."""
-        
+        """Initializes the BaseTrainer with the provided configuration, model, and data loaders.
+
+        Args:
+            config (dict): Configuration object containing training parameters.
+            model (torch.nn.Module): The model to be trained.
+            train_loader (torch.utils.data.DataLoader): DataLoader for the training dataset.
+            test_loader (torch.utils.data.DataLoader, optional): DataLoader for the testing dataset. Defaults to None.
+            device (torch.device, optional): Device to run the model on. Defaults to None, which will use CUDA if available.
+        """
         self.config = config
         self.metric_criterion = "abs_rel"
         if device is None:
-            device = torch.device(
-                'cuda') if torch.cuda.is_available() else torch.device('cpu')
+            device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         self.device = device
         self.model = model
         self.train_loader = train_loader
@@ -62,6 +97,15 @@ class BaseTrainer:
         self.scheduler = self.init_scheduler()
 
     def resize_to_target(self, prediction, target):
+        """Resize the prediction to match the target dimensions.
+
+        Args:
+            prediction: The predicted output from the model.
+            target: The ground truth target output.
+
+        Returns:
+            Tensor: Resized prediction tensor.
+        """
         if prediction.shape[2:] != target.shape[-2:]:
             prediction = nn.functional.interpolate(
                 prediction, size=target.shape[-2:], mode="bilinear", align_corners=True
@@ -69,6 +113,15 @@ class BaseTrainer:
         return prediction
 
     def load_ckpt(self, checkpoint_dir="./checkpoints", ckpt_type="best"):
+        """Load model weights from a checkpoint.
+
+        Args:
+            checkpoint_dir (str): Directory to load checkpoints from (default: "./checkpoints").
+            ckpt_type (str): Type of checkpoint to load (default: "best").
+
+        Returns:
+            None
+        """
         import glob
         import os
 
@@ -78,8 +131,7 @@ class BaseTrainer:
             checkpoint = self.config.checkpoint
         elif hasattr(self.config, "ckpt_pattern"):
             pattern = self.config.ckpt_pattern
-            matches = glob.glob(os.path.join(
-                checkpoint_dir, f"*{pattern}*{ckpt_type}*"))
+            matches = glob.glob(os.path.join(checkpoint_dir, f"*{pattern}*{ckpt_type}*"))
             if not (len(matches) > 0):
                 raise ValueError(f"No matches found for the pattern {pattern}")
             checkpoint = matches[0]
@@ -89,97 +141,198 @@ class BaseTrainer:
         # TODO : Resuming training is not properly supported in this repo. Implement loading / saving of optimizer and scheduler to support it.
         print("Loaded weights from {0}".format(checkpoint))
         warnings.warn(
-            "Resuming training is not properly supported in this repo. Implement loading / saving of optimizer and scheduler to support it.")
+            "Resuming training is not properly supported in this repo. Implement loading / saving of optimizer and scheduler to support it."
+        )
         self.model = model
 
     def init_optimizer(self):
+        """Initialize the optimizer for the model.
+
+        Returns:
+            Optimizer: The initialized AdamW optimizer.
+        """
         m = self.model.module if self.config.multigpu else self.model
 
         if self.config.same_lr:
             print("Using same LR")
-            if hasattr(m, 'core'):
+            if hasattr(m, "core"):
                 m.core.unfreeze()
             params = self.model.parameters()
         else:
             print("Using diff LR")
-            if not hasattr(m, 'get_lr_params'):
+            if not hasattr(m, "get_lr_params"):
                 raise NotImplementedError(
-                    f"Model {m.__class__.__name__} does not implement get_lr_params. Please implement it or use the same LR for all parameters.")
+                    f"Model {m.__class__.__name__} does not implement get_lr_params. Please implement it or use the same LR for all parameters."
+                )
 
             params = m.get_lr_params(self.config.lr)
 
         return optim.AdamW(params, lr=self.config.lr, weight_decay=self.config.wd)
 
     def init_scheduler(self):
-        lrs = [l['lr'] for l in self.optimizer.param_groups]
-        return optim.lr_scheduler.OneCycleLR(self.optimizer, lrs, epochs=self.config.epochs, steps_per_epoch=len(self.train_loader),
-                                             cycle_momentum=self.config.cycle_momentum,
-                                             base_momentum=0.85, max_momentum=0.95, div_factor=self.config.div_factor, final_div_factor=self.config.final_div_factor, pct_start=self.config.pct_start, three_phase=self.config.three_phase)
+        """Initialize the learning rate scheduler.
+
+        Returns:
+            Scheduler: The initialized OneCycleLR scheduler.
+        """
+        lrs = [params["lr"] for params in self.optimizer.param_groups]
+        return optim.lr_scheduler.OneCycleLR(
+            self.optimizer,
+            lrs,
+            epochs=self.config.epochs,
+            steps_per_epoch=len(self.train_loader),
+            cycle_momentum=self.config.cycle_momentum,
+            base_momentum=0.85,
+            max_momentum=0.95,
+            div_factor=self.config.div_factor,
+            final_div_factor=self.config.final_div_factor,
+            pct_start=self.config.pct_start,
+            three_phase=self.config.three_phase,
+        )
 
     def train_on_batch(self, batch, train_step):
+        """Train the model on a single batch of data.
+
+        Args:
+            batch: A batch of training data.
+            train_step: The current training step.
+
+        Returns:
+            dict: A dictionary of loss values.
+        """
         raise NotImplementedError
 
     def validate_on_batch(self, batch, val_step):
+        """Validate the model on a single batch of data.
+
+        Args:
+            batch: A batch of validation data.
+            val_step: The current validation step.
+
+        Returns:
+            dict: A dictionary of metrics and loss values.
+        """
         raise NotImplementedError
 
     def raise_if_nan(self, losses):
+        """Raise an error if any loss value is NaN.
+
+        Args:
+            losses: A dictionary of loss values.
+
+        Returns:
+            None
+        """
         for key, value in losses.items():
             if torch.isnan(value):
                 raise ValueError(f"{key} is NaN, Stopping training")
 
     @property
     def iters_per_epoch(self):
+        """Get the number of iterations per epoch.
+
+        Returns:
+            int: The number of iterations in the training loader.
+        """
         return len(self.train_loader)
 
     @property
     def total_iters(self):
+        """Get the total number of iterations for training.
+
+        Returns:
+            int: Total iterations calculated as epochs * iterations per epoch.
+        """
         return self.config.epochs * self.iters_per_epoch
 
     def should_early_stop(self):
-        if self.config.get('early_stop', False) and self.step > self.config.early_stop:
+        """Check if early stopping criteria are met.
+
+        Returns:
+            bool: True if early stopping is required, False otherwise.
+        """
+        if self.config.get("early_stop", False) and self.step > self.config.early_stop:
             return True
 
     def train(self):
+        """Train the model over multiple epochs.
+
+        Returns:
+            None
+        """
         print(f"Training {self.config.name}")
         if self.config.uid is None:
-            self.config.uid = str(uuid.uuid4()).split('-')[-1]
+            self.config.uid = str(uuid.uuid4()).split("-")[-1]
         run_id = f"{dt.now().strftime('%d-%h_%H-%M')}-{self.config.uid}"
         self.config.run_id = run_id
         self.config.experiment_id = f"{self.config.name}{self.config.version_name}_{run_id}"
-        self.should_write = ((not self.config.distributed)
-                             or self.config.rank == 0)
+        self.should_write = (not self.config.distributed) or self.config.rank == 0
         self.should_log = self.should_write  # and logging
         if self.should_log:
-            tags = self.config.tags.split(
-                ',') if self.config.tags != '' else None
-            wandb.init(project=self.config.project, name=self.config.experiment_id, config=flatten(self.config), dir=self.config.root,
-                       tags=tags, notes=self.config.notes, settings=wandb.Settings(start_method="fork"))
+            tags = self.config.tags.split(",") if self.config.tags != "" else None
+            wandb.init(
+                project=self.config.project,
+                name=self.config.experiment_id,
+                config=flatten(self.config),
+                dir=self.config.root,
+                tags=tags,
+                notes=self.config.notes,
+                settings=wandb.Settings(start_method="fork"),
+            )
 
         self.model.train()
         self.step = 0
         best_loss = np.inf
         validate_every = int(self.config.validate_every * self.iters_per_epoch)
 
-
         if self.config.prefetch:
 
-            for i, batch in tqdm(enumerate(self.train_loader), desc=f"Prefetching...",
-                                 total=self.iters_per_epoch) if is_rank_zero(self.config) else enumerate(self.train_loader):
+            for i, batch in (
+                tqdm(
+                    enumerate(self.train_loader),
+                    desc="Prefetching...",
+                    total=self.iters_per_epoch,
+                )
+                if is_rank_zero(self.config)
+                else enumerate(self.train_loader)
+            ):
                 pass
 
         losses = {}
-        def stringify_losses(L): return "; ".join(map(
-            lambda kv: f"{colors.fg.purple}{kv[0]}{colors.reset}: {round(kv[1].item(),3):.4e}", L.items()))
+
+        def stringify_losses(L):
+            """Convert loss dictionary to a string representation.
+
+            Args:
+                L: A dictionary of loss values.
+
+            Returns:
+                str: A string representation of the losses.
+            """
+            return "; ".join(
+                map(
+                    lambda kv: f"{colors.fg.purple}{kv[0]}{colors.reset}: {round(kv[1].item(),3):.4e}",
+                    L.items(),
+                )
+            )
+
         for epoch in range(self.config.epochs):
             if self.should_early_stop():
                 break
-            
+
             self.epoch = epoch
-            ################################# Train loop ##########################################################
+            # Train loop ##########################################################
             if self.should_log:
                 wandb.log({"Epoch": epoch}, step=self.step)
-            pbar = tqdm(enumerate(self.train_loader), desc=f"Epoch: {epoch + 1}/{self.config.epochs}. Loop: Train",
-                        total=self.iters_per_epoch) if is_rank_zero(self.config) else enumerate(self.train_loader)
+            pbar = (
+                tqdm(
+                    enumerate(self.train_loader),
+                    desc=f"Epoch: {epoch + 1}/{self.config.epochs}. Loop: Train",
+                    total=self.iters_per_epoch,
+                )
+                if is_rank_zero(self.config)
+                else enumerate(self.train_loader)
+            )
             for i, batch in pbar:
                 if self.should_early_stop():
                     print("Early stopping")
@@ -191,38 +344,43 @@ class BaseTrainer:
                 self.raise_if_nan(losses)
                 if is_rank_zero(self.config) and self.config.print_losses:
                     pbar.set_description(
-                        f"Epoch: {epoch + 1}/{self.config.epochs}. Loop: Train. Losses: {stringify_losses(losses)}")
+                        f"Epoch: {epoch + 1}/{self.config.epochs}. Loop: Train. Losses: {stringify_losses(losses)}"
+                    )
                 self.scheduler.step()
 
                 if self.should_log and self.step % 50 == 0:
-                    wandb.log({f"Train/{name}": loss.item()
-                              for name, loss in losses.items()}, step=self.step)
+                    wandb.log(
+                        {f"Train/{name}": loss.item() for name, loss in losses.items()},
+                        step=self.step,
+                    )
 
                 self.step += 1
 
-                ########################################################################################################
+                # #######################################################################################################
 
                 if self.test_loader:
                     if (self.step % validate_every) == 0:
                         self.model.eval()
                         if self.should_write:
-                            self.save_checkpoint(
-                                f"{self.config.experiment_id}_latest.pt")
+                            self.save_checkpoint(f"{self.config.experiment_id}_latest.pt")
 
-                        ################################# Validation loop ##################################################
+                        # Validation loop ##################################################
                         # validate on the entire validation set in every process but save only from rank 0, I know, inefficient, but avoids divergence of processes
                         metrics, test_losses = self.validate()
                         # print("Validated: {}".format(metrics))
                         if self.should_log:
                             wandb.log(
-                                {f"Test/{name}": tloss for name, tloss in test_losses.items()}, step=self.step)
+                                {f"Test/{name}": tloss for name, tloss in test_losses.items()},
+                                step=self.step,
+                            )
 
-                            wandb.log({f"Metrics/{k}": v for k,
-                                      v in metrics.items()}, step=self.step)
+                            wandb.log(
+                                {f"Metrics/{k}": v for k, v in metrics.items()},
+                                step=self.step,
+                            )
 
                             if (metrics[self.metric_criterion] < best_loss) and self.should_write:
-                                self.save_checkpoint(
-                                    f"{self.config.experiment_id}_best.pt")
+                                self.save_checkpoint(f"{self.config.experiment_id}_best.pt")
                                 best_loss = metrics[self.metric_criterion]
 
                         self.model.train()
@@ -232,7 +390,7 @@ class BaseTrainer:
                         # print(f"Validated: {metrics} on device {self.config.rank}")
 
                 # print(f"Finished step {self.step} on device {self.config.rank}")
-                #################################################################################################
+                # ################################################################################################
 
         # Save / validate at the end
         self.step += 1  # log as final point
@@ -240,27 +398,37 @@ class BaseTrainer:
         self.save_checkpoint(f"{self.config.experiment_id}_latest.pt")
         if self.test_loader:
 
-            ################################# Validation loop ##################################################
+            # Validation loop ##################################################
             metrics, test_losses = self.validate()
             # print("Validated: {}".format(metrics))
             if self.should_log:
-                wandb.log({f"Test/{name}": tloss for name,
-                          tloss in test_losses.items()}, step=self.step)
-                wandb.log({f"Metrics/{k}": v for k,
-                          v in metrics.items()}, step=self.step)
+                wandb.log(
+                    {f"Test/{name}": tloss for name, tloss in test_losses.items()},
+                    step=self.step,
+                )
+                wandb.log({f"Metrics/{k}": v for k, v in metrics.items()}, step=self.step)
 
                 if (metrics[self.metric_criterion] < best_loss) and self.should_write:
-                    self.save_checkpoint(
-                        f"{self.config.experiment_id}_best.pt")
+                    self.save_checkpoint(f"{self.config.experiment_id}_best.pt")
                     best_loss = metrics[self.metric_criterion]
 
         self.model.train()
 
     def validate(self):
+        """Validate the model on the test dataset.
+
+        Returns:
+            tuple: A tuple containing average metrics and average losses.
+        """
         with torch.no_grad():
             losses_avg = RunningAverageDict()
             metrics_avg = RunningAverageDict()
-            for i, batch in tqdm(enumerate(self.test_loader), desc=f"Epoch: {self.epoch + 1}/{self.config.epochs}. Loop: Validation", total=len(self.test_loader), disable=not is_rank_zero(self.config)):
+            for i, batch in tqdm(
+                enumerate(self.test_loader),
+                desc=f"Epoch: {self.epoch + 1}/{self.config.epochs}. Loop: Validation",
+                total=len(self.test_loader),
+                disable=not is_rank_zero(self.config),
+            ):
                 metrics, losses = self.validate_on_batch(batch, val_step=i)
 
                 if losses:
@@ -271,6 +439,14 @@ class BaseTrainer:
             return metrics_avg.get_value(), losses_avg.get_value()
 
     def save_checkpoint(self, filename):
+        """Save the model checkpoint to a file.
+
+        Args:
+            filename (str): The name of the file to save the checkpoint.
+
+        Returns:
+            None
+        """
         if not self.should_write:
             return
         root = self.config.save_dir
@@ -283,10 +459,35 @@ class BaseTrainer:
             {
                 "model": m.state_dict(),
                 "optimizer": None,  # TODO : Change to self.optimizer.state_dict() if resume support is needed, currently None to reduce file size
-                "epoch": self.epoch
-            }, fpath)
+                "epoch": self.epoch,
+            },
+            fpath,
+        )
 
-    def log_images(self, rgb: Dict[str, list] = {}, depth: Dict[str, list] = {}, scalar_field: Dict[str, list] = {}, prefix="", scalar_cmap="jet", min_depth=None, max_depth=None):
+    def log_images(
+        self,
+        rgb: Dict[str, list] = {},
+        depth: Dict[str, list] = {},
+        scalar_field: Dict[str, list] = {},
+        prefix="",
+        scalar_cmap="jet",
+        min_depth=None,
+        max_depth=None,
+    ):
+        """Log images to WandB.
+
+        Args:
+            rgb (Dict[str, list]): Dictionary of RGB images (default: {}).
+            depth (Dict[str, list]): Dictionary of depth images (default: {}).
+            scalar_field (Dict[str, list]): Dictionary of scalar field images (default: {}).
+            prefix (str): Prefix for the logged images (default: "").
+            scalar_cmap (str): Colormap for scalar fields (default: "jet").
+            min_depth: Minimum depth value for colorization (default: None).
+            max_depth: Maximum depth value for colorization (default: None).
+
+        Returns:
+            None
+        """
         if not self.should_log:
             return
 
@@ -298,16 +499,21 @@ class BaseTrainer:
                 min_depth = None
                 max_depth = None
 
-        depth = {k: colorize(v, vmin=min_depth, vmax=max_depth)
-                 for k, v in depth.items()}
-        scalar_field = {k: colorize(
-            v, vmin=None, vmax=None, cmap=scalar_cmap) for k, v in scalar_field.items()}
+        depth = {k: colorize(v, vmin=min_depth, vmax=max_depth) for k, v in depth.items()}
+        scalar_field = {k: colorize(v, vmin=None, vmax=None, cmap=scalar_cmap) for k, v in scalar_field.items()}
         images = {**rgb, **depth, **scalar_field}
-        wimages = {
-            prefix+"Predictions": [wandb.Image(v, caption=k) for k, v in images.items()]}
+        wimages = {prefix + "Predictions": [wandb.Image(v, caption=k) for k, v in images.items()]}
         wandb.log(wimages, step=self.step)
 
     def log_line_plot(self, data):
+        """Log a line plot to WandB.
+
+        Args:
+            data: Data to plot.
+
+        Returns:
+            None
+        """
         if not self.should_log:
             return
 
@@ -317,10 +523,22 @@ class BaseTrainer:
         plt.close()
 
     def log_bar_plot(self, title, labels, values):
+        """Log a bar plot to WandB.
+
+        Args:
+            title (str): Title of the bar plot.
+            labels (list): List of labels for the bars.
+            values (list): List of values for the bars.
+
+        Returns:
+            None
+        """
         if not self.should_log:
             return
 
         data = [[label, val] for (label, val) in zip(labels, values)]
         table = wandb.Table(data=data, columns=["label", "value"])
-        wandb.log({title: wandb.plot.bar(table, "label",
-                  "value", title=title)}, step=self.step)
+        wandb.log(
+            {title: wandb.plot.bar(table, "label", "value", title=title)},
+            step=self.step,
+        )
