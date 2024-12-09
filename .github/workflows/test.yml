@@ -59,7 +59,7 @@ jobs:
     - name: Run tests with coverage
       run: |
         poetry run pytest \
-          --cov=src/zensvi --cov-report=xml -s
+          --cov=src/zensvi --cov-report=xml:coverage-service.xml
       env:
         MLY_API_KEY: ${{ secrets.MLY_API_KEY }}
         GSV_API_KEY: ${{ secrets.GSV_API_KEY }}
