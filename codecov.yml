@@ -10,17 +10,20 @@ coverage:
         threshold: 1%
 
 ignore:
-  # Ignore any tests
-  - "tests/*"
+  # Test files
+  - "tests/**/*"
   - "**/tests/**/*"
+  - "**/*.test.*"
+  - "**/*_test.*"
   
-  # Ignore virtual environment folders
-  - "venv/*"
-  - "env/*"
+  # Virtual environments
+  - "venv/**/*"
+  - "env/**/*"
+  - ".venv/**/*"
   
-  # Ignore cache directories
-  - "**/__pycache__/*"
-  - "**/.pytest_cache/*"
+  # Cache directories
+  - "**/__pycache__/**/*"
+  - "**/.pytest_cache/**/*"
   
   # Custom folders to ignore
   - "src/zensvi/utils/**/*"
