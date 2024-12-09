@@ -1,4 +1,3 @@
-import multiprocessing
 import platform
 import shutil
 import signal
@@ -22,20 +21,21 @@ def timeout(seconds=DOWNLOAD_TIMEOUT_SECONDS):
     """
     A context manager that forces timeout on processes and their child threads.
     This works even when the function being timed out uses ThreadPoolExecutor internally.
-    
+
     Args:
         seconds (int): Maximum execution time in seconds. Defaults to DOWNLOAD_TIMEOUT_SECONDS
-    
+
     Raises:
         TimeoutException: If execution time exceeds the specified seconds
     """
+
     def signal_handler(signum, frame):
         raise TimeoutException(f"Operation timed out after {seconds} seconds")
 
     # Register the signal handler and set the alarm
     signal.signal(signal.SIGALRM, signal_handler)
     signal.alarm(seconds)
-    
+
     try:
         yield
     finally:
@@ -60,7 +60,7 @@ def input_dir():
     return Path("tests/data/input")
 
 
-@pytest.fixture(scope="session") 
+@pytest.fixture(scope="session")
 def base_output_dir(tmp_path_factory):
     output_dir = tmp_path_factory.mktemp("output")
     return output_dir
@@ -70,6 +70,7 @@ def base_output_dir(tmp_path_factory):
 def ensure_dir():
     def _ensure_dir(directory):
         directory.mkdir(parents=True, exist_ok=True)
+
     return _ensure_dir
 
 

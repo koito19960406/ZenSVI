@@ -50,7 +50,14 @@ def sv_downloader(output_dir, gsv_api_key):
     ],
 )
 def test_downloader_input_types(
-    output_dir, gsv_input_files, input_dir, sv_downloader, input_type, expected_files, timeout_decorator, timeout_seconds
+    output_dir,
+    gsv_input_files,
+    input_dir,
+    sv_downloader,
+    input_type,
+    expected_files,
+    timeout_decorator,
+    timeout_seconds,
 ):
     """Test downloading with different input types"""
     output_dir = output_dir / f"test_{input_type}"

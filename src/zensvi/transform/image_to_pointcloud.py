@@ -66,27 +66,27 @@ class PointCloudProcessor:
         """
         if self.logger:
             self.logger.log_args("PointCloudProcessor._load_images", data=data)
-        
+
         images = {}
-        extensions = ['.jpg', '.jpeg', '.png']
-        
+        extensions = [".jpg", ".jpeg", ".png"]
+
         for image_id in data["id"].unique():
             depth_found = color_found = False
-            
+
             # Try each extension for depth image
             for ext in extensions:
                 depth_path = self.depth_folder / f"{image_id}{ext}"
                 if depth_path.exists():
                     depth_found = True
                     break
-                    
-            # Try each extension for color image    
+
+            # Try each extension for color image
             for ext in extensions:
                 color_path = self.image_folder / f"{image_id}{ext}"
                 if color_path.exists():
                     color_found = True
                     break
-            
+
             if depth_found and color_found:
                 images[image_id] = {
                     "depth": np.array(Image.open(depth_path).convert("L")),
