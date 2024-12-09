@@ -6,7 +6,7 @@ jobs:
       # Limit concurrent jobs to 2
       max-parallel: 2
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest] # macOS is not supported
         python-version: ['3.9', '3.10', '3.11']
     runs-on: ${{ matrix.os }}
     steps:
@@ -24,18 +24,6 @@ jobs:
         sudo apt-get clean
         df -h
         
-    - name: Install system dependencies (Linux)
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libomp-dev
-
-    - name: Install system dependencies (macOS)
-      if: runner.os == 'macOS'
-      run: |
-        brew update
-        brew install libomp
-    
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
