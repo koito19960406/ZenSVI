@@ -23,51 +23,49 @@ def sv_downloader(output_dir):
     return AMSDownloader(log_path=output_dir / "log.log")
 
 
-def test_download_asv(output_dir, sv_downloader, timeout):
+def test_download_asv(output_dir, sv_downloader, timeout_decorator, timeout_seconds):
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             sv_downloader.download_svi(output_dir, lat=52.356768, lon=4.907408, buffer=50)
     except TimeoutException:
-        pass  # Allow timeout, we'll check results next
+        pass
 
-    assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
+    assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
 
 
-def test_download_asv_metadata_only(output_dir, sv_downloader, timeout):
+def test_download_asv_metadata_only(output_dir, sv_downloader, timeout_decorator, timeout_seconds):
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             sv_downloader.download_svi(output_dir, lat=52.356768, lon=4.907408, buffer=50, metadata_only=True)
-            # Try to check CSV first if within timeout
             df = pd.read_csv(output_dir / "ams_pids.csv")
             assert df.shape[0] > 1
     except TimeoutException:
-        # Fall back to checking if any files exist
-        assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
+        assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
 
 
-def test_csv_download_asv(output_dir, sv_downloader, input_dir, timeout):
+def test_csv_download_asv(output_dir, sv_downloader, input_dir, timeout_decorator, timeout_seconds):
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             sv_downloader.download_svi(output_dir, input_csv_file=input_dir / "test_ams.csv", buffer=50)
     except TimeoutException:
-        pass  # Allow timeout, we'll check results next
+        pass
 
-    assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
+    assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
 
 
-def test_shp_download_asv(output_dir, sv_downloader, input_dir, timeout):
+def test_shp_download_asv(output_dir, sv_downloader, input_dir, timeout_decorator, timeout_seconds):
     file_list = ["point_ams.geojson", "line_ams.geojson", "polygon_ams.geojson"]
     for file in file_list:
         try:
-            with timeout(300):  # Let it run for 5 minutes
+            with timeout_decorator():
                 sv_downloader.download_svi(output_dir, input_shp_file=input_dir / file, buffer=50)
         except TimeoutException:
-            pass  # Allow timeout, we'll check results next
+            pass
 
-        assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within 5 minutes for {file}"
+        assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds for {file}"
 
 
-# def test_place_name_download_asv(output_dir, sv_downloader, timeout):
+# def test_place_name_download_asv(output_dir, sv_downloader, timeout_decorator):
 #     try:
 #         with timeout(30):  # Let it run for 5 minutes
 #             sv_downloader.download_svi(output_dir, input_place_name="West Amsterdam, Netherlands", buffer=10)

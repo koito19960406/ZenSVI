@@ -50,7 +50,7 @@ def sv_downloader(output_dir, gsv_api_key):
     ],
 )
 def test_downloader_input_types(
-    output_dir, gsv_input_files, input_dir, sv_downloader, input_type, expected_files, timeout
+    output_dir, gsv_input_files, input_dir, sv_downloader, input_type, expected_files, timeout_decorator, timeout_seconds
 ):
     """Test downloading with different input types"""
     output_dir = output_dir / f"test_{input_type}"
@@ -73,17 +73,17 @@ def test_downloader_input_types(
     #     kwargs = {"input_place_name": "Peng Yong"}
 
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             sv_downloader.download_svi(output_dir, augment_metadata=True, **kwargs)
     except TimeoutException:
-        pass  # Allow timeout, we'll check the results next
+        pass
 
-    # Check if files were downloaded within the 5-minute window
+    # Check if files were downloaded within the 60-second window
     files = list(output_dir.iterdir())
-    assert len(files) >= expected_files, f"No files downloaded within 5 minutes for {input_type}"
+    assert len(files) >= expected_files, f"No files downloaded within {timeout_seconds} seconds for {input_type}"
 
 
-def test_download_gsv_zoom(output_dir, sv_downloader, timeout):
+def test_download_gsv_zoom(output_dir, sv_downloader, timeout_decorator):
     if (output_dir / "gsv_panorama_zoom_0").exists():
         pytest.skip("Result exists")
 
@@ -91,7 +91,7 @@ def test_download_gsv_zoom(output_dir, sv_downloader, timeout):
     downloaded_zoom_folders = []
 
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator(60):  # Let it run for 5 minutes
             for zoom in zoom_levels:
                 folder_name = f"gsv_panorama_zoom_{zoom}"
                 folder_path = output_dir / folder_name
@@ -109,12 +109,12 @@ def test_download_gsv_zoom(output_dir, sv_downloader, timeout):
     assert len(downloaded_zoom_folders) > 0, "No files downloaded within 5 minutes for any zoom level"
 
 
-def test_download_gsv_metadata_only(output_dir, sv_downloader, timeout):
+def test_download_gsv_metadata_only(output_dir, sv_downloader, timeout_decorator):
     if (output_dir / "gsv_pids.csv").exists():
         pytest.skip("Result exists")
 
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator(60):  # Let it run for 5 minutes
             sv_downloader.download_svi(
                 output_dir, lat=1.342425, lon=103.721523, augment_metadata=True, metadata_only=True
             )
@@ -126,9 +126,9 @@ def test_download_gsv_metadata_only(output_dir, sv_downloader, timeout):
         assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
 
 
-def test_download_gsv_depth(output_dir, sv_downloader, timeout):
+def test_download_gsv_depth(output_dir, sv_downloader, timeout_decorator):
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator(60):  # Let it run for 5 minutes
             sv_downloader.download_svi(output_dir, lat=1.342425, lon=103.721523, download_depth=True)
     except TimeoutException:
         pass  # Allow timeout, we'll check results next
@@ -136,9 +136,9 @@ def test_download_gsv_depth(output_dir, sv_downloader, timeout):
     assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
 
 
-def test_error_handling(output_dir, sv_downloader, timeout):
+def test_error_handling(output_dir, sv_downloader, timeout_decorator):
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator(60):  # Let it run for 5 minutes
             # Test invalid date format
             with pytest.raises(ValueError):
                 sv_downloader.download_svi(output_dir, lat=1.342425, lon=103.721523, start_date="invalid_date")
@@ -150,10 +150,10 @@ def test_error_handling(output_dir, sv_downloader, timeout):
         pass  # For error handling tests, timeout is acceptable
 
 
-def test_download_with_buffer(output_dir, sv_downloader, timeout):
+def test_download_with_buffer(output_dir, sv_downloader, timeout_decorator):
     output_dir = output_dir / "test_buffer"
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator(60):  # Let it run for 5 minutes
             sv_downloader.download_svi(output_dir, lat=1.342425, lon=103.721523, buffer=100)
     except TimeoutException:
         pass  # Allow timeout, we'll check results next

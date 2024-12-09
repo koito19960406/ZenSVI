@@ -28,21 +28,19 @@ def kv_input_files(input_dir):
     }
 
 
-def test_interface(output_dir, kv_input_files, timeout):
+def test_interface(output_dir, kv_input_files, timeout_decorator, timeout_seconds):
     output_file = output_dir / "test_interface.csv"
     if output_file.exists():
         pytest.skip("Result exists")
 
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             gdf = gp.read_file(kv_input_files["polygon"])
             output_data = kv.get_points_in_shape(gdf)
             output_data.to_csv(output_file)
-            # Try to check data if within timeout
             assert len(output_data) > 0
     except TimeoutException:
-        # Fall back to checking if any files exist
-        assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
+        assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
 
 
 @pytest.mark.parametrize(
@@ -55,7 +53,9 @@ def test_interface(output_dir, kv_input_files, timeout):
         ("place_name", 1),  # Place name input
     ],
 )
-def test_downloader_input_types(output_dir, kv_input_files, input_dir, input_type, expected_files, timeout):
+def test_downloader_input_types(
+    output_dir, kv_input_files, input_dir, input_type, expected_files, timeout_decorator, timeout_seconds
+):
     """Test downloading with different input types"""
     output_dir = output_dir / f"test_{input_type}"
     kv_downloader = KVDownloader(log_path=output_dir / "log.log", max_workers=1)
@@ -77,49 +77,47 @@ def test_downloader_input_types(output_dir, kv_input_files, input_dir, input_typ
         kwargs = {"input_place_name": "Yong Peng, Malaysia"}
 
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             kv_downloader.download_svi(output_dir, **kwargs)
     except TimeoutException:
         pass  # Allow timeout, we'll check results next
 
-    # Check if files were downloaded within the 5-minute window
+    # Check if files were downloaded within the timeout window
     files = list(output_dir.iterdir())
-    assert len(files) >= expected_files, f"No files downloaded within 5 minutes for {input_type}"
+    assert len(files) >= expected_files, f"No files downloaded within {timeout_seconds} seconds for {input_type}"
 
 
-def test_downloader_metadata_only(output_dir, kv_input_files, timeout):
+def test_downloader_metadata_only(output_dir, kv_input_files, timeout_decorator, timeout_seconds):
     output_dir = output_dir / "test_metadata_only"
     kv_downloader = KVDownloader(log_path=output_dir / "log.log", max_workers=1)
 
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             kv_downloader.download_svi(output_dir, input_shp_file=kv_input_files["polygon"], metadata_only=True)
-            # Try to check CSV first if within timeout
             assert (output_dir / "kv_pids.csv").stat().st_size > 0
     except TimeoutException:
-        # Fall back to checking if any files exist
-        assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
+        assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
 
 
-def test_downloader_with_buffer(output_dir, timeout):
+def test_downloader_with_buffer(output_dir, timeout_decorator, timeout_seconds):
     output_dir = output_dir / "test_buffer"
     kv_downloader = KVDownloader(log_path=output_dir / "log.log", max_workers=1)
 
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             kv_downloader.download_svi(output_dir, lat=1.3140256, lon=103.7624098, buffer=50)
     except TimeoutException:
         pass  # Allow timeout, we'll check results next
 
-    assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
+    assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
 
 
-def test_downloader_date_filter(output_dir, kv_input_files, timeout):
+def test_downloader_date_filter(output_dir, kv_input_files, timeout_decorator, timeout_seconds):
     output_dir = output_dir / "test_date_filter"
     kv_downloader = KVDownloader(log_path=output_dir / "log.log", max_workers=1)
 
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             kv_downloader.download_svi(
                 output_dir,
                 input_shp_file=kv_input_files["polygon"],
@@ -134,32 +132,31 @@ def test_downloader_date_filter(output_dir, kv_input_files, timeout):
             dates = pd.to_datetime(df["shotDate"])
             assert all(dates >= "2020-01-01") and all(dates <= "2023-12-31")
     except TimeoutException:
-        # Fall back to checking if any files exist
-        assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
+        assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
 
 
-def test_downloader_batch_processing(output_dir, kv_input_files, timeout):
+def test_downloader_batch_processing(output_dir, kv_input_files, timeout_decorator, timeout_seconds):
     output_dir = output_dir / "test_batch"
     kv_downloader = KVDownloader(log_path=output_dir / "log.log", max_workers=1)
 
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             kv_downloader.download_svi(
                 output_dir, input_shp_file=kv_input_files["polygon"], batch_size=5, metadata_only=False
             )
     except TimeoutException:
         pass  # Allow timeout, we'll check results next
 
-    assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
-    assert (output_dir / "kv_svi").exists(), "SVI directory not created within 5 minutes"
+    assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
+    assert (output_dir / "kv_svi").exists(), f"SVI directory not created within {timeout_seconds} seconds"
 
 
-def test_downloader_cropped_images(output_dir, kv_input_files, timeout):
+def test_downloader_cropped_images(output_dir, kv_input_files, timeout_decorator, timeout_seconds):
     output_dir = output_dir / "test_cropped"
     kv_downloader = KVDownloader(log_path=output_dir / "log.log", max_workers=1)
 
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             kv_downloader.download_svi(
                 output_dir, input_shp_file=kv_input_files["polygon"], cropped=True, metadata_only=False
             )
@@ -172,16 +169,15 @@ def test_downloader_cropped_images(output_dir, kv_input_files, timeout):
                 img = Image.open(img_path)
                 assert img.size[1] <= img.size[0] / 2  # Height should be at most half the width
     except TimeoutException:
-        # Fall back to checking if any files exist
-        assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
+        assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
 
 
-def test_error_handling(output_dir, timeout):
+def test_error_handling(output_dir, timeout_decorator, timeout_seconds):
     output_dir = output_dir / "test_errors"
     kv_downloader = KVDownloader(log_path=output_dir / "log.log")
 
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             # Test invalid date format
             with pytest.raises(ValueError):
                 kv_downloader.download_svi(output_dir, lat=1.3140256, lon=103.7624098, start_date="invalid_date")

@@ -1,44 +1,58 @@
 import multiprocessing
 import platform
 import shutil
+import signal
 from pathlib import Path
+from contextlib import contextmanager
 
 import pytest
 import torch
+
+
+# Define timeout duration as a constant
+DOWNLOAD_TIMEOUT_SECONDS = 60
 
 
 class TimeoutException(Exception):
     pass
 
 
-class TimeoutContext:
-    """Timeout context manager using multiprocessing"""
+@contextmanager
+def timeout(seconds=DOWNLOAD_TIMEOUT_SECONDS):
+    """
+    A context manager that forces timeout on processes and their child threads.
+    This works even when the function being timed out uses ThreadPoolExecutor internally.
+    
+    Args:
+        seconds (int): Maximum execution time in seconds. Defaults to DOWNLOAD_TIMEOUT_SECONDS
+    
+    Raises:
+        TimeoutException: If execution time exceeds the specified seconds
+    """
+    def signal_handler(signum, frame):
+        raise TimeoutException(f"Operation timed out after {seconds} seconds")
 
-    def __init__(self, seconds):
-        self.seconds = seconds
-        self.process = None
-
-    def __enter__(self):
-        def target():
-            self.process = multiprocessing.current_process()
-
-        self.process = multiprocessing.Process(target=target)
-        self.process.start()
-        self.process.join(timeout=self.seconds)
-
-        if self.process.is_alive():
-            self.process.terminate()
-            raise TimeoutException("Download test timed out")
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.process and self.process.is_alive():
-            self.process.terminate()
+    # Register the signal handler and set the alarm
+    signal.signal(signal.SIGALRM, signal_handler)
+    signal.alarm(seconds)
+    
+    try:
+        yield
+    finally:
+        # Disable the alarm
+        signal.alarm(0)
 
 
 @pytest.fixture(scope="session")
-def timeout():
+def timeout_decorator():
     """Fixture to provide timeout context manager"""
-    return TimeoutContext
+    return timeout
+
+
+@pytest.fixture(scope="session")
+def timeout_seconds():
+    """Fixture to provide timeout duration"""
+    return DOWNLOAD_TIMEOUT_SECONDS
 
 
 @pytest.fixture(scope="session")
@@ -46,7 +60,7 @@ def input_dir():
     return Path("tests/data/input")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session") 
 def base_output_dir(tmp_path_factory):
     output_dir = tmp_path_factory.mktemp("output")
     return output_dir
@@ -56,7 +70,6 @@ def base_output_dir(tmp_path_factory):
 def ensure_dir():
     def _ensure_dir(directory):
         directory.mkdir(parents=True, exist_ok=True)
-
     return _ensure_dir
 
 

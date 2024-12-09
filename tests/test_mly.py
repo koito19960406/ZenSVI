@@ -37,20 +37,19 @@ def mly_input_files(input_dir):
     }
 
 
-def test_interface(output_dir, mly_input_files, mly_api_key, timeout):
+def test_interface(output_dir, mly_input_files, mly_api_key, timeout_decorator, timeout_seconds):
     output_file = output_dir / "test_interface.json"
     if output_file.exists():
         pytest.skip("Result exists")
 
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             with open(mly_input_files["polygon"]) as f:
                 geojson = json.load(f)
             output_data = interface.images_in_geojson(geojson)
             assert len(output_data.to_dict()) > 0
     except TimeoutException:
-        # Check if any files were created
-        assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
+        assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
 
 
 @pytest.mark.parametrize(
@@ -64,7 +63,7 @@ def test_interface(output_dir, mly_input_files, mly_api_key, timeout):
     ],
 )
 def test_downloader_input_types(
-    output_dir, mly_input_files, input_dir, mly_api_key, input_type, expected_files, timeout
+    output_dir, mly_input_files, input_dir, mly_api_key, input_type, expected_files, timeout_decorator, timeout_seconds
 ):
     """Test downloading with different input types"""
     output_dir = output_dir / f"test_{input_type}"
@@ -89,55 +88,49 @@ def test_downloader_input_types(
         kwargs = {"input_place_name": "Maiduguri, Nigeria"}
 
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             mly_downloader.download_svi(output_dir, **kwargs)
     except TimeoutException:
-        pass  # Allow timeout, we'll check the results next
+        pass  # Allow timeout, we'll check results next
 
-    # Check if files were downloaded within the 5-minute window
+    # Check if files were downloaded within the 60-second window
     files = list(output_dir.iterdir())
-    assert len(files) >= expected_files, f"No files downloaded within 5 minutes for {input_type}"
+    assert len(files) >= expected_files, f"No files downloaded within {timeout_seconds} seconds for {input_type}"
 
 
-def test_downloader_metadata_only(output_dir, mly_input_files, mly_api_key, timeout):
+def test_downloader_metadata_only(output_dir, mly_input_files, mly_api_key, timeout_decorator, timeout_seconds):
     output_dir = output_dir / "test_metadata"
     if (output_dir / "mly_pids.csv").exists():
         pytest.skip("Result exists")
 
     try:
-        with timeout(300):  # Let it run for 5 minutes
-            mly_downloader = MLYDownloader(
-                mly_api_key,
-                log_path=str(output_dir / "log.log"),
-                max_workers=1,
-            )
+        with timeout_decorator():
+            mly_downloader = MLYDownloader(mly_api_key, log_path=str(output_dir / "log.log"), max_workers=1)
             mly_downloader.download_svi(output_dir, input_shp_file=mly_input_files["polygon"], metadata_only=True)
-            # Try to check CSV first if within timeout
             assert (output_dir / "mly_pids.csv").stat().st_size > 0
     except TimeoutException:
-        # Fall back to checking if any files exist
-        assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
+        assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
 
 
-def test_downloader_with_buffer(output_dir, mly_api_key, timeout):
+def test_downloader_with_buffer(output_dir, mly_api_key, timeout_decorator, timeout_seconds):
     output_dir = output_dir / "test_buffer"
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             mly_downloader = MLYDownloader(mly_api_key, max_workers=1)
             mly_downloader.download_svi(output_dir, lat=11.827575599999989, lon=13.146558000000027, buffer=100)
     except TimeoutException:
         pass  # Allow timeout, we'll check the results next
 
-    assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
+    assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
 
 
-def test_downloader_kwargs(output_dir, mly_input_files, mly_api_key, timeout):
+def test_downloader_kwargs(output_dir, mly_input_files, mly_api_key, timeout_decorator, timeout_seconds):
     output_dir = output_dir / "test_kwargs"
     if (output_dir / "mly_svi").exists():
         pytest.skip("Result exists")
 
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             mly_downloader = MLYDownloader(mly_api_key, log_path=str(output_dir / "log.log"), max_workers=1)
             kwarg = {
                 "image_type": "flat",
@@ -150,15 +143,15 @@ def test_downloader_kwargs(output_dir, mly_input_files, mly_api_key, timeout):
     except TimeoutException:
         pass  # Allow timeout, we'll check the results next
 
-    assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
+    assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
 
 
-def test_error_handling(output_dir, mly_api_key, timeout):
+def test_error_handling(output_dir, mly_api_key, timeout_decorator, timeout_seconds):
     output_dir = output_dir / "test_errors"
     mly_downloader = MLYDownloader(mly_api_key, log_path=output_dir / "log.log")
 
     try:
-        with timeout(300):  # Let it run for 5 minutes
+        with timeout_decorator():
             # Test invalid date format
             with pytest.raises(ValueError):
                 mly_downloader.download_svi(
