@@ -1,15 +1,14 @@
 import platform
 import shutil
 import signal
-from pathlib import Path
 from contextlib import contextmanager
+from pathlib import Path
 
 import pytest
 import torch
 
-
 # Define timeout duration as a constant
-DOWNLOAD_TIMEOUT_SECONDS = 60
+DOWNLOAD_TIMEOUT_SECONDS = 180
 
 
 class TimeoutException(Exception):
