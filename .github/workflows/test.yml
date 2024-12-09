@@ -23,6 +23,18 @@ jobs:
         sudo rm -rf "$AGENT_TOOLSDIRECTORY"
         sudo apt-get clean
         df -h
+        
+    - name: Install system dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libomp-dev
+
+    - name: Install system dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew update
+        brew install libomp
     
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
