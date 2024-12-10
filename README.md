@@ -104,7 +104,7 @@ downloader.download_svi("path/to/output_directory", input_csv_file="path/to/csv_
 # with a shapefile:
 downloader.download_svi("path/to/output_directory", input_shp_file="path/to/shapefile.shp")
 # with a place name that works on OpenStreetMap:
-downloader.download_svi("path/to/output_directory", input_place_name="Amserdam")
+downloader.download_svi("path/to/output_directory", input_place_name="Amsterdam")
 ```
 
 ### Analyzing Metadata of Mapillary Images
