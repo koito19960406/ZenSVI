@@ -6,6 +6,9 @@
 - **AMSDownloader Introduced**: New downloader for Amsterdam Street View Images (SVI). Usage: `from zensvi.download import AMSDownloader`.
 - **PointCloudProcessor Added**: New module to convert Street View Images to point clouds. Usage: `from zensvi.transform import PointCloudProcessor`.
 - **Embeddings Module Added**: New functionality for generating image embeddings. Usage: `from zensvi.cv import Embeddings`.
+- **Enhanced Documentation**: Improved documentation for embeddings functionality.
+- **Enhanced Metadata Return**: Improved metadata return functionality in MLYDownloader.
+- **Removed Geopolars Dependency**: Streamlined dependencies by removing geopolars requirement.
 
 ## v0.12.0 (15/05/2024)
 - **ClassifierPerception Introduced**: New classifier for perception-based image analysis. Usage: `from zensvi.cv import ClassifierPerception`.
