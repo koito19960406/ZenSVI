@@ -10,31 +10,42 @@ import math
 import os
 from functools import partial
 
-from fvcore.common.checkpoint import PeriodicCheckpointer
-import torch
-
-from dinov2.data import SamplerType, make_data_loader, make_dataset
-from dinov2.data import collate_data_and_cast, DataAugmentationDINO, MaskingGenerator
 import dinov2.distributed as distributed
+import torch
+from dinov2.data import (
+    DataAugmentationDINO,
+    MaskingGenerator,
+    SamplerType,
+    collate_data_and_cast,
+    make_data_loader,
+    make_dataset,
+)
 from dinov2.fsdp import FSDPCheckpointer
 from dinov2.logging import MetricLogger
+from dinov2.train.ssl_meta_arch import SSLMetaArch
 from dinov2.utils.config import setup
 from dinov2.utils.utils import CosineScheduler
-
-from dinov2.train.ssl_meta_arch import SSLMetaArch
-
+from fvcore.common.checkpoint import PeriodicCheckpointer
 
 torch.backends.cuda.matmul.allow_tf32 = True  # PyTorch 1.12 sets this to False by default
 logger = logging.getLogger("dinov2")
 
 
 def get_args_parser(add_help: bool = True):
+    """Creates an argument parser for DINOv2 training.
+
+    Args:
+        add_help (bool): Whether to add help to the parser. Default is True.
+
+    Returns:
+        argparse.ArgumentParser: The argument parser.
+    """
     parser = argparse.ArgumentParser("DINOv2 training", add_help=add_help)
     parser.add_argument("--config-file", default="", metavar="FILE", help="path to config file")
     parser.add_argument(
         "--no-resume",
         action="store_true",
-        help="Whether to not attempt to resume from the checkpoint directory. ",
+        help="Whether to not attempt to resume from the checkpoint directory.",
     )
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
     parser.add_argument("--eval", type=str, default="", help="Eval type to perform")
@@ -60,10 +71,27 @@ For python-based LazyConfig, use "path.key=value".
 
 
 def build_optimizer(cfg, params_groups):
+    """Builds the AdamW optimizer.
+
+    Args:
+        cfg: Configuration object containing optimizer settings.
+        params_groups: Parameter groups to optimize.
+
+    Returns:
+        torch.optim.AdamW: The constructed optimizer.
+    """
     return torch.optim.AdamW(params_groups, betas=(cfg.optim.adamw_beta1, cfg.optim.adamw_beta2))
 
 
 def build_schedulers(cfg):
+    """Builds learning rate and other schedulers.
+
+    Args:
+        cfg: Configuration object containing scheduler settings.
+
+    Returns:
+        tuple: A tuple containing the learning rate, weight decay, momentum, teacher temperature, and last layer learning rate schedules.
+    """
     OFFICIAL_EPOCH_LENGTH = cfg.train.OFFICIAL_EPOCH_LENGTH
     lr = dict(
         base_value=cfg.optim["lr"],
@@ -96,9 +124,9 @@ def build_schedulers(cfg):
     teacher_temp_schedule = CosineScheduler(**teacher_temp)
     last_layer_lr_schedule = CosineScheduler(**lr)
 
-    last_layer_lr_schedule.schedule[
-        : cfg.optim["freeze_last_layer_epochs"] * OFFICIAL_EPOCH_LENGTH
-    ] = 0  # mimicking the original schedules
+    last_layer_lr_schedule.schedule[: cfg.optim["freeze_last_layer_epochs"] * OFFICIAL_EPOCH_LENGTH] = (
+        0  # mimicking the original schedules
+    )
 
     logger.info("Schedulers ready.")
 
@@ -112,6 +140,14 @@ def build_schedulers(cfg):
 
 
 def apply_optim_scheduler(optimizer, lr, wd, last_layer_lr):
+    """Applies the learning rate and weight decay to the optimizer.
+
+    Args:
+        optimizer: The optimizer to apply the schedules to.
+        lr: The current learning rate.
+        wd: The current weight decay.
+        last_layer_lr: The learning rate for the last layer.
+    """
     for param_group in optimizer.param_groups:
         is_last_layer = param_group["is_last_layer"]
         lr_multiplier = param_group["lr_multiplier"]
@@ -121,6 +157,13 @@ def apply_optim_scheduler(optimizer, lr, wd, last_layer_lr):
 
 
 def do_test(cfg, model, iteration):
+    """Performs evaluation and saves the teacher model checkpoint.
+
+    Args:
+        cfg: Configuration object containing evaluation settings.
+        model: The model to evaluate.
+        iteration: The current iteration number.
+    """
     new_state_dict = model.teacher.state_dict()
 
     if distributed.is_main_process():
@@ -133,6 +176,16 @@ def do_test(cfg, model, iteration):
 
 
 def do_train(cfg, model, resume=False):
+    """Runs the training loop.
+
+    Args:
+        cfg: Configuration object containing training settings.
+        model: The model to train.
+        resume (bool): Whether to resume training from a checkpoint. Default is False.
+
+    Returns:
+        dict: A dictionary containing the average metrics.
+    """
     model.train()
     inputs_dtype = torch.half
     fp16_scaler = model.fp16_scaler  # for mixed precision training
@@ -296,6 +349,14 @@ def do_train(cfg, model, resume=False):
 
 
 def main(args):
+    """Main entry point for the training script.
+
+    Args:
+        args: Command line arguments.
+
+    Returns:
+        None
+    """
     cfg = setup(args)
 
     model = SSLMetaArch(cfg).to(torch.device("cuda"))

@@ -1,21 +1,28 @@
-from torch.utils.data import Dataset, DataLoader
-from torchvision.io import read_image
-from torchvision import transforms as trn
 from pathlib import Path
-import pkg_resources
-import pandas as pd
-import numpy as np
-import cv2
-from tqdm import tqdm
 from typing import Union
+
+import cv2
+import numpy as np
+import pandas as pd
+import pkg_resources
 import torch
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms as trn
+from torchvision.io import read_image
+from tqdm import tqdm
 
 from .base import BaseClassifier
 from .utils import wideresnet
 
 
 class ImageDataset(Dataset):
-    # Dataset class for loading images
+    """Dataset class for loading images.
+
+    Args:
+        img_paths: List of paths to image files
+        transform: Optional transform to apply to images
+    """
+
     def __init__(self, img_paths, transform=None):
         self.img_paths = img_paths
         self.transform = transform
@@ -31,15 +38,25 @@ class ImageDataset(Dataset):
         return image, str(img_path)
 
     def collate_fn(self, batch):
+        """Collate function for batching images.
+
+        Args:
+            batch: List of (image, path) tuples
+
+        Returns:
+            Tuple of (batched_images, paths)
+        """
         images, paths = zip(*batch)
-        images = torch.stack(
-            images, dim=0
-        )  # This combines the images into a single tensor
+        images = torch.stack(images, dim=0)  # This combines the images into a single tensor
         return images, list(paths)
 
 
 def _returnTF():
-    # load the image transformer
+    """Returns the image transformer for Places365 model.
+
+    Returns:
+        torchvision.transforms.Compose: The image transformer
+    """
     tf = trn.Compose(
         [
             trn.Resize((224, 224)),
@@ -51,7 +68,14 @@ def _returnTF():
 
 
 def _recursion_change_bn(module):
-    # change the batchnorm2D layer to batchnorm1D
+    """Recursively changes BatchNorm2d layers to use track_running_stats.
+
+    Args:
+        module: PyTorch module to modify
+
+    Returns:
+        Modified module
+    """
     if isinstance(module, torch.nn.BatchNorm2d):
         module.track_running_stats = 1
     else:
@@ -61,7 +85,16 @@ def _recursion_change_bn(module):
 
 
 def _returnCAM(feature_conv, weight_softmax, class_idx):
-    # generate the class activation maps upsample to 256x256
+    """Generate class activation maps.
+
+    Args:
+        feature_conv: Convolutional features
+        weight_softmax: Softmax weights
+        class_idx: Class indices to generate CAM for
+
+    Returns:
+        List of class activation maps upsampled to 256x256
+    """
     size_upsample = (256, 256)
     nc, h, w = feature_conv.shape
     output_cam = []
@@ -76,20 +109,17 @@ def _returnCAM(feature_conv, weight_softmax, class_idx):
 
 
 class ClassifierPlaces365(BaseClassifier):
-    """
-    A classifier for identifying places using the Places365 model. The model is from Zhou et al. (2017) (https://github.com/CSAILVision/places365).
+    """A classifier for identifying places using the Places365 model. The model is from Zhou et al. (2017) (https://github.com/CSAILVision/places365).
 
-    :param device: The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
-        If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
-    :type device: str, optional
+    Args:
+        device (str, optional): The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
+            If None, the model tries to use a GPU if available; otherwise, falls back to CPU.
     """
 
     def __init__(self, device=None):
         super().__init__(device)
         self.device = self._get_device(device)
-        self.classes, self.labels_IO, self.labels_attribute, self.W_attribute = (
-            self._load_labels()
-        )
+        self.classes, self.labels_IO, self.labels_attribute, self.W_attribute = self._load_labels()
         self.features_blobs = []
         self.model = self._load_model()
         self.model.eval()
@@ -97,6 +127,15 @@ class ClassifierPlaces365(BaseClassifier):
         self.weight_softmax = self._load_weight_softmax()
 
     def _load_labels(self):
+        """Load category, indoor/outdoor, and attribute labels.
+
+        Returns:
+            Tuple containing:
+                - classes: List of scene categories
+                - labels_IO: Indoor/outdoor labels
+                - labels_attribute: Scene attribute labels
+                - W_attribute: Scene attribute weights
+        """
         # prepare all the labels
         # scene category relevant
         file_name_category = pkg_resources.resource_filename(
@@ -109,9 +148,7 @@ class ClassifierPlaces365(BaseClassifier):
         classes = tuple(classes)
 
         # indoor and outdoor relevant
-        file_name_IO = pkg_resources.resource_filename(
-            "zensvi.cv.classification.utils", "IO_places365.txt"
-        )
+        file_name_IO = pkg_resources.resource_filename("zensvi.cv.classification.utils", "IO_places365.txt")
         with open(file_name_IO) as f:
             lines = f.readlines()
             labels_IO = []
@@ -135,18 +172,25 @@ class ClassifierPlaces365(BaseClassifier):
         return classes, labels_IO, labels_attribute, W_attribute
 
     def _hook_feature(self, module, input, output):
+        """Hook function to capture features during forward pass.
+
+        Args:
+            module: Layer module
+            input: Layer input
+            output: Layer output
+        """
         self.features_blobs.append(np.squeeze(output.data.cpu().numpy()))
 
     def _load_model(self):
-        model_file = pkg_resources.resource_filename(
-            "zensvi.cv.classification.utils", "wideresnet18_places365.pth.tar"
-        )
+        """Load and configure the Places365 model.
+
+        Returns:
+            torch.nn.Module: Configured Places365 model
+        """
+        model_file = pkg_resources.resource_filename("zensvi.cv.classification.utils", "wideresnet18_places365.pth.tar")
         model = wideresnet.resnet18(num_classes=365)
         checkpoint = torch.load(model_file, map_location=self.device)
-        state_dict = {
-            str.replace(k, "module.", ""): v
-            for k, v in checkpoint["state_dict"].items()
-        }
+        state_dict = {str.replace(k, "module.", ""): v for k, v in checkpoint["state_dict"].items()}
         model.load_state_dict(state_dict)
 
         # hacky way to deal with the upgraded batchnorm2D and avgpool layers...
@@ -165,15 +209,26 @@ class ClassifierPlaces365(BaseClassifier):
         return model
 
     def _load_weight_softmax(self):
-        # get the softmax weight
+        """Load and process the softmax weights.
+
+        Returns:
+            numpy.ndarray: Processed softmax weights
+        """
         params = list(self.model.parameters())
         weight_softmax = params[-2].data.cpu().numpy()
         weight_softmax[weight_softmax < 0] = 0
         return weight_softmax
 
-    def _save_results_to_file(
-        self, results, dir_output, file_name, save_format="csv json", csv_format="long"
-    ):
+    def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json", csv_format="long"):
+        """Save classification results to file.
+
+        Args:
+            results: Classification results to save
+            dir_output: Output directory path
+            file_name: Base name for output files
+            save_format: Format(s) to save in ("csv json")
+            csv_format: CSV format type ("long" or "wide")
+        """
         df = pd.DataFrame(results)
         if csv_format == "long":
             # Convert the DataFrame to long format if necessary
@@ -198,34 +253,39 @@ class ClassifierPlaces365(BaseClassifier):
         batch_size: int = 1,
         save_image_options: str = "cam_image blend_image",
         save_format: str = "json csv",
-        csv_format: str = "long",  # "long" or "wide"
+        csv_format: str = "long",
     ):
-        """
-        Classifies images based on scene recognition using the Places365 model. The output file can be saved in JSON and/or CSV format and will contain the scene categories, scene attributes, and environment type (indoor or outdoor) for each image.
+        """Classifies images based on scene recognition using the Places365 model.
 
-        A list of categories can be found at https://github.com/CSAILVision/places365/blob/master/categories_places365.txt and a list of attributes can be found at https://github.com/CSAILVision/places365/blob/master/labels_sunattribute.txt
+        The output file can be saved in JSON and/or CSV format and will contain the scene
+        categories, scene attributes, and environment type (indoor or outdoor) for each
+        image.
 
-        Scene categories' values range from 0 to 1, where 1 is the highest probability of the scene category. Scene attributes' values are the responses of the scene attributes, which are the dot product of the scene attributes' weight and the features of the image, and higher values indicate a higher presence of the attribute in the image. The environment type is either "indoor" or "outdoor".
+        A list of categories can be found at
+        https://github.com/CSAILVision/places365/blob/master/categories_places365.txt
+        and a list of attributes can be found at
+        https://github.com/CSAILVision/places365/blob/master/labels_sunattribute.txt
 
-        :param dir_input: directory containing input images.
-        :type dir_input: Union[str, Path]
-        :param dir_image_output: directory to save output images, defaults to None
-        :type dir_image_output: Union[str, Path, None], optional
-        :param dir_summary_output: directory to save summary output, defaults to None
-        :type dir_summary_output: Union[str, Path, None], optional
-        :param batch_size: batch size for inference, defaults to 1
-        :type batch_size: int, optional
-        :param save_image_options: save options for images, defaults to "cam_image blend_image". Options are "cam_image" and "blend_image". Please add a space between options.
-        :type save_image_options: str, optional
-        :param save_format: save format for the output, defaults to "json csv". Options are "json" and "csv". Please add a space between options.
-        :type save_format: str, optional
-        :param csv_format: csv format for the output, defaults to "long". Options are "long" and "wide".
-        :type csv_format: str, optional
+        Scene categories' values range from 0 to 1, where 1 is the highest probability
+        of the scene category. Scene attributes' values are the responses of the scene
+        attributes, which are the dot product of the scene attributes' weight and the
+        features of the image, and higher values indicate a higher presence of the
+        attribute in the image. The environment type is either "indoor" or "outdoor".
+
+        Args:
+            dir_input: Directory containing input images
+            dir_image_output: Directory to save output images
+            dir_summary_output: Directory to save summary output
+            batch_size: Batch size for inference
+            save_image_options: Save options for images ("cam_image blend_image")
+            save_format: Save format for the output ("json csv")
+            csv_format: CSV format for the output ("long" or "wide")
+
+        Raises:
+            ValueError: If neither dir_image_output nor dir_summary_output is provided
         """
         if not dir_image_output and not dir_summary_output:
-            raise ValueError(
-                "At least one of dir_image_output and dir_summary_output must be provided"
-            )
+            raise ValueError("At least one of dir_image_output and dir_summary_output must be provided")
         # Prepare output directories
         if dir_image_output:
             Path(dir_image_output).mkdir(parents=True, exist_ok=True)
@@ -258,9 +318,7 @@ class ClassifierPlaces365(BaseClassifier):
         # Transform and load the dataset
         transform = _returnTF()
         dataset = ImageDataset(img_paths, transform=transform)
-        dataloader = DataLoader(
-            dataset, batch_size=batch_size, collate_fn=dataset.collate_fn
-        )
+        dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=dataset.collate_fn)
         results = []
         # Process images
         for images, paths in tqdm(dataloader, desc="Processing images"):
@@ -287,25 +345,19 @@ class ClassifierPlaces365(BaseClassifier):
                 for i, idx in enumerate(idx_a):
                     dict_temp[self.labels_attribute[idx]] = responses_attribute[idx]
 
-                io_image = np.mean(
-                    self.labels_IO[top_idxs.numpy()[:10]]
-                )  # Assuming labels_IO is correctly shaped
+                io_image = np.mean(self.labels_IO[top_idxs.numpy()[:10]])  # Assuming labels_IO is correctly shaped
                 environment_type = "indoor" if io_image < 0.5 else "outdoor"
                 dict_temp["environment_type"] = environment_type
                 results.append(dict_temp)
 
                 if len(save_image_options) > 0 and dir_image_output is not None:
                     # Generate class activation mapping
-                    CAMs = _returnCAM(
-                        features_blobs_0, self.weight_softmax, [top_idxs[0]]
-                    )
+                    CAMs = _returnCAM(features_blobs_0, self.weight_softmax, [top_idxs[0]])
 
                     # Render the CAM and output
                     img = cv2.imread(paths[idx_img_prob])
                     height, width, _ = img.shape
-                    heatmap = cv2.applyColorMap(
-                        cv2.resize(CAMs[0], (width, height)), cv2.COLORMAP_JET
-                    )
+                    heatmap = cv2.applyColorMap(cv2.resize(CAMs[0], (width, height)), cv2.COLORMAP_JET)
                     if "cam_image" in save_image_options:
                         output_filename = f"{Path(paths[idx_img_prob]).stem}-cam.jpg"
                         output_filepath = Path(dir_image_output) / output_filename

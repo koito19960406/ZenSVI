@@ -22,10 +22,23 @@
 
 # File author: Shariq Farooq Bhat
 
-from .zoedepth_v1 import ZoeDepth 
+from .zoedepth_v1 import ZoeDepth
 
 all_versions = {
     "v1": ZoeDepth,
 }
 
-get_version = lambda v : all_versions[v]
+
+def get_version(v):
+    """Retrieve the specified version of the ZoeDepth model.
+
+    Args:
+        v (str): The version identifier for the ZoeDepth model.
+
+    Returns:
+        ZoeDepth: The corresponding ZoeDepth model class for the specified version.
+
+    Raises:
+        KeyError: If the specified version is not available in the all_versions dictionary.
+    """
+    return all_versions[v]

@@ -8,8 +8,8 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="logos/logo_zensvi_white2.png">
-    <img src="logos/logo_zensvi_fixed 2.png" alt="ZenSVI logo" width="400">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/koito19960406/ZenSVI/refs/heads/v1.0.0/logos/logo_zensvi_white2.png">
+    <img src="https://raw.githubusercontent.com/koito19960406/ZenSVI/refs/heads/v1.0.0/logos/logo_zensvi_fixed%202.png" alt="ZenSVI logo" width="400">
   </picture>
 </p>
 
@@ -310,6 +310,6 @@ Please cite the following paper if you use `zensvi` in a scientific publication:
 <br>
 <p align="center">
   <a href="https://ual.sg/">
-    <img src="logos/ualsg.jpeg" width = 55% alt="Logo">
+    <img src="https://raw.githubusercontent.com/koito19960406/ZenSVI/main/docs/_static/ualsg.jpeg" width = 55% alt="Logo">
   </a>
 </p>

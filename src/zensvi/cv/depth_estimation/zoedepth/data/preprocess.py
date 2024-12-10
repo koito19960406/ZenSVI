@@ -22,34 +22,82 @@
 
 # File author: Shariq Farooq Bhat
 
-import numpy as np
 from dataclasses import dataclass
-from typing import Tuple, List
+from typing import Tuple
+
+import numpy as np
+
 
 # dataclass to store the crop parameters
 @dataclass
 class CropParams:
+    """Class to store crop parameters for image cropping.
+
+    Attributes:
+        top (int): The top boundary of the crop.
+        bottom (int): The bottom boundary of the crop.
+        left (int): The left boundary of the crop.
+        right (int): The right boundary of the crop.
+    """
+
     top: int
     bottom: int
     left: int
     right: int
 
 
+def get_border_params(
+    rgb_image: np.ndarray,
+    tolerance: float = 0.1,
+    cut_off: int = 20,
+    value: int = 0,
+    level_diff_threshold: int = 5,
+    channel_axis: int = -1,
+    min_border: int = 5,
+) -> CropParams:
+    """Determines the crop parameters for the borders of an RGB image.
 
-def get_border_params(rgb_image, tolerance=0.1, cut_off=20, value=0, level_diff_threshold=5, channel_axis=-1, min_border=5) -> CropParams:
+    Args:
+        rgb_image (np.ndarray): The input RGB image.
+        tolerance (float): The tolerance level for pixel value comparison. Default is 0.1.
+        cut_off (int): The maximum number of pixels to cut off from the border. Default is 20.
+        value (int): The pixel value to check against. Default is 0.
+        level_diff_threshold (int): The threshold for pixel value difference. Default is 5.
+        channel_axis (int): The axis along which to compute the mean for grayscale conversion. Default is -1.
+        min_border (int): The minimum border size to consider. Default is 5.
+
+    Returns:
+        CropParams: The parameters for cropping the image.
+    """
     gray_image = np.mean(rgb_image, axis=channel_axis)
     h, w = gray_image.shape
 
+    def num_value_pixels(arr: np.ndarray) -> int:
+        """Counts the number of pixels in the array that are close to the specified value.
 
-    def num_value_pixels(arr):
+        Args:
+            arr (np.ndarray): The array to check.
+
+        Returns:
+            int: The count of pixels close to the specified value.
+        """
         return np.sum(np.abs(arr - value) < level_diff_threshold)
 
-    def is_above_tolerance(arr, total_pixels):
+    def is_above_tolerance(arr: np.ndarray, total_pixels: int) -> bool:
+        """Checks if the proportion of value pixels exceeds the tolerance.
+
+        Args:
+            arr (np.ndarray): The array to check.
+            total_pixels (int): The total number of pixels in the array.
+
+        Returns:
+            bool: True if the proportion of value pixels exceeds the tolerance, False otherwise.
+        """
         return (num_value_pixels(arr) / total_pixels) > tolerance
 
     # Crop top border until number of value pixels become below tolerance
     top = min_border
-    while is_above_tolerance(gray_image[top, :], w) and top < h-1:
+    while is_above_tolerance(gray_image[top, :], w) and top < h - 1:
         top += 1
         if top > cut_off:
             break
@@ -63,7 +111,7 @@ def get_border_params(rgb_image, tolerance=0.1, cut_off=20, value=0, level_diff_
 
     # Crop left border until number of value pixels become below tolerance
     left = min_border
-    while is_above_tolerance(gray_image[:, left], h) and left < w-1:
+    while is_above_tolerance(gray_image[:, left], h) and left < w - 1:
         left += 1
         if left > cut_off:
             break
@@ -74,18 +122,20 @@ def get_border_params(rgb_image, tolerance=0.1, cut_off=20, value=0, level_diff_
         right -= 1
         if w - right > cut_off:
             break
-        
 
     return CropParams(top, bottom, left, right)
 
 
-def get_white_border(rgb_image, value=255, **kwargs) -> CropParams:
-    """Crops the white border of the RGB.
+def get_white_border(rgb_image: np.ndarray, value: int = 255, **kwargs) -> CropParams:
+    """Crops the white border of the RGB image.
 
     Args:
-        rgb: RGB image, shape (H, W, 3).
+        rgb_image (np.ndarray): The input RGB image.
+        value (int): The pixel value to check against. Default is 255.
+        **kwargs: Additional arguments passed to get_border_params.
+
     Returns:
-        Crop parameters.
+        CropParams: The parameters for cropping the white border.
     """
     if value == 255:
         # assert range of values in rgb image is [0, 255]
@@ -97,58 +147,81 @@ def get_white_border(rgb_image, value=255, **kwargs) -> CropParams:
 
     return get_border_params(rgb_image, value=value, **kwargs)
 
-def get_black_border(rgb_image, **kwargs) -> CropParams:
-    """Crops the black border of the RGB.
+
+def get_black_border(rgb_image: np.ndarray, **kwargs) -> CropParams:
+    """Crops the black border of the RGB image.
 
     Args:
-        rgb: RGB image, shape (H, W, 3).
+        rgb_image (np.ndarray): The input RGB image.
+        **kwargs: Additional arguments passed to get_border_params.
 
     Returns:
-        Crop parameters.
+        CropParams: The parameters for cropping the black border.
     """
-
     return get_border_params(rgb_image, value=0, **kwargs)
 
+
 def crop_image(image: np.ndarray, crop_params: CropParams) -> np.ndarray:
-    """Crops the image according to the crop parameters.
+    """Crops the image according to the specified crop parameters.
 
     Args:
-        image: RGB or depth image, shape (H, W, 3) or (H, W).
-        crop_params: Crop parameters.
+        image (np.ndarray): The input image, either RGB or depth, with shape (H, W, 3) or (H, W).
+        crop_params (CropParams): The parameters defining the crop boundaries.
 
     Returns:
-        Cropped image.
+        np.ndarray: The cropped image.
     """
-    return image[crop_params.top:crop_params.bottom, crop_params.left:crop_params.right]
+    return image[crop_params.top : crop_params.bottom, crop_params.left : crop_params.right]
+
 
 def crop_images(*images: np.ndarray, crop_params: CropParams) -> Tuple[np.ndarray]:
-    """Crops the images according to the crop parameters.
+    """Crops multiple images according to the specified crop parameters.
 
     Args:
-        images: RGB or depth images, shape (H, W, 3) or (H, W).
-        crop_params: Crop parameters.
+        *images (np.ndarray): The input images, either RGB or depth, with shape (H, W, 3) or (H, W).
+        crop_params (CropParams): The parameters defining the crop boundaries.
 
     Returns:
-        Cropped images.
+        Tuple[np.ndarray]: A tuple of cropped images.
     """
     return tuple(crop_image(image, crop_params) for image in images)
 
-def crop_black_or_white_border(rgb_image, *other_images: np.ndarray, tolerance=0.1, cut_off=20, level_diff_threshold=5) -> Tuple[np.ndarray]:
-    """Crops the white and black border of the RGB and depth images.
+
+def crop_black_or_white_border(
+    rgb_image: np.ndarray,
+    *other_images: np.ndarray,
+    tolerance: float = 0.1,
+    cut_off: int = 20,
+    level_diff_threshold: int = 5,
+) -> Tuple[np.ndarray]:
+    """Crops the white and black borders of the RGB and depth images.
 
     Args:
-        rgb: RGB image, shape (H, W, 3). This image is used to determine the border.
-        other_images: The other images to crop according to the border of the RGB image.
+        rgb_image (np.ndarray): The RGB image used to determine the borders, shape (H, W, 3).
+        *other_images (np.ndarray): Additional images to crop.
+        tolerance (float): The tolerance level for pixel value comparison. Default is 0.1.
+        cut_off (int): The maximum number of pixels to cut off from the border. Default is 20.
+        level_diff_threshold (int): The threshold for pixel value difference. Default is 5.
+
     Returns:
-        Cropped RGB and other images.
+        Tuple[np.ndarray]: A tuple of cropped RGB and other images.
     """
     # crop black border
-    crop_params = get_black_border(rgb_image, tolerance=tolerance, cut_off=cut_off, level_diff_threshold=level_diff_threshold)
+    crop_params = get_black_border(
+        rgb_image,
+        tolerance=tolerance,
+        cut_off=cut_off,
+        level_diff_threshold=level_diff_threshold,
+    )
     cropped_images = crop_images(rgb_image, *other_images, crop_params=crop_params)
 
     # crop white border
-    crop_params = get_white_border(cropped_images[0], tolerance=tolerance, cut_off=cut_off, level_diff_threshold=level_diff_threshold)
+    crop_params = get_white_border(
+        cropped_images[0],
+        tolerance=tolerance,
+        cut_off=cut_off,
+        level_diff_threshold=level_diff_threshold,
+    )
     cropped_images = crop_images(*cropped_images, crop_params=crop_params)
 
     return cropped_images
-    

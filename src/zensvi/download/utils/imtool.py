@@ -1,67 +1,72 @@
+import glob
 import os
+import random
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import numpy as np
 import requests
 from PIL import Image
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import numpy as np
-from tqdm import tqdm
-import random
 from requests.exceptions import ProxyError
-import glob
+from tqdm import tqdm
 
-class ImageTool():
+
+class ImageTool:
+    """A class containing static methods for image manipulation and downloading."""
 
     @staticmethod
     def concat_horizontally(im1, im2):
-        """
-        Description of concat_horizontally
-        Horizontally concatenates two images
+        """Horizontally concatenates two images.
 
         Args:
-            im1 (undefined): first PIL image
-            im2 (undefined): second PIL image
+            im1 (PIL.Image): First PIL image to concatenate.
+            im2 (PIL.Image): Second PIL image to concatenate.
 
+        Returns:
+            PIL.Image: New image with im1 and im2 concatenated horizontally.
         """
-        dst = Image.new('RGB', (im1.width + im2.width, im1.height))
+        dst = Image.new("RGB", (im1.width + im2.width, im1.height))
         dst.paste(im1, (0, 0))
         dst.paste(im2, (im1.width, 0))
         return dst
 
     @staticmethod
     def concat_vertically(im1, im2):
-        """
-        Description of concat_vertically
-        Vertically concatenates two images
+        """Vertically concatenates two images.
 
         Args:
-            im1 (undefined): first PIL image
-            im2 (undefined): second PIL image
+            im1 (PIL.Image): First PIL image to concatenate.
+            im2 (PIL.Image): Second PIL image to concatenate.
 
+        Returns:
+            PIL.Image: New image with im1 and im2 concatenated vertically.
         """
-        dst = Image.new('RGB', (im1.width, im1.height + im2.height))
+        dst = Image.new("RGB", (im1.width, im1.height + im2.height))
         dst.paste(im1, (0, 0))
         dst.paste(im2, (0, im1.height))
         return dst
-                
+
     @staticmethod
     def fetch_image_with_proxy(pano_id, zoom, x, y, ua, proxies):
-        """
-        Fetches an image using a proxy.
+        """Fetches a Google Street View image tile using a random proxy.
 
         Args:
-            pano_id (str): GSV panorama id
-            zoom (int): Zoom level for the image
-            x (int): The x coordinate of the tile
-            y (int): The y coordinate of the tile
-            ua (str): User agent string
-            proxies (list): A list of available proxies
+            pano_id (str): Google Street View panorama ID.
+            zoom (int): Zoom level for the image tile.
+            x (int): X coordinate of the tile.
+            y (int): Y coordinate of the tile.
+            ua (str): User agent string for the HTTP request.
+            proxies (list): List of proxy servers to use.
 
         Returns:
-            Image: The fetched image
+            PIL.Image: The fetched image tile.
+
+        Raises:
+            ProxyError: If the selected proxy fails to connect.
         """
         while True:
             # Choose a random proxy for each request
             proxy = random.choice(proxies)
-            url_img = f'https://cbk0.google.com/cbk?output=tile&panoid={pano_id}&zoom={zoom}&x={x}&y={y}'
+            url_img = f"https://cbk0.google.com/cbk?output=tile&panoid={pano_id}&zoom={zoom}&x={x}&y={y}"
             try:
                 image = Image.open(requests.get(url_img, headers=ua, proxies=proxy, stream=True).raw)
                 return image
@@ -71,14 +76,14 @@ class ImageTool():
 
     @staticmethod
     def is_bottom_black(image, row_count=3, intensity_threshold=10):
-        """
-        Check if the bottom 'row_count' rows of the image are near black, with a given intensity threshold.
-        This method uses linear computation instead of nested loops for faster execution.
+        """Check if the bottom rows of an image are near black.
+
+        Uses linear computation instead of nested loops for faster execution.
 
         Args:
             image (PIL.Image): The image to check.
-            row_count (int): Number of rows to check.
-            intensity_threshold (int): The maximum intensity for a pixel to be considered black.
+            row_count (int, optional): Number of bottom rows to check. Defaults to 3.
+            intensity_threshold (int, optional): Maximum pixel intensity to be considered black. Defaults to 10.
 
         Returns:
             bool: True if the bottom rows are near black, False otherwise.
@@ -90,20 +95,21 @@ class ImageTool():
 
     @staticmethod
     def process_image(image, zoom):
-        """
-        Crop and resize the image based on zoom level if the bottom is black.
+        """Process an image by cropping and resizing based on zoom level.
+
+        Only processes the image if the bottom is black.
 
         Args:
             image (PIL.Image): The image to process.
-            zoom (int): The zoom level.
+            zoom (int): The zoom level used to determine dimensions.
 
         Returns:
-            PIL.Image: The processed image.
+            PIL.Image: The processed image, either cropped and resized or unchanged.
         """
         if ImageTool.is_bottom_black(image):
             # Compute the crop and resize dimensions based on zoom level
-            crop_height, crop_width = 208 * (2 ** zoom), 416 * (2 ** zoom)
-            resize_height, resize_width = 256 * (2 ** zoom), 512 * (2 ** zoom)
+            crop_height, crop_width = 208 * (2**zoom), 416 * (2**zoom)
+            resize_height, resize_width = 256 * (2**zoom), 512 * (2**zoom)
 
             # Crop the image
             image = image.crop((0, 0, crop_width, crop_height))
@@ -111,31 +117,46 @@ class ImageTool():
             # Resize the image
             image = image.resize((resize_width, resize_height), Image.LANCZOS)
 
-        return image            
+        return image
 
     @staticmethod
-    def get_and_save_image(pano_id, identif, zoom, vertical_tiles, horizontal_tiles, out_path, ua, proxies, cropped=False, full=True):
-        """
-        Description of get_and_save_image
-        
-        Downloads an image tile by tile and composes them together.
+    def get_and_save_image(
+        pano_id,
+        identif,
+        zoom,
+        vertical_tiles,
+        horizontal_tiles,
+        out_path,
+        ua,
+        proxies,
+        cropped=False,
+        full=True,
+    ):
+        """Download and compose a complete Street View image from individual tiles.
 
         Args:
-            pano_id (undefined): GSV anorama id
-            identif (undefined): custom identifier
-            size (undefined):    image resolution
-            vertical_tiles (undefined): number of vertical tiles
-            horizontal_tiles (undefined): number of horizontal tiles
-            out_path (undefined): output path
-            cropped=False (undefined): set True if the image split horizontally in half is needed
-            full=True (undefined): set to True if the full image is needed
+            pano_id (str): Google Street View panorama ID.
+            identif (str): Custom identifier for the saved image.
+            zoom (int): Zoom level for image resolution.
+            vertical_tiles (int): Number of vertical tiles to download.
+            horizontal_tiles (int): Number of horizontal tiles to download.
+            out_path (str): Directory path to save the images.
+            ua (str): User agent string for HTTP requests.
+            proxies (list): List of proxy servers to use.
+            cropped (bool, optional): Whether to crop image horizontally in half. Defaults to False.
+            full (bool, optional): Whether to save the complete composed image. Defaults to True.
 
+        Returns:
+            str: The identifier of the saved image.
+
+        Raises:
+            ValueError: If the final image dimensions are invalid.
         """
         for x in range(horizontal_tiles):
             for y in range(vertical_tiles):
                 new_img = ImageTool.fetch_image_with_proxy(pano_id, zoom, x, y, ua, proxies)
                 if not full:
-                    new_img.save(f'{out_path}/{identif}_x{x}_y{y}.jpg')
+                    new_img.save(f"{out_path}/{identif}_x{x}_y{y}.jpg")
                 if y == 0:
                     first_slice = new_img
                 else:
@@ -147,7 +168,7 @@ class ImageTool():
                 final_image = ImageTool.concat_horizontally(final_image, first_slice)
 
         if full:
-            name = f'{out_path}/{identif}'
+            name = f"{out_path}/{identif}"
             if cropped or zoom == 0:
                 h_cropped = final_image.size[1] // 2
                 final_image = final_image.crop((0, 0, final_image.size[0], h_cropped))
@@ -155,31 +176,47 @@ class ImageTool():
             # Validate image before saving
             if final_image.size[0] > 0 and final_image.size[1] > 0:
                 final_image = ImageTool.process_image(final_image, zoom)
-                final_image.save(f'{name}.jpg')
+                final_image.save(f"{name}.jpg")
             else:
                 raise ValueError(f"Invalid image for pano_id {pano_id}")
 
         return identif
 
-
     @staticmethod
-    def dwl_multiple(panoids, zoom, v_tiles, h_tiles, out_path, uas, proxies, cropped, full, batch_size = 1000, logger = None):
-        """
-        Description of dwl_multiple
-        
-        Calls the get_and_save_image function using multiple threads.
-        
-        Args:
-            panoids (undefined): GSV anorama id
-            zoom (undefined):    image resolution
-            v_tiles (undefined): number of vertical tiles
-            h_tiles (undefined): number of horizontal tiles
-            out_path (undefined): output path
-            cropped=False (undefined): set True if the image split horizontally in half is needed
-            full=True (undefined): set to True if the full image is needed
-            log_path=None (undefined): path to a log file
-        """
+    def dwl_multiple(
+        panoids,
+        zoom,
+        v_tiles,
+        h_tiles,
+        out_path,
+        uas,
+        proxies,
+        cropped,
+        full,
+        batch_size=1000,
+        logger=None,
+        max_workers=None,
+    ):
+        """Download multiple Street View images in parallel using batched processing.
 
+        Args:
+            panoids (list): List of Google Street View panorama IDs.
+            zoom (int): Zoom level for image resolution.
+            v_tiles (int): Number of vertical tiles per image.
+            h_tiles (int): Number of horizontal tiles per image.
+            out_path (str): Base directory to save images.
+            uas (list): List of user agent strings.
+            proxies (list): List of proxy servers to use.
+            cropped (bool): Whether to crop images horizontally in half.
+            full (bool): Whether to save complete composed images.
+            batch_size (int, optional): Number of images to process per batch. Defaults to 1000.
+            logger (Logger, optional): Logger object for recording progress. Defaults to None.
+            max_workers (int, optional): Maximum number of concurrent download threads. Defaults to None.
+
+        Note:
+            Creates subdirectories for each batch of downloads.
+            Failed downloads are logged if a logger is provided.
+        """
         if not os.path.exists(out_path):
             os.makedirs(out_path)
 
@@ -187,20 +224,27 @@ class ImageTool():
 
         # Calculate current highest batch number
         existing_batches = glob.glob(os.path.join(out_path, "batch_*"))
-        existing_batch_numbers = [int(os.path.basename(batch).split('_')[-1]) for batch in existing_batches]
+        existing_batch_numbers = [int(os.path.basename(batch).split("_")[-1]) for batch in existing_batches]
         start_batch_number = max(existing_batch_numbers, default=0)
 
         num_batches = (len(panoids) + batch_size - 1) // batch_size
 
-        for counter, i in tqdm(enumerate(range(start_batch_number, start_batch_number + num_batches)), desc=f"Downloading images by batch size {min(batch_size, len(panoids))}"):
+        for i in tqdm(
+            range(num_batches),
+            desc=f"Processing outer batches of size {min(batch_size, len(panoids))}",
+        ):
             # Create a new sub-folder for each batch
-            batch_out_path = os.path.join(out_path, f"batch_{i+1}")
+            batch_out_path = os.path.join(out_path, f"batch_{start_batch_number + i + 1}")
             os.makedirs(batch_out_path, exist_ok=True)
 
-            with ThreadPoolExecutor(max_workers=min(len(uas), batch_size)) as executor:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 jobs = []
-                batch_panoids = panoids[counter*batch_size : (counter+1)*batch_size]
-                batch_uas = uas[counter*batch_size : (counter+1)*batch_size]
+                batch_panoids = panoids[
+                    start_batch_number * batch_size + i * batch_size : (start_batch_number + i + 1) * batch_size
+                ]
+                batch_uas = uas[
+                    start_batch_number * batch_size + i * batch_size : (start_batch_number + i + 1) * batch_size
+                ]
                 for pano, ua in zip(batch_panoids, batch_uas):
                     kw = {
                         "pano_id": pano,
@@ -212,11 +256,15 @@ class ImageTool():
                         "horizontal_tiles": h_tiles,
                         "out_path": batch_out_path,  # Pass the new sub-folder path
                         "cropped": cropped,
-                        "full": full
+                        "full": full,
                     }
                     jobs.append(executor.submit(ImageTool.get_and_save_image, **kw))
 
-                for job in tqdm(as_completed(jobs), total=len(jobs), desc=f"Downloading images for batch #{i+1}"):
+                for job in tqdm(
+                    as_completed(jobs),
+                    total=len(jobs),
+                    desc=f"Downloading images for batch #{start_batch_number + i + 1}",
+                ):
                     try:
                         job.result()
                     except Exception as e:
@@ -226,6 +274,6 @@ class ImageTool():
                         if logger:
                             logger.log_failed_pids(failed_panoid)
 
-        print("Total images downloaded:", len(panoids) - errors, "Errors:", errors)  
+        print("Total images downloaded:", len(panoids) - errors, "Errors:", errors)
         if logger:
             logger.log_info(f"Total images downloaded: {len(panoids) - errors}, Errors: {errors}")

@@ -1,53 +1,63 @@
-import random
 import datetime
-import pandas as pd
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import warnings
-import requests
-from pathlib import Path
-import geopandas as gpd
-from tqdm import tqdm
-from shapely.geometry import Point
-import warnings
-from shapely.errors import ShapelyDeprecationWarning
-import json
-import os
-
-warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
-
 import glob
-import shutil
-import numpy as np
-import osmnx as ox
-from PIL import Image
+import logging
+import os
+import random
+import warnings
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
-from zensvi.download.base import BaseDownloader
+import geopandas as gpd
+import osmnx as ox
+import pandas as pd
+import requests
+from PIL import Image
+from shapely.errors import ShapelyDeprecationWarning
+from tqdm import tqdm
+
 import zensvi.download.kartaview.download_functions as kv
-from zensvi.download.utils.geoprocess import GeoProcessor
-from zensvi.download.utils.helpers import standardize_column_names, check_and_buffer
+from zensvi.download.base import BaseDownloader
+from zensvi.download.utils.helpers import check_and_buffer, standardize_column_names
 from zensvi.utils.log import Logger
 
-# set logging level to warning
-import logging
-
+warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 logging.getLogger("mapillary.utils.client").setLevel(logging.WARNING)
 
 
 class KVDownloader(BaseDownloader):
-    """
-    KartaView Downloader class.
+    """KartaView Downloader class.
 
     Args:
         log_path (str, optional): Path to the log file. Defaults to None.
+        max_workers (int, optional): Number of workers for parallel processing. Defaults to None.
     """
 
-    def __init__(self, log_path=None):
+    def __init__(self, log_path=None, max_workers=None):
         super().__init__(log_path)
+        self._max_workers = max_workers
         # initialize the logger
         if log_path is not None:
+            # make log directory
+            Path(log_path).parent.mkdir(parents=True, exist_ok=True)
             self.logger = Logger(log_path)
         else:
             self.logger = None
+
+    @property
+    def max_workers(self):
+        """Property for the number of workers for parallel processing.
+
+        Returns:
+            int: max_workers
+        """
+        return self._max_workers
+
+    @max_workers.setter
+    def max_workers(self, max_workers):
+        if max_workers is None:
+            self._max_workers = min(32, os.cpu_count() + 4)
+        else:
+            self._max_workers = max_workers
 
     def _read_pids(self, path_pid):
         pid_df = pd.read_csv(path_pid)
@@ -90,9 +100,7 @@ class KVDownloader(BaseDownloader):
         if kwargs["lat"] is not None and kwargs["lon"] is not None:
             # create a geodataframe with lat and lon
             df = pd.DataFrame({"lat": [kwargs["lat"]], "lon": [kwargs["lon"]]})
-            gdf = gpd.GeoDataFrame(
-                df, geometry=gpd.points_from_xy(df.lon, df.lat), crs="EPSG:4326"
-            )
+            gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.lon, df.lat), crs="EPSG:4326")
 
         # input: csv file
         elif kwargs["input_csv_file"] != "":
@@ -114,9 +122,7 @@ class KVDownloader(BaseDownloader):
             gdf = ox.geocoder.geocode_to_gdf(kwargs["input_place_name"])
             # raise error if the input_place_name is not found
             if len(gdf) == 0:
-                raise ValueError(
-                    "The input_place_name is not found. Please try another place name."
-                )
+                raise ValueError("The input_place_name is not found. Please try another place name.")
         else:
             raise ValueError("Please input the lat and lon, csv file, or shapefile.")
 
@@ -130,7 +136,7 @@ class KVDownloader(BaseDownloader):
 
     def _filter_pids_date(self, pid_df, start_date, end_date):
         # create a temporary column date from captured_at (milliseconds from Unix epoch)
-        pid_df["date"] = pd.to_datetime(pid_df["shotDate"], format='%Y-%m-%d %H:%M:%S')
+        pid_df["date"] = pd.to_datetime(pid_df["shotDate"], format="%Y-%m-%d %H:%M:%S")
         # check if start_date and end_date are in the correct format with regex. If not, raise error
         if start_date is not None:
             try:
@@ -143,9 +149,7 @@ class KVDownloader(BaseDownloader):
             except ValueError:
                 raise ValueError("Incorrect end_date format, should be YYYY-MM-DD")
         # if start_date is not None, filter out the rows with date < start_date
-        pid_df = (
-            pid_df[pid_df["date"] >= start_date] if start_date is not None else pid_df
-        )
+        pid_df = pid_df[pid_df["date"] >= start_date] if start_date is not None else pid_df
         # if end_date is not None, filter out the rows with date > end_date
         pid_df = pid_df[pid_df["date"] <= end_date] if end_date is not None else pid_df
         # drop the temporary column date
@@ -172,16 +176,14 @@ class KVDownloader(BaseDownloader):
         if len(pid) == 0:
             print("There is no image ID to download")
             return
-        urls = pid[['id', 'fileurlProc']].rename(columns={'fileurlProc': 'url'})
+        urls = pid[["id", "fileurlProc"]].rename(columns={"fileurlProc": "url"})
         urls.to_csv(self.pids_url, index=False)
 
     def _download_images_kv(self, path_pid, cropped, batch_size, start_date, end_date):
         checkpoints = glob.glob(str(self.panorama_output / "**/*.png"), recursive=True)
 
         # Read already downloaded images and convert to ids
-        downloaded_ids = set(
-            [int(Path(file_path).stem) for file_path in checkpoints]
-        )  # Use set for faster operations
+        downloaded_ids = set([int(Path(file_path).stem) for file_path in checkpoints])  # Use set for faster operations
 
         pid_df = pd.read_csv(path_pid).dropna(subset=["id"])
         pid_df["id"] = pid_df["id"].astype("int64")
@@ -193,46 +195,46 @@ class KVDownloader(BaseDownloader):
         urls_df = self._filter_pids_date(urls_df, start_date, end_date)
 
         # Filter out the ids that have already been processed
-        urls_df = urls_df[
-            ~urls_df["id"].isin(downloaded_ids)
-        ]  # Use isin for efficient operation
+        urls_df = urls_df[~urls_df["id"].isin(downloaded_ids)]  # Use isin for efficient operation
 
-        def worker(row, output_dir, cropped):
+        def worker(row, output_dir, cropped, max_retries=5):
             url, panoid = row.url, row.id
-            user_agent = random.choice(self.user_agents)
-            proxy = random.choice(self.proxies)
+            user_agent = random.choice(self._user_agents)
+            proxy = random.choice(self._proxies)
 
             image_name = f"{panoid}.png"  # Use id for file name
             image_path = output_dir / image_name
-            try:
-                response = requests.get(
-                    url, headers=user_agent, proxies=proxy, timeout=10
-                )
-                if response.status_code == 200:
-                    with open(image_path, "wb") as f:
-                        f.write(response.content)
 
-                    if cropped:
-                        img = Image.open(image_path)
-                        w, h = img.size
-                        img_cropped = img.crop((0, 0, w, h // 2))
-                        img_cropped.save(image_path)
+            for retry in range(max_retries):
+                try:
+                    response = requests.get(url, headers=user_agent, proxies=proxy, timeout=10)
+                    if response.status_code == 200:
+                        with open(image_path, "wb") as f:
+                            f.write(response.content)
 
-                else:
-                    if self.logger is not None:
-                        self.logger.log_failed_pids(panoid)
-            except Exception as e:
-                if self.logger is not None:
-                    self.logger.log_failed_pids(panoid)
-                print(f"Error: {e}")
+                        if cropped:
+                            img = Image.open(image_path)
+                            w, h = img.size
+                            img_cropped = img.crop((0, 0, w, h // 2))
+                            img_cropped.save(image_path)
+                        break
+                    else:
+                        if retry == max_retries - 1:  # Last retry
+                            if self.logger is not None:
+                                self.logger.log_failed_pids(panoid)
+                except Exception as e:
+                    if retry == max_retries - 1:  # Last retry
+                        if self.logger is not None:
+                            self.logger.log_failed_pids(panoid)
+                        print(f"Error: {e}")
+                    else:
+                        print(f"Retry {retry + 1}/{max_retries} failed: {e}")
 
         num_batches = (len(urls_df) + batch_size - 1) // batch_size
 
         # Calculate current highest batch number
         existing_batches = glob.glob(str(self.panorama_output / "batch_*"))
-        existing_batch_numbers = [
-            int(Path(batch).name.split("_")[-1]) for batch in existing_batches
-        ]
+        existing_batch_numbers = [int(Path(batch).name.split("_")[-1]) for batch in existing_batches]
         start_batch_number = max(existing_batch_numbers, default=0)
 
         for i in tqdm(
@@ -243,7 +245,7 @@ class KVDownloader(BaseDownloader):
             batch_out_path = self.panorama_output / f"batch_{i+1}"
             batch_out_path.mkdir(exist_ok=True)
 
-            with ThreadPoolExecutor() as executor:
+            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
                 batch_futures = {
                     executor.submit(worker, row, batch_out_path, cropped): row.id
                     for row in urls_df.iloc[
@@ -276,9 +278,9 @@ class KVDownloader(BaseDownloader):
         start_date=None,
         end_date=None,
         metadata_only=False,
+        max_workers=None,
     ):
-        """
-        Downloads street view images from KartaView using specified parameters.
+        """Downloads street view images from KartaView using specified parameters.
 
         Args:
             dir_output (str): Directory where output files and images will be stored.
@@ -295,6 +297,7 @@ class KVDownloader(BaseDownloader):
             start_date (str, optional): Start date (YYYY-MM-DD) to filter images by capture date.
             end_date (str, optional): End date (YYYY-MM-DD) to filter images by capture date.
             metadata_only (bool, optional): If True, skips downloading images and only fetches metadata. Defaults to False.
+            max_workers (int, optional): Number of workers for parallel processing. If None, it will be set to min(32, os.cpu_count() + 4).
 
         Returns:
             None: This method does not return a value but will save files directly to the specified output directory.
@@ -324,7 +327,11 @@ class KVDownloader(BaseDownloader):
                 start_date=start_date,
                 end_date=end_date,
                 metadata_only=metadata_only,
+                max_workers=max_workers,
             )
+        # Set max_workers
+        self.max_workers = max_workers
+
         # set necessary directories
         self._set_dirs(dir_output)
 
@@ -332,12 +339,8 @@ class KVDownloader(BaseDownloader):
         if path_pid is None:
             print("Getting pids...")
             path_pid = self.dir_output / "kv_pids.csv"
-            if path_pid.exists() & (update_pids == False):
-                print(
-                    "update_pids is set to False. So the following csv file will be used: {}".format(
-                        path_pid
-                    )
-                )
+            if path_pid.exists() & (not update_pids):
+                print("update_pids is set to False. So the following csv file will be used: {}".format(path_pid))
             else:
                 self._get_pids(
                     path_pid,
@@ -379,13 +382,9 @@ class KVDownloader(BaseDownloader):
         if path_pid.exists():
             self._get_urls_kv(path_pid)
             # download images
-            self._download_images_kv(
-                path_pid, cropped, batch_size, start_date, end_date
-            )
+            self._download_images_kv(path_pid, cropped, batch_size, start_date, end_date)
         else:
-            print(
-                "There is no imagae ID to download within the given input parameters"
-            )
+            print("There is no imagae ID to download within the given input parameters")
 
         # # delete the cache directory
         # if self.dir_cache.exists():

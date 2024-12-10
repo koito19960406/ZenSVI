@@ -28,41 +28,63 @@ import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms
 
 
 class ToTensor(object):
+    """Convert images and depth maps to PyTorch tensors.
+
+    This class normalizes the image and converts both the image and depth
+    maps from numpy arrays to PyTorch tensors.
+
+    Attributes:
+        normalize (callable): A function to normalize the image.
+    """
+
     def __init__(self):
         # self.normalize = transforms.Normalize(
         #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        self.normalize = lambda x : x
+        self.normalize = lambda x: x
 
     def __call__(self, sample):
-        image, depth = sample['image'], sample['depth']
+        """Convert the sample to tensors and apply normalization.
+
+        Args:
+            sample (dict): A dictionary containing 'image' and 'depth'.
+
+        Returns:
+            dict: A dictionary containing the transformed 'image', 'depth', and dataset name.
+        """
+        image, depth = sample["image"], sample["depth"]
         image = self.to_tensor(image)
         image = self.normalize(image)
         depth = self.to_tensor(depth)
 
-        return {'image': image, 'depth': depth, 'dataset': "diml_outdoor"}
+        return {"image": image, "depth": depth, "dataset": "diml_outdoor"}
 
     def to_tensor(self, pic):
+        """Convert a PIL image or numpy array to a PyTorch tensor.
 
+        Args:
+            pic (PIL Image or np.ndarray): The image to convert.
+
+        Returns:
+            torch.Tensor: The converted image as a tensor.
+        """
         if isinstance(pic, np.ndarray):
             img = torch.from_numpy(pic.transpose((2, 0, 1)))
             return img
 
-        #         # handle PIL Image
-        if pic.mode == 'I':
+        # Handle PIL Image
+        if pic.mode == "I":
             img = torch.from_numpy(np.array(pic, np.int32, copy=False))
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             img = torch.from_numpy(np.array(pic, np.int16, copy=False))
         else:
-            img = torch.ByteTensor(
-                torch.ByteStorage.from_buffer(pic.tobytes()))
+            img = torch.ByteTensor(torch.ByteStorage.from_buffer(pic.tobytes()))
         # PIL image mode: 1, L, P, I, F, RGB, YCbCr, RGBA, CMYK
-        if pic.mode == 'YCbCr':
+        if pic.mode == "YCbCr":
             nchannel = 3
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             nchannel = 1
         else:
             nchannel = len(pic.mode)
@@ -76,39 +98,75 @@ class ToTensor(object):
 
 
 class DIML_Outdoor(Dataset):
+    """Dataset class for DIML outdoor images and depth maps.
+
+    This class loads images and their corresponding depth maps from the specified
+    directory and applies transformations.
+
+    Attributes:
+        image_files (list): List of file paths for the images.
+        depth_files (list): List of file paths for the depth maps.
+        transform (callable): Transformation to apply to the samples.
+    """
+
     def __init__(self, data_dir_root):
+        """Initializes the DIML_Outdoor dataset.
+
+        Args:
+            data_dir_root (str): Root directory containing the dataset.
+        """
         import glob
 
         # image paths are of the form <data_dir_root>/{outleft, depthmap}/*.png
-        self.image_files = glob.glob(os.path.join(
-            data_dir_root, 'outleft', '*.png'))
-        self.depth_files = [r.replace("outleft", "depthmap")
-                            for r in self.image_files]
+        self.image_files = glob.glob(os.path.join(data_dir_root, "outleft", "*.png"))
+        self.depth_files = [r.replace("outleft", "depthmap") for r in self.image_files]
         self.transform = ToTensor()
 
     def __getitem__(self, idx):
+        """Fetches a sample from the dataset.
+
+        Args:
+            idx (int): Index of the sample to fetch.
+
+        Returns:
+            dict: A dictionary containing the image, depth, and dataset name.
+        """
         image_path = self.image_files[idx]
         depth_path = self.depth_files[idx]
 
         image = np.asarray(Image.open(image_path), dtype=np.float32) / 255.0
-        depth = np.asarray(Image.open(depth_path),
-                           dtype='uint16') / 1000.0  # mm to meters
+        depth = np.asarray(Image.open(depth_path), dtype="uint16") / 1000.0  # mm to meters
 
         # depth[depth > 8] = -1
         depth = depth[..., None]
 
         sample = dict(image=image, depth=depth, dataset="diml_outdoor")
 
-        # return sample
         return self.transform(sample)
 
     def __len__(self):
+        """Returns the total number of samples in the dataset.
+
+        Returns:
+            int: Number of samples in the dataset.
+        """
         return len(self.image_files)
 
 
 def get_diml_outdoor_loader(data_dir_root, batch_size=1, **kwargs):
+    """Creates a DataLoader for the DIML outdoor dataset.
+
+    Args:
+        data_dir_root (str): Root directory containing the dataset.
+        batch_size (int, optional): Number of samples per batch. Defaults to 1.
+        **kwargs: Additional arguments for DataLoader.
+
+    Returns:
+        DataLoader: A DataLoader for the DIML outdoor dataset.
+    """
     dataset = DIML_Outdoor(data_dir_root)
     return DataLoader(dataset, batch_size, **kwargs)
+
 
 # get_diml_outdoor_loader(data_dir_root="datasets/diml/outdoor/test/HR")
 # get_diml_outdoor_loader(data_dir_root="datasets/diml/outdoor/test/LR")

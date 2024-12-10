@@ -11,8 +11,12 @@ from torchvision import transforms
 
 
 class GaussianBlur(transforms.RandomApply):
-    """
-    Apply Gaussian Blur to the PIL image.
+    """Apply Gaussian Blur to the PIL image.
+
+    Args:
+        p (float): Probability of applying the Gaussian blur. Default is 0.5.
+        radius_min (float): Minimum radius for Gaussian blur. Default is 0.1.
+        radius_max (float): Maximum radius for Gaussian blur. Default is 2.0.
     """
 
     def __init__(self, *, p: float = 0.5, radius_min: float = 0.1, radius_max: float = 2.0):
@@ -23,14 +27,22 @@ class GaussianBlur(transforms.RandomApply):
 
 
 class MaybeToTensor(transforms.ToTensor):
-    """
-    Convert a ``PIL Image`` or ``numpy.ndarray`` to tensor, or keep as is if already a tensor.
+    """Convert a ``PIL Image`` or ``numpy.ndarray`` to tensor, or keep as is if already
+    a tensor.
+
+    Args:
+        pic (PIL Image, numpy.ndarray or torch.tensor): Image to be converted to tensor.
+
+    Returns:
+        Tensor: Converted image.
     """
 
     def __call__(self, pic):
-        """
+        """Convert the input image to a tensor if it is not already a tensor.
+
         Args:
             pic (PIL Image, numpy.ndarray or torch.tensor): Image to be converted to tensor.
+
         Returns:
             Tensor: Converted image.
         """
@@ -48,6 +60,15 @@ def make_normalize_transform(
     mean: Sequence[float] = IMAGENET_DEFAULT_MEAN,
     std: Sequence[float] = IMAGENET_DEFAULT_STD,
 ) -> transforms.Normalize:
+    """Create a normalization transform.
+
+    Args:
+        mean (Sequence[float]): Mean values for normalization. Default is IMAGENET_DEFAULT_MEAN.
+        std (Sequence[float]): Standard deviation values for normalization. Default is IMAGENET_DEFAULT_STD.
+
+    Returns:
+        transforms.Normalize: Normalization transform.
+    """
     return transforms.Normalize(mean=mean, std=std)
 
 
@@ -61,6 +82,18 @@ def make_classification_train_transform(
     mean: Sequence[float] = IMAGENET_DEFAULT_MEAN,
     std: Sequence[float] = IMAGENET_DEFAULT_STD,
 ):
+    """Create a transform for training classification models.
+
+    Args:
+        crop_size (int): Size of the crop. Default is 224.
+        interpolation: Interpolation method for resizing. Default is transforms.InterpolationMode.BICUBIC.
+        hflip_prob (float): Probability of horizontal flipping. Default is 0.5.
+        mean (Sequence[float]): Mean values for normalization. Default is IMAGENET_DEFAULT_MEAN.
+        std (Sequence[float]): Standard deviation values for normalization. Default is IMAGENET_DEFAULT_STD.
+
+    Returns:
+        transforms.Compose: Composed transform for training.
+    """
     transforms_list = [transforms.RandomResizedCrop(crop_size, interpolation=interpolation)]
     if hflip_prob > 0.0:
         transforms_list.append(transforms.RandomHorizontalFlip(hflip_prob))
@@ -83,6 +116,18 @@ def make_classification_eval_transform(
     mean: Sequence[float] = IMAGENET_DEFAULT_MEAN,
     std: Sequence[float] = IMAGENET_DEFAULT_STD,
 ) -> transforms.Compose:
+    """Create a transform for evaluating classification models.
+
+    Args:
+        resize_size (int): Size for resizing the image. Default is 256.
+        interpolation: Interpolation method for resizing. Default is transforms.InterpolationMode.BICUBIC.
+        crop_size (int): Size of the crop. Default is 224.
+        mean (Sequence[float]): Mean values for normalization. Default is IMAGENET_DEFAULT_MEAN.
+        std (Sequence[float]): Standard deviation values for normalization. Default is IMAGENET_DEFAULT_STD.
+
+    Returns:
+        transforms.Compose: Composed transform for evaluation.
+    """
     transforms_list = [
         transforms.Resize(resize_size, interpolation=interpolation),
         transforms.CenterCrop(crop_size),

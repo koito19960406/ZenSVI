@@ -4,20 +4,19 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
+import warnings
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
 from gzip import GzipFile
 from io import BytesIO
 from mmap import ACCESS_READ, mmap
-import os
 from typing import Any, Callable, List, Optional, Set, Tuple
-import warnings
 
 import numpy as np
 
 from .extended import ExtendedVisionDataset
-
 
 _Labels = int
 
@@ -26,12 +25,28 @@ _DEFAULT_MMAP_CACHE_SIZE = 16  # Warning: This can exhaust file descriptors
 
 @dataclass
 class _ClassEntry:
+    """Represents an entry for a class in the dataset.
+
+    Attributes:
+        block_offset (int): The offset of the block in the tarball.
+        maybe_filename (Optional[str]): The filename associated with the entry, if available.
+    """
+
     block_offset: int
     maybe_filename: Optional[str] = None
 
 
 @dataclass
 class _Entry:
+    """Represents an entry in the dataset.
+
+    Attributes:
+        class_index (int): The index of the class.
+        start_offset (int): The start offset of the entry in the tarball.
+        end_offset (int): The end offset of the entry in the tarball.
+        filename (str): The filename of the entry.
+    """
+
     class_index: int  # noqa: E701
     start_offset: int
     end_offset: int
@@ -39,27 +54,65 @@ class _Entry:
 
 
 class _Split(Enum):
+    """Enumeration for dataset splits."""
+
     TRAIN = "train"
     VAL = "val"
 
     @property
     def length(self) -> int:
+        """Returns the length of the dataset split.
+
+        Returns:
+            int: The number of entries in the split.
+        """
         return {
             _Split.TRAIN: 11_797_647,
             _Split.VAL: 561_050,
         }[self]
 
-    def entries_path(self):
+    def entries_path(self) -> str:
+        """Returns the path to the entries file for the split.
+
+        Returns:
+            str: The path to the entries file.
+        """
         return f"imagenet21kp_{self.value}.txt"
 
 
 def _get_tarball_path(class_id: str) -> str:
+    """Generates the tarball path for a given class ID.
+
+    Args:
+        class_id (str): The class ID.
+
+    Returns:
+        str: The path to the tarball.
+    """
     return f"{class_id}.tar"
 
 
 def _make_mmap_tarball(tarballs_root: str, mmap_cache_size: int):
+    """Creates a memory-mapped tarball for the dataset.
+
+    Args:
+        tarballs_root (str): The root directory of the tarballs.
+        mmap_cache_size (int): The size of the memory-mapped cache.
+
+    Returns:
+        Callable: A function that returns a memory-mapped tarball for a given class ID.
+    """
+
     @lru_cache(maxsize=mmap_cache_size)
     def _mmap_tarball(class_id: str) -> mmap:
+        """Memory-maps the tarball for a given class ID.
+
+        Args:
+            class_id (str): The class ID.
+
+        Returns:
+            mmap: The memory-mapped tarball.
+        """
         tarball_path = _get_tarball_path(class_id)
         tarball_full_path = os.path.join(tarballs_root, tarball_path)
         with open(tarball_full_path) as f:
@@ -69,6 +122,13 @@ def _make_mmap_tarball(tarballs_root: str, mmap_cache_size: int):
 
 
 class ImageNet22k(ExtendedVisionDataset):
+    """Dataset class for ImageNet 22k.
+
+    Attributes:
+        _GZIPPED_INDICES (Set[int]): Set of indices for gzipped entries.
+        Labels (int): Type alias for labels.
+    """
+
     _GZIPPED_INDICES: Set[int] = {
         841_545,
         1_304_131,
@@ -109,6 +169,16 @@ class ImageNet22k(ExtendedVisionDataset):
         target_transform: Optional[Callable] = None,
         mmap_cache_size: int = _DEFAULT_MMAP_CACHE_SIZE,
     ) -> None:
+        """Initializes the ImageNet22k dataset.
+
+        Args:
+            root (str): The root directory of the dataset.
+            extra (str): The directory for extra data.
+            transforms (Optional[Callable]): Transformations to apply to the images.
+            transform (Optional[Callable]): Transformations to apply to the images.
+            target_transform (Optional[Callable]): Transformations to apply to the targets.
+            mmap_cache_size (int): The size of the memory-mapped cache.
+        """
         super().__init__(root, transforms, transform, target_transform)
         self._extra_root = extra
 
@@ -122,12 +192,36 @@ class ImageNet22k(ExtendedVisionDataset):
         self._mmap_tarball = _make_mmap_tarball(self._tarballs_root, mmap_cache_size)
 
     def _get_entries_path(self, root: Optional[str] = None) -> str:
+        """Gets the path to the entries file.
+
+        Args:
+            root (Optional[str]): The root directory (default is None).
+
+        Returns:
+            str: The path to the entries file.
+        """
         return "entries.npy"
 
     def _get_class_ids_path(self, root: Optional[str] = None) -> str:
+        """Gets the path to the class IDs file.
+
+        Args:
+            root (Optional[str]): The root directory (default is None).
+
+        Returns:
+            str: The path to the class IDs file.
+        """
         return "class-ids.npy"
 
     def _find_class_ids(self, path: str) -> List[str]:
+        """Finds class IDs in the specified directory.
+
+        Args:
+            path (str): The directory path to search for class IDs.
+
+        Returns:
+            List[str]: A sorted list of class IDs found in the directory.
+        """
         class_ids = []
 
         with os.scandir(path) as entries:
@@ -140,6 +234,14 @@ class ImageNet22k(ExtendedVisionDataset):
         return sorted(class_ids)
 
     def _load_entries_class_ids(self, root: Optional[str] = None) -> Tuple[List[_Entry], List[str]]:
+        """Loads entries and class IDs from the specified root directory.
+
+        Args:
+            root (Optional[str]): The root directory (default is None).
+
+        Returns:
+            Tuple[List[_Entry], List[str]]: A tuple containing a list of entries and a list of class IDs.
+        """
         root = self.get_root(root)
         entries: List[_Entry] = []
         class_ids = self._find_class_ids(root)
@@ -184,11 +286,25 @@ class ImageNet22k(ExtendedVisionDataset):
         return entries, class_ids
 
     def _load_extra(self, extra_path: str) -> np.ndarray:
+        """Loads extra data from the specified path.
+
+        Args:
+            extra_path (str): The path to the extra data file.
+
+        Returns:
+            np.ndarray: The loaded extra data as a NumPy array.
+        """
         extra_root = self._extra_root
         extra_full_path = os.path.join(extra_root, extra_path)
         return np.load(extra_full_path, mmap_mode="r")
 
     def _save_extra(self, extra_array: np.ndarray, extra_path: str) -> None:
+        """Saves extra data to the specified path.
+
+        Args:
+            extra_array (np.ndarray): The extra data to save.
+            extra_path (str): The path to save the extra data.
+        """
         extra_root = self._extra_root
         extra_full_path = os.path.join(extra_root, extra_path)
         os.makedirs(extra_root, exist_ok=True)
@@ -196,12 +312,33 @@ class ImageNet22k(ExtendedVisionDataset):
 
     @property
     def _tarballs_root(self) -> str:
+        """Returns the root directory for tarballs.
+
+        Returns:
+            str: The root directory for tarballs.
+        """
         return self.root
 
     def find_class_id(self, class_index: int) -> str:
+        """Finds the class ID for a given class index.
+
+        Args:
+            class_index (int): The index of the class.
+
+        Returns:
+            str: The class ID corresponding to the index.
+        """
         return str(self._class_ids[class_index])
 
     def get_image_data(self, index: int) -> bytes:
+        """Retrieves image data for a given index.
+
+        Args:
+            index (int): The index of the image.
+
+        Returns:
+            bytes: The image data.
+        """
         entry = self._entries[index]
         class_id = entry["class_id"]
         class_mmap = self._mmap_tarball(class_id)
@@ -221,26 +358,71 @@ class ImageNet22k(ExtendedVisionDataset):
         return data
 
     def get_target(self, index: int) -> Any:
+        """Retrieves the target class index for a given index.
+
+        Args:
+            index (int): The index of the entry.
+
+        Returns:
+            Any: The target class index.
+        """
         return int(self._entries[index]["class_index"])
 
     def get_targets(self) -> np.ndarray:
+        """Retrieves all target class indices.
+
+        Returns:
+            np.ndarray: An array of target class indices.
+        """
         return self._entries["class_index"]
 
     def get_class_id(self, index: int) -> str:
+        """Retrieves the class ID for a given index.
+
+        Args:
+            index (int): The index of the entry.
+
+        Returns:
+            str: The class ID.
+        """
         return str(self._entries[index]["class_id"])
 
     def get_class_ids(self) -> np.ndarray:
+        """Retrieves all class IDs.
+
+        Returns:
+            np.ndarray: An array of class IDs.
+        """
         return self._entries["class_id"]
 
     def __getitem__(self, index: int) -> Tuple[Any, Any]:
+        """Retrieves an item from the dataset.
+
+        Args:
+            index (int): The index of the item.
+
+        Returns:
+            Tuple[Any, Any]: A tuple containing the image data and target.
+        """
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             return super().__getitem__(index)
 
     def __len__(self) -> int:
+        """Returns the number of entries in the dataset.
+
+        Returns:
+            int: The number of entries.
+        """
         return len(self._entries)
 
     def _dump_entries(self, *args, **kwargs) -> None:
+        """Dumps the entries to a file.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
         entries, class_ids = self._load_entries_class_ids(*args, **kwargs)
 
         max_class_id_length, max_filename_length, max_class_index = -1, -1, -1
@@ -279,6 +461,12 @@ class ImageNet22k(ExtendedVisionDataset):
         self._save_extra(entries_array, entries_path)
 
     def _dump_class_ids(self, *args, **kwargs) -> None:
+        """Dumps the class IDs to a file.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
         entries_path = self._get_entries_path(*args, **kwargs)
         entries_array = self._load_extra(entries_path)
 
@@ -296,8 +484,19 @@ class ImageNet22k(ExtendedVisionDataset):
         self._save_extra(class_ids_array, class_ids_path)
 
     def _dump_extra(self, *args, **kwargs) -> None:
-        self._dump_entries(*args, *kwargs)
-        self._dump_class_ids(*args, *kwargs)
+        """Dumps extra data to files.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        self._dump_entries(*args, **kwargs)
+        self._dump_class_ids(*args, **kwargs)
 
     def dump_extra(self, root: Optional[str] = None) -> None:
+        """Dumps extra data to the specified root directory.
+
+        Args:
+            root (Optional[str]): The root directory to dump extra data (default is None).
+        """
         return self._dump_extra(root)
