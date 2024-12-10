@@ -295,13 +295,13 @@ Interested in contributing? Check out the contributing guidelines. Please note t
 Please cite the following paper if you use `zensvi` in a scientific publication:
 ***(place holder for the paper citation)***
 ```bibtex
-@article{ito2024zensvi,
-  title={ZenSVI: An Open-Source Software for Integrated Acquisition, Processing and Analysis of Street View Imagery},
+@article{ito2025zensvi,
+  title={ZenSVI: An Open-Source Software for the Integrated Acquisition, Processing and Analysis of Street View Imagery},
   author={Ito, Koichi, XXX, XXX, XXX, ...},
   journal={Computers, Environment and Urban Systems},
   volume={XXX},
   pages={XXX},
-  year={2024}
+  year={2025}
 }
 ```
 
