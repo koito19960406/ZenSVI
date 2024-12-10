@@ -1,13 +1,15 @@
-from typing import Union, Tuple, Any
-from pathlib import Path
-from matplotlib import pyplot as plt, colors
-import geopandas as gpd
-import pandas as pd
 import glob
-import h3
-from shapely.geometry import Polygon
-import osmnx as ox
+from pathlib import Path
+from typing import Any, Tuple, Union
+
 import contextily as ctx
+import geopandas as gpd
+import h3
+import osmnx as ox
+import pandas as pd
+from matplotlib import colors
+from matplotlib import pyplot as plt
+from shapely.geometry import Polygon
 
 from .font_property import _get_font_properties
 
@@ -37,9 +39,7 @@ def _create_line(gdf, variable_name=None):
     # left join back to the line_gd
     if variable_name:
         # aggregate by the id and get mean of the variable
-        aggregated_data = (
-            gdf.groupby("u")[variable_name].mean().reset_index(name="mean_value")
-        )
+        aggregated_data = gdf.groupby("u")[variable_name].mean().reset_index(name="mean_value")
         gdf[variable_name] = gdf["u"].map(aggregated_data.set_index("u")["mean_value"])
     else:
         # aggregate by the id and get count
@@ -56,12 +56,8 @@ def _create_hexagon(gdf, resolution=7, variable_name=None):
     gdf = gdf.to_crs(4326)
     gdf["h3_id"] = gdf.apply(_lat_lng_to_h3, resolution=resolution, axis=1)
     if variable_name:
-        aggregated_data = (
-            gdf.groupby("h3_id")[variable_name].mean().reset_index(name="mean_value")
-        )
-        gdf[variable_name] = gdf["h3_id"].map(
-            aggregated_data.set_index("h3_id")["mean_value"]
-        )
+        aggregated_data = gdf.groupby("h3_id")[variable_name].mean().reset_index(name="mean_value")
+        gdf[variable_name] = gdf["h3_id"].map(aggregated_data.set_index("h3_id")["mean_value"])
     else:
         aggregated_data = gdf.groupby("h3_id").size().reset_index(name="count")
         gdf["count"] = gdf["h3_id"].map(aggregated_data.set_index("h3_id")["count"])
@@ -83,7 +79,9 @@ def _add_colorbar(
     orientation="vertical",
     dark_mode=False,
 ):
-    """Adds a colorbar to the figure based on given parameters, with optional dark mode."""
+    """Adds a colorbar to the figure based on given parameters, with optional dark
+    mode.
+    """
     norm = colors.Normalize(vmin=vmin, vmax=vmax)
     sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
     sm.set_array([])
@@ -114,11 +112,10 @@ def plot_map(
     dpi: int = 300,
     font_size: int = 30,
     dark_mode: bool = False,
-    **kwargs
+    **kwargs,
 ) -> Tuple[plt.Figure, plt.Axes]:
-    """
-    Plots a geographic map from data points, with options for line or hexagonal aggregations, coloring by variables,
-    and using different base maps.
+    """Plots a geographic map from data points, with options for line or hexagonal
+    aggregations, coloring by variables, and using different base maps.
 
     Args:
         path_pid (Union[str, Path]): Path to the CSV file containing longitude and latitude and other metadata.
@@ -158,9 +155,7 @@ def plot_map(
         csv_files = glob.glob(str(dir_input / "**" / csv_file_pattern), recursive=True)
         df_list = [pd.read_csv(file) for file in csv_files]
         merged_df = pd.concat(df_list, ignore_index=True)
-        final_df = pd.merge(
-            pid_df, merged_df, left_on=pid_column, right_on="filename_key", how="inner"
-        )
+        final_df = pd.merge(pid_df, merged_df, left_on=pid_column, right_on="filename_key", how="inner")
         gdf = gpd.GeoDataFrame(
             final_df,
             geometry=gpd.points_from_xy(final_df.lon, final_df.lat),
@@ -170,14 +165,10 @@ def plot_map(
         if plot_type == "line":
             gdf = _create_line(gdf, variable_name=variable_name)
         elif plot_type == "hexagon":
-            gdf = _create_hexagon(
-                gdf, resolution=resolution, variable_name=variable_name
-            )
+            gdf = _create_hexagon(gdf, resolution=resolution, variable_name=variable_name)
         gdf.plot(ax=ax, column=variable_name, cmap=cmap, **kwargs)
     elif variable_name:
-        gdf = gpd.GeoDataFrame(
-            pid_df, geometry=gpd.points_from_xy(pid_df.lon, pid_df.lat), crs="EPSG:4326"
-        )
+        gdf = gpd.GeoDataFrame(pid_df, geometry=gpd.points_from_xy(pid_df.lon, pid_df.lat), crs="EPSG:4326")
         gdf = gdf.to_crs(3857)
         if plot_type == "point":
             gdf.plot(ax=ax, column=variable_name, cmap=cmap, **kwargs)
@@ -188,9 +179,7 @@ def plot_map(
             gdf = _create_hexagon(gdf, resolution=resolution, variable_name=variable_name)
             gdf.plot(ax=ax, column=variable_name, cmap=cmap, **kwargs)
     else:
-        gdf = gpd.GeoDataFrame(
-            pid_df, geometry=gpd.points_from_xy(pid_df.lon, pid_df.lat), crs="EPSG:4326"
-        )
+        gdf = gpd.GeoDataFrame(pid_df, geometry=gpd.points_from_xy(pid_df.lon, pid_df.lat), crs="EPSG:4326")
         gdf = gdf.to_crs(3857)
         if plot_type == "point":
             gdf.plot(ax=ax, **kwargs)
@@ -209,9 +198,7 @@ def plot_map(
 
     # After plotting the GeoDataFrame
     prop_title, prop, prop_legend = _get_font_properties(font_size)
-    ax.set_title(
-        title, fontproperties=prop_title, color=font_color
-    )  # Set the title with font properties
+    ax.set_title(title, fontproperties=prop_title, color=font_color)  # Set the title with font properties
 
     if legend and not (plot_type == "point" and not variable_name):
         # Assuming variable_name represents continuous data. Adjust vmin and vmax accordingly.

@@ -43,13 +43,27 @@ If you are proposing a feature:
 Ready to contribute? Here's how to set up `zensvi` for local development.
 
 1. Download a copy of `zensvi` locally.
-2. Install `zensvi` using `poetry`:
+
+2. Create a virtual environment using conda:
+
+    ```console
+    $ conda create -n zensvi-env python=3.9
+    $ conda activate zensvi-env
+    ```
+
+3. Install Poetry using pip:
+
+    ```console
+    $ pip install poetry
+    ```
+
+4. Install `zensvi` using `poetry`:
 
     ```console
     $ poetry install
     ```
 
-3. Use `git` (or similar) to create a branch for local development and make your changes:
+5. Use `git` (or similar) to create a branch for local development and make your changes:
 
     ```console
     $ git checkout -b name-of-your-bugfix-or-feature
@@ -63,11 +77,66 @@ Ready to contribute? Here's how to set up `zensvi` for local development.
 
 Before you submit a pull request, check that it meets these guidelines:
 
-1. The pull request should include additional tests if appropriate.
-2. If the pull request adds functionality, the docs should be updated.
-3. The pull request should work for all currently supported operating systems and versions of Python.
+1. The pull request should include tests that cover the new functionality or bug fix.
+2. If the pull request adds functionality, the docs should be updated. Put your new functionality into a function with a docstring, and add the feature to the list in README.md.
+3. The pull request should work for all currently supported Python versions. Check https://github.com/koito19960406/ZenSVI/actions and make sure that the tests pass for all supported Python versions.
+4. If your change affects the public API, update the docstrings and ensure they render correctly in the documentation.
+
+## Code Style
+
+This project uses `black` for code formatting and `flake8` for linting. Please ensure your code adheres to these standards before submitting a pull request.
+
+## Commit Messages
+
+Please follow these guidelines for commit messages:
+
+- Use the present tense ("Add feature" not "Added feature")
+- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
+- Limit the first line to 72 characters or less
+- Reference issues and pull requests liberally after the first line
 
 ## Code of Conduct
 
-Please note that the `zensvi` project is released with a
-Code of Conduct. By contributing to this project you agree to abide by its terms.
+Please note that the `zensvi` project is released with a [Code of Conduct](CONDUCT.md). By contributing to this project you agree to abide by its terms.
+
+## Docstring Style
+
+We use Google-style docstrings for this project. Please ensure all functions, classes, and modules have proper docstrings. Here's an example:
+
+```python
+def function_name(param1: type, param2: type) -> return_type:
+    """Short description of the function.
+
+    Longer description of the function if necessary.
+
+    Args:
+        param1: Description of param1.
+        param2: Description of param2.
+
+    Returns:
+        Description of the return value.
+
+    Raises:
+        ExceptionType: When and why this exception is raised.
+    """
+    # Function body
+```
+
+To help maintain consistent docstring formatting, please use the following tools:
+
+1. Use `docformatter` to format docstrings:
+   ```
+   docformatter --in-place --wrap-summaries 88 --wrap-descriptions 88 -r src
+   ```
+
+2. Use `docconvert` to convert docstrings to Google style:
+   ```
+   docconvert -i guess -o google --in-place -v src
+   ```
+
+3. Use `pydocstyle` to check docstring formatting:
+   ```
+   pydocstyle src
+   ```
+
+Make sure to run these tools before submitting your code. This will help ensure consistent and well-formatted docstrings throughout the project.

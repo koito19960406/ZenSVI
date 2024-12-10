@@ -6,3 +6,5 @@
 
 from .image_net import ImageNet
 from .image_net_22k import ImageNet22k
+
+__all__ = ["ImageNet", "ImageNet22k"]

@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.controllers.save
+"""mapillary.controllers.save
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This module implements the saving business logic functionalities of the Mapillary Python SDK.
@@ -13,10 +11,12 @@ For more information, please check out https://www.mapillary.com/developer/api-d
 - License: MIT LICENSE
 """
 
+import csv
+import json
+
 # Package Imports
 import os
-import json
-import csv
+
 from shapely.geometry import shape
 
 # Local Imports
@@ -26,22 +26,16 @@ from zensvi.download.mapillary.utils.verify import check_file_name_validity
 
 
 def save_as_csv_controller(data: str, path: str, file_name: str) -> None:
+    """Save data as CSV to given file path.
+
+    Args:
+        data (str): The data to save as CSV
+        path (str): The path to save to
+        file_name (str): The file name to save as
+
+    Returns:
+        None: None
     """
-    Save data as CSV to given file path
-
-    :param data: The data to save as CSV
-    :type data: str
-
-    :param path: The path to save to
-    :type path: str
-
-    :param file_name: The file name to save as
-    :type file_name: str
-
-    :return: None
-    :rtype: None
-    """
-
     # Ensure that the geojson is a dictionary
     if isinstance(data, str):
         data = json.loads(data)
@@ -64,11 +58,7 @@ def save_as_csv_controller(data: str, path: str, file_name: str) -> None:
             # Enforce the header for field_names
             field_names = (
                 ["ID", "WKT"]
-                + [
-                    key
-                    for key in features[0].keys()
-                    if key != "id" and key != "geometry"
-                ]
+                + [key for key in features[0].keys() if key != "id" and key != "geometry"]
                 # organization_id may or may not exist in the flattened features
                 # If it does exist, then its value will be reflected
                 # If it does not exist, then it will be set to "NULL"
@@ -91,17 +81,11 @@ def save_as_csv_controller(data: str, path: str, file_name: str) -> None:
                         # It will always exist
                         "WKT": shape(feature["geometry"]).wkt,
                         # The rest of the columns are the features attributes
-                        **{
-                            key: feature[key]
-                            for key in feature.keys()
-                            if key != "id" and key != "geometry"
-                        },
+                        **{key: feature[key] for key in feature.keys() if key != "id" and key != "geometry"},
                         # organization_id is the id of the organization that the feature belongs to.
                         # If it does exist, then its value will be reflected
                         # If it does not exist, then it will be set to "NULL"
-                        "organization_id": feature["organization_id"]
-                        if "organization_id" in feature
-                        else "NULL",
+                        "organization_id": (feature["organization_id"] if "organization_id" in feature else "NULL"),
                     }
                 )
     except Exception as e:
@@ -111,22 +95,16 @@ def save_as_csv_controller(data: str, path: str, file_name: str) -> None:
 
 
 def save_as_geojson_controller(data: str, path: str, file_name: str) -> None:
+    """Save data as GeoJSON to given file path.
+
+    Args:
+        data (str): The data to save as GeoJSON
+        path (str): The path to save to
+        file_name (str): The file name to save as
+
+    Returns:
+        None: None
     """
-    Save data as GeoJSON to given file path
-
-    :param data: The data to save as GeoJSON
-    :type data: str
-
-    :param path: The path to save to
-    :type path: str
-
-    :param file_name: The file name to save as
-    :type file_name: str
-
-    :return: None
-    :rtype: None
-    """
-
     # Ensure that the geojson is a dictionary
     if isinstance(data, str):
         data = json.loads(data)

@@ -28,4 +28,14 @@ all_versions = {
     "v1": ZoeDepthNK,
 }
 
-get_version = lambda v : all_versions[v]
+
+def get_version(v):
+    """Retrieve the specified version of the ZoeDepth model.
+
+    Args:
+        v (str): The version identifier for the model.
+
+    Returns:
+        type: The class corresponding to the specified version of the ZoeDepth model.
+    """
+    return all_versions[v]

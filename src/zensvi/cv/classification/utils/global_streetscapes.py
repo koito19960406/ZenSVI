@@ -1,8 +1,9 @@
-from torch import nn
-import torch
 from pathlib import Path
+
 import pytorch_lightning as pl
+import torch
 import torchvision
+from torch import nn
 
 # dict2idx -------------------------------------
 weather_dict2idx = {
@@ -62,36 +63,26 @@ view_direction_dict2idx = {
 
 # ----------------------------------------------
 class GlobalStreetScapesClassificationModel(pl.LightningModule):
-    """
-    Creates an instance of a classification model for one of
-    six different variables:
-    - weather
-    - glare
-    - lighting
-    - panorama
-    - platform
-    - quality
-    - reflection
-    - view direction
+    """Creates a classification model for streetscape image attributes.
 
-    :param lr: Learning rate, defaults to 0.0001
-    :type lr: float
+    This model can classify one of eight different streetscape attributes:
+    weather, glare, lighting, panorama, platform, quality, reflection,
+    and view direction.
 
-    :param pretrained: Flag for using pretrained weights, defaults to True
-    :type pretrained: boolean
+    Args:
+        lr (float, optional): Learning rate. Defaults to 0.0001.
+        pretrained (bool, optional): Whether to use pretrained weights. Defaults to True.
+        weight (str, optional): Path to custom loss weights file. Defaults to None.
+        num_classes (int, optional): Number of classes for the target variable. Defaults to None.
+        class_mapping (dict, optional): Mapping between class names and indices. Defaults to None.
+        model (str, optional): Model architecture name. Defaults to "maxvit_t".
+        **kwargs: Additional keyword arguments.
 
-    :param weight: Flag for using existing weights, defaults to True
-    :type weight: boolean
-
-    :param num_classes: Number of unique classes for the target variable, defaults to None
-    :type num_class: int
-
-    :param class_mapping: Mapping of class string names and integer value, defaults to None
-    :type class_mapping: dictionary
-
-    :param model: Model name, defaults to maxvit_t
-    :type model: string
-
+    Attributes:
+        lr (float): Learning rate for optimization.
+        class_mapping (dict): Mapping between class names and indices.
+        model (nn.Module): The underlying neural network model.
+        loss_fn (nn.Module): The loss function used for training.
     """
 
     def __init__(
@@ -110,13 +101,10 @@ class GlobalStreetScapesClassificationModel(pl.LightningModule):
 
         # Setup the model
         if pretrained:
-            self.model = torchvision.models.maxvit_t(
-                weights=torchvision.models.MaxVit_T_Weights.DEFAULT
-            )
+            self.model = torchvision.models.maxvit_t(weights=torchvision.models.MaxVit_T_Weights.DEFAULT)
         else:
             self.model = torchvision.models.maxvit_t(weights=None)
-        self.model.classifier[-1] = nn.Linear(
-            in_features=512, out_features=num_classes)
+        self.model.classifier[-1] = nn.Linear(in_features=512, out_features=num_classes)
 
         # Configure the loss function
         if weight is not None and Path(weight).exists():
@@ -127,5 +115,13 @@ class GlobalStreetScapesClassificationModel(pl.LightningModule):
         self.kwargs = kwargs
 
     def forward(self, x):
+        """Performs forward pass through the model.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch_size, channels, height, width).
+
+        Returns:
+            torch.Tensor: Logits tensor of shape (batch_size, num_classes).
+        """
         logits = self.model(x)
         return logits

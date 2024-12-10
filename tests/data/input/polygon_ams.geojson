@@ -1,0 +1,14 @@
+{
+"type": "FeatureCollection",
+"name": "polygon",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "full_id": "w332118097", "osm_id": "332118097", "osm_type": "way", "landuse": "residential", "type": "", "leaf_type": "", "name": "Weesperzijde", "wikidata": "Q95177588", "wikipedia": "nl:Weesperzijde (wijk)", "name:de": "", "layer": "" }, "geometry": { "type": "Polygon", "coordinates": [ [ 
+[ 4.9075483, 52.3556169 ],
+[ 4.9085483, 52.3556169 ],
+[ 4.9085483, 52.3566169 ],
+[ 4.9075483, 52.3566169 ],
+[ 4.9075483, 52.3556169 ]
+] ] } }
+]
+}

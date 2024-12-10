@@ -34,55 +34,90 @@ from torchvision import transforms
 
 
 def hypersim_distance_to_depth(npyDistance):
+    """Converts distance data to depth data.
+
+    Args:
+        npyDistance (numpy.ndarray): The distance data in numpy array format.
+
+    Returns:
+        numpy.ndarray: The converted depth data.
+    """
     intWidth, intHeight, fltFocal = 1024, 768, 886.81
 
-    npyImageplaneX = np.linspace((-0.5 * intWidth) + 0.5, (0.5 * intWidth) - 0.5, intWidth).reshape(
-        1, intWidth).repeat(intHeight, 0).astype(np.float32)[:, :, None]
-    npyImageplaneY = np.linspace((-0.5 * intHeight) + 0.5, (0.5 * intHeight) - 0.5,
-                                 intHeight).reshape(intHeight, 1).repeat(intWidth, 1).astype(np.float32)[:, :, None]
+    npyImageplaneX = (
+        np.linspace((-0.5 * intWidth) + 0.5, (0.5 * intWidth) - 0.5, intWidth)
+        .reshape(1, intWidth)
+        .repeat(intHeight, 0)
+        .astype(np.float32)[:, :, None]
+    )
+    npyImageplaneY = (
+        np.linspace((-0.5 * intHeight) + 0.5, (0.5 * intHeight) - 0.5, intHeight)
+        .reshape(intHeight, 1)
+        .repeat(intWidth, 1)
+        .astype(np.float32)[:, :, None]
+    )
     npyImageplaneZ = np.full([intHeight, intWidth, 1], fltFocal, np.float32)
-    npyImageplane = np.concatenate(
-        [npyImageplaneX, npyImageplaneY, npyImageplaneZ], 2)
+    npyImageplane = np.concatenate([npyImageplaneX, npyImageplaneY, npyImageplaneZ], 2)
 
     npyDepth = npyDistance / np.linalg.norm(npyImageplane, 2, 2) * fltFocal
     return npyDepth
 
 
 class ToTensor(object):
+    """Converts images and depth maps to PyTorch tensors and applies resizing."""
+
     def __init__(self):
+        """Initializes the ToTensor transformation.
+
+        This transformation normalizes the image and resizes it to (480, 640).
+        """
         # self.normalize = transforms.Normalize(
         #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         self.normalize = lambda x: x
         self.resize = transforms.Resize((480, 640))
 
     def __call__(self, sample):
-        image, depth = sample['image'], sample['depth']
+        """Applies the transformation to the sample.
+
+        Args:
+            sample (dict): A dictionary containing "image" and "depth".
+
+        Returns:
+            dict: A dictionary containing the transformed "image", "depth", and dataset name.
+        """
+        image, depth = sample["image"], sample["depth"]
         image = self.to_tensor(image)
         image = self.normalize(image)
         depth = self.to_tensor(depth)
 
         image = self.resize(image)
 
-        return {'image': image, 'depth': depth, 'dataset': "hypersim"}
+        return {"image": image, "depth": depth, "dataset": "hypersim"}
 
     def to_tensor(self, pic):
+        """Converts a PIL image or numpy array to a PyTorch tensor.
 
+        Args:
+            pic (PIL.Image or numpy.ndarray): The image to convert.
+
+        Returns:
+            torch.Tensor: The converted image as a tensor.
+        """
         if isinstance(pic, np.ndarray):
             img = torch.from_numpy(pic.transpose((2, 0, 1)))
             return img
 
-        #         # handle PIL Image
-        if pic.mode == 'I':
+        # Handle PIL Image
+        if pic.mode == "I":
             img = torch.from_numpy(np.array(pic, np.int32, copy=False))
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             img = torch.from_numpy(np.array(pic, np.int16, copy=False))
         else:
-            img = torch.ByteTensor(
-                torch.ByteStorage.from_buffer(pic.tobytes()))
+            img = torch.ByteTensor(torch.ByteStorage.from_buffer(pic.tobytes()))
         # PIL image mode: 1, L, P, I, F, RGB, YCbCr, RGBA, CMYK
-        if pic.mode == 'YCbCr':
+        if pic.mode == "YCbCr":
             nchannel = 3
-        elif pic.mode == 'I;16':
+        elif pic.mode == "I;16":
             nchannel = 1
         else:
             nchannel = len(pic.mode)
@@ -96,16 +131,40 @@ class ToTensor(object):
 
 
 class HyperSim(Dataset):
+    """Dataset class for loading images and depth maps from the HyperSim dataset."""
+
     def __init__(self, data_dir_root):
+        """Initializes the HyperSim dataset.
+
+        Args:
+            data_dir_root (str): The root directory containing the dataset.
+        """
         # image paths are of the form <data_dir_root>/<scene>/images/scene_cam_#_final_preview/*.tonemap.jpg
         # depth paths are of the form <data_dir_root>/<scene>/images/scene_cam_#_final_preview/*.depth_meters.hdf5
-        self.image_files = glob.glob(os.path.join(
-            data_dir_root, '*', 'images', 'scene_cam_*_final_preview', '*.tonemap.jpg'))
-        self.depth_files = [r.replace("_final_preview", "_geometry_hdf5").replace(
-            ".tonemap.jpg", ".depth_meters.hdf5") for r in self.image_files]
+        self.image_files = glob.glob(
+            os.path.join(
+                data_dir_root,
+                "*",
+                "images",
+                "scene_cam_*_final_preview",
+                "*.tonemap.jpg",
+            )
+        )
+        self.depth_files = [
+            r.replace("_final_preview", "_geometry_hdf5").replace(".tonemap.jpg", ".depth_meters.hdf5")
+            for r in self.image_files
+        ]
         self.transform = ToTensor()
 
     def __getitem__(self, idx):
+        """Fetches an item from the dataset.
+
+        Args:
+            idx (int): The index of the item to fetch.
+
+        Returns:
+            dict: A dictionary containing the transformed image and depth.
+        """
         image_path = self.image_files[idx]
         depth_path = self.depth_files[idx]
 
@@ -114,9 +173,8 @@ class HyperSim(Dataset):
         # depth from hdf5
         depth_fd = h5py.File(depth_path, "r")
         # in meters (Euclidean distance)
-        distance_meters = np.array(depth_fd['dataset'])
-        depth = hypersim_distance_to_depth(
-            distance_meters)  # in meters (planar depth)
+        distance_meters = np.array(depth_fd["dataset"])
+        depth = hypersim_distance_to_depth(distance_meters)  # in meters (planar depth)
 
         # depth[depth > 8] = -1
         depth = depth[..., None]
@@ -130,9 +188,24 @@ class HyperSim(Dataset):
         return sample
 
     def __len__(self):
+        """Returns the total number of items in the dataset.
+
+        Returns:
+            int: The number of items in the dataset.
+        """
         return len(self.image_files)
 
 
 def get_hypersim_loader(data_dir_root, batch_size=1, **kwargs):
+    """Creates a DataLoader for the HyperSim dataset.
+
+    Args:
+        data_dir_root (str): The root directory containing the dataset.
+        batch_size (int, optional): The number of samples per batch. Defaults to 1.
+        **kwargs: Additional arguments for DataLoader.
+
+    Returns:
+        DataLoader: A DataLoader for the HyperSim dataset.
+    """
     dataset = HyperSim(data_dir_root)
     return DataLoader(dataset, batch_size, **kwargs)

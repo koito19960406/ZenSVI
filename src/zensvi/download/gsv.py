@@ -1,38 +1,37 @@
-import random
 import datetime
-import pandas as pd
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import warnings
-import requests
-from pathlib import Path
-import geopandas as gpd
-from tqdm import tqdm
-from shapely.geometry import Point
-import warnings
-from shapely.errors import ShapelyDeprecationWarning
+import glob
 import math
-from streetlevel import streetview
+import os
+import random
+import shutil
+import warnings
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import List, Union
+
+import geopandas as gpd
+import numpy as np
+import osmnx as ox
+import pandas as pd
+import requests
 from PIL import Image
+from shapely.errors import ShapelyDeprecationWarning
+from shapely.geometry import Point
+from streetlevel import streetview
+from tqdm import tqdm
+
+from zensvi.download.base import BaseDownloader
+from zensvi.download.utils.geoprocess import GeoProcessor
+from zensvi.download.utils.get_pids import panoids
+from zensvi.download.utils.helpers import create_buffer_gdf, standardize_column_names
+from zensvi.download.utils.imtool import ImageTool
+from zensvi.utils.log import Logger
 
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
-import glob
-import shutil
-import numpy as np
-import osmnx as ox
-from typing import List, Union
-
-from zensvi.download.base import BaseDownloader
-from zensvi.download.utils.imtool import ImageTool
-from zensvi.download.utils.get_pids import panoids
-from zensvi.download.utils.geoprocess import GeoProcessor
-from zensvi.download.utils.helpers import standardize_column_names, create_buffer_gdf
-from zensvi.utils.log import Logger
-
 
 class GSVDownloader(BaseDownloader):
-    """
-    Google Street View Downloader class.
+    """Google Street View Downloader class.
 
     Args:
         gsv_api_key (str, optional): Google Street View API key. Defaults to None.
@@ -40,6 +39,7 @@ class GSVDownloader(BaseDownloader):
         distance (int, optional): Distance parameter for the GeoProcessor. Defaults to 1.
         grid (bool, optional): Grid parameter for the GeoProcessor. Defaults to False.
         grid_size (int, optional): Grid size parameter for the GeoProcessor. Defaults to 1.
+        max_workers (int, optional): Number of workers for parallel processing. Defaults to None.
 
     Raises:
         Warning: If gsv_api_key is not provided.
@@ -52,12 +52,11 @@ class GSVDownloader(BaseDownloader):
         distance: int = 1,
         grid: bool = False,
         grid_size: int = 1,
+        max_workers: int = None,
     ):
         super().__init__(log_path)
-        if gsv_api_key == None:
-            warnings.warn(
-                "Please provide your Google Street View API key to augment metadata."
-            )
+        if gsv_api_key is None:
+            warnings.warn("Please provide your Google Street View API key to augment metadata.")
         self._gsv_api_key = gsv_api_key
         # initialize the logger
         if self.log_path is not None:
@@ -67,65 +66,23 @@ class GSVDownloader(BaseDownloader):
         self._distance = distance
         self._grid = grid
         self._grid_size = grid_size
+        self._max_workers = max_workers
 
     @property
-    def gsv_api_key(self) -> str:
-        """
-        Property for the Google Street View API key.
+    def max_workers(self):
+        """Property for the number of workers for parallel processing.
 
         Returns:
-            str: Google Street View API key.
+            int: max_workers
         """
-        return self._gsv_api_key
+        return self._max_workers
 
-    @gsv_api_key.setter
-    def gsv_api_key(self, gsv_api_key: str):
-        """
-        Setter to set the Google Street View API key.
-
-        Args:
-            gsv_api_key (str): Google Street View API key.
-        """
-        self._gsv_api_key = gsv_api_key
-
-    @property
-    def distance(self):
-        """Property for the distance between sampling points.
-
-        :return: distance
-        :rtype: int
-        """
-        return self._distance
-
-    @distance.setter
-    def distance(self, distance):
-        self._distance = distance
-
-    @property
-    def grid(self):
-        """Property for whether to create a grid of sampling points.
-
-        :return: grid
-        :rtype: bool
-        """
-        return self._grid
-
-    @grid.setter
-    def grid(self, grid):
-        self._grid = grid
-
-    @property
-    def grid_size(self):
-        """Property for the size of the grid.
-
-        :return: grid_size
-        :rtype: int
-        """
-        return self._grid_size
-
-    @grid_size.setter
-    def grid_size(self, grid_size):
-        self._grid_size = grid_size
+    @max_workers.setter
+    def max_workers(self, max_workers):
+        if max_workers is None:
+            self._max_workers = min(32, os.cpu_count() + 4)
+        else:
+            self._max_workers = max_workers
 
     def _augment_metadata(self, df):
         if self.cache_pids_augmented.exists():
@@ -153,7 +110,7 @@ class GSVDownloader(BaseDownloader):
 
         def get_year_month(pid, proxies):
             url = "https://maps.googleapis.com/maps/api/streetview/metadata?pano={}&key={}".format(
-                pid, self.gsv_api_key
+                pid, self._gsv_api_key
             )
             while True:
                 proxy = random.choice(proxies)
@@ -189,13 +146,10 @@ class GSVDownloader(BaseDownloader):
             range(num_batches),
             desc=f"Augmenting metadata by batch size {min(batch_size, len(df))}",
         ):
-            batch_df = df.iloc[
-                i * batch_size : (i + 1) * batch_size
-            ].copy()  # Copy the batch data to a new dataframe
+            batch_df = df.iloc[i * batch_size : (i + 1) * batch_size].copy()  # Copy the batch data to a new dataframe
             with ThreadPoolExecutor() as executor:
                 batch_futures = {
-                    executor.submit(worker, row, self.proxies): row.Index
-                    for row in batch_df.itertuples()
+                    executor.submit(worker, row, self._proxies): row.Index for row in batch_df.itertuples()
                 }
                 for future in tqdm(
                     as_completed(batch_futures),
@@ -215,10 +169,7 @@ class GSVDownloader(BaseDownloader):
 
         # Merge all checkpoints into a single dataframe
         df = pd.concat(
-            [
-                pd.read_csv(checkpoint)
-                for checkpoint in glob.glob(str(dir_cache_augmented_metadata / "*.csv"))
-            ],
+            [pd.read_csv(checkpoint) for checkpoint in glob.glob(str(dir_cache_augmented_metadata / "*.csv"))],
             ignore_index=True,
         )
 
@@ -257,9 +208,7 @@ class GSVDownloader(BaseDownloader):
             completed_ids = completed_rows["lat_lon_id"].drop_duplicates()
 
             # Merge on the ID column, keeping track of where each row originates
-            merged = df.merge(
-                completed_ids, on="lat_lon_id", how="outer", indicator=True
-            )
+            merged = df.merge(completed_ids, on="lat_lon_id", how="outer", indicator=True)
 
             # Filter out rows that come from the 'completed_ids' DataFrame
             df = merged[merged["_merge"] == "left_only"].drop(columns="_merge")
@@ -276,15 +225,11 @@ class GSVDownloader(BaseDownloader):
             input_longitude = row.longitude
             input_latitude = row.latitude
             lat_lon_id = row.lat_lon_id
-            id_dict = (
-                {column: getattr(row, column) for column in id_columns}
-                if id_columns
-                else {}
-            )
+            id_dict = {column: getattr(row, column) for column in id_columns} if id_columns else {}
             return (
                 lat_lon_id,
                 (input_longitude, input_latitude),
-                get_street_view_info(input_longitude, input_latitude, self.proxies),
+                get_street_view_info(input_longitude, input_latitude, self._proxies),
                 id_dict,
             )
 
@@ -308,9 +253,7 @@ class GSVDownloader(BaseDownloader):
             with ThreadPoolExecutor() as executor:
                 batch_futures = {
                     executor.submit(worker, row): row
-                    for row in df.iloc[
-                        i * batch_size : (i + 1) * batch_size
-                    ].itertuples()
+                    for row in df.iloc[i * batch_size : (i + 1) * batch_size].itertuples()
                 }
                 for future in tqdm(
                     as_completed(batch_futures),
@@ -332,9 +275,7 @@ class GSVDownloader(BaseDownloader):
                             results.append(result)
                     except Exception as e:
                         print(f"Error: {e}")
-                        failed_rows.append(
-                            batch_futures[future]
-                        )  # Store the failed row
+                        failed_rows.append(batch_futures[future])  # Store the failed row
 
                 # Save checkpoint for each batch
                 if len(results) > 0:
@@ -346,10 +287,7 @@ class GSVDownloader(BaseDownloader):
 
         # Merge all checkpoints into a single dataframe
         results_df = pd.concat(
-            [
-                pd.read_csv(checkpoint)
-                for checkpoint in glob.glob(str(dir_cache_pids / "*.csv"))
-            ],
+            [pd.read_csv(checkpoint) for checkpoint in glob.glob(str(dir_cache_pids / "*.csv"))],
             ignore_index=True,
         )
 
@@ -357,9 +295,7 @@ class GSVDownloader(BaseDownloader):
         if failed_rows:
             print("Retrying failed rows...")
             with ThreadPoolExecutor() as executor:
-                retry_futures = {
-                    executor.submit(worker, row): row for row in failed_rows
-                }
+                retry_futures = {executor.submit(worker, row): row for row in failed_rows}
                 for future in tqdm(
                     as_completed(retry_futures),
                     total=len(retry_futures),
@@ -383,9 +319,7 @@ class GSVDownloader(BaseDownloader):
 
             # Save the results of retried rows as another checkpoint
             if len(results) > 0:
-                pd.DataFrame(results).to_csv(
-                    f"{dir_cache_pids}/checkpoint_retry.csv", index=False
-                )
+                pd.DataFrame(results).to_csv(f"{dir_cache_pids}/checkpoint_retry.csv", index=False)
                 # Merge the retry checkpoint into the final dataframe
                 retry_df = pd.read_csv(f"{dir_cache_pids}/checkpoint_retry.csv")
                 results_df = pd.concat([results_df, retry_df], ignore_index=True)
@@ -414,9 +348,9 @@ class GSVDownloader(BaseDownloader):
             # read shapefile
             gp = GeoProcessor(
                 gdf,
-                distance=self.distance,
-                grid=self.grid,
-                grid_size=self.grid_size,
+                distance=self._distance,
+                grid=self._grid,
+                grid_size=self._grid_size,
                 **kwargs,
             )
             df = gp.get_lat_lon()
@@ -432,22 +366,14 @@ class GSVDownloader(BaseDownloader):
             results_df = self._get_pids_from_df(df, kwargs["id_columns"])
 
         # Check if lat and lon are within input polygons
-        polygons = gpd.GeoSeries(
-            [
-                geom
-                for geom in gdf["geometry"]
-                if geom.type in ["Polygon", "MultiPolygon"]
-            ]
-        )
+        polygons = gpd.GeoSeries([geom for geom in gdf["geometry"] if geom.type in ["Polygon", "MultiPolygon"]])
 
         # the rest is only for polygons, so return results_df if there's no polygons
         if len(polygons) == 0:
             return results_df
 
         # Convert lat, lon to Points and create a GeoSeries
-        points = gpd.GeoSeries(
-            [Point(lon, lat) for lon, lat in zip(results_df["lon"], results_df["lat"])]
-        )
+        points = gpd.GeoSeries([Point(lon, lat) for lon, lat in zip(results_df["lon"], results_df["lat"])])
 
         # Create a GeoDataFrame with the points and an index column
         points_gdf = gpd.GeoDataFrame(geometry=points, crs=gdf.crs)
@@ -475,9 +401,7 @@ class GSVDownloader(BaseDownloader):
         # Return only those points within polygons
         results_within_polygons_df = results_df[results_df["within_polygon"]]
         # Drop the 'within_polygon' column
-        results_within_polygons_df = results_within_polygons_df.drop(
-            columns="within_polygon"
-        )
+        results_within_polygons_df = results_within_polygons_df.drop(columns="within_polygon")
         return results_within_polygons_df
 
     def _get_raw_pids(self, **kwargs):
@@ -487,7 +411,7 @@ class GSVDownloader(BaseDownloader):
             return pid
 
         if kwargs["lat"] is not None and kwargs["lon"] is not None:
-            pid = panoids(kwargs["lat"], kwargs["lon"], self.proxies)
+            pid = panoids(kwargs["lat"], kwargs["lon"], self._proxies)
             pid = pd.DataFrame(pid)
             # add input_lat and input_lon
             pid["input_latitude"] = kwargs["lat"]
@@ -515,9 +439,7 @@ class GSVDownloader(BaseDownloader):
             gdf = ox.geocoder.geocode_to_gdf(kwargs["input_place_name"])
             # raise error if the input_place_name is not found
             if len(gdf) == 0:
-                raise ValueError(
-                    "The input_place_name is not found. Please try another place name."
-                )
+                raise ValueError("The input_place_name is not found. Please try another place name.")
             if kwargs["buffer"] > 0:
                 gdf = create_buffer_gdf(gdf, kwargs["buffer"])
             pid = self._get_pids_from_gdf(gdf, **kwargs)
@@ -541,12 +463,10 @@ class GSVDownloader(BaseDownloader):
         # get raw pid
         pid = self._get_raw_pids(**kwargs)
 
-        if kwargs["augment_metadata"] & (self.gsv_api_key != None):
+        if kwargs["augment_metadata"] & (self._gsv_api_key is not None):
             pid = self._augment_metadata(pid)
-        elif kwargs["augment_metadata"] & (self.gsv_api_key == None):
-            raise ValueError(
-                "Please set the gsv api key by calling the gsv_api_key method."
-            )
+        elif kwargs["augment_metadata"] & (self._gsv_api_key is None):
+            raise ValueError("Please set the gsv api key by calling the gsv_api_key method.")
         pid.to_csv(path_pid, index=False)
         print("The panorama IDs have been saved to {}".format(path_pid))
 
@@ -573,11 +493,7 @@ class GSVDownloader(BaseDownloader):
         pid_df["month"] = pid_df["month"].replace([np.inf, -np.inf], -1)
 
         # Convert to int and then to string, and create the 'date' column
-        pid_df["date"] = (
-            pid_df["year"].astype(int).astype(str)
-            + "-"
-            + pid_df["month"].astype(int).astype(str)
-        )
+        pid_df["date"] = pid_df["year"].astype(int).astype(str) + "-" + pid_df["month"].astype(int).astype(str)
 
         # Optionally, you can replace the placeholder values in 'date' column back to NaN
         pid_df["date"] = pid_df["date"].replace("-1--1", np.nan)
@@ -596,9 +512,7 @@ class GSVDownloader(BaseDownloader):
             except ValueError:
                 raise ValueError("Incorrect end_date format, should be YYYY-MM-DD")
         # if start_date is not None, filter out the rows with date < start_date
-        pid_df = (
-            pid_df[pid_df["date"] >= start_date] if start_date is not None else pid_df
-        )
+        pid_df = pid_df[pid_df["date"] >= start_date] if start_date is not None else pid_df
         # if end_date is not None, filter out the rows with date > end_date
         pid_df = pid_df[pid_df["date"] <= end_date] if end_date is not None else pid_df
         # drop the temporary column date
@@ -637,17 +551,13 @@ class GSVDownloader(BaseDownloader):
 
         # use ThreadPoolExecutor and as_completed to download the depth images
         with ThreadPoolExecutor() as executor:
-            futures = {
-                executor.submit(download_depth_image, pid): pid for pid in panoids
-            }
+            futures = {executor.submit(download_depth_image, pid): pid for pid in panoids}
             for future in tqdm(as_completed(futures), desc="Downloading depth images"):
                 pid = futures[future]
                 try:
                     future.result()
                 except Exception as e:
-                    self.logger.log_error(
-                        f"Error downloading depth image for panorama ID {pid}: {e}"
-                    )
+                    self.logger.log_error(f"Error downloading depth image for panorama ID {pid}: {e}")
                     continue
 
     def download_svi(
@@ -671,10 +581,11 @@ class GSVDownloader(BaseDownloader):
         end_date: str = None,
         metadata_only: bool = False,
         download_depth=False,
+        max_workers: int = None,
         **kwargs,
     ) -> None:
-        """
-        Downloads street view images from Google Street View API using specified parameters.
+        """Downloads street view images from Google Street View API using specified
+        parameters.
 
         Args:
             dir_output (str): The output directory.
@@ -695,6 +606,9 @@ class GSVDownloader(BaseDownloader):
             start_date (str, optional): The start date for the panorama IDs. Format is isoformat (YYYY-MM-DD). Defaults to None.
             end_date (str, optional): The end date for the panorama IDs. Format is isoformat (YYYY-MM-DD). Defaults to None.
             metadata_only (bool, optional): Whether to download metadata only. Defaults to False.
+            download_depth (bool, optional): Whether to download depth images. Defaults to False.
+            max_workers (int, optional): Number of workers for parallel processing.
+                If not specified, uses the value set during initialization.
             **kwargs: Additional keyword arguments.
 
         Returns:
@@ -732,21 +646,18 @@ class GSVDownloader(BaseDownloader):
                 start_date=start_date,
                 end_date=end_date,
                 metadata_only=metadata_only,
+                max_workers=max_workers,
                 **kwargs,
             )
         # set necessary directories
         self._set_dirs(dir_output)
 
         # call _get_pids function first if path_pid is None
-        if (path_pid is None) & (self.cache_pids_augmented.exists() == False):
+        if (path_pid is None) & (not self.cache_pids_augmented.exists()):
             print("Getting pids...")
             path_pid = self.dir_output / "gsv_pids.csv"
-            if path_pid.exists() & (update_pids == False):
-                print(
-                    "update_pids is set to False. So the following csv file will be used: {}".format(
-                        path_pid
-                    )
-                )
+            if path_pid.exists() & (not update_pids):
+                print("update_pids is set to False. So the following csv file will be used: {}".format(path_pid))
             else:
                 self._get_pids(
                     path_pid,
@@ -789,7 +700,7 @@ class GSVDownloader(BaseDownloader):
             panoids_rest = self._check_already(panoids)
 
         if len(panoids_rest) > 0:
-            UAs = random.choices(self.user_agents, k=len(panoids_rest))
+            UAs = random.choices(self._user_agents, k=len(panoids_rest))
             # check zoom level is 0<=zoom<=5
             if zoom < 0 or zoom > 5:
                 raise ValueError("zoom level should be between 0 and 6")
@@ -802,11 +713,12 @@ class GSVDownloader(BaseDownloader):
                 h_tiles,
                 self.panorama_output,
                 UAs,
-                self.proxies,
+                self._proxies,
                 cropped,
                 full,
                 batch_size=batch_size,
                 logger=self.logger,
+                max_workers=self.max_workers,
             )
         else:
             print("All images have been downloaded")
