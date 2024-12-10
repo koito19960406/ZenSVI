@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.config.__init__
+"""mapillary.config.__init__
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This module contains the API v4 configuration and URL arguments.

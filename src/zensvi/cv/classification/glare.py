@@ -1,27 +1,34 @@
 from pathlib import Path
 from typing import List, Tuple, Union
-from torch.utils.data import Dataset, DataLoader
-from huggingface_hub import hf_hub_download
-from torchvision import transforms
-from PIL import Image
-import torch
-import pandas as pd
-import tqdm
 
-from .utils.global_streetscapes import (
-    glare_dict2idx,
-    GlobalStreetScapesClassificationModel,
-)
+import pandas as pd
+import torch
+import tqdm
+from huggingface_hub import hf_hub_download
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
+
 from .base import BaseClassifier
+from .utils.global_streetscapes import GlobalStreetScapesClassificationModel, glare_dict2idx
 
 
 class ImageDataset(Dataset):
+    """Dataset class for loading and preprocessing images.
+
+    Args:
+        image_files: List of paths to image files.
+
+    Attributes:
+        image_files: Filtered list of valid image file paths.
+        transform: Composition of image transformations to apply.
+    """
+
     def __init__(self, image_files: List[Path]):
         self.image_files = [
             image_file
             for image_file in image_files
-            if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"]
-            and not image_file.name.startswith(".")
+            if image_file.suffix.lower() in [".jpg", ".jpeg", ".png"] and not image_file.name.startswith(".")
         ]
 
         # Image transformations
@@ -29,33 +36,41 @@ class ImageDataset(Dataset):
             [
                 transforms.Resize((224, 224)),
                 transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),  # ImageNet normalization
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),  # ImageNet normalization
             ]
         )
 
     def __len__(self) -> int:
+        """Returns the number of images in the dataset.
+
+        Returns:
+            Number of images.
+        """
         return len(self.image_files)
 
     def __getitem__(self, idx: int) -> Tuple[str, torch.Tensor]:
+        """Gets an image and its file path at the given index.
+
+        Args:
+            idx: Index of the image to retrieve.
+
+        Returns:
+            Tuple containing the image file path as string and the preprocessed image tensor.
+        """
         image_file = self.image_files[idx]
         img = Image.open(image_file)  # Open image directly using PIL
         img = self.transform(img)  # Apply transformations
 
         return str(image_file), img
 
-    def collate_fn(
-        self, data: List[Tuple[str, torch.Tensor]]
-    ) -> Tuple[List[str], torch.Tensor]:
-        """
-        Custom collate function for the dataset.
+    def collate_fn(self, data: List[Tuple[str, torch.Tensor]]) -> Tuple[List[str], torch.Tensor]:
+        """Custom collate function for batching dataset items.
 
         Args:
-            data (List[Tuple[str, torch.Tensor]]): List of tuples containing image file path and transformed image tensor.
+            data: List of tuples containing image file paths and transformed image tensors.
 
         Returns:
-            Tuple[List[str], torch.Tensor]: Tuple containing lists of image file paths and a batch of image tensors.
+            Tuple containing a list of image file paths and a batch of stacked image tensors.
         """
         image_files, images = zip(*data)
         images = torch.stack(images)  # Stack images to create a batch
@@ -63,12 +78,18 @@ class ImageDataset(Dataset):
 
 
 class ClassifierGlare(BaseClassifier):
-    """
-    A classifier for identifying glare.
+    """A classifier for identifying glare in images.
 
-    :param device: The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
-        If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
-    :type device: str, optional
+    This classifier uses a pre-trained model from Hou et al (2024)
+    (https://github.com/ualsg/global-streetscapes) to detect glare in street-level imagery.
+
+    Args:
+        device: The device to load the model onto. Options are "cpu", "cuda", or "mps".
+            If None, tries to use GPU if available, otherwise falls back to CPU.
+
+    Attributes:
+        device: The device the model is loaded on.
+        model: The loaded classification model.
     """
 
     def __init__(self, device=None):
@@ -82,9 +103,7 @@ class ClassifierGlare(BaseClassifier):
             local_dir=Path(__file__).parent.parent.parent.parent.parent / "models",
         )
 
-        checkpoint = torch.load(
-            checkpoint_path, map_location=lambda storage, loc: storage
-        )
+        checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
 
         # Extract the number of classes
         num_classes = checkpoint["state_dict"]["model.classifier.5.weight"].shape[0]
@@ -96,9 +115,16 @@ class ClassifierGlare(BaseClassifier):
         self.model.eval()
         self.model.to(self.device)
 
-    def _save_results_to_file(
-        self, results, dir_output, file_name, save_format="csv json"
-    ):
+    def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json"):
+        """Saves classification results to file(s) in specified format(s).
+
+        Args:
+            results: List of dictionaries containing classification results.
+            dir_output: Directory to save output files.
+            file_name: Base name for output files (without extension).
+            save_format: Space-separated string of formats to save in.
+                Options are "csv" and "json". Defaults to "csv json".
+        """
         df = pd.DataFrame(results)
         dir_output = Path(dir_output)
         dir_output.mkdir(parents=True, exist_ok=True)
@@ -116,17 +142,20 @@ class ClassifierGlare(BaseClassifier):
         batch_size=1,
         save_format="json csv",
     ) -> List[str]:
-        """
-        Classifies images based on glare. The output file can be saved in JSON and/or CSV format and will contain glare for each image. The glare categories are "True" and "False".
+        """Classifies images based on presence of glare.
 
-        :param dir_input: directory containing input images.
-        :type dir_input: Union[str, Path]
-        :param dir_summary_output: directory to save summary output.
-        :type dir_summary_output: Union[str, Path, None]
-        :param batch_size: batch size for inference, defaults to 1
-        :type batch_size: int, optional
-        :param save_format: save format for the output, defaults to "json csv". Options are "json" and "csv". Please add a space between options.
-        :type save_format: str, optional
+        Processes images from the input directory and classifies them as having glare ("True")
+        or not having glare ("False"). Results can be saved in JSON and/or CSV format.
+
+        Args:
+            dir_input: Directory containing input images or path to a single image.
+            dir_summary_output: Directory to save classification results.
+            batch_size: Number of images to process simultaneously. Defaults to 1.
+            save_format: Space-separated string of output formats.
+                Options are "json" and "csv". Defaults to "json csv".
+
+        Returns:
+            List of glare classifications ("True" or "False") for each image.
         """
         # Prepare output directories
         if dir_summary_output:
@@ -156,9 +185,7 @@ class ClassifierGlare(BaseClassifier):
             ]
 
         dataset = ImageDataset(img_paths)
-        dataloader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=False, collate_fn=dataset.collate_fn
-        )
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=dataset.collate_fn)
 
         results = []
         # Using torch.no_grad() to avoid unnecessary gradient computations during inference
@@ -168,14 +195,10 @@ class ClassifierGlare(BaseClassifier):
                     "filename_key": str(Path(image_file).stem),
                     "glare": glare_dict2idx["index2label"][pred.item()],
                 }
-                for image_files, images in tqdm.tqdm(
-                    dataloader, desc="Classifying glare"
-                )
+                for image_files, images in tqdm.tqdm(dataloader, desc="Classifying glare")
                 for image_file, pred in zip(
                     image_files,
-                    torch.max(
-                        self.model(images.to(self.device, dtype=torch.float32)), 1
-                    )[1],
+                    torch.max(self.model(images.to(self.device, dtype=torch.float32)), 1)[1],
                 )
             ]
 

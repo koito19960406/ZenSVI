@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. (http://www.facebook.com)
 # -*- coding: utf-8 -*-
-
-"""
-mapillary.models.api.__init__
+"""mapillary.models.api.__init__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This package contains the class adaptors of the API logic within the Mapillary Python SDK.

@@ -10,9 +10,7 @@ from typing import Dict, Union
 import numpy as np
 import torch
 
-
 TypeSpec = Union[str, np.dtype, torch.dtype]
-
 
 _NUMPY_TO_TORCH_DTYPE: Dict[np.dtype, torch.dtype] = {
     np.dtype("bool"): torch.bool,
@@ -30,9 +28,21 @@ _NUMPY_TO_TORCH_DTYPE: Dict[np.dtype, torch.dtype] = {
 
 
 def as_torch_dtype(dtype: TypeSpec) -> torch.dtype:
+    """Converts a given dtype to a PyTorch dtype.
+
+    Args:
+        dtype (TypeSpec): The input dtype to convert. This can be a string,
+                          a NumPy dtype, or a PyTorch dtype.
+
+    Returns:
+        torch.dtype: The corresponding PyTorch dtype.
+
+    Raises:
+        AssertionError: If the input dtype is not a NumPy dtype after conversion.
+    """
     if isinstance(dtype, torch.dtype):
         return dtype
     if isinstance(dtype, str):
         dtype = np.dtype(dtype)
-    assert isinstance(dtype, np.dtype), f"Expected an instance of nunpy dtype, got {type(dtype)}"
+    assert isinstance(dtype, np.dtype), f"Expected an instance of numpy dtype, got {type(dtype)}"
     return _NUMPY_TO_TORCH_DTYPE[dtype]

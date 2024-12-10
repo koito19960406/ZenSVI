@@ -29,20 +29,21 @@ def get_trainer(config):
     """Builds and returns a trainer based on the config.
 
     Args:
-        config (dict): the config dict (typically constructed using utils.config.get_config)
-            config.trainer (str): the name of the trainer to use. The module named "{config.trainer}_trainer" must exist in trainers root module
-
-    Raises:
-        ValueError: If the specified trainer does not exist under trainers/ folder
+      config(dict): the config dict (typically constructed using utils.config.get_config)
+    config.trainer (str): the name of the trainer to use. The module named "{config.trainer}_trainer" must exist in trainers root module
 
     Returns:
-        Trainer (inherited from zoedepth.trainers.BaseTrainer): The Trainer object
+      inherited from zoedepth.trainers.BaseTrainer: The Trainer object
+
+    Raises:
+      ValueError: If the specified trainer does not exist under trainers/ folder
+
     """
-    assert "trainer" in config and config.trainer is not None and config.trainer != '', "Trainer not specified. Config: {0}".format(
-        config)
+    assert (
+        "trainer" in config and config.trainer is not None and config.trainer != ""
+    ), "Trainer not specified. Config: {0}".format(config)
     try:
-        Trainer = getattr(import_module(
-            f"zoedepth.trainers.{config.trainer}_trainer"), 'Trainer')
+        Trainer = getattr(import_module(f"zoedepth.trainers.{config.trainer}_trainer"), "Trainer")
     except ModuleNotFoundError as e:
         raise ValueError(f"Trainer {config.trainer}_trainer not found.") from e
     return Trainer

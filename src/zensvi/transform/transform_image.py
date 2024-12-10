@@ -1,17 +1,18 @@
+import math
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import Union
+
 import cv2
 import numpy as np
-import math
-from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
-from typing import Union
 
 from zensvi.utils.log import Logger
 
 
 def _xyz2lonlat(xyz):
-    """
-    Converts 3D Cartesian coordinates (x, y, z) to geographic coordinates (longitude, latitude).
+    """Converts 3D Cartesian coordinates (x, y, z) to geographic coordinates (longitude,
+    latitude).
 
     Args:
         xyz (np.ndarray): An array of shape (..., 3) containing 3D Cartesian coordinates.
@@ -37,8 +38,8 @@ def _xyz2lonlat(xyz):
 
 
 def _lonlat2XY(lonlat, shape):
-    """
-    Converts geographic coordinates (longitude, latitude) to pixel coordinates (X, Y) based on an image shape.
+    """Converts geographic coordinates (longitude, latitude) to pixel coordinates (X, Y)
+    based on an image shape.
 
     Args:
         lonlat (np.ndarray): An array of shape (..., 2) containing longitude and latitude coordinates.
@@ -56,8 +57,8 @@ def _lonlat2XY(lonlat, shape):
 
 
 class ImageTransformer:
-    """
-    Transforms images by applying various projections such as fisheye and perspective adjustments.
+    """Transforms images by applying various projections such as fisheye and perspective
+    adjustments.
 
     Args:
         dir_input (Union[str, Path]): Input directory containing images.
@@ -94,8 +95,8 @@ class ImageTransformer:
     def dir_input(self):
         """Property for the input directory.
 
-        :return: dir_input
-        :rtype: Path
+        Returns:
+            Path: dir_input
         """
         return self._dir_input
 
@@ -111,8 +112,8 @@ class ImageTransformer:
     def dir_output(self):
         """Property for the output directory.
 
-        :return: dir_output
-        :rtype: Path
+        Returns:
+            Path: dir_output
         """
         return self._dir_output
 
@@ -125,8 +126,7 @@ class ImageTransformer:
         self._dir_output = value
 
     def perspective(self, img, FOV, THETA, PHI, height, width):
-        """
-        Transforms an image to simulate a perspective view from specific angles.
+        """Transforms an image to simulate a perspective view from specific angles.
 
         Args:
             img (np.ndarray): Source image to transform.
@@ -139,7 +139,6 @@ class ImageTransformer:
         Returns:
             np.ndarray: Transformed image.
         """
-
         f = 0.5 * width * 1 / np.tan(0.5 * FOV / 180.0 * np.pi)
         cx = (width - 1) / 2.0
         cy = (height - 1) / 2.0
@@ -168,14 +167,11 @@ class ImageTransformer:
         xyz = xyz @ R.T
         lonlat = _xyz2lonlat(xyz)
         XY = _lonlat2XY(lonlat, shape=img.shape).astype(np.float32)
-        persp = cv2.remap(
-            img, XY[..., 0], XY[..., 1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP
-        )
+        persp = cv2.remap(img, XY[..., 0], XY[..., 1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP)
         return persp
 
     def equidistant_fisheye(self, img):
-        """
-        Transforms an image to an equidistant fisheye projection.
+        """Transforms an image to an equidistant fisheye projection.
 
         Args:
             img (np.ndarray): Source image to transform.
@@ -205,8 +201,7 @@ class ImageTransformer:
         return new_img
 
     def orthographic_fisheye(self, img):
-        """
-        Transforms an image to an orthographic fisheye projection.
+        """Transforms an image to an orthographic fisheye projection.
 
         Args:
             img (np.ndarray): Source image to transform.
@@ -235,8 +230,7 @@ class ImageTransformer:
         return new_img
 
     def stereographic_fisheye(self, img):
-        """
-        Transforms an image to a stereographic fisheye projection.
+        """Transforms an image to a stereographic fisheye projection.
 
         Args:
             img (np.ndarray): Source image to transform.
@@ -274,8 +268,7 @@ class ImageTransformer:
         return new_img
 
     def equisolid_fisheye(self, img):
-        """
-        Transforms an image to an equisolid fisheye projection.
+        """Transforms an image to an equisolid fisheye projection.
 
         Args:
             img (np.ndarray): Source image to transform.
@@ -313,8 +306,8 @@ class ImageTransformer:
         show_size: Union[int, float] = 100,
         use_upper_half: bool = False,
     ):
-        """
-        Applies specified transformations to all images in the input directory and saves them in the output directory.
+        """Applies specified transformations to all images in the input directory and
+        saves them in the output directory.
 
         Args:
             style_list (str): Space-separated list of transformation styles to apply. Valid styles include 'perspective',
@@ -344,13 +337,11 @@ class ImageTransformer:
                 phi=phi,
                 aspects=aspects,
                 show_size=show_size,
-                use_upper_half=use_upper_half
+                use_upper_half=use_upper_half,
             )
         # raise an error if the style_list is a list
         if isinstance(style_list, list):
-            raise ValueError(
-                "Please input the correct image style as a string, not a list."
-            )
+            raise ValueError("Please input the correct image style as a string, not a list.")
         # check if there's anything other than "perspective" and "fisheye"
         style_list = style_list.split()
         if not all(
@@ -387,7 +378,7 @@ class ImageTransformer:
         def run(path_input, path_output, show_size, style, theta, aspects, FOV):
             img_raw = cv2.imread(str(path_input), cv2.IMREAD_COLOR)
             if use_upper_half:
-                img_raw = img_raw[:img_raw.shape[0]//2, :]
+                img_raw = img_raw[: img_raw.shape[0] // 2, :]
             if style == "equidistant_fisheye":
                 if not path_output.exists():
                     img_new = self.equidistant_fisheye(img_raw)
@@ -409,12 +400,8 @@ class ImageTransformer:
                     cv2.imwrite(str(path_output), img_new)
 
             elif style == "perspective":
-                num_images = (
-                    360 // theta
-                )  # Calculate the number of images based on theta
-                thetas = [
-                    theta * i for i in range(num_images)
-                ]  # Calculate thetas based on step size
+                num_images = 360 // theta  # Calculate the number of images based on theta
+                thetas = [theta * i for i in range(num_images)]  # Calculate thetas based on step size
 
                 for theta in thetas:
                     height = int(aspects[0] * show_size)
@@ -424,14 +411,12 @@ class ImageTransformer:
                         f"{path_output.stem}_Direction_{theta}_FOV_{FOV}_aspect_{aspect_name}_raw.png"
                     )
                     if not path_output_raw.exists():
-                        img_new = self.perspective(
-                            img_raw, FOV, theta, phi, height, width
-                        )
+                        img_new = self.perspective(img_raw, FOV, theta, phi, height, width)
                         cv2.imwrite(str(path_output_raw), img_new)
 
         def process_image(dir_input, dir_output, file_path, show_size, style, theta, aspects, FOV):
             relative_path = file_path.relative_to(dir_input)
-            path_output = dir_output / relative_path.with_suffix('.png')
+            path_output = dir_output / relative_path.with_suffix(".png")
             path_output.parent.mkdir(parents=True, exist_ok=True)
             return file_path, path_output, show_size, style, theta, aspects, FOV
 

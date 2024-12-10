@@ -8,7 +8,9 @@ jobs:
   pr-checks:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # This will fetch all history for all branches and tags
 
     - name: Set up Python
       uses: actions/setup-python@v2
@@ -27,7 +29,7 @@ jobs:
     - name: Check file changes in tests/
       run: |
         # Checks for any upload in tests/
-        CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} -- tests/)
+        CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT origin/${{ github.base_ref }} HEAD -- tests/)
         if [ -n "$CHANGED_FILES" ]; then
           echo "Files changed in tests/:"
           echo "$CHANGED_FILES"
