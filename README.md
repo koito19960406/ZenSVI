@@ -5,6 +5,7 @@
 [![Downloads](https://pepy.tech/badge/zensvi/month)](https://pepy.tech/project/zensvi)
 [![Downloads](https://pepy.tech/badge/zensvi/week)](https://pepy.tech/project/zensvi)
 [![Documentation Status](https://readthedocs.org/projects/zensvi/badge/?version=latest)](https://zensvi.readthedocs.io/en/latest/?badge=latest)
+[![codecov](https://codecov.io/gh/koito19960406/ZenSVI/graph/badge.svg?token=HAIMJIT9HQ)](https://codecov.io/gh/koito19960406/ZenSVI)
 
 <p align="center">
   <picture>
@@ -19,23 +20,25 @@ This package is a one-stop solution for downloading, cleaning, analyzing street 
 
 ## Table of Contents
 
-- [Installation of `zensvi`](#installation-of-zensvi)
-- [Installation of `pytorch` and `torchvision`](#installation-of-pytorch-and-torchvision)
-- [Usage](#usage)
-  - [Downloading Street View Imagery](#downloading-street-view-imagery)
-  - [Analyzing Metadata of Mapillary Images](#analyzing-metadata-of-mapillary-images)
-  - [Running Segmentation](#running-segmentation)
-  - [Running Places365](#running-places365)
-  - [Running PlacePulse 2.0 Prediction](#running-placepulse-20-prediction)
-  - [Running Global Streetscapes Prediction](#running-global-streetscapes-prediction)
-  - [Running Depth Estimation](#running-depth-estimation)
-  - [Running Embeddings](#running-embeddings)
-  - [Running Low-Level Feature Extraction](#running-low-level-feature-extraction)
-  - [Transforming Images](#transforming-images)
-  - [Visualizing Results](#visualizing-results)
-- [Contributing](#contributing)
-- [License](#license)
-- [Credits](#credits)
+- [ZenSVI](#zensvi)
+  - [Table of Contents](#table-of-contents)
+  - [Installation of `zensvi`](#installation-of-zensvi)
+  - [Installation of `pytorch` and `torchvision`](#installation-of-pytorch-and-torchvision)
+  - [Usage](#usage)
+    - [Downloading Street View Imagery](#downloading-street-view-imagery)
+    - [Analyzing Metadata of Mapillary Images](#analyzing-metadata-of-mapillary-images)
+    - [Running Segmentation](#running-segmentation)
+    - [Running Places365](#running-places365)
+    - [Running PlacePulse 2.0 Prediction](#running-placepulse-20-prediction)
+    - [Running Global Streetscapes Prediction](#running-global-streetscapes-prediction)
+    - [Running Depth Estimation](#running-depth-estimation)
+    - [Running Embeddings](#running-embeddings)
+    - [Running Low-Level Feature Extraction](#running-low-level-feature-extraction)
+    - [Transforming Images](#transforming-images)
+    - [Visualizing Results](#visualizing-results)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Credits](#credits)
 
 ## Installation of `zensvi`
 
