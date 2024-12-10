@@ -35,9 +35,7 @@ def _detect_edges_single_image(image_path: Path, dir_image_output: Union[str, Pa
     for technique, edges in techniques.items():
         if dir_image_output:
             # Save processed image
-            output_path = os.path.join(
-                dir_image_output, f"{image_path.stem}_{technique}.png"
-            )
+            output_path = os.path.join(dir_image_output, f"{image_path.stem}_{technique}.png")
             cv2.imwrite(output_path, edges)
 
         # Count edges

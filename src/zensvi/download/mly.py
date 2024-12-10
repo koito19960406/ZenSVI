@@ -289,9 +289,7 @@ class MLYDownloader(BaseDownloader):
             return
 
         def worker(panoid, resolution):
-            result = mly.image_thumbnail(
-                panoid, resolution=resolution, additional_fields=additional_fields
-            )
+            result = mly.image_thumbnail(panoid, resolution=resolution, additional_fields=additional_fields)
             return panoid, result
 
         results = {}
@@ -565,9 +563,7 @@ class MLYDownloader(BaseDownloader):
 
         # get urls
         if path_pid.exists():
-            self._get_urls_mly(
-                path_pid, resolution=resolution, additional_fields=additional_fields
-            )
+            self._get_urls_mly(path_pid, resolution=resolution, additional_fields=additional_fields)
 
             # stop if metadata_only is True
             if metadata_only:
