@@ -3,7 +3,7 @@ name = "zensvi"
 version = "1.0.0-dev4"
 description = "This package handles downloading, cleaning, analyzing street view imagery in a one-stop and zen manner."
 authors = ["koito19960406"]
-license = "CC BY-SA 4.0"
+license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]

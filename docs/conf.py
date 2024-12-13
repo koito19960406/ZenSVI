@@ -7,7 +7,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "zensvi"
-copyright = "2023, koito19960406"
+copyright = "2024, koito19960406"
 author = "koito19960406"
 
 # -- General configuration ---------------------------------------------------

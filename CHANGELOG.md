@@ -3,6 +3,7 @@
 <!--next-version-placeholder-->
 
 ## v1.0.0 (10/12/2024)
+- **License Changed**: Changed license from CC BY-SA 4.0 to MIT License
 - **AMSDownloader Introduced**: New downloader for Amsterdam Street View Images (SVI). Usage: `from zensvi.download import AMSDownloader`.
 - **PointCloudProcessor Added**: New module to convert Street View Images to point clouds. Usage: `from zensvi.transform import PointCloudProcessor`.
 - **Embeddings Module Added**: New functionality for generating image embeddings. Usage: `from zensvi.cv import Embeddings`.
