@@ -290,7 +290,7 @@ Interested in contributing? Check out the contributing guidelines. Please note t
 
 ## License
 
-`zensvi` was created by Koichi Ito. It is licensed under the terms of the CC BY-SA 4.0.
+`zensvi` was created by Koichi Ito. It is licensed under the terms of the MIT License.
 
 Please cite the following paper if you use `zensvi` in a scientific publication:
 ***(place holder for the paper citation)***
