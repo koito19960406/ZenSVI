@@ -141,6 +141,8 @@ segmenter.segment("path/to/input_directory",
 To perform scene classification, use the `ClassifierPlaces365`:
 
 ```python
+from zensvi.cv import ClassifierPlaces365
+
 # initialize the classifier
 classifier = ClassifierPlaces365(
     device="cpu",  # device to use (either "cpu" or "gpu")
