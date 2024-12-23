@@ -16,7 +16,11 @@
 
 # ZenSVI
 
-This package is a one-stop solution for downloading, cleaning, analyzing street view imagery. Detailed documentation can be found [here](https://zensvi.readthedocs.io/en/latest/).
+**Primary Author:** [Koichi Ito](https://koichiito.com/) (National University of Singapore)
+
+ZenSVI is a comprehensive Python package for downloading, cleaning, and analyzing street view imagery. For more information about the package or to discuss potential collaborations, please visit my website at [koichiito.com](https://koichiito.com/). The source code is available on [GitHub](https://github.com/koito19960406/ZenSVI).
+
+This package is a one-stop solution for downloading, cleaning, and analyzing street view imagery, with comprehensive API documentation available at [zensvi.readthedocs.io](https://zensvi.readthedocs.io/en/latest/autoapi/index.html).
 
 ## Table of Contents
 
