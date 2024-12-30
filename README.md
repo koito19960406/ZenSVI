@@ -18,6 +18,8 @@
 
 **Primary Author:** [Koichi Ito](https://koichiito.com/) (National University of Singapore)
 
+Besides this documentation, we have published a [comprehensive paper](https://arxiv.org/abs/2412.18641) with detailed information and demonstration use cases. The paper provides in-depth insights into the package's architecture, features, and real-world applications.
+
 ZenSVI is a comprehensive Python package for downloading, cleaning, and analyzing street view imagery. For more information about the package or to discuss potential collaborations, please visit my website at [koichiito.com](https://koichiito.com/). The source code is available on [GitHub](https://github.com/koito19960406/ZenSVI).
 
 This package is a one-stop solution for downloading, cleaning, and analyzing street view imagery, with comprehensive API documentation available at [zensvi.readthedocs.io](https://zensvi.readthedocs.io/en/latest/autoapi/index.html).
@@ -297,15 +299,13 @@ Interested in contributing? Check out the contributing guidelines. Please note t
 `zensvi` was created by Koichi Ito. It is licensed under the terms of the MIT License.
 
 Please cite the following paper if you use `zensvi` in a scientific publication:
-***(place holder for the paper citation)***
+
 ```bibtex
-@article{ito2025zensvi,
-  title={ZenSVI: An Open-Source Software for the Integrated Acquisition, Processing and Analysis of Street View Imagery},
-  author={Ito, Koichi, XXX, XXX, XXX, ...},
-  journal={Computers, Environment and Urban Systems},
-  volume={XXX},
-  pages={XXX},
-  year={2025}
+@article{ito2023zensvi,
+    title={ZenSVI: An Open-Source Software for the Integrated Acquisition, Processing and Analysis of Street View Imagery Towards Scalable Urban Science},
+    author={Ito, Koichi and Zhu, Yihan and Abdelrahman, Mahmoud and Liang, Xiucheng and Fan, Zicheng and Hou, Yujun and Zhao, Tianhong and Ma, Rui and Fujiwara, Kunihiko and Ouyang, Jiani and Quintana, Matias and Biljecki, Filip},
+    journal={arXiv preprint arXiv:2412.18641},
+    year={2023}
 }
 ```
 

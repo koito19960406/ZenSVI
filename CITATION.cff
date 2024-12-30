@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "ZenSVI: An Open-Source Software for the Integrated Acquisition, Processing and Analysis of Street View Imagery Towards Scalable Urban Science"
+version: 1.0.0
+date-released: 2023-12-24
+url: "https://github.com/koito19960406/ZenSVI"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Ito"
+    given-names: "Koichi"
+  - family-names: "Zhu"
+    given-names: "Yihan"
+  - family-names: "Abdelrahman"
+    given-names: "Mahmoud"
+  - family-names: "Liang"
+    given-names: "Xiucheng"
+  - family-names: "Fan"
+    given-names: "Zicheng"
+  - family-names: "Hou"
+    given-names: "Yujun"
+  - family-names: "Zhao"
+    given-names: "Tianhong"
+  - family-names: "Ma"
+    given-names: "Rui"
+  - family-names: "Fujiwara"
+    given-names: "Kunihiko"
+  - family-names: "Ouyang"
+    given-names: "Jiani"
+  - family-names: "Quintana"
+    given-names: "Matias"
+  - family-names: "Biljecki"
+    given-names: "Filip"
+  title: "ZenSVI: An Open-Source Software for the Integrated Acquisition, Processing and Analysis of Street View Imagery Towards Scalable Urban Science"
+  journal: "arXiv preprint arXiv:2412.18641"
+  year: 2023 
