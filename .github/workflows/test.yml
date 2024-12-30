@@ -30,36 +30,17 @@ jobs:
         python-version: ${{ matrix.python-version }}
         cache: 'pip'
     
-    - name: Cache Poetry
-      uses: actions/cache@v3
-      with:
-        path: ~/.local
-        key: poetry-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
-    
     - name: Install Poetry
-      if: steps.cache-poetry.outputs.cache-hit != 'true'
       run: |
         pip install poetry
-    
-    - name: Cache Poetry virtualenv
-      uses: actions/cache@v3
-      id: cache-venv
-      with:
-        path: ./.venv
-        key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: |
-          venv-${{ runner.os }}-${{ matrix.python-version }}-
+        poetry config virtualenvs.in-project true
     
     - name: Install dependencies
-      if: steps.cache-venv.outputs.cache-hit != 'true'
       run: |
-        poetry config virtualenvs.in-project true
-        poetry install --no-interaction
+        poetry install --no-interaction --with dev
     
     - name: Run tests with coverage
-      run: |
-        poetry run pytest \
-          --cov=src/zensvi --cov-report=xml:coverage-service.xml
+      run: poetry run pytest --cov=src/zensvi --cov-report=xml:coverage-service.xml
       env:
         MLY_API_KEY: ${{ secrets.MLY_API_KEY }}
         GSV_API_KEY: ${{ secrets.GSV_API_KEY }}
