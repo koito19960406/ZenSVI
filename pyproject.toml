@@ -107,7 +107,7 @@ addopts = "--cov-config=.coveragerc"
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
 
-[aool.poetry.group.dev.dependencies]
+[tool.poetry.group.dev.dependencies]
 myst-nb = {version = "^1.0.0", python = "^3.9"}
 sphinx-autoapi = "^3.0.0"
 sphinx-rtd-theme = "^2.0.0"
