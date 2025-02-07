@@ -174,4 +174,4 @@ class PrepareForNet(object):
 
 
 # Alias for backward compatibility
-NormalizeImage = Normalize 
+NormalizeImage = Normalize
