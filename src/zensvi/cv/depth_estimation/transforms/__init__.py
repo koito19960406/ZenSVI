@@ -4,7 +4,6 @@ This module contains the transforms used for preprocessing images for depth esti
 """
 
 import numpy as np
-import torch
 import torch.nn as nn
 from torchvision.transforms import Normalize
 
