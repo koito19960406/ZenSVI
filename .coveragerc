@@ -1,21 +1,12 @@
 [run]
 omit =
-    # Ignore any tests
     */tests/*
-    # Ignore virtual environment folders
-    */venv/*
-    */env/*
-    # Ignore cache directories
-    */__pycache__/*
-    */.pytest_cache/*
-    # Add your custom folders to ignore
-    */migrations/*
-    */docs/*
-    */examples/*
-    */mapillary/*
-    */utils/*
-    */depth_anything/*
-    */zoedepth/*
+    src/zensvi/utils/*
+    src/zensvi/download/mapillary/*
+    src/zensvi/download/utils/*
+    src/zensvi/cv/depth_estimation/depth_anything/*
+    src/zensvi/cv/depth_estimation/zoedepth/*
+    src/zensvi/cv/depth_estimation/torchhub/*
 
 
 [report]
@@ -29,22 +20,14 @@ exclude_lines =
     raise AssertionError
 
 omit =
-    # Ignore any tests
+omit =
     */tests/*
-    # Ignore virtual environment folders
-    */venv/*
-    */env/*
-    # Ignore cache directories
-    */__pycache__/*
-    */.pytest_cache/*
-    # Add your custom folders to ignore
-    */migrations/*
-    */docs/*
-    */examples/*
-    */mapillary/*
-    */utils/*
-    */depth_anything/*
-    */zoedepth/*
+    src/zensvi/utils/*
+    src/zensvi/download/mapillary/*
+    src/zensvi/download/utils/*
+    src/zensvi/cv/depth_estimation/depth_anything/*
+    src/zensvi/cv/depth_estimation/zoedepth/*
+    src/zensvi/cv/depth_estimation/torchhub/*
 
 [html]
 directory = coverage_html_report
