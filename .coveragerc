@@ -24,6 +24,7 @@ omit =
     src/zensvi/utils/*
     src/zensvi/download/mapillary/*
     src/zensvi/download/utils/*
+    src/zensvi/cv/classification/utils/*
     src/zensvi/cv/depth_estimation/depth_anything/*
     src/zensvi/cv/depth_estimation/zoedepth/*
     src/zensvi/cv/depth_estimation/torchhub/*

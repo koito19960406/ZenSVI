@@ -66,7 +66,7 @@ jobs:
     - name: Upload coverage reports to Codecov
       shell: bash
       run: |
-        ./codecov --verbose upload-process --fail-on-error -t ${{ secrets.CODECOV_TOKEN }} -n '${{ matrix.os }}-py${{ matrix.python-version }}-${{ github.run_id }}' -F service -f coverage-service.xml -y codecov.yml
+        ./codecov --verbose upload-process --fail-on-error -t ${{ secrets.CODECOV_TOKEN }} -n '${{ matrix.os }}-py${{ matrix.python-version }}-${{ github.run_id }}' -F service -f coverage-service.xml
     
     # Cleanup after tests
     - name: Cleanup test artifacts
