@@ -20,7 +20,6 @@ exclude_lines =
     raise AssertionError
 
 omit =
-omit =
     */tests/*
     src/zensvi/utils/*
     src/zensvi/download/mapillary/*
