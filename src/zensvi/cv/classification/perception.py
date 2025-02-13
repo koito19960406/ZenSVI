@@ -137,7 +137,7 @@ class ClassifierPerception(BaseClassifier):
         Returns:
             torch.nn.Module: Model with loaded weights
         """
-        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
         model.load_state_dict(checkpoint)
         return model
 
@@ -285,7 +285,7 @@ class ClassifierPerceptionViT(BaseClassifier):
             df.to_json(file_path, orient="records")
 
     def _load_checkpoint(self, model, checkpoint_path):
-        model = torch.load(checkpoint_path, map_location=self.device)
+        model = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
         return model
 
     def classify(

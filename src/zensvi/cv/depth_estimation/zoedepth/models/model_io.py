@@ -68,7 +68,7 @@ def load_wts(model, checkpoint_path):
     Returns:
         torch.nn.Module: The model with loaded weights.
     """
-    ckpt = torch.load(checkpoint_path, map_location="cpu")
+    ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     return load_state_dict(model, ckpt)
 
 
