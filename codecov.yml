@@ -10,28 +10,14 @@ coverage:
         threshold: 1%
 
 ignore:
-  # Test files
-  - "tests/**/*"
-  - "**/tests/**/*"
-  - "**/*.test.*"
-  - "**/*_test.*"
-  
-  # Virtual environments
-  - "venv/**/*"
-  - "env/**/*"
-  - ".venv/**/*"
-  
-  # Cache directories
-  - "**/__pycache__/**/*"
-  - "**/.pytest_cache/**/*"
-  
-  # Custom folders to ignore
-  - "src/zensvi/utils/**/*"
-  - "src/zensvi/download/mapillary/**/*"
-  - "src/zensvi/download/utils/**/*"
-  - "src/zensvi/cv/depth_estimation/depth_anything/**/*"
-  - "src/zensvi/cv/depth_estimation/zoedepth/**/*"
-  - "src/zensvi/cv/depth_estimation/torchhub/**/*"
+  - "tests/*"
+  - "**/tests/*"
+  - "src/zensvi/utils/*"
+  - "src/zensvi/download/mapillary/*"
+  - "src/zensvi/download/utils/*"
+  - "src/zensvi/cv/depth_estimation/depth_anything/*"
+  - "src/zensvi/cv/depth_estimation/zoedepth/*"
+  - "src/zensvi/cv/depth_estimation/torchhub/*"
 
 comment:
   layout: "reach, diff, flags, files"

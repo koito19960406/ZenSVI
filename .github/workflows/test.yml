@@ -59,6 +59,9 @@ jobs:
       run: |
         curl -Os https://cli.codecov.io/latest/linux/codecov
         chmod +x codecov
+
+    - name: Check coverage file
+      run: cat coverage-service.xml
     
     - name: Upload coverage reports to Codecov
       shell: bash
