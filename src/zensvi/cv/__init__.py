@@ -15,6 +15,7 @@ from .depth_estimation import DepthEstimator
 from .embeddings import Embeddings
 from .low_level import get_low_level_features
 from .segmentation import Segmenter
+from .object_detection import ObjectDetector
 
 __all__ = [
     # Classification models
@@ -37,4 +38,5 @@ __all__ = [
     "get_low_level_features",
     # Segmentation
     "Segmenter",
+    "ObjectDetector"
 ]
