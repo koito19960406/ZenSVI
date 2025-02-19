@@ -212,7 +212,7 @@ To run grounding object detection on the images, use the `ObjectDetector`:
 from zensvi.cv import ObjectDetector
 
 detector = ObjectDetector(
-    text_prompt="tree",  # specify the object(s) you want to detect (e.g., single type: "building", multi-type "car . tree")
+    text_prompt="tree",  # specify the object(s) (e.g., single type: "building", multi-type "car . tree")
     box_threshold=0.45,
     text_threshold=0.25
 )
