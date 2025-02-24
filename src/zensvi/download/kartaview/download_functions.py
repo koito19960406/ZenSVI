@@ -5,7 +5,8 @@
 import geopandas as gp
 import pandas as pd
 import requests
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
+
 
 # Function to determine whether the exception should trigger a retry
 def is_retriable_exception(exception):
@@ -15,9 +16,10 @@ def is_retriable_exception(exception):
         if exception.response is not None:
             status_code = exception.response.status_code
             # Retry only on specific server-side issues
-            if status_code in {500, 503, 429}:  
+            if status_code in {500, 503, 429}:
                 return True  # Trigger retry for these error codes
     return False  # Don't retry on other errors (like client-side 400)
+
 
 # The main function to fetch data from a URL with retry logic
 @retry(
@@ -40,7 +42,7 @@ def get_data_from_url(url):
     try:
         response_json = r.json()  # Parse the response as JSON
         # Extract apiCode and apiMessage to check for errors
-        api_code = response_json.get("status", {}).get("apiCode", 0)  
+        api_code = response_json.get("status", {}).get("apiCode", 0)
         api_message = response_json.get("status", {}).get("apiMessage", "Unknown API error")
 
         # If the status code is 400 (Bad Request), print the error message and raise an exception
@@ -58,6 +60,7 @@ def get_data_from_url(url):
     except ValueError as e:
         # Handle JSON parsing errors or other exceptions during the response processing
         raise ValueError(f"Error processing response JSON: {e}")
+
 
 def data_to_dataframe(data):
     """Convert JSON data to a pandas DataFrame.
