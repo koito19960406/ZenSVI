@@ -46,7 +46,7 @@ img2vec-pytorch>=1.0.1
 open3d>=0.18.0
 scikit-learn>=1.5.2
 addict>=2.4.0
-goundingdino>=0.4.0
+groundingdino>=0.4.0
 
 # Development dependencies
 pytest>=8.0.0
