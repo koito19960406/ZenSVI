@@ -37,7 +37,7 @@ jobs:
     
     - name: Install dependencies
       run: |
-        poetry lock --no-update
+        poetry lock
         poetry install --no-interaction --with dev
     
     - name: Run tests with coverage
