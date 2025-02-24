@@ -525,7 +525,7 @@ class MLYDownloader(BaseDownloader):
         if path_pid is None:
             print("Getting pids...")
             path_pid = self.dir_output / "mly_pids.csv"
-            if path_pid.exists() & (not update_pids):
+            if Path(path_pid).exists() & (not update_pids):
                 print("update_pids is set to False. So the following csv file will be used: {}".format(path_pid))
             else:
                 self._get_pids(
