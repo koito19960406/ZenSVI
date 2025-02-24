@@ -189,7 +189,7 @@ class ClassifierPlaces365(BaseClassifier):
         """
         model_file = pkg_resources.resource_filename("zensvi.cv.classification.utils", "wideresnet18_places365.pth.tar")
         model = wideresnet.resnet18(num_classes=365)
-        checkpoint = torch.load(model_file, map_location=self.device)
+        checkpoint = torch.load(model_file, map_location=self.device, weights_only=False)
         state_dict = {str.replace(k, "module.", ""): v for k, v in checkpoint["state_dict"].items()}
         model.load_state_dict(state_dict)
 

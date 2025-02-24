@@ -5,8 +5,28 @@
 import geopandas as gp
 import pandas as pd
 import requests
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 
+# Function to determine whether the exception should trigger a retry
+def is_retriable_exception(exception):
+    """Determine if the exception should trigger a retry."""
+    if isinstance(exception, requests.exceptions.RequestException):
+        # Only retry for server errors (500, 503) and rate limits (429)
+        if exception.response is not None:
+            status_code = exception.response.status_code
+            # Retry only on specific server-side issues
+            if status_code in {500, 503, 429}:
+                return True  # Trigger retry for these error codes
+    return False  # Don't retry on other errors (like client-side 400)
+
+
+# The main function to fetch data from a URL with retry logic
+@retry(
+    stop=stop_after_attempt(5),  # Retry up to 5 times
+    wait=wait_exponential(multiplier=1, min=2, max=10),  # Exponential backoff: 2s, 4s, 8s... up to 10s
+    retry=retry_if_exception(is_retriable_exception),  # Only retry if `is_retriable_exception` returns True
+)
 def get_data_from_url(url):
     """Get data from a KartaView API URL.
 
@@ -16,17 +36,30 @@ def get_data_from_url(url):
     Returns:
         dict: The JSON response data if successful, None otherwise.
     """
+    r = requests.get(url, timeout=10)  # Send GET request with a 10-second timeout
+
+    # Try to parse the JSON response and handle errors based on the API response
     try:
-        r = requests.get(url, timeout=None)
-        while r.status_code != 200:
-            r = requests.get(url, timeout=None)  # try again
-        if r.json()["status"]["apiCode"] == 600:
-            data = r.json()["result"]["data"]  # get a JSON format of the response
-            return data
-        else:
-            return None
-    except Exception as e:
-        print(f"Error: {e}")
+        response_json = r.json()  # Parse the response as JSON
+        # Extract apiCode and apiMessage to check for errors
+        api_code = response_json.get("status", {}).get("apiCode", 0)
+        api_message = response_json.get("status", {}).get("apiMessage", "Unknown API error")
+
+        # If the status code is 400 (Bad Request), print the error message and raise an exception
+        if r.status_code == 400:
+            print(f"HTTP 400 Error: {api_message}")  # Print the API-specific error message
+            raise ValueError(f"API Error: {api_message}")  # Raise an exception to stop further processing
+
+        # If apiCode is 600, this indicates a successful request with the expected data
+        if api_code == 600:
+            return response_json.get("result", {}).get("data", None)  # Return the data from the response
+
+        # For any other error (apiCode other than 600), raise an exception
+        raise ValueError(f"API Error: {api_message}")  # Raise exception with API message
+
+    except ValueError as e:
+        # Handle JSON parsing errors or other exceptions during the response processing
+        raise ValueError(f"Error processing response JSON: {e}")
 
 
 def data_to_dataframe(data):
@@ -55,8 +88,12 @@ def get_points_in_sequence(sequenceId):
         geopandas.GeoDataFrame: GeoDataFrame containing photo points, or empty DataFrame if no data.
     """
     try:
-        url = f"https://api.openstreetcam.org/2.0/sequence/{sequenceId}/photos?itemsPerPage=1000000&join=user,photo,photos,attachment,attachments"
-        data = get_data_from_url(url)
+        url = f"https://api.openstreetcam.org/2.0/sequence/{sequenceId}/photos?itemsPerPage=1000000&join=user"
+        try:
+            data = get_data_from_url(url)
+        except Exception as e:
+            print(f"Request failed: {e}")
+            data = None  # Explicitly set to None if the request fails
         if data:
             df = data_to_dataframe(data)
             points = gp.GeoDataFrame(df, geometry=gp.points_from_xy(df.lng, df.lat))
@@ -110,7 +147,11 @@ def get_sequences_in_shape(shape):
                 row.geometry.bounds[3],
             )  # find the extent of each polygon geometry
             url = f"https://api.openstreetcam.org/2.0/sequence/?bRight={miny},{maxx}&tLeft={maxy},{minx}&itemsPerPage=1000000"  # use the extent to query for sequences existing in the extent
-            data = get_data_from_url(url)
+            try:
+                data = get_data_from_url(url)
+            except Exception as e:
+                print(f"Request failed: {e}")
+                data = None  # Explicitly set to None if the request fails
             if data:
                 df = data_to_dataframe(data)
                 ls.append(df)  # append the collected df of sequences to the list
