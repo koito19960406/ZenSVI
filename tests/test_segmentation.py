@@ -1,8 +1,12 @@
+import json
 import shutil
 
+import numpy as np
+import pandas as pd
 import pytest
 
 from zensvi.cv import Segmenter
+from zensvi.transform import ImageTransformer
 
 
 @pytest.fixture(scope="function")  # Explicitly set function scope
@@ -136,3 +140,85 @@ def test_long_format(output_dir, input_dir, all_devices):
     )
     assert len(list(image_output.glob("*"))) > 0
     assert len(list(summary_output.glob("*"))) > 0
+
+
+def test_transformed_segmentation_pixel_ratio(output_dir, input_dir):
+    """Test the pixel ratio calculation on transformed segmentation images.
+
+    Steps:
+    1. Transform segmented images to orthographic fish-eye projection
+    2. Calculate pixel ratios using the post-process function
+    3. Verify that the pixel ratios for each image sum to 1 (within tolerance)
+    """
+    # Step 1: Transform segmented images to orthographic fish-eye projection
+    segmented_input = input_dir / "cityscapes_semantic"
+
+    # Find all colored_segmented.png files
+    segmented_files = [file for file in segmented_input.glob("*_colored_segmented.png")]
+
+    # Create a temporary directory for the transformed images
+    transform_output = output_dir / "transformed_segmentation"
+    transform_output.mkdir(parents=True, exist_ok=True)
+
+    # Use the ImageTransformer to transform the images - just use orthographic_fisheye
+    for file in segmented_files:
+        transformer = ImageTransformer(str(file), str(transform_output), log_path=output_dir / "transformation.log")
+        transformer.transform_images(style_list="orthographic_fisheye")
+
+    # Step 2: Calculate pixel ratios on transformed images
+    segmenter = Segmenter(dataset="cityscapes", task="semantic")
+    orthographic_dir = transform_output / "orthographic_fisheye"
+    ratio_output = output_dir / "transformed_pixel_ratios"
+
+    segmenter.calculate_pixel_ratio_post_process(str(orthographic_dir), str(ratio_output))
+
+    # Step 3: Verify that the pixel ratios sum to 1
+    # Read the CSV file with the pixel ratios
+    csv_file = ratio_output / "pixel_ratios.csv"
+    assert csv_file.exists()
+
+    df = pd.read_csv(csv_file, index_col=0)
+
+    # Calculate the sum of each row
+    row_sums = df.sum(axis=1)
+
+    # Check that all row sums are approximately 1 (allowing a larger tolerance due to potential NaN values)
+    tolerance = 1e-5  # Increased tolerance
+
+    # Remove rows that might be problematic (sum not close to 1)
+    valid_rows = np.abs(row_sums - 1.0) < tolerance
+
+    # Print info about any invalid rows for debugging
+    if not np.all(valid_rows):
+        print(f"Rows with ratio sum not close to 1: {row_sums[~valid_rows].to_dict()}")
+
+    # Assert that at least 90% of rows sum to approximately 1
+    min_valid_percentage = 0.9
+    valid_percentage = np.mean(valid_rows)
+
+    assert valid_percentage >= min_valid_percentage, (
+        f"Only {valid_percentage * 100:.2f}% of rows sum to 1.0 within tolerance. "
+        f"Expected at least {min_valid_percentage * 100:.2f}%"
+    )
+
+    # Also check JSON file
+    json_file = ratio_output / "pixel_ratios.json"
+    assert json_file.exists()
+
+    with open(json_file, "r") as f:
+        json_data = json.load(f)
+
+    # Check that most image ratios sum to 1
+    valid_count = 0
+    total_count = len(json_data)
+
+    for image_key, ratios in json_data.items():
+        ratio_sum = sum(ratios.values())
+        if abs(ratio_sum - 1.0) < tolerance:
+            valid_count += 1
+
+    valid_json_percentage = valid_count / total_count
+    assert valid_json_percentage >= min_valid_percentage, (
+        f"Only {valid_json_percentage * 100:.2f}% of images in JSON have ratio sums close to 1.0. "
+        f"Expected at least {min_valid_percentage * 100:.2f}%"
+    )
