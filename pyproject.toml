@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zensvi"
-version = "1.0.1"
+version = "1.0.3"
 description = "This package handles downloading, cleaning, analyzing street view imagery in a one-stop and zen manner."
 authors = ["koito19960406"]
 license = "MIT"
@@ -55,9 +55,10 @@ img2vec-pytorch = "^1.0.1"
 open3d = "^0.18.0"
 scikit-learn = "^1.5.2"
 addict = "^2.4.0"
+tenacity = "^9.0.0"
 groundingdino-py = "^0.4.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 bleach = "^3.3.0"
 certifi = "^2021.5.30"
 chardet = "^4.0.0"
@@ -107,13 +108,6 @@ add-ignore = ["D100", "D104", "D415", "D107", "D205", "D105"]
 addopts = "--cov-config=.coveragerc"
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
-
-[tool.poetry.group.dev.dependencies]
-myst-nb = {version = "^1.0.0", python = "^3.9"}
-sphinx-autoapi = "^3.0.0"
-sphinx-rtd-theme = "^2.0.0"
-sphinxcontrib-bibtex = "*"
-furo = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -95,7 +95,7 @@ class ClassifierLighting(BaseClassifier):
             local_dir=Path(__file__).parent.parent.parent.parent.parent / "models",
         )
 
-        checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
+        checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage, weights_only=False)
 
         # Extract the number of classes
         num_classes = checkpoint["state_dict"]["model.classifier.5.weight"].shape[0]
