@@ -1074,11 +1074,18 @@ class Segmenter:
 
             """
             label_ratios = {}
-            total_pixels = image.shape[0] * image.shape[1]
+            valid_pixels = 0
 
+            # First pass: count valid pixels that match colors in the label map
             for color, label in label_map.items():
                 color_pixels = np.count_nonzero(np.all(image == color, axis=-1))
-                label_ratios[label.name] = color_pixels / total_pixels
+                valid_pixels += color_pixels
+                label_ratios[label.name] = color_pixels
+
+            # Second pass: normalize by total valid pixels
+            if valid_pixels > 0:  # Avoid division by zero
+                for label_name in label_ratios:
+                    label_ratios[label_name] = label_ratios[label_name] / valid_pixels
 
             return label_ratios
 
