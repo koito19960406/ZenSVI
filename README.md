@@ -37,6 +37,7 @@ This package is a one-stop solution for downloading, cleaning, and analyzing str
     - [Running Places365](#running-places365)
     - [Running PlacePulse 2.0 Prediction](#running-placepulse-20-prediction)
     - [Running Global Streetscapes Prediction](#running-global-streetscapes-prediction)
+    - [Running Grounding Object Detection](#running-grounding-object-detection)
     - [Running Depth Estimation](#running-depth-estimation)
     - [Running Embeddings](#running-embeddings)
     - [Running Low-Level Feature Extraction](#running-low-level-feature-extraction)
@@ -200,6 +201,27 @@ dir_summary_output = "path/to/summary_output"
 classifier.classify(
     dir_input,
     dir_summary_output=dir_summary_output,
+)
+```
+
+
+### Running Grounding Object Detection
+To run grounding object detection on the images, use the `ObjectDetector`:
+
+```python
+from zensvi.cv import ObjectDetector
+
+detector = ObjectDetector(
+    text_prompt="tree",  # specify the object(s) (e.g., single type: "building", multi-type: "car . tree")
+    box_threshold=0.45,
+    text_threshold=0.25
+)
+
+detector.detect_objects(
+    dir_input="path/to/image_input_directory",
+    dir_output="path/to/image_output_directory",
+    dir_summary_output="path/to/detection_summary_output",
+    save_format="json" # or "csv"
 )
 ```
 
