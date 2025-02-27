@@ -222,3 +222,71 @@ def test_transformed_segmentation_pixel_ratio(output_dir, input_dir):
         f"Only {valid_json_percentage * 100:.2f}% of images in JSON have ratio sums close to 1.0. "
         f"Expected at least {min_valid_percentage * 100:.2f}%"
     )
+
+
+def test_verbosity_levels(all_devices):
+    """Test that different verbosity levels are correctly set in the Segmenter class.
+
+    This test verifies that the verbosity parameter is correctly initialized
+    and that it can be modified after initialization.
+    """
+    # Test default verbosity level (should be 1)
+    segmenter = Segmenter(device=all_devices)
+    assert segmenter.verbosity == 1
+
+    # Test explicit verbosity levels
+    segmenter_quiet = Segmenter(device=all_devices, verbosity=0)
+    assert segmenter_quiet.verbosity == 0
+
+    segmenter_verbose = Segmenter(device=all_devices, verbosity=2)
+    assert segmenter_verbose.verbosity == 2
+
+    # Test changing verbosity after initialization
+    segmenter.verbosity = 0
+    assert segmenter.verbosity == 0
+
+    segmenter.verbosity = 2
+    assert segmenter.verbosity == 2
+
+    # Test with different dataset and task
+    segmenter_mapillary = Segmenter(dataset="mapillary", task="panoptic", device=all_devices, verbosity=0)
+    assert segmenter_mapillary.verbosity == 0
+
+
+def test_verbosity_in_segment(output_dir, input_dir, all_devices):
+    """Test that the segment method respects verbosity levels.
+
+    This test runs the segment method with different verbosity levels to ensure
+    that the verbosity parameter affects the progress bar display.
+    """
+    # Create a segmenter with verbosity=0 (no progress bars)
+    segmenter_quiet = Segmenter(device=all_devices, verbosity=0)
+    image_output_quiet = output_dir / f"{all_devices}/verbosity_quiet"
+    summary_output_quiet = output_dir / f"{all_devices}/verbosity_quiet_summary"
+
+    # Run with verbosity=0
+    segmenter_quiet.segment(
+        input_dir / "images",
+        dir_image_output=image_output_quiet,
+        dir_summary_output=summary_output_quiet,
+        max_workers=1,
+    )
+    # Check that files were generated
+    assert len(list(image_output_quiet.glob("*"))) > 0
+    assert len(list(summary_output_quiet.glob("*"))) > 0
+
+    # Create a segmenter with verbosity=2 (all progress bars)
+    segmenter_verbose = Segmenter(device=all_devices, verbosity=2)
+    image_output_verbose = output_dir / f"{all_devices}/verbosity_verbose"
+    summary_output_verbose = output_dir / f"{all_devices}/verbosity_verbose_summary"
+
+    # Run with verbosity=2
+    segmenter_verbose.segment(
+        input_dir / "images",
+        dir_image_output=image_output_verbose,
+        dir_summary_output=summary_output_verbose,
+        max_workers=1,
+    )
+    # Check that files were generated
+    assert len(list(image_output_verbose.glob("*"))) > 0
+    assert len(list(summary_output_verbose.glob("*"))) > 0

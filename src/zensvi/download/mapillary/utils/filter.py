@@ -15,13 +15,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import haversine
 from geojson import Feature, Point
 from shapely.geometry import shape
-from tqdm import tqdm
 
 # Package imports
 from turfpy.measurement import bearing
 
 # Local imports
 from zensvi.download.mapillary.utils.time import date_to_unix_timestamp
+from zensvi.utils.log import verbosity_tqdm
 
 logger = logging.getLogger("pipeline-logger")
 
@@ -403,7 +403,9 @@ def pipeline(data: dict, components: list, **kwargs) -> list:
     Args:
         data: Dictionary containing features to filter
         components: List of filter components to apply
-        **kwargs: Additional arguments including max_workers for parallel processing
+        **kwargs: Additional arguments including:
+            max_workers: Number of workers for parallel processing
+            verbosity: Level of verbosity for progress bars (0=none, 1=outer loops, 2=all loops). Defaults to 1.
 
     Returns:
         Filtered list of features
@@ -415,7 +417,8 @@ def pipeline(data: dict, components: list, **kwargs) -> list:
         ...         {"filter": "image_type", "image_type": "pano"},
         ...         {"filter": "organization_id", "organization_id": ["org1", "org2"]},
         ...     ],
-        ...     max_workers=4
+        ...     max_workers=4,
+        ...     verbosity=1
         ... )
     """
     __data = data.copy()["features"]
@@ -476,14 +479,19 @@ def pipeline(data: dict, components: list, **kwargs) -> list:
 
         return feature
 
-    # Apply filters in parallel and display a tqdm progress bar
-    with ThreadPoolExecutor(max_workers=kwargs["max_workers"]) as executor:
+    # Get verbosity level from kwargs or use default value of 1
+    verbosity = kwargs.get("verbosity", 1)
+
+    # Apply filters in parallel and display a progress bar based on verbosity
+    with ThreadPoolExecutor(max_workers=kwargs.get("max_workers", None)) as executor:
         # Submit all tasks
         futures = [executor.submit(apply_filters, feature) for feature in __data]
 
         # Collect results as they are completed
         filtered_data = []
-        for future in tqdm(as_completed(futures), total=len(__data), desc="Filtering data"):
+        for future in verbosity_tqdm(
+            as_completed(futures), total=len(__data), desc="Filtering data", verbosity=verbosity, level=1
+        ):
             result = future.result()
             if result:
                 filtered_data.append(result)

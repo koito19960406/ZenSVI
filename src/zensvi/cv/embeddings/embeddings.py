@@ -10,11 +10,12 @@ import pyarrow.parquet as pq
 import torch
 import torchvision.models as models
 import torchvision.transforms as transforms
-import tqdm
 from img2vec_pytorch import Img2Vec
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import ToPILImage
+
+from zensvi.utils.log import verbosity_tqdm
 
 _Model = namedtuple("Model", ["name", "layer", "layer_output_size"])
 
@@ -83,6 +84,7 @@ class Embeddings:
         model_name: str = "resnet-18",
         cuda: bool = False,
         tensor: bool = True,
+        verbosity: int = 1,
     ):
         """Initialize the Embeddings class for extracting image embeddings.
 
@@ -103,6 +105,7 @@ class Embeddings:
             cuda: Whether to use CUDA for GPU acceleration. Default is False.
             tensor: Whether to return the embedding as a PyTorch tensor.
                 If False, returns a numpy array. Default is True.
+            verbosity: Verbosity level for tqdm progress bar. Default is 1.
         """
         self.model_name = model_name
         self.layer = _models_dict[model_name].layer
@@ -111,6 +114,7 @@ class Embeddings:
         self.model.eval()
         self.cuda = cuda
         self.tensor = tensor
+        self.verbosity = verbosity
 
     def load_image(self, image_path):
         """Load and preprocess an image from a file path.
@@ -166,6 +170,7 @@ class Embeddings:
         dir_embeddings_output: str,
         batch_size: int = 100,
         maxWorkers: int = 8,
+        verbosity: int = None,
     ):
         """Generate and save embeddings for multiple images.
 
@@ -174,10 +179,17 @@ class Embeddings:
             dir_embeddings_output: Directory where embeddings will be saved as parquet files.
             batch_size: Number of images to process in each batch. Default is 100.
             maxWorkers: Maximum number of worker threads for image processing. Default is 8.
+            verbosity: Level of verbosity for progress bars.
+                      0 = no progress bars, 1 = outer loops only, 2 = all loops.
+                      If None, uses the instance's verbosity level.
 
         Returns:
             bool: True if embeddings were successfully generated and saved.
         """
+        # Use instance verbosity if not specified
+        if verbosity is None:
+            verbosity = self.verbosity
+
         if isinstance(images_path, str):
             valid_extensions = [
                 ".jpg",
@@ -239,11 +251,8 @@ class Embeddings:
             return pil_image
 
         with ThreadPoolExecutor(max_workers=maxWorkers, thread_name_prefix="emb") as executor:
-            for i, (image_paths, images) in tqdm.tqdm(
-                enumerate(dataloader),
-                total=n_batches,
-                desc="Progress",
-                ncols=100,
+            for i, (image_paths, images) in verbosity_tqdm(
+                enumerate(dataloader), total=n_batches, desc="Generating embeddings", verbosity=verbosity, level=1
             ):
                 pil_images = list(executor.map(process_image, images))
                 vec = img2vec.get_vec(pil_images, tensor=self.tensor)

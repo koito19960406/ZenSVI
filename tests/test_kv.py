@@ -44,21 +44,21 @@ def test_interface(output_dir, kv_input_files, timeout_decorator, timeout_second
 
 
 @pytest.mark.parametrize(
-    "input_type,expected_files",
+    "input_type,expected_files,verbosity",
     [
-        ("coordinates", 1),  # lat/lon input
-        ("csv", 1),  # CSV file input
-        ("polygon", 1),  # Single polygon
-        ("multipolygon", 1),  # Multiple polygons
-        ("place_name", 1),  # Place name input
+        ("coordinates", 1, 0),  # lat/lon input with no progress bars
+        ("csv", 1, 1),  # CSV file input with outer progress bars
+        ("polygon", 1, 2),  # Single polygon with all progress bars
+        ("multipolygon", 1, 1),  # Multiple polygons with outer progress bars
+        ("place_name", 1, 1),  # Place name input with outer progress bars
     ],
 )
 def test_downloader_input_types(
-    output_dir, kv_input_files, input_dir, input_type, expected_files, timeout_decorator, timeout_seconds
+    output_dir, kv_input_files, input_dir, input_type, expected_files, verbosity, timeout_decorator, timeout_seconds
 ):
     """Test downloading with different input types"""
     output_dir = output_dir / f"test_{input_type}"
-    kv_downloader = KVDownloader(log_path=output_dir / "log.log", max_workers=1)
+    kv_downloader = KVDownloader(log_path=output_dir / "log.log", max_workers=1, verbosity=verbosity)
 
     # Set up input parameters based on type
     kwargs = {}
@@ -187,3 +187,24 @@ def test_error_handling(output_dir, timeout_decorator, timeout_seconds):
                 kv_downloader.download_svi(output_dir)
     except TimeoutException:
         pass  # For error handling tests, timeout is acceptable
+
+
+def test_verbosity_levels(output_dir):
+    """Test that verbosity levels work correctly."""
+    output_dir = output_dir / "test_verbosity"
+
+    # Test verbosity=0
+    kv_downloader_0 = KVDownloader(log_path=output_dir / "log.log", verbosity=0)
+    assert kv_downloader_0.verbosity == 0
+
+    # Test verbosity=1
+    kv_downloader_1 = KVDownloader(log_path=output_dir / "log.log", verbosity=1)
+    assert kv_downloader_1.verbosity == 1
+
+    # Test verbosity=2
+    kv_downloader_2 = KVDownloader(log_path=output_dir / "log.log", verbosity=2)
+    assert kv_downloader_2.verbosity == 2
+
+    # Test setting verbosity after initialization
+    kv_downloader_1.verbosity = 2
+    assert kv_downloader_1.verbosity == 2

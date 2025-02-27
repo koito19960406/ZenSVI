@@ -12,12 +12,11 @@ import pandas as pd
 import requests
 from PIL import Image
 from shapely.geometry import Point
-from tqdm import tqdm
 
 from zensvi.download.base import BaseDownloader
 from zensvi.download.utils.geoprocess import GeoProcessor
 from zensvi.download.utils.helpers import standardize_column_names
-from zensvi.utils.log import Logger
+from zensvi.utils.log import Logger, verbosity_tqdm
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -29,11 +28,14 @@ class AMSDownloader(BaseDownloader):
         log_path (str, optional): Path to the log file. Defaults to
             None.
         max_workers (int, optional): Number of workers for parallel processing. Defaults to None.
+        verbosity (int, optional): Level of verbosity for progress bars. Defaults to 1.
+                                  0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, log_path=None, max_workers=None):
+    def __init__(self, log_path=None, max_workers=None, verbosity=1):
         super().__init__(log_path)
         self._max_workers = max_workers
+        self._verbosity = verbosity
         if log_path is not None:
             self.logger = Logger(log_path)
         else:
@@ -55,6 +57,19 @@ class AMSDownloader(BaseDownloader):
         else:
             self._max_workers = max_workers
 
+    @property
+    def verbosity(self):
+        """Property for the verbosity level of progress bars.
+
+        Returns:
+            int: verbosity level (0=no progress, 1=outer loops only, 2=all loops)
+        """
+        return self._verbosity
+
+    @verbosity.setter
+    def verbosity(self, verbosity):
+        self._verbosity = verbosity
+
     def _set_dirs(self, dir_output):
         self.dir_output = Path(dir_output)
         self.dir_output.mkdir(parents=True, exist_ok=True)
@@ -74,6 +89,7 @@ class AMSDownloader(BaseDownloader):
                     distance=self.distance,
                     grid=self.grid,
                     grid_size=self.grid_size,
+                    verbosity=self.verbosity,
                 )
                 df = gp.get_lat_lon()
             df["lat_lon_id"] = range(1, len(df) + 1)
@@ -101,7 +117,9 @@ class AMSDownloader(BaseDownloader):
 
             with ThreadPoolExecutor() as executor:
                 futures = {executor.submit(worker, row): row for _, row in df.iterrows()}
-                for future in tqdm(as_completed(futures), total=len(futures), desc="Getting pids"):
+                for future in verbosity_tqdm(
+                    as_completed(futures), total=len(futures), desc="Getting pids", verbosity=self.verbosity, level=1
+                ):
                     try:
                         results.extend(future.result())
                     except Exception as e:
@@ -179,6 +197,7 @@ class AMSDownloader(BaseDownloader):
         grid: bool = False,
         grid_size: int = 100,
         max_workers: int = None,
+        verbosity: int = None,
     ):
         """Download street view images from Amsterdam Street View API using specified
         parameters.
@@ -214,6 +233,8 @@ class AMSDownloader(BaseDownloader):
                 GeoProcessor. Defaults to 1.
             max_workers (int, optional): Number of workers for parallel processing.
                 If not specified, uses the value set during initialization.
+            verbosity (int, optional): Level of verbosity for progress bars.
+                If not specified, uses the value set during initialization.
 
         Returns:
             None
@@ -241,11 +262,16 @@ class AMSDownloader(BaseDownloader):
                 grid=grid,
                 grid_size=grid_size,
                 max_workers=max_workers,
+                verbosity=verbosity,
             )
 
         # Set max_workers if provided
         if max_workers is not None:
             self.max_workers = max_workers
+
+        # Set verbosity if provided
+        if verbosity is not None:
+            self.verbosity = verbosity
 
         self.grid = grid
         self.grid_size = grid_size
@@ -307,10 +333,12 @@ class AMSDownloader(BaseDownloader):
         results = []
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = [executor.submit(process_pid, row.pano_id) for _, row in pid_df.iterrows()]
-            for future in tqdm(
+            for future in verbosity_tqdm(
                 as_completed(futures),
                 total=len(futures),
                 desc="Downloading images and metadata",
+                verbosity=self.verbosity,
+                level=1,
             ):
                 result = future.result()
                 if result is not None:
