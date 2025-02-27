@@ -24,12 +24,12 @@ class BaseClassifier(ABC):
     @property
     def verbosity(self):
         """Property for the verbosity level of progress bars.
-        
+
         Returns:
             int: verbosity level (0=no progress, 1=outer loops only, 2=all loops)
         """
         return self._verbosity
-        
+
     @verbosity.setter
     def verbosity(self, verbosity):
         self._verbosity = verbosity

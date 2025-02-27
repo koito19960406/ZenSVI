@@ -13,7 +13,6 @@ import pandas as pd
 import requests
 from PIL import Image
 from shapely.errors import ShapelyDeprecationWarning
-from tqdm import tqdm
 
 import zensvi.download.kartaview.download_functions as kv
 from zensvi.download.base import BaseDownloader
@@ -61,16 +60,16 @@ class KVDownloader(BaseDownloader):
             self._max_workers = min(32, os.cpu_count() + 4)
         else:
             self._max_workers = max_workers
-            
+
     @property
     def verbosity(self):
         """Property for the verbosity level of progress bars.
-        
+
         Returns:
             int: verbosity level
         """
         return self._verbosity
-    
+
     @verbosity.setter
     def verbosity(self, verbosity):
         self._verbosity = verbosity
@@ -257,7 +256,7 @@ class KVDownloader(BaseDownloader):
             range(start_batch_number, start_batch_number + num_batches),
             desc=f"Downloading images by batch size {min(batch_size, len(urls_df))}",
             level=1,
-            verbosity=self.verbosity
+            verbosity=self.verbosity,
         ):
             # Create a new sub-folder for each batch
             batch_out_path = self.panorama_output / f"batch_{i+1}"
@@ -275,7 +274,7 @@ class KVDownloader(BaseDownloader):
                     total=len(batch_futures),
                     desc=f"Downloading images for batch #{i+1}",
                     level=2,
-                    verbosity=self.verbosity
+                    verbosity=self.verbosity,
                 ):
                     try:
                         future.result()

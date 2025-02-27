@@ -6,7 +6,7 @@ from typing import Union
 
 import cv2
 import pandas as pd
-from tqdm import tqdm
+
 from zensvi.utils.log import verbosity_tqdm
 
 
@@ -216,11 +216,7 @@ def get_low_level_features(
             executor.submit(_detect_all_features_single_image, image, dir_image_output): image for image in images
         }
         for future in verbosity_tqdm(
-            as_completed(future_to_image), 
-            desc="Processing images", 
-            total=len(images),
-            verbosity=verbosity,
-            level=1
+            as_completed(future_to_image), desc="Processing images", total=len(images), verbosity=verbosity, level=1
         ):
             image = future_to_image[future]
             try:

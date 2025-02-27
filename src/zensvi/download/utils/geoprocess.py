@@ -120,7 +120,7 @@ class GeoProcessor:
         # Define a function to apply to each geometry
         def apply_interpolate(geometry):
             return list(ox.utils_geo.interpolate_points(geometry, dist=self.distance))
-        
+
         # Apply the function to each geometry, respecting verbosity
         if self.verbosity >= 2:
             # Use progress_apply for visible progress bar
@@ -128,7 +128,7 @@ class GeoProcessor:
         else:
             # Use regular apply for no progress bar
             gdf_utm["sample_points"] = gdf_utm["geometry"].apply(apply_interpolate)
-            
+
         gdf_utm = gdf_utm.explode("sample_points").reset_index(drop=True)
 
         gdf_utm["longitude"], gdf_utm["latitude"] = zip(*self.utm_to_lat_lon(gdf_utm["sample_points"], self.utm_crs))
@@ -253,7 +253,9 @@ class GeoProcessor:
             print("Retrying failed geoms by making grids")
             with ProcessPoolExecutor() as executor:
                 retry_futures = {}
-                for geom in verbosity_tqdm(failed_geoms, desc="Preparing Failed Geoms", verbosity=self.verbosity, level=1):
+                for geom in verbosity_tqdm(
+                    failed_geoms, desc="Preparing Failed Geoms", verbosity=self.verbosity, level=1
+                ):
                     future = executor.submit(self.create_point_grid, geom, self.grid_size)
                     retry_futures[future] = geom
 

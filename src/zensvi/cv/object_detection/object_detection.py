@@ -1,5 +1,5 @@
-import os
 import json
+import os
 import threading
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -7,12 +7,10 @@ from pathlib import Path
 from typing import List, Union
 
 import cv2
-import numpy as np
 import pandas as pd
-from PIL import Image
 from groundingdino.util.inference import annotate, load_image, load_model, predict
 from torch.utils.data import Dataset
-from tqdm import tqdm
+
 from zensvi.utils.log import verbosity_tqdm
 
 current_dir = os.path.dirname(__file__)
@@ -199,7 +197,7 @@ class ObjectDetector:
         # Use instance verbosity if not specified
         if verbosity is None:
             verbosity = self.verbosity
-            
+
         # Collect image files from input (handle both file and directory)
         dir_input = Path(dir_input)
         if dir_input.is_file():
@@ -241,11 +239,7 @@ class ObjectDetector:
                 for image_file in remaining_files
             }
             for future in verbosity_tqdm(
-                as_completed(futures), 
-                total=len(futures), 
-                desc="Processing images",
-                verbosity=verbosity,
-                level=1
+                as_completed(futures), total=len(futures), desc="Processing images", verbosity=verbosity, level=1
             ):
                 try:
                     result = future.result()

@@ -5,7 +5,6 @@ from typing import Union
 
 import cv2
 import numpy as np
-from tqdm import tqdm
 
 from zensvi.utils.log import Logger, verbosity_tqdm
 
@@ -335,7 +334,7 @@ class ImageTransformer:
         # Use instance verbosity if not specified
         if verbosity is None:
             verbosity = self.verbosity
-        
+
         if self.logger is not None:
             # record the arguments
             self.logger.log_args(
@@ -474,6 +473,6 @@ class ImageTransformer:
                     total=len(futures),
                     desc=f"Converting to {current_style}",
                     verbosity=verbosity,
-                    level=1
+                    level=1,
                 ):
                     future.result()

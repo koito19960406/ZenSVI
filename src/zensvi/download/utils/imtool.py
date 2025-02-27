@@ -2,14 +2,11 @@ import glob
 import os
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from functools import partial
-from io import BytesIO
 
 import numpy as np
 import requests
 from PIL import Image
 from requests.exceptions import ProxyError
-from tqdm import tqdm
 
 from zensvi.utils.log import verbosity_tqdm
 

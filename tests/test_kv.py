@@ -192,19 +192,19 @@ def test_error_handling(output_dir, timeout_decorator, timeout_seconds):
 def test_verbosity_levels(output_dir):
     """Test that verbosity levels work correctly."""
     output_dir = output_dir / "test_verbosity"
-    
+
     # Test verbosity=0
     kv_downloader_0 = KVDownloader(log_path=output_dir / "log.log", verbosity=0)
     assert kv_downloader_0.verbosity == 0
-    
+
     # Test verbosity=1
     kv_downloader_1 = KVDownloader(log_path=output_dir / "log.log", verbosity=1)
     assert kv_downloader_1.verbosity == 1
-    
+
     # Test verbosity=2
     kv_downloader_2 = KVDownloader(log_path=output_dir / "log.log", verbosity=2)
     assert kv_downloader_2.verbosity == 2
-    
+
     # Test setting verbosity after initialization
     kv_downloader_1.verbosity = 2
     assert kv_downloader_1.verbosity == 2

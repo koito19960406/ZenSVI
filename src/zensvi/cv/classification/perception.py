@@ -5,16 +5,16 @@ from typing import List, Tuple, Union
 
 import pandas as pd
 import torch
-import tqdm
 from huggingface_hub import hf_hub_download, snapshot_download
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 
+from zensvi.utils.log import verbosity_tqdm
+
 from .base import BaseClassifier
 from .utils.Model_01 import Net
 from .utils.place_pulse import PlacePulseClassificationModel
-from zensvi.utils.log import verbosity_tqdm
 
 
 class ImageDataset(Dataset):
@@ -170,7 +170,7 @@ class ClassifierPerception(BaseClassifier):
         # Use instance verbosity if not specified
         if verbosity is None:
             verbosity = self.verbosity
-            
+
         # Prepare output directories
         if dir_summary_output:
             Path(dir_summary_output).mkdir(parents=True, exist_ok=True)
@@ -208,7 +208,7 @@ class ClassifierPerception(BaseClassifier):
                 dataloader,
                 desc=f"Evaluating human perception of study: {self.perception_study}",
                 verbosity=verbosity,
-                level=1
+                level=1,
             ):
                 images = images.to(self.device, dtype=torch.float32)
 
@@ -329,7 +329,7 @@ class ClassifierPerceptionViT(BaseClassifier):
         # Use instance verbosity if not specified
         if verbosity is None:
             verbosity = self.verbosity
-            
+
         # Prepare output directories
         if dir_summary_output:
             Path(dir_summary_output).mkdir(parents=True, exist_ok=True)
@@ -367,7 +367,7 @@ class ClassifierPerceptionViT(BaseClassifier):
                 dataloader,
                 desc=f"Evaluating human perception of study: {self.perception_study}",
                 verbosity=verbosity,
-                level=1
+                level=1,
             ):
                 images = images.to(self.device, dtype=torch.float32)
 

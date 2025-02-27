@@ -3,15 +3,15 @@ from typing import List, Tuple, Union
 
 import pandas as pd
 import torch
-import tqdm
 from huggingface_hub import hf_hub_download
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 
+from zensvi.utils.log import verbosity_tqdm
+
 from .base import BaseClassifier
 from .utils.global_streetscapes import GlobalStreetScapesClassificationModel, panorama_dict2idx
-from zensvi.utils.log import verbosity_tqdm
 
 
 class ImageDataset(Dataset):
@@ -161,7 +161,7 @@ class ClassifierPanorama(BaseClassifier):
         # Use instance verbosity if not specified
         if verbosity is None:
             verbosity = self.verbosity
-            
+
         # Prepare output directories
         if dir_summary_output:
             Path(dir_summary_output).mkdir(parents=True, exist_ok=True)
@@ -201,10 +201,7 @@ class ClassifierPanorama(BaseClassifier):
                     "panorama": panorama_dict2idx["index2label"][pred.item()],
                 }
                 for image_files, images in verbosity_tqdm(
-                    dataloader, 
-                    desc="Classifying panorama",
-                    verbosity=verbosity,
-                    level=1
+                    dataloader, desc="Classifying panorama", verbosity=verbosity, level=1
                 )
                 for image_file, pred in zip(
                     image_files,

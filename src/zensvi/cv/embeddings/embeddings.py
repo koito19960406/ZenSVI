@@ -10,7 +10,6 @@ import pyarrow.parquet as pq
 import torch
 import torchvision.models as models
 import torchvision.transforms as transforms
-import tqdm
 from img2vec_pytorch import Img2Vec
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
@@ -180,7 +179,7 @@ class Embeddings:
             dir_embeddings_output: Directory where embeddings will be saved as parquet files.
             batch_size: Number of images to process in each batch. Default is 100.
             maxWorkers: Maximum number of worker threads for image processing. Default is 8.
-            verbosity: Level of verbosity for progress bars. 
+            verbosity: Level of verbosity for progress bars.
                       0 = no progress bars, 1 = outer loops only, 2 = all loops.
                       If None, uses the instance's verbosity level.
 
@@ -190,7 +189,7 @@ class Embeddings:
         # Use instance verbosity if not specified
         if verbosity is None:
             verbosity = self.verbosity
-            
+
         if isinstance(images_path, str):
             valid_extensions = [
                 ".jpg",
@@ -253,11 +252,7 @@ class Embeddings:
 
         with ThreadPoolExecutor(max_workers=maxWorkers, thread_name_prefix="emb") as executor:
             for i, (image_paths, images) in verbosity_tqdm(
-                enumerate(dataloader),
-                total=n_batches,
-                desc="Generating embeddings",
-                verbosity=verbosity,
-                level=1
+                enumerate(dataloader), total=n_batches, desc="Generating embeddings", verbosity=verbosity, level=1
             ):
                 pil_images = list(executor.map(process_image, images))
                 vec = img2vec.get_vec(pil_images, tensor=self.tensor)

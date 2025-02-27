@@ -9,11 +9,11 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms as trn
 from torchvision.io import read_image
-from tqdm import tqdm
+
+from zensvi.utils.log import verbosity_tqdm
 
 from .base import BaseClassifier
 from .utils import wideresnet
-from zensvi.utils.log import verbosity_tqdm
 
 
 class ImageDataset(Dataset):
@@ -329,10 +329,7 @@ class ClassifierPlaces365(BaseClassifier):
         results = []
         # Process images
         for images, paths in verbosity_tqdm(
-            dataloader, 
-            desc="Processing images",
-            verbosity=self.verbosity if verbosity is None else verbosity,
-            level=1
+            dataloader, desc="Processing images", verbosity=self.verbosity if verbosity is None else verbosity, level=1
         ):
             self.features_blobs = []
             images = images.to(self.device)

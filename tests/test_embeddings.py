@@ -91,35 +91,28 @@ def test_all_models(output_dir, input_dir, cuda):
 
 def test_verbosity_levels(output_dir, input_dir):
     """Test that verbosity levels work correctly in the Embeddings class."""
-    
+
     # Test default verbosity (should be 1)
     default_embeddings = Embeddings(model_name="alexnet", cuda=False)
     assert default_embeddings.verbosity == 1
-    
+
     # Test explicitly setting verbosity to 0 (no progress bars)
     silent_embeddings = Embeddings(model_name="alexnet", cuda=False, verbosity=0)
     assert silent_embeddings.verbosity == 0
-    
+
     # Test explicitly setting verbosity to 2 (all progress bars)
     verbose_embeddings = Embeddings(model_name="alexnet", cuda=False, verbosity=2)
     assert verbose_embeddings.verbosity == 2
-    
+
     # Test the generate_embedding method with different verbosity levels
     image_output = output_dir / "verbosity_test"
-    
+
     # Run with verbosity=0
-    result = silent_embeddings.generate_embedding(
-        str(input_dir / "images"),
-        str(image_output / "silent"),
-        batch_size=2
-    )
+    result = silent_embeddings.generate_embedding(str(input_dir / "images"), str(image_output / "silent"), batch_size=2)
     assert result is True
-    
+
     # Run with verbosity set in method call (overriding instance verbosity)
     result = default_embeddings.generate_embedding(
-        str(input_dir / "images"),
-        str(image_output / "explicit_verbosity"),
-        batch_size=2,
-        verbosity=0
+        str(input_dir / "images"), str(image_output / "explicit_verbosity"), batch_size=2, verbosity=0
     )
     assert result is True

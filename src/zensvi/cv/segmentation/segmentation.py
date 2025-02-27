@@ -12,7 +12,6 @@ import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Dataset
-from tqdm import tqdm
 from tqdm.contrib.concurrent import thread_map
 from transformers import AutoImageProcessor, Mask2FormerForUniversalSegmentation
 

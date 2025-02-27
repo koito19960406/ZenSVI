@@ -144,9 +144,8 @@ class Logger:
 
 
 def verbosity_tqdm(iterable, desc=None, total=None, disable=False, verbosity=1, level=1, **kwargs):
-    """
-    A wrapper around tqdm that respects verbosity levels.
-    
+    """A wrapper around tqdm that respects verbosity levels.
+
     Args:
         iterable: Iterable to decorate with a progressbar
         desc: Description to show in the progressbar
@@ -155,15 +154,15 @@ def verbosity_tqdm(iterable, desc=None, total=None, disable=False, verbosity=1, 
         verbosity: Current verbosity level (0 = no output, 1 = outer loops only, 2 = all loops)
         level: The nested level of this loop (1 = outermost, 2 = inner, etc.)
         **kwargs: Additional arguments to pass to tqdm
-        
+
     Returns:
         tqdm: A tqdm progress bar or a simple iterable if disabled
     """
     from tqdm import tqdm
-    
+
     # If verbosity is 0, or level is greater than verbosity, disable the progress bar
     should_disable = disable or verbosity == 0 or level > verbosity
-    
+
     if should_disable:
         return iterable
     else:

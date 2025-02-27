@@ -12,7 +12,6 @@ import pandas as pd
 import requests
 from PIL import Image
 from shapely.geometry import Point
-from tqdm import tqdm
 
 from zensvi.download.base import BaseDownloader
 from zensvi.download.utils.geoprocess import GeoProcessor
@@ -61,12 +60,12 @@ class AMSDownloader(BaseDownloader):
     @property
     def verbosity(self):
         """Property for the verbosity level of progress bars.
-        
+
         Returns:
             int: verbosity level (0=no progress, 1=outer loops only, 2=all loops)
         """
         return self._verbosity
-        
+
     @verbosity.setter
     def verbosity(self, verbosity):
         self._verbosity = verbosity
@@ -119,11 +118,7 @@ class AMSDownloader(BaseDownloader):
             with ThreadPoolExecutor() as executor:
                 futures = {executor.submit(worker, row): row for _, row in df.iterrows()}
                 for future in verbosity_tqdm(
-                    as_completed(futures), 
-                    total=len(futures), 
-                    desc="Getting pids", 
-                    verbosity=self.verbosity,
-                    level=1
+                    as_completed(futures), total=len(futures), desc="Getting pids", verbosity=self.verbosity, level=1
                 ):
                     try:
                         results.extend(future.result())
@@ -273,7 +268,7 @@ class AMSDownloader(BaseDownloader):
         # Set max_workers if provided
         if max_workers is not None:
             self.max_workers = max_workers
-            
+
         # Set verbosity if provided
         if verbosity is not None:
             self.verbosity = verbosity
@@ -343,7 +338,7 @@ class AMSDownloader(BaseDownloader):
                 total=len(futures),
                 desc="Downloading images and metadata",
                 verbosity=self.verbosity,
-                level=1
+                level=1,
             ):
                 result = future.result()
                 if result is not None:

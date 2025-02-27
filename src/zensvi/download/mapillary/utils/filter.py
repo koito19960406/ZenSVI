@@ -15,7 +15,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import haversine
 from geojson import Feature, Point
 from shapely.geometry import shape
-from tqdm import tqdm
 
 # Package imports
 from turfpy.measurement import bearing
@@ -491,11 +490,7 @@ def pipeline(data: dict, components: list, **kwargs) -> list:
         # Collect results as they are completed
         filtered_data = []
         for future in verbosity_tqdm(
-            as_completed(futures), 
-            total=len(__data), 
-            desc="Filtering data",
-            verbosity=verbosity,
-            level=1
+            as_completed(futures), total=len(__data), desc="Filtering data", verbosity=verbosity, level=1
         ):
             result = future.result()
             if result:
