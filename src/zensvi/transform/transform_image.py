@@ -5,9 +5,8 @@ from typing import Union
 
 import cv2
 import numpy as np
-from tqdm import tqdm
 
-from zensvi.utils.log import Logger
+from zensvi.utils.log import Logger, verbosity_tqdm
 
 
 def _xyz2lonlat(xyz):
@@ -73,6 +72,7 @@ class ImageTransformer:
         dir_input: Union[str, Path],
         dir_output: Union[str, Path],
         log_path: Union[str, Path] = None,
+        verbosity: int = 1,
     ):
         if isinstance(dir_input, str):
             dir_input = Path(dir_input)
@@ -90,6 +90,7 @@ class ImageTransformer:
             self.logger = Logger(log_path)
         else:
             self.logger = None
+        self.verbosity = verbosity
 
     @property
     def dir_input(self):
@@ -305,6 +306,7 @@ class ImageTransformer:
         aspects: tuple = (9, 16),
         show_size: Union[int, float] = 100,
         use_upper_half: bool = False,
+        verbosity: int = None,
     ):
         """Applies specified transformations to all images in the input directory and
         saves them in the output directory.
@@ -318,6 +320,8 @@ class ImageTransformer:
             aspects (tuple, optional): Aspect ratio of the output images represented as a tuple.
             show_size (Union[int, float], optional): Base size to calculate the dimensions of the output images.
             use_upper_half (bool, optional): If True, only the upper half of the image is used for fisheye transformations.
+            verbosity (int, optional): Level of verbosity for progress bars (0=no progress bars, 1=outer loops only, 2=all loops).
+                                      If None, uses the instance's verbosity level.
 
         Raises:
             ValueError: If an invalid style is specified in style_list.
@@ -327,6 +331,10 @@ class ImageTransformer:
             automatically splits style_list into individual styles and processes each style, creating appropriate subdirectories
             in the output directory for each style.
         """
+        # Use instance verbosity if not specified
+        if verbosity is None:
+            verbosity = self.verbosity
+
         if self.logger is not None:
             # record the arguments
             self.logger.log_args(
@@ -338,6 +346,7 @@ class ImageTransformer:
                 aspects=aspects,
                 show_size=show_size,
                 use_upper_half=use_upper_half,
+                verbosity=verbosity,
             )
         # raise an error if the style_list is a list
         if isinstance(style_list, list):
@@ -459,9 +468,11 @@ class ImageTransformer:
                     )
                     for file_path in dir_input
                 ]
-                for future in tqdm(
+                for future in verbosity_tqdm(
                     as_completed(futures),
                     total=len(futures),
                     desc=f"Converting to {current_style}",
+                    verbosity=verbosity,
+                    level=1,
                 ):
                     future.result()

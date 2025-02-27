@@ -12,9 +12,10 @@ import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Dataset
-from tqdm.auto import tqdm
 from tqdm.contrib.concurrent import thread_map
 from transformers import AutoImageProcessor, Mask2FormerForUniversalSegmentation
+
+from zensvi.utils.log import verbosity_tqdm
 
 # a label and all meta information
 _Label = namedtuple(
@@ -311,23 +312,26 @@ class Segmenter:
         color_map: A mapping of class IDs to colors.
         label_map: A mapping of class IDs to labels.
         id_to_name_map: A mapping of label IDs to label names.
+        verbosity (int): Level of verbosity for progress bars (0=no progress, 1=outer loops only, 2=all loops)
 
     Args:
         dataset (str): The name of the dataset (default is "cityscapes").
         task (str): The type of task (default is "semantic").
         device (str, optional): The device to run the model on (e.g., "cuda" or "cpu"). If None, the default device will be used.
+        verbosity (int, optional): Level of verbosity for progress bars (0=no progress, 1=outer loops only, 2=all loops). Default is 1.
 
     Returns:
         None
     """
 
-    def __init__(self, dataset="cityscapes", task="semantic", device=None):
+    def __init__(self, dataset="cityscapes", task="semantic", device=None, verbosity=1):
         """Initializes the Segmenter with a model and dataset.
 
         Args:
             dataset (str): The name of the dataset (default is "cityscapes").
             task (str): The type of task (default is "semantic").
             device (str, optional): The device to run the model on (e.g., "cuda" or "cpu"). If None, the default device will be used.
+            verbosity (int, optional): Level of verbosity for progress bars (0=no progress, 1=outer loops only, 2=all loops). Default is 1.
 
         Returns:
             None
@@ -340,6 +344,7 @@ class Segmenter:
         self.color_map = self._create_color_map(dataset)
         self.label_map = self._create_label_map(dataset)
         self.id_to_name_map = self._create_id_to_name_map(dataset)
+        self.verbosity = verbosity
 
     def _get_model_name(self, dataset: str, task: str) -> str:
         """Get the model name based on the dataset and task.
@@ -793,43 +798,21 @@ class Segmenter:
         or a path to a single image and supports optional saving of output images and segmentation summaries.
 
         Args:
-          dir_input: Union
-          dir_image_output: Union
-          are: saved
-          dir_summary_output: Union
-          segmentation: summary files are saved
-          batch_size: int (Default value = 1)
-          save_image_options: str (Default value = "segmented_image blend_image")
-          segmented_image: and
-          save_format: str (Default value = "json csv")
-          Defaults: to
-          csv_format: str (Default value = "long")
-          Defaults: to
-          max_workers: Union
-          Defaults: to None
-          dir_input: Union[str:
-          Path]:
-          dir_image_output: Union[str:
-          Path:
-          None]: (Default value = None)
-          dir_summary_output: Union[str:
-          # "long" or "wide"max_workers: Union[int:
-          dir_input: Union[str:
-          dir_image_output: Union[str:
-          dir_summary_output: Union[str:
-          # "long" or "wide"max_workers: Union[int:
-          dir_input: Union[str:
-          dir_image_output: Union[str:
-          dir_summary_output: Union[str:
-          # "long" or "wide"max_workers: Union[int:
+          dir_input: Input directory or path to a single image file
+          dir_image_output: Output directory where segmented images are saved
+          dir_summary_output: Output directory where segmentation summary files are saved
+          batch_size: Batch size for processing images (Default: 1)
+          save_image_options: Options for saving images ("segmented_image blend_image")
+          save_format: Format for saving summary files ("json csv")
+          csv_format: Format for CSV summary files ("long" or "wide")
+          max_workers: Maximum number of workers for parallel processing
 
         Returns:
           None: The method does not return any value but saves the processed results to specified directories.
 
         Raises:
-          ValueError: If neither
-          ValueError: If
-
+          ValueError: If neither dir_image_output nor dir_summary_output is provided
+          ValueError: If the input path is neither a file nor a directory
         """
         # make sure that at least one of dir_image_output and dir_summary_output is not None
         if (dir_image_output is None) & (dir_summary_output is None):
@@ -935,9 +918,11 @@ class Segmenter:
             outer_batch_size * batch_size
         )
 
-        for i in tqdm(
+        for i in verbosity_tqdm(
             range(num_outer_batches),
             desc=f"Processing outer batches of size {min(outer_batch_size * batch_size, len(image_file_list))}",
+            verbosity=self.verbosity,
+            level=1,
         ):
             # Get the image files for the current outer batch
             outer_batch_image_file_list = image_file_list[
@@ -978,10 +963,12 @@ class Segmenter:
                         )
                     futures.append(future)
 
-                for completed_future in tqdm(
+                for completed_future in verbosity_tqdm(
                     as_completed(futures),
                     total=len(futures),
                     desc=f"Processing outer batch #{i+1}",
+                    verbosity=self.verbosity,
+                    level=2,
                 ):
                     completed_future.result()
 
@@ -1074,11 +1061,18 @@ class Segmenter:
 
             """
             label_ratios = {}
-            total_pixels = image.shape[0] * image.shape[1]
+            valid_pixels = 0
 
+            # First pass: count valid pixels that match colors in the label map
             for color, label in label_map.items():
                 color_pixels = np.count_nonzero(np.all(image == color, axis=-1))
-                label_ratios[label.name] = color_pixels / total_pixels
+                valid_pixels += color_pixels
+                label_ratios[label.name] = color_pixels
+
+            # Second pass: normalize by total valid pixels
+            if valid_pixels > 0:  # Avoid division by zero
+                for label_name in label_ratios:
+                    label_ratios[label_name] = label_ratios[label_name] / valid_pixels
 
             return label_ratios
 

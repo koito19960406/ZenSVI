@@ -3,11 +3,12 @@ from typing import List, Tuple, Union
 
 import pandas as pd
 import torch
-import tqdm
 from huggingface_hub import hf_hub_download
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
+
+from zensvi.utils.log import verbosity_tqdm
 
 from .base import BaseClassifier
 from .utils.global_streetscapes import GlobalStreetScapesClassificationModel, lighting_dict2idx
@@ -67,25 +68,17 @@ class ImageDataset(Dataset):
 
 
 class ClassifierLighting(BaseClassifier):
-    """A classifier for identifying lighting conditions in images.
-
-    This classifier uses a pre-trained model from Hou et al (2024)
-    (https://github.com/ualsg/global-streetscapes) to detect lighting conditions
-    in street-level imagery. The model classifies images into three categories:
-    "day", "night", and "dawn/dusk".
+    """A classifier for identifying lighting. The model is from Hou et al (2024) (https://github.com/ualsg/global-streetscapes).
 
     Args:
-        device (str, optional): The device to load the model onto. Options are "cpu",
-            "cuda", or "mps". If None, tries to use GPU if available, otherwise falls
-            back to CPU.
-
-    Attributes:
-        device (torch.device): The device the model is loaded on.
-        model (GlobalStreetScapesClassificationModel): The loaded classification model.
+        device (str, optional): The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
+            If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
+        verbosity (int, optional): Level of verbosity for progress bars. Defaults to 1.
+                                  0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, device=None):
-        super().__init__(device)
+    def __init__(self, device=None, verbosity=1):
+        super().__init__(device, verbosity)
         self.device = self._get_device(device)
 
         file_name = "lighting_condition_uniform/e14259c3-aea1-4469-a70d-451955255a80_lighting_condition_lighting_condition_uniform_checkpoint.ckpt"
@@ -133,6 +126,7 @@ class ClassifierLighting(BaseClassifier):
         dir_summary_output: Union[str, Path],
         batch_size=1,
         save_format="json csv",
+        verbosity: int = None,
     ) -> List[str]:
         """Classifies images based on lighting. The output file can be saved in JSON
         and/or CSV format and will contain lighting for each image. The lighting
@@ -144,10 +138,17 @@ class ClassifierLighting(BaseClassifier):
             batch_size (int, optional): Batch size for inference. Defaults to 1.
             save_format (str, optional): Save format for the output. Options are "json" and "csv".
                 Add a space between options. Defaults to "json csv".
+            verbosity (int, optional): Level of verbosity for progress bars.
+                If None, uses the instance's verbosity level.
+                0 = no progress bars, 1 = outer loops only, 2 = all loops.
 
         Returns:
             List[str]: List of lighting classifications for each image.
         """
+        # Use instance verbosity if not specified
+        if verbosity is None:
+            verbosity = self.verbosity
+
         # Prepare output directories
         if dir_summary_output:
             Path(dir_summary_output).mkdir(parents=True, exist_ok=True)
@@ -186,7 +187,9 @@ class ClassifierLighting(BaseClassifier):
                     "filename_key": str(Path(image_file).stem),
                     "lighting": lighting_dict2idx["index2label"][pred.item()],
                 }
-                for image_files, images in tqdm.tqdm(dataloader, desc="Classifying lighting")
+                for image_files, images in verbosity_tqdm(
+                    dataloader, desc="Classifying lighting", verbosity=verbosity, level=1
+                )
                 for image_file, pred in zip(
                     image_files,
                     torch.max(self.model(images.to(self.device, dtype=torch.float32)), 1)[1],

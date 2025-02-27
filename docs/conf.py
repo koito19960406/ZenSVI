@@ -98,6 +98,7 @@ def skip_util_classes(app, what, name, obj, skip, options):
         "low_level",
         "depth_estimation",
         "embeddings",
+        "object_detection"
     ]
     skip_modules = [
         "base",
@@ -115,6 +116,7 @@ def skip_util_classes(app, what, name, obj, skip, options):
         "image",
         "kde",
         "map",
+        "config"
     ]
     skip_classes = ["ImageDataset", "GSVDownloader", "Logger"]
     skip_keywords = ["utils", "torchhub", "zoedepth", "depth_anything", "dinov2"]

@@ -18,6 +18,7 @@ ignore:
   - "src/zensvi/cv/depth_estimation/depth_anything/*"
   - "src/zensvi/cv/depth_estimation/zoedepth/*"
   - "src/zensvi/cv/depth_estimation/torchhub/*"
+  - "src/zensvi/cv/object_detection/config/*"
 
 comment:
   layout: "reach, diff, flags, files"

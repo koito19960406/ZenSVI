@@ -3,11 +3,12 @@ from typing import List, Tuple, Union
 
 import pandas as pd
 import torch
-import tqdm
 from huggingface_hub import hf_hub_download
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
+
+from zensvi.utils.log import verbosity_tqdm
 
 from .base import BaseClassifier
 from .utils.global_streetscapes import GlobalStreetScapesClassificationModel, reflection_dict2idx
@@ -66,10 +67,12 @@ class ClassifierReflection(BaseClassifier):
     Args:
         device (str, optional): The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
             If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
+        verbosity (int, optional): Level of verbosity for progress bars. Defaults to 1.
+                                  0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, device=None):
-        super().__init__(device)
+    def __init__(self, device=None, verbosity=1):
+        super().__init__(device, verbosity)
         self.device = self._get_device(device)
 
         file_name = (
@@ -118,22 +121,27 @@ class ClassifierReflection(BaseClassifier):
         dir_summary_output: Union[str, Path],
         batch_size=1,
         save_format="json csv",
+        verbosity: int = None,
     ) -> List[str]:
         """Classifies images based on reflection.
 
-        The output file can be saved in JSON and/or CSV format and will contain reflection for each image.
-        The reflection categories are "True" and "False".
-
         Args:
-            dir_input (Union[str, Path]): Directory containing input images or path to a single image file
-            dir_summary_output (Union[str, Path]): Directory to save summary output
-            batch_size (int, optional): Batch size for inference. Defaults to 1
-            save_format (str, optional): Space-separated string of formats to save results in.
+            dir_input (Union[str, Path]): Directory containing input images or path to a single image.
+            dir_summary_output (Union[str, Path]): Directory to save summary output.
+            batch_size (int, optional): Batch size for inference. Defaults to 1.
+            save_format (str, optional): Space-separated string of formats to save results.
                 Options are "json" and "csv". Defaults to "json csv".
+            verbosity (int, optional): Level of verbosity for progress bars.
+                If None, uses the instance's verbosity level.
+                0 = no progress bars, 1 = outer loops only, 2 = all loops.
 
         Returns:
             List[str]: List of classification results
         """
+        # Use instance verbosity if not specified
+        if verbosity is None:
+            verbosity = self.verbosity
+
         # Prepare output directories
         if dir_summary_output:
             Path(dir_summary_output).mkdir(parents=True, exist_ok=True)
@@ -172,7 +180,9 @@ class ClassifierReflection(BaseClassifier):
                     "filename_key": str(Path(image_file).stem),
                     "reflection": reflection_dict2idx["index2label"][pred.item()],
                 }
-                for image_files, images in tqdm.tqdm(dataloader, desc="Classifying reflection")
+                for image_files, images in verbosity_tqdm(
+                    dataloader, desc="Classifying reflection", verbosity=verbosity, level=1
+                )
                 for image_file, pred in zip(
                     image_files,
                     torch.max(self.model(images.to(self.device, dtype=torch.float32)), 1)[1],
