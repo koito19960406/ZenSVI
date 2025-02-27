@@ -20,7 +20,7 @@ from tqdm import tqdm
 import zensvi.download.mapillary.interface as mly
 from zensvi.download.base import BaseDownloader
 from zensvi.download.utils.helpers import check_and_buffer, standardize_column_names
-from zensvi.utils.log import Logger
+from zensvi.utils.log import Logger, verbosity_tqdm
 
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 logging.getLogger("mapillary.utils.client").setLevel(logging.WARNING)
@@ -33,12 +33,15 @@ class MLYDownloader(BaseDownloader):
         mly_api_key (str, optional): Mapillary API key. Defaults to None.
         log_path (str, optional): Path to the log file. Defaults to None.
         max_workers (int, optional): Number of workers for parallel processing. Defaults to None.
+        verbosity (int, optional): Level of verbosity for progress bars. Defaults to 1.
+                                  0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, mly_api_key, log_path=None, max_workers=None):
+    def __init__(self, mly_api_key, log_path=None, max_workers=None, verbosity=1):
         super().__init__(log_path)
         self._mly_api_key = mly_api_key
         self._max_workers = max_workers
+        self._verbosity = verbosity
         mly.set_access_token(self.mly_api_key)
         # initialize the logger
         if log_path is not None:
@@ -74,6 +77,19 @@ class MLYDownloader(BaseDownloader):
             self._max_workers = min(32, os.cpu_count() + 4)
         else:
             self._max_workers = max_workers
+            
+    @property
+    def verbosity(self):
+        """Property for the verbosity level of progress bars.
+        
+        Returns:
+            int: verbosity level
+        """
+        return self._verbosity
+    
+    @verbosity.setter
+    def verbosity(self, verbosity):
+        self._verbosity = verbosity
 
     def _read_pids(self, path_pid):
         pid_df = pd.read_csv(path_pid)
@@ -296,9 +312,11 @@ class MLYDownloader(BaseDownloader):
         batch_size = 1000  # Modify this to a suitable value
         num_batches = (len(panoids) + batch_size - 1) // batch_size
 
-        for i in tqdm(
+        for i in verbosity_tqdm(
             range(num_batches),
             desc=f"Getting urls by batch size {min(batch_size, len(panoids))}",
+            level=1,
+            verbosity=self.verbosity
         ):
             with ThreadPoolExecutor() as executor:
                 batch_futures = {
@@ -306,10 +324,12 @@ class MLYDownloader(BaseDownloader):
                     for panoid in panoids[i * batch_size : (i + 1) * batch_size]
                 }
 
-                for future in tqdm(
+                for future in verbosity_tqdm(
                     as_completed(batch_futures),
                     total=len(batch_futures),
                     desc=f"Getting urls for batch #{i+1}",
+                    level=2,
+                    verbosity=self.verbosity
                 ):
                     current_panoid = batch_futures[future]
                     try:
@@ -318,7 +338,7 @@ class MLYDownloader(BaseDownloader):
                     except Exception as e:
                         print(f"Error: {e}")
                         if self.logger is not None:
-                            self.logger.log_failed_pids(current_panoid)
+                            self.logger.log_failed_pid(current_panoid)
                         continue
 
             if len(results) > 0:
@@ -384,10 +404,10 @@ class MLYDownloader(BaseDownloader):
 
                 else:
                     if self.logger is not None:
-                        self.logger.log_failed_pids(panoid)
+                        self.logger.log_failed_pid(panoid)
             except Exception as e:
                 if self.logger is not None:
-                    self.logger.log_failed_pids(panoid)
+                    self.logger.log_failed_pid(panoid)
                 print(f"Error: {e}")
 
         num_batches = (len(urls_df) + batch_size - 1) // batch_size
@@ -397,9 +417,11 @@ class MLYDownloader(BaseDownloader):
         existing_batch_numbers = [int(Path(batch).name.split("_")[-1]) for batch in existing_batches]
         start_batch_number = max(existing_batch_numbers, default=0)
 
-        for i in tqdm(
+        for i in verbosity_tqdm(
             range(start_batch_number, start_batch_number + num_batches),
             desc=f"Downloading images by batch size {min(batch_size, len(urls_df))}",
+            level=1,
+            verbosity=self.verbosity
         ):
             # Create a new sub-folder for each batch
             batch_out_path = self.panorama_output / f"batch_{i+1}"
@@ -410,10 +432,12 @@ class MLYDownloader(BaseDownloader):
                     executor.submit(worker, row, batch_out_path, cropped): row.id
                     for row in urls_df.iloc[i * batch_size : (i + 1) * batch_size].itertuples()
                 }
-                for future in tqdm(
+                for future in verbosity_tqdm(
                     as_completed(batch_futures),
                     total=len(batch_futures),
                     desc=f"Downloading images for batch #{i+1}",
+                    level=2,
+                    verbosity=self.verbosity
                 ):
                     try:
                         future.result()

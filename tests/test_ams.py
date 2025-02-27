@@ -73,3 +73,41 @@ def test_shp_download_asv(output_dir, sv_downloader, input_dir, timeout_decorato
 #         pass  # Allow timeout, we'll check results next
 
 #     assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
+
+
+def test_verbosity_levels(output_dir):
+    """Test that verbosity levels work correctly in the AMSDownloader class."""
+    
+    # Test with verbosity=0 (no progress bars)
+    silent_downloader = AMSDownloader(
+        log_path=output_dir / "log_silent.log", 
+        verbosity=0
+    )
+    assert silent_downloader.verbosity == 0
+    
+    # Test with verbosity=1 (outer loops only - default)
+    default_downloader = AMSDownloader(
+        log_path=output_dir / "log_default.log"
+    )
+    assert default_downloader.verbosity == 1
+    
+    # Test with verbosity=2 (all loops)
+    verbose_downloader = AMSDownloader(
+        log_path=output_dir / "log_verbose.log", 
+        verbosity=2
+    )
+    assert verbose_downloader.verbosity == 2
+    
+    # Test changing verbosity after initialization
+    silent_downloader.verbosity = 2
+    assert silent_downloader.verbosity == 2
+    
+    # Test setting verbosity in download_svi method
+    default_downloader.download_svi(
+        output_dir / "test_verbosity", 
+        lat=52.356768, 
+        lon=4.907408, 
+        metadata_only=True, 
+        verbosity=0
+    )
+    assert default_downloader.verbosity == 0

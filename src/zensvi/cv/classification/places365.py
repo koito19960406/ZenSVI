@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 from .base import BaseClassifier
 from .utils import wideresnet
+from zensvi.utils.log import verbosity_tqdm
 
 
 class ImageDataset(Dataset):
@@ -114,10 +115,12 @@ class ClassifierPlaces365(BaseClassifier):
     Args:
         device (str, optional): The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
             If None, the model tries to use a GPU if available; otherwise, falls back to CPU.
+        verbosity (int, optional): Level of verbosity for progress bars. Defaults to 1.
+                                  0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, device=None):
-        super().__init__(device)
+    def __init__(self, device=None, verbosity=1):
+        super().__init__(device, verbosity)
         self.device = self._get_device(device)
         self.classes, self.labels_IO, self.labels_attribute, self.W_attribute = self._load_labels()
         self.features_blobs = []
@@ -254,6 +257,7 @@ class ClassifierPlaces365(BaseClassifier):
         save_image_options: str = "cam_image blend_image",
         save_format: str = "json csv",
         csv_format: str = "long",
+        verbosity: int = None,
     ):
         """Classifies images based on scene recognition using the Places365 model.
 
@@ -280,6 +284,9 @@ class ClassifierPlaces365(BaseClassifier):
             save_image_options: Save options for images ("cam_image blend_image")
             save_format: Save format for the output ("json csv")
             csv_format: CSV format for the output ("long" or "wide")
+            verbosity (int, optional): Level of verbosity for progress bars.
+                If None, uses the instance's verbosity level.
+                0 = no progress bars, 1 = outer loops only, 2 = all loops.
 
         Raises:
             ValueError: If neither dir_image_output nor dir_summary_output is provided
@@ -321,7 +328,12 @@ class ClassifierPlaces365(BaseClassifier):
         dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=dataset.collate_fn)
         results = []
         # Process images
-        for images, paths in tqdm(dataloader, desc="Processing images"):
+        for images, paths in verbosity_tqdm(
+            dataloader, 
+            desc="Processing images",
+            verbosity=self.verbosity if verbosity is None else verbosity,
+            level=1
+        ):
             self.features_blobs = []
             images = images.to(self.device)
             outputs = self.model(images)

@@ -7,6 +7,7 @@ from typing import Union
 import cv2
 import pandas as pd
 from tqdm import tqdm
+from zensvi.utils.log import verbosity_tqdm
 
 
 def _detect_edges_single_image(image_path: Path, dir_image_output: Union[str, Path]) -> dict:
@@ -157,6 +158,7 @@ def get_low_level_features(
     dir_summary_output: Union[str, Path] = None,
     save_format: str = "json csv",
     csv_format: str = "long",
+    verbosity: int = 1,
 ) -> None:
     """Processes images from the specified input directory or single image file to
     detect various low-level features, which include edge detection, blob detection,
@@ -169,6 +171,8 @@ def get_low_level_features(
         dir_summary_output (Union[str, Path], optional): Directory to save summary results. Defaults to None.
         save_format (str, optional): Format to save the summary results. Defaults to "json csv".
         csv_format (str, optional): Format for CSV output. Defaults to "long".
+        verbosity (int, optional): Level of verbosity for progress bars. Defaults to 1.
+                                  0 = no progress bars, 1 = outer loops only, 2 = all loops.
 
     Returns:
         None: The function does not return any value but outputs results to the specified directories.
@@ -211,7 +215,13 @@ def get_low_level_features(
         future_to_image = {
             executor.submit(_detect_all_features_single_image, image, dir_image_output): image for image in images
         }
-        for future in tqdm(as_completed(future_to_image), desc="Processing images", total=len(images)):
+        for future in verbosity_tqdm(
+            as_completed(future_to_image), 
+            desc="Processing images", 
+            total=len(images),
+            verbosity=verbosity,
+            level=1
+        ):
             image = future_to_image[future]
             try:
                 result = future.result()

@@ -9,6 +9,8 @@ from pyproj import Transformer
 from shapely.geometry import Point
 from tqdm.auto import tqdm
 
+from zensvi.utils.log import verbosity_tqdm
+
 tqdm.pandas()
 
 
@@ -24,12 +26,14 @@ class GeoProcessor:
         grid (bool, optional): Whether to use grid-based sampling. Defaults to False.
         grid_size (float, optional): Grid cell size in meters. Defaults to 1.
         id_columns (list, optional): List of columns to preserve in output. Defaults to [].
+        verbosity (int, optional): Level of verbosity for progress bars (0=no progress, 1=outer loops only, 2=all loops).
+                                  Defaults to 1.
         **kwargs: Additional keyword arguments:
             network_type (str): OSM network type to use. Defaults to "all".
             custom_filter (str): Custom OSM filter query.
     """
 
-    def __init__(self, gdf, distance=1, grid=False, grid_size=1, id_columns=[], **kwargs):
+    def __init__(self, gdf, distance=1, grid=False, grid_size=1, id_columns=[], verbosity=1, **kwargs):
         self.gdf = gdf
         self.distance = distance
         self.processing_functions = {
@@ -44,6 +48,7 @@ class GeoProcessor:
         self.grid_size = grid_size
         self.utm_crs = None
         self.id_columns = id_columns
+        self.verbosity = verbosity
         if "network_type" in kwargs:
             self.network_type = kwargs["network_type"]
         else:
@@ -112,9 +117,18 @@ class GeoProcessor:
         gdf_utm = ox.projection.project_gdf(gdf)
         self.utm_crs = gdf_utm.crs
 
-        gdf_utm["sample_points"] = gdf_utm["geometry"].progress_apply(
-            lambda geom: list(ox.utils_geo.interpolate_points(geom, dist=self.distance))
-        )
+        # Define a function to apply to each geometry
+        def apply_interpolate(geometry):
+            return list(ox.utils_geo.interpolate_points(geometry, dist=self.distance))
+        
+        # Apply the function to each geometry, respecting verbosity
+        if self.verbosity >= 2:
+            # Use progress_apply for visible progress bar
+            gdf_utm["sample_points"] = gdf_utm["geometry"].progress_apply(apply_interpolate)
+        else:
+            # Use regular apply for no progress bar
+            gdf_utm["sample_points"] = gdf_utm["geometry"].apply(apply_interpolate)
+            
         gdf_utm = gdf_utm.explode("sample_points").reset_index(drop=True)
 
         gdf_utm["longitude"], gdf_utm["latitude"] = zip(*self.utm_to_lat_lon(gdf_utm["sample_points"], self.utm_crs))
@@ -206,9 +220,11 @@ class GeoProcessor:
         failed_geoms = []
         results = []
 
-        for i in tqdm(
+        for i in verbosity_tqdm(
             range(num_batches),
             desc=f"Processing polygon by batch size {min(batch_size, len(gdf))}",
+            verbosity=self.verbosity,
+            level=1,
         ):
             with ProcessPoolExecutor() as executor:
                 batch_futures = {}
@@ -219,10 +235,12 @@ class GeoProcessor:
                         future = executor.submit(self.create_point_grid, geom, self.grid_size)
                     batch_futures[future] = geom
 
-                for future in tqdm(
+                for future in verbosity_tqdm(
                     as_completed(batch_futures.keys()),
                     total=len(batch_futures),
                     desc=f"Processing polygon for batch #{i+1}",
+                    verbosity=self.verbosity,
+                    level=2,
                 ):
                     geom = batch_futures[future]
                     try:
@@ -235,14 +253,16 @@ class GeoProcessor:
             print("Retrying failed geoms by making grids")
             with ProcessPoolExecutor() as executor:
                 retry_futures = {}
-                for geom in tqdm(failed_geoms, desc="Preparing Failed Geoms"):
+                for geom in verbosity_tqdm(failed_geoms, desc="Preparing Failed Geoms", verbosity=self.verbosity, level=1):
                     future = executor.submit(self.create_point_grid, geom, self.grid_size)
                     retry_futures[future] = geom
 
-                for future in tqdm(
+                for future in verbosity_tqdm(
                     as_completed(retry_futures.keys()),
                     total=len(retry_futures),
                     desc="Processing Failed Geoms",
+                    verbosity=self.verbosity,
+                    level=2,
                 ):
                     result = future.result()
                     results.append(result)
@@ -259,10 +279,12 @@ class GeoProcessor:
                 for crs, group in gdf_exploded.groupby("utm_crs")
             }
             lat_lon_points = []
-            for future in tqdm(
+            for future in verbosity_tqdm(
                 as_completed(futures),
                 total=len(futures),
                 desc="Converting UTM to Lat/Lon",
+                verbosity=self.verbosity,
+                level=1,
             ):
                 lat_lon_points.extend(future.result())
 

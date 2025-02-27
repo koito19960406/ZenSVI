@@ -2,12 +2,16 @@ import glob
 import os
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import partial
+from io import BytesIO
 
 import numpy as np
 import requests
 from PIL import Image
 from requests.exceptions import ProxyError
 from tqdm import tqdm
+
+from zensvi.utils.log import verbosity_tqdm
 
 
 class ImageTool:
@@ -196,6 +200,7 @@ class ImageTool:
         batch_size=1000,
         logger=None,
         max_workers=None,
+        verbosity=1,
     ):
         """Download multiple Street View images in parallel using batched processing.
 
@@ -212,6 +217,7 @@ class ImageTool:
             batch_size (int, optional): Number of images to process per batch. Defaults to 1000.
             logger (Logger, optional): Logger object for recording progress. Defaults to None.
             max_workers (int, optional): Maximum number of concurrent download threads. Defaults to None.
+            verbosity (int, optional): Level of verbosity for progress bars (0=no progress, 1=outer loops only, 2=all loops). Defaults to 1.
 
         Note:
             Creates subdirectories for each batch of downloads.
@@ -229,9 +235,11 @@ class ImageTool:
 
         num_batches = (len(panoids) + batch_size - 1) // batch_size
 
-        for i in tqdm(
+        for i in verbosity_tqdm(
             range(num_batches),
             desc=f"Processing outer batches of size {min(batch_size, len(panoids))}",
+            verbosity=verbosity,
+            level=1,
         ):
             # Create a new sub-folder for each batch
             batch_out_path = os.path.join(out_path, f"batch_{start_batch_number + i + 1}")
@@ -260,10 +268,12 @@ class ImageTool:
                     }
                     jobs.append(executor.submit(ImageTool.get_and_save_image, **kw))
 
-                for job in tqdm(
+                for job in verbosity_tqdm(
                     as_completed(jobs),
                     total=len(jobs),
                     desc=f"Downloading images for batch #{start_batch_number + i + 1}",
+                    verbosity=verbosity,
+                    level=2,
                 ):
                     try:
                         job.result()

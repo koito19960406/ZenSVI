@@ -53,21 +53,21 @@ def test_interface(output_dir, mly_input_files, mly_api_key, timeout_decorator, 
 
 
 @pytest.mark.parametrize(
-    "input_type,expected_files",
+    "input_type,expected_files,verbosity",
     [
-        ("coordinates", 1),  # lat/lon input
-        ("csv", 1),  # CSV file input
-        ("polygon", 1),  # Single polygon
-        ("multipolygon", 1),  # Multiple polygons
-        ("place_name", 1),  # Place name input
+        ("coordinates", 1, 0),  # Test with no progress bars
+        ("csv", 1, 1),  # Test with outer progress bars only
+        ("polygon", 1, 2),  # Test with all progress bars
+        ("multipolygon", 1, 1),
+        ("place_name", 1, 1),
     ],
 )
 def test_downloader_input_types(
-    output_dir, mly_input_files, input_dir, mly_api_key, input_type, expected_files, timeout_decorator, timeout_seconds
+    output_dir, mly_input_files, input_dir, mly_api_key, input_type, expected_files, verbosity, timeout_decorator, timeout_seconds
 ):
     """Test downloading with different input types"""
     output_dir = output_dir / f"test_{input_type}"
-    mly_downloader = MLYDownloader(mly_api_key, log_path=output_dir / "log.log", max_workers=1)
+    mly_downloader = MLYDownloader(mly_api_key, log_path=output_dir / "log.log", max_workers=1, verbosity=verbosity)
 
     # Set up input parameters based on type
     kwargs = {}
@@ -163,3 +163,32 @@ def test_error_handling(output_dir, mly_api_key, timeout_decorator, timeout_seco
             #     mly_downloader.download_svi(output_dir)
     except TimeoutException:
         pass  # For error handling tests, timeout is acceptable
+
+
+def test_verbosity_levels(output_dir, mly_api_key, timeout_decorator, timeout_seconds):
+    """Test that verbosity levels work correctly"""
+    output_dir = output_dir / "test_verbosity"
+    
+    # Test with verbosity=0 (should disable all progress bars)
+    mly_downloader_no_verbosity = MLYDownloader(
+        mly_api_key, log_path=output_dir / "log_no_verbosity.log", max_workers=1, verbosity=0
+    )
+    
+    # Test with verbosity=1 (should show only outer loop)
+    mly_downloader_low_verbosity = MLYDownloader(
+        mly_api_key, log_path=output_dir / "log_low_verbosity.log", max_workers=1, verbosity=1
+    )
+    
+    # Test with verbosity=2 (should show all loops)
+    mly_downloader_high_verbosity = MLYDownloader(
+        mly_api_key, log_path=output_dir / "log_high_verbosity.log", max_workers=1, verbosity=2
+    )
+    
+    # Check that verbosity property works correctly
+    assert mly_downloader_no_verbosity.verbosity == 0
+    assert mly_downloader_low_verbosity.verbosity == 1
+    assert mly_downloader_high_verbosity.verbosity == 2
+    
+    # Change verbosity and check it updates
+    mly_downloader_no_verbosity.verbosity = 2
+    assert mly_downloader_no_verbosity.verbosity == 2

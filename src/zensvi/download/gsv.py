@@ -25,7 +25,7 @@ from zensvi.download.utils.geoprocess import GeoProcessor
 from zensvi.download.utils.get_pids import panoids
 from zensvi.download.utils.helpers import create_buffer_gdf, standardize_column_names
 from zensvi.download.utils.imtool import ImageTool
-from zensvi.utils.log import Logger
+from zensvi.utils.log import Logger, verbosity_tqdm
 
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
@@ -40,6 +40,8 @@ class GSVDownloader(BaseDownloader):
         grid (bool, optional): Grid parameter for the GeoProcessor. Defaults to False.
         grid_size (int, optional): Grid size parameter for the GeoProcessor. Defaults to 1.
         max_workers (int, optional): Number of workers for parallel processing. Defaults to None.
+        verbosity (int, optional): Level of verbosity for progress bars. Defaults to 1.
+                                  0 = no progress bars, 1 = outer loops only, 2 = all loops.
 
     Raises:
         Warning: If gsv_api_key is not provided.
@@ -53,6 +55,7 @@ class GSVDownloader(BaseDownloader):
         grid: bool = False,
         grid_size: int = 1,
         max_workers: int = None,
+        verbosity: int = 1,
     ):
         super().__init__(log_path)
         if gsv_api_key is None:
@@ -67,6 +70,7 @@ class GSVDownloader(BaseDownloader):
         self._grid = grid
         self._grid_size = grid_size
         self._max_workers = max_workers
+        self._verbosity = verbosity
 
     @property
     def max_workers(self):
@@ -83,6 +87,19 @@ class GSVDownloader(BaseDownloader):
             self._max_workers = min(32, os.cpu_count() + 4)
         else:
             self._max_workers = max_workers
+            
+    @property
+    def verbosity(self):
+        """Property for the verbosity level of progress bars.
+        
+        Returns:
+            int: verbosity level (0=no progress, 1=outer loops only, 2=all loops)
+        """
+        return self._verbosity
+        
+    @verbosity.setter
+    def verbosity(self, verbosity):
+        self._verbosity = verbosity
 
     def _augment_metadata(self, df):
         if self.cache_pids_augmented.exists():
@@ -142,19 +159,23 @@ class GSVDownloader(BaseDownloader):
         batch_size = 1000  # Modify this to a suitable value
         num_batches = (len(df) + batch_size - 1) // batch_size
 
-        for i in tqdm(
+        for i in verbosity_tqdm(
             range(num_batches),
             desc=f"Augmenting metadata by batch size {min(batch_size, len(df))}",
+            verbosity=self.verbosity,
+            level=1,
         ):
             batch_df = df.iloc[i * batch_size : (i + 1) * batch_size].copy()  # Copy the batch data to a new dataframe
             with ThreadPoolExecutor() as executor:
                 batch_futures = {
                     executor.submit(worker, row, self._proxies): row.Index for row in batch_df.itertuples()
                 }
-                for future in tqdm(
+                for future in verbosity_tqdm(
                     as_completed(batch_futures),
                     total=len(batch_futures),
                     desc=f"Augmenting metadata for batch #{i+1}",
+                    verbosity=self.verbosity,
+                    level=2,
                 ):
                     row_index, year_month = future.result()
                     if year_month["year"] is not None:
@@ -243,22 +264,30 @@ class GSVDownloader(BaseDownloader):
 
         # if there's no rows to process, return completed_ids
         if len(df) == 0:
-            return completed_ids
+            try:
+                return completed_ids
+            except NameError:
+                # If completed_ids is not defined (no checkpoints), return empty DataFrame
+                return pd.DataFrame()
 
         # if not, process the rows
-        for i in tqdm(
+        for i in verbosity_tqdm(
             range(num_batches),
             desc=f"Getting pids by batch size {min(batch_size, len(df))}",
+            verbosity=self.verbosity,
+            level=1,
         ):
             with ThreadPoolExecutor() as executor:
                 batch_futures = {
                     executor.submit(worker, row): row
                     for row in df.iloc[i * batch_size : (i + 1) * batch_size].itertuples()
                 }
-                for future in tqdm(
+                for future in verbosity_tqdm(
                     as_completed(batch_futures),
                     total=len(batch_futures),
                     desc=f"Getting pids for batch #{i+1}",
+                    verbosity=self.verbosity,
+                    level=2,
                 ):
                     try:
                         (
@@ -296,10 +325,12 @@ class GSVDownloader(BaseDownloader):
             print("Retrying failed rows...")
             with ThreadPoolExecutor() as executor:
                 retry_futures = {executor.submit(worker, row): row for row in failed_rows}
-                for future in tqdm(
+                for future in verbosity_tqdm(
                     as_completed(retry_futures),
                     total=len(retry_futures),
                     desc="Retrying failed rows",
+                    verbosity=self.verbosity,
+                    level=2,
                 ):
                     try:
                         (
@@ -336,73 +367,68 @@ class GSVDownloader(BaseDownloader):
         return results_df
 
     def _get_pids_from_gdf(self, gdf, **kwargs):
-        if self.cache_lat_lon.exists():
-            df = pd.read_csv(self.cache_lat_lon)
-            print("The lat and lon have been read from the cache")
-        else:
-            if gdf.crs is None:
-                gdf = gdf.set_crs("EPSG:4326")
-            elif gdf.crs != "EPSG:4326":
-                # convert to EPSG:4326
-                gdf = gdf.to_crs("EPSG:4326")
-            # read shapefile
-            gp = GeoProcessor(
-                gdf,
-                distance=self._distance,
-                grid=self._grid,
-                grid_size=self._grid_size,
-                **kwargs,
-            )
-            df = gp.get_lat_lon()
-            df["lat_lon_id"] = np.arange(1, len(df) + 1)
-            # save df to cache
-            df.to_csv(self.cache_lat_lon, index=False)
+        """Get panorama IDs from a GeoDataFrame of polygons.
 
-        if self.cache_pids_raw.exists():
-            print("The raw panorama IDs have been read from the cache")
-            results_df = pd.read_csv(self.cache_pids_raw)
-        else:
-            # Use _get_pids_from_df to get pids from df
-            results_df = self._get_pids_from_df(df, kwargs["id_columns"])
+        Args:
+          gdf: GeoDataFrame of polygons
+          **kwargs: Additional keyword arguments
 
-        # Check if lat and lon are within input polygons
-        polygons = gpd.GeoSeries([geom for geom in gdf["geometry"] if geom.type in ["Polygon", "MultiPolygon"]])
+        Returns:
+          pandas DataFrame containing panorama IDs
 
-        # the rest is only for polygons, so return results_df if there's no polygons
-        if len(polygons) == 0:
-            return results_df
-
-        # Convert lat, lon to Points and create a GeoSeries
-        points = gpd.GeoSeries([Point(lon, lat) for lon, lat in zip(results_df["lon"], results_df["lat"])])
-
-        # Create a GeoDataFrame with the points and an index column
-        points_gdf = gpd.GeoDataFrame(geometry=points, crs=gdf.crs)
-        points_gdf["index"] = range(len(points_gdf))
-
-        # Create a spatial index on the polygons GeoSeries
-        polygons_sindex = polygons.sindex
-
-        # Function to check whether a point is within any polygon
-        def is_within_polygon(point):
-            possible_matches_index = list(polygons_sindex.intersection(point.bounds))
-            possible_matches = polygons.iloc[possible_matches_index]
-            precise_matches = possible_matches.contains(point)
-            return precise_matches.any()
-
-        # Add progress bar for within_polygon calculation
-        with tqdm(total=len(points), desc="Checking points within polygons") as pbar:
-            within_polygon = []
-            for point in points_gdf["geometry"]:
-                within_polygon.append(is_within_polygon(point))
-                pbar.update()
-
-        results_df["within_polygon"] = within_polygon
+        """
+        # Create processor params, preferring kwargs values over self values
+        processor_params = {
+            'distance': kwargs.get('distance', self._distance),
+            'grid': kwargs.get('grid', self._grid),
+            'grid_size': kwargs.get('grid_size', self._grid_size),
+            'verbosity': kwargs.get('verbosity', self.verbosity)
+        }
+        
+        # Remove these keys from kwargs to avoid duplication
+        for key in processor_params:
+            if key in kwargs:
+                del kwargs[key]
+                
+        geo_processor = GeoProcessor(
+            gdf,
+            **processor_params,
+            **kwargs,
+        )
+        points_df = geo_processor.get_lat_lon()
+        points_df["lat_lon_id"] = np.arange(1, len(points_df) + 1)
+        
+        # add a column to the points dataframe to indicate whether each point is within one of the polygons
+        points_df["within_polygon"] = False
+        
+        # Check if points is within polygons with progress bar
+        for idx, row in verbosity_tqdm(points_df.iterrows(), 
+                                       total=len(points_df), 
+                                       desc="Checking points within polygons", 
+                                       verbosity=self.verbosity, 
+                                       level=1):
+            point = Point(row["longitude"], row["latitude"])
+            # Check if the point is within any of the polygons
+            within = False
+            for _, poly_row in gdf.iterrows():
+                if point.within(poly_row.geometry):
+                    within = True
+                    break
+            points_df.at[idx, "within_polygon"] = within
 
         # Return only those points within polygons
-        results_within_polygons_df = results_df[results_df["within_polygon"]]
+        points_within_polygons_df = points_df[points_df["within_polygon"]]
         # Drop the 'within_polygon' column
-        results_within_polygons_df = results_within_polygons_df.drop(columns="within_polygon")
-        return results_within_polygons_df
+        points_within_polygons_df = points_within_polygons_df.drop(columns="within_polygon")
+        
+        # if there are no points within polygons, use all points
+        if len(points_within_polygons_df) == 0:
+            print("Warning: No points were found within polygons. Using all generated points.")
+            points_within_polygons_df = points_df.drop(columns="within_polygon")
+            
+        # Get PIDs for these points
+        results_df = self._get_pids_from_df(points_within_polygons_df, kwargs["id_columns"] if "id_columns" in kwargs else None)
+        return results_df
 
     def _get_raw_pids(self, **kwargs):
         if self.cache_pids_raw.exists():
@@ -552,7 +578,13 @@ class GSVDownloader(BaseDownloader):
         # use ThreadPoolExecutor and as_completed to download the depth images
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(download_depth_image, pid): pid for pid in panoids}
-            for future in tqdm(as_completed(futures), desc="Downloading depth images"):
+            for future in verbosity_tqdm(
+                as_completed(futures), 
+                desc="Downloading depth images", 
+                total=len(futures),
+                verbosity=self.verbosity,
+                level=1
+            ):
                 pid = futures[future]
                 try:
                     future.result()
@@ -582,6 +614,7 @@ class GSVDownloader(BaseDownloader):
         metadata_only: bool = False,
         download_depth=False,
         max_workers: int = None,
+        verbosity: int = None,
         **kwargs,
     ) -> None:
         """Downloads street view images from Google Street View API using specified
@@ -608,6 +641,8 @@ class GSVDownloader(BaseDownloader):
             metadata_only (bool, optional): Whether to download metadata only. Defaults to False.
             download_depth (bool, optional): Whether to download depth images. Defaults to False.
             max_workers (int, optional): Number of workers for parallel processing.
+                If not specified, uses the value set during initialization.
+            verbosity (int, optional): Level of verbosity for progress bars (0=no progress, 1=outer loops only, 2=all loops).
                 If not specified, uses the value set during initialization.
             **kwargs: Additional keyword arguments.
 
@@ -649,6 +684,12 @@ class GSVDownloader(BaseDownloader):
                 max_workers=max_workers,
                 **kwargs,
             )
+            
+        # Set max_workers and verbosity
+        self.max_workers = max_workers
+        if verbosity is not None:
+            self.verbosity = verbosity
+            
         # set necessary directories
         self._set_dirs(dir_output)
 
@@ -719,6 +760,7 @@ class GSVDownloader(BaseDownloader):
                 batch_size=batch_size,
                 logger=self.logger,
                 max_workers=self.max_workers,
+                verbosity=self.verbosity,
             )
         else:
             print("All images have been downloaded")

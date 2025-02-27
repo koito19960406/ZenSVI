@@ -18,7 +18,7 @@ from tqdm import tqdm
 import zensvi.download.kartaview.download_functions as kv
 from zensvi.download.base import BaseDownloader
 from zensvi.download.utils.helpers import check_and_buffer, standardize_column_names
-from zensvi.utils.log import Logger
+from zensvi.utils.log import Logger, verbosity_tqdm
 
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 logging.getLogger("mapillary.utils.client").setLevel(logging.WARNING)
@@ -30,11 +30,14 @@ class KVDownloader(BaseDownloader):
     Args:
         log_path (str, optional): Path to the log file. Defaults to None.
         max_workers (int, optional): Number of workers for parallel processing. Defaults to None.
+        verbosity (int, optional): Level of verbosity for progress bars. Defaults to 1.
+                                  0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, log_path=None, max_workers=None):
+    def __init__(self, log_path=None, max_workers=None, verbosity=1):
         super().__init__(log_path)
         self._max_workers = max_workers
+        self._verbosity = verbosity
         # initialize the logger
         if log_path is not None:
             # make log directory
@@ -58,6 +61,19 @@ class KVDownloader(BaseDownloader):
             self._max_workers = min(32, os.cpu_count() + 4)
         else:
             self._max_workers = max_workers
+            
+    @property
+    def verbosity(self):
+        """Property for the verbosity level of progress bars.
+        
+        Returns:
+            int: verbosity level
+        """
+        return self._verbosity
+    
+    @verbosity.setter
+    def verbosity(self, verbosity):
+        self._verbosity = verbosity
 
     def _read_pids(self, path_pid):
         pid_df = pd.read_csv(path_pid)
@@ -237,9 +253,11 @@ class KVDownloader(BaseDownloader):
         existing_batch_numbers = [int(Path(batch).name.split("_")[-1]) for batch in existing_batches]
         start_batch_number = max(existing_batch_numbers, default=0)
 
-        for i in tqdm(
+        for i in verbosity_tqdm(
             range(start_batch_number, start_batch_number + num_batches),
             desc=f"Downloading images by batch size {min(batch_size, len(urls_df))}",
+            level=1,
+            verbosity=self.verbosity
         ):
             # Create a new sub-folder for each batch
             batch_out_path = self.panorama_output / f"batch_{i+1}"
@@ -252,10 +270,12 @@ class KVDownloader(BaseDownloader):
                         (i - start_batch_number) * batch_size : (i + 1 - start_batch_number) * batch_size
                     ].itertuples()
                 }
-                for future in tqdm(
+                for future in verbosity_tqdm(
                     as_completed(batch_futures),
                     total=len(batch_futures),
                     desc=f"Downloading images for batch #{i+1}",
+                    level=2,
+                    verbosity=self.verbosity
                 ):
                     try:
                         future.result()

@@ -134,14 +134,37 @@ class Logger:
         """
         self.log_error(f"Failed to process tile: {failed_tile_name}")
 
-    def log_failed_pids(self, failed_pid):
-        """Logs the failed pids to a log file.
+    def log_failed_pid(self, failed_pid):
+        """Log failed panorama ID.
 
         Args:
-          failed_pid: ID of the process that failed
-
-        Returns:
-          : None
-
+            failed_pid (str): The failed panorama ID.
         """
         self.log_error(f"Failed to process pid: {failed_pid}")
+
+
+def verbosity_tqdm(iterable, desc=None, total=None, disable=False, verbosity=1, level=1, **kwargs):
+    """
+    A wrapper around tqdm that respects verbosity levels.
+    
+    Args:
+        iterable: Iterable to decorate with a progressbar
+        desc: Description to show in the progressbar
+        total: Total number of items in the iterable
+        disable: Whether to disable the progressbar
+        verbosity: Current verbosity level (0 = no output, 1 = outer loops only, 2 = all loops)
+        level: The nested level of this loop (1 = outermost, 2 = inner, etc.)
+        **kwargs: Additional arguments to pass to tqdm
+        
+    Returns:
+        tqdm: A tqdm progress bar or a simple iterable if disabled
+    """
+    from tqdm import tqdm
+    
+    # If verbosity is 0, or level is greater than verbosity, disable the progress bar
+    should_disable = disable or verbosity == 0 or level > verbosity
+    
+    if should_disable:
+        return iterable
+    else:
+        return tqdm(iterable, desc=desc, total=total, **kwargs)

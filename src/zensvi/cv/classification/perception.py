@@ -14,6 +14,7 @@ from torchvision import transforms
 from .base import BaseClassifier
 from .utils.Model_01 import Net
 from .utils.place_pulse import PlacePulseClassificationModel
+from zensvi.utils.log import verbosity_tqdm
 
 
 class ImageDataset(Dataset):
@@ -88,10 +89,12 @@ class ClassifierPerception(BaseClassifier):
             This affects the checkpoint file used.
         device (str, optional): The device that the model should be loaded onto. Options are "cpu", "cuda",
             or "mps". If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
+        verbosity (int, optional): Level of verbosity for progress bars. Defaults to 1.
+                                  0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, perception_study, device=None):
-        super().__init__(device)
+    def __init__(self, perception_study, device=None, verbosity=1):
+        super().__init__(device, verbosity)
         self.device = self._get_device(device)
         self.perception_study = perception_study
 
@@ -147,6 +150,7 @@ class ClassifierPerception(BaseClassifier):
         dir_summary_output: Union[str, Path],
         batch_size=1,
         save_format="json csv",
+        verbosity: int = None,
     ) -> List[str]:
         """Classifies images based on human perception of streetscapes from the specified perception study.
 
@@ -156,10 +160,17 @@ class ClassifierPerception(BaseClassifier):
             batch_size (int, optional): Batch size for inference. Defaults to 1.
             save_format (str, optional): Save format for the output. Options are "json" and "csv".
                 Add a space between options. Defaults to "json csv".
+            verbosity (int, optional): Level of verbosity for progress bars.
+                If None, uses the instance's verbosity level.
+                0 = no progress bars, 1 = outer loops only, 2 = all loops.
 
         Returns:
             List[dict]: List of dictionaries containing perception scores for each image.
         """
+        # Use instance verbosity if not specified
+        if verbosity is None:
+            verbosity = self.verbosity
+            
         # Prepare output directories
         if dir_summary_output:
             Path(dir_summary_output).mkdir(parents=True, exist_ok=True)
@@ -188,13 +199,16 @@ class ClassifierPerception(BaseClassifier):
             ]
 
         dataset = ImageDataset(img_paths)
-        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=dataset.collate_fn)
 
         results = []
+
         with torch.no_grad():
-            for image_files, images in tqdm.tqdm(
+            for image_files, images in verbosity_tqdm(
                 dataloader,
                 desc=f"Evaluating human perception of study: {self.perception_study}",
+                verbosity=verbosity,
+                level=1
             ):
                 images = images.to(self.device, dtype=torch.float32)
 
@@ -219,7 +233,6 @@ class ClassifierPerception(BaseClassifier):
 
 class ClassifierPerceptionViT(BaseClassifier):
     """A classifier for evaluating the perception of streetscape based on a given study
-    using Ouyang (2023) Visual Transformer.
 
     Args:
         perception_study (str): The specific perception study for which the model is trained, including
@@ -227,10 +240,12 @@ class ClassifierPerceptionViT(BaseClassifier):
             This affects the checkpoint file used.
         device (str, optional): The device that the model should be loaded onto. Options are "cpu", "cuda",
             or "mps". If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
+        verbosity (int, optional): Level of verbosity for progress bars. Defaults to 1.
+                                  0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, perception_study, device=None):
-        super().__init__(device)
+    def __init__(self, perception_study, device=None, verbosity=1):
+        super().__init__(device, verbosity)
         self.device = self._get_device(device)
         self.perception_study = perception_study
 
@@ -294,6 +309,7 @@ class ClassifierPerceptionViT(BaseClassifier):
         dir_summary_output: Union[str, Path],
         batch_size=1,
         save_format="json csv",
+        verbosity: int = None,
     ) -> List[str]:
         """Classifies images based on human perception of streetscapes from the specified perception study.
 
@@ -303,10 +319,17 @@ class ClassifierPerceptionViT(BaseClassifier):
             batch_size (int, optional): Batch size for inference. Defaults to 1.
             save_format (str, optional): Save format for the output. Options are "json" and "csv".
                 Add a space between options. Defaults to "json csv".
+            verbosity (int, optional): Level of verbosity for progress bars.
+                If None, uses the instance's verbosity level.
+                0 = no progress bars, 1 = outer loops only, 2 = all loops.
 
         Returns:
             List[dict]: List of dictionaries containing perception scores for each image.
         """
+        # Use instance verbosity if not specified
+        if verbosity is None:
+            verbosity = self.verbosity
+            
         # Prepare output directories
         if dir_summary_output:
             Path(dir_summary_output).mkdir(parents=True, exist_ok=True)
@@ -335,13 +358,16 @@ class ClassifierPerceptionViT(BaseClassifier):
             ]
 
         dataset = ImageDataset(img_paths, vit=True)
-        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=dataset.collate_fn)
 
         results = []
+
         with torch.no_grad():
-            for image_files, images in tqdm.tqdm(
+            for image_files, images in verbosity_tqdm(
                 dataloader,
                 desc=f"Evaluating human perception of study: {self.perception_study}",
+                verbosity=verbosity,
+                level=1
             ):
                 images = images.to(self.device, dtype=torch.float32)
 

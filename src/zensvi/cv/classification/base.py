@@ -13,10 +13,26 @@ class BaseClassifier(ABC):
         device (str, optional): The device that the model should be loaded onto.
             Options are "cpu", "cuda", or "mps". If `None`, the model tries to use
             a GPU if available; otherwise, falls back to CPU.
+        verbosity (int, optional): Level of verbosity for progress bars. Defaults to 1.
+                                  0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, device=None):
+    def __init__(self, device=None, verbosity=1):
         self.device = self._get_device(device)
+        self._verbosity = verbosity
+
+    @property
+    def verbosity(self):
+        """Property for the verbosity level of progress bars.
+        
+        Returns:
+            int: verbosity level (0=no progress, 1=outer loops only, 2=all loops)
+        """
+        return self._verbosity
+        
+    @verbosity.setter
+    def verbosity(self, verbosity):
+        self._verbosity = verbosity
 
     def _get_device(self, device) -> torch.device:
         """Get the appropriate device for running the model.
@@ -53,6 +69,7 @@ class BaseClassifier(ABC):
         save_image_options: str = "cam_image blend_image",
         save_format: str = "json csv",
         csv_format: str = "long",  # "long" or "wide"
+        verbosity: int = None,
     ) -> None:
         """Classify images in a directory.
 
@@ -69,5 +86,8 @@ class BaseClassifier(ABC):
                 Options are "json" and "csv". Defaults to "json csv".
             csv_format (str, optional): Format for CSV output.
                 Options are "long" and "wide". Defaults to "long".
+            verbosity (int, optional): Level of verbosity for progress bars.
+                If None, uses the instance's verbosity level.
+                0 = no progress bars, 1 = outer loops only, 2 = all loops.
         """
         pass

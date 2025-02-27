@@ -166,3 +166,44 @@ def test_download_with_buffer(output_dir, sv_downloader, timeout_decorator):
         pass  # Allow timeout, we'll check results next
 
     assert len(list(output_dir.iterdir())) > 0, "No files downloaded within 5 minutes"
+
+
+def test_verbosity_levels(output_dir, gsv_api_key):
+    """Test that verbosity levels work correctly in the GSVDownloader class."""
+    # Test with verbosity=0 (no progress bars)
+    gsv_downloader0 = GSVDownloader(
+        gsv_api_key=gsv_api_key, 
+        log_path=output_dir / "log_no_verbosity.log", 
+        verbosity=0
+    )
+    assert gsv_downloader0.verbosity == 0
+    
+    # Test with verbosity=1 (outer loops only)
+    gsv_downloader1 = GSVDownloader(
+        gsv_api_key=gsv_api_key, 
+        log_path=output_dir / "log_outer_verbosity.log", 
+        verbosity=1
+    )
+    assert gsv_downloader1.verbosity == 1
+    
+    # Test with verbosity=2 (all loops)
+    gsv_downloader2 = GSVDownloader(
+        gsv_api_key=gsv_api_key, 
+        log_path=output_dir / "log_all_verbosity.log", 
+        verbosity=2
+    )
+    assert gsv_downloader2.verbosity == 2
+    
+    # Test changing verbosity after initialization
+    gsv_downloader0.verbosity = 2
+    assert gsv_downloader0.verbosity == 2
+    
+    # Test setting verbosity in download_svi method
+    gsv_downloader1.download_svi(
+        output_dir / "test_verbosity", 
+        lat=1.342425, 
+        lon=103.721523, 
+        metadata_only=True, 
+        verbosity=0
+    )
+    assert gsv_downloader1.verbosity == 0

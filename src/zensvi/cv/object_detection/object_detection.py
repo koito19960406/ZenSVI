@@ -1,4 +1,5 @@
 import os
+import json
 import threading
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -6,9 +7,13 @@ from pathlib import Path
 from typing import List, Union
 
 import cv2
+import numpy as np
+import pandas as pd
+from PIL import Image
 from groundingdino.util.inference import annotate, load_image, load_model, predict
 from torch.utils.data import Dataset
 from tqdm import tqdm
+from zensvi.utils.log import verbosity_tqdm
 
 current_dir = os.path.dirname(__file__)
 models_dir = Path(__file__).parent.parent.parent.parent.parent / "models"
@@ -85,6 +90,8 @@ class ObjectDetector:
         text_prompt (str, optional): Text prompt for object detection. Defaults to "tree . building .".
         box_threshold (float, optional): Confidence threshold for box detection. Defaults to 0.35.
         text_threshold (float, optional): Confidence threshold for text. Defaults to 0.25.
+        verbosity (int, optional): Level of verbosity for progress bars. Defaults to 1.
+                                  0 = no progress bars, 1 = outer loops only, 2 = all loops.
 
     Attributes:
         model: The loaded GroundingDINO model.
@@ -92,6 +99,7 @@ class ObjectDetector:
         box_threshold (float): Box confidence threshold.
         text_threshold (float): Text confidence threshold.
         model_lock (threading.Lock): Lock for thread-safe model inference.
+        verbosity (int): Level of verbosity for progress reporting.
     """
 
     def __init__(
@@ -101,11 +109,13 @@ class ObjectDetector:
         text_prompt: str = "tree . building .",
         box_threshold: float = 0.35,
         text_threshold: float = 0.25,
+        verbosity: int = 1,
     ):
         self.model = load_model(config_path, weights_path)
         self.text_prompt = text_prompt
         self.box_threshold = box_threshold
         self.text_threshold = text_threshold
+        self.verbosity = verbosity
         # Create a lock to serialize access to the model inference
         self.model_lock = threading.Lock()
 
@@ -164,6 +174,7 @@ class ObjectDetector:
         dir_summary_output: Union[str, Path, None] = None,
         save_format: str = "json",  # Options: "json", "csv", or "json csv"
         max_workers: int = 4,
+        verbosity: int = None,
     ):
         """Detect objects in images and save results.
 
@@ -178,10 +189,17 @@ class ObjectDetector:
             save_format (str, optional): Format for saving summaries ("json", "csv", or "json csv").
                 Defaults to "json".
             max_workers (int, optional): Maximum number of parallel workers. Defaults to 4.
+            verbosity (int, optional): Level of verbosity for progress bars.
+                If None, uses the instance's verbosity level.
+                0 = no progress bars, 1 = outer loops only, 2 = all loops.
 
         Raises:
             ValueError: If dir_input is neither a file nor directory.
         """
+        # Use instance verbosity if not specified
+        if verbosity is None:
+            verbosity = self.verbosity
+            
         # Collect image files from input (handle both file and directory)
         dir_input = Path(dir_input)
         if dir_input.is_file():
@@ -222,7 +240,13 @@ class ObjectDetector:
                 executor.submit(self._process_image, image_file, dir_output): image_file
                 for image_file in remaining_files
             }
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Processing images"):
+            for future in verbosity_tqdm(
+                as_completed(futures), 
+                total=len(futures), 
+                desc="Processing images",
+                verbosity=verbosity,
+                level=1
+            ):
                 try:
                     result = future.result()
                     summary_dict[result["filename_key"]] = {
@@ -252,14 +276,10 @@ class ObjectDetector:
             if "json" in save_format:
                 json_path = summary_dir / "detection_summary.json"
                 with open(json_path, "w") as f:
-                    import json
-
                     json.dump(object_rows, f, indent=2)
                 print(f"Saved detection summary to {json_path}")
 
             if "csv" in save_format:
-                import pandas as pd
-
                 df = pd.DataFrame(object_rows)
                 csv_path = summary_dir / "detection_summary.csv"
                 df.to_csv(csv_path, index=False)

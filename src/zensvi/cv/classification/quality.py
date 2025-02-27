@@ -11,6 +11,7 @@ from torchvision import transforms
 
 from .base import BaseClassifier
 from .utils.global_streetscapes import GlobalStreetScapesClassificationModel, quality_dict2idx
+from zensvi.utils.log import verbosity_tqdm
 
 
 class ImageDataset(Dataset):
@@ -66,10 +67,12 @@ class ClassifierQuality(BaseClassifier):
     Args:
         device (str, optional): The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
             If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
+        verbosity (int, optional): Level of verbosity for progress bars. Defaults to 1.
+                                  0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, device=None):
-        super().__init__(device)
+    def __init__(self, device=None, verbosity=1):
+        super().__init__(device, verbosity)
         self.device = self._get_device(device)
 
         file_name = "quality_inverse/ce2c16b6-2950-4fb2-b064-1078ed31aa05_quality_quality_inverse_checkpoint.ckpt"
@@ -116,6 +119,7 @@ class ClassifierQuality(BaseClassifier):
         dir_summary_output: Union[str, Path],
         batch_size=1,
         save_format="json csv",
+        verbosity: int = None,
     ) -> List[str]:
         """Classifies images based on quality.
 
@@ -125,10 +129,17 @@ class ClassifierQuality(BaseClassifier):
             batch_size (int, optional): Batch size for inference. Defaults to 1.
             save_format (str, optional): Space-separated string of formats to save results.
                 Options are "json" and/or "csv". Defaults to "json csv".
+            verbosity (int, optional): Level of verbosity for progress bars.
+                If None, uses the instance's verbosity level.
+                0 = no progress bars, 1 = outer loops only, 2 = all loops.
 
         Returns:
             List[str]: List of classification results.
         """
+        # Use instance verbosity if not specified
+        if verbosity is None:
+            verbosity = self.verbosity
+            
         # Prepare output directories
         if dir_summary_output:
             Path(dir_summary_output).mkdir(parents=True, exist_ok=True)
@@ -167,7 +178,12 @@ class ClassifierQuality(BaseClassifier):
                     "filename_key": str(Path(image_file).stem),
                     "quality": quality_dict2idx["index2label"][pred.item()],
                 }
-                for image_files, images in tqdm.tqdm(dataloader, desc="Classifying quality")
+                for image_files, images in verbosity_tqdm(
+                    dataloader, 
+                    desc="Classifying quality", 
+                    verbosity=verbosity,
+                    level=1
+                )
                 for image_file, pred in zip(
                     image_files,
                     torch.max(self.model(images.to(self.device, dtype=torch.float32)), 1)[1],
@@ -181,3 +197,4 @@ class ClassifierQuality(BaseClassifier):
             "results",
             save_format=save_format,
         )
+        return results

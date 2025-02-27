@@ -11,6 +11,7 @@ from torchvision import transforms
 
 from .base import BaseClassifier
 from .utils.global_streetscapes import GlobalStreetScapesClassificationModel, view_direction_dict2idx
+from zensvi.utils.log import verbosity_tqdm
 
 
 class ImageDataset(Dataset):
@@ -66,10 +67,12 @@ class ClassifierViewDirection(BaseClassifier):
     Args:
         device (str, optional): The device that the model should be loaded onto. Options are "cpu", "cuda", or "mps".
             If `None`, the model tries to use a GPU if available; otherwise, falls back to CPU.
+        verbosity (int, optional): Level of verbosity for progress bars. Defaults to 1.
+                                  0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, device=None):
-        super().__init__(device)
+    def __init__(self, device=None, verbosity=1):
+        super().__init__(device, verbosity)
         self.device = self._get_device(device)
 
         file_name = "view_direction_inverse/a0bd363c-60e8-455c-b077-e5852aca9371_view_direction_view_direction_inverse_checkpoint.ckpt"
@@ -116,6 +119,7 @@ class ClassifierViewDirection(BaseClassifier):
         dir_summary_output: Union[str, Path],
         batch_size=1,
         save_format="json csv",
+        verbosity: int = None,
     ) -> List[str]:
         """Classifies images based on view_direction.
 
@@ -123,12 +127,19 @@ class ClassifierViewDirection(BaseClassifier):
             dir_input (Union[str, Path]): Directory containing input images or path to a single image.
             dir_summary_output (Union[str, Path]): Directory to save summary output.
             batch_size (int, optional): Batch size for inference. Defaults to 1.
-            save_format (str, optional): Space-separated string of formats to save results in.
+            save_format (str, optional): Space-separated string of formats to save results.
                 Options are "json" and/or "csv". Defaults to "json csv".
+            verbosity (int, optional): Level of verbosity for progress bars.
+                If None, uses the instance's verbosity level.
+                0 = no progress bars, 1 = outer loops only, 2 = all loops.
 
         Returns:
             List[str]: List of classification results.
         """
+        # Use instance verbosity if not specified
+        if verbosity is None:
+            verbosity = self.verbosity
+            
         # Prepare output directories
         if dir_summary_output:
             Path(dir_summary_output).mkdir(parents=True, exist_ok=True)
@@ -159,7 +170,6 @@ class ClassifierViewDirection(BaseClassifier):
         dataset = ImageDataset(img_paths)
         dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=dataset.collate_fn)
 
-        results = []
         # Using torch.no_grad() to avoid unnecessary gradient computations during inference
         with torch.no_grad():
             results = [
@@ -167,7 +177,12 @@ class ClassifierViewDirection(BaseClassifier):
                     "filename_key": str(Path(image_file).stem),
                     "view_direction": view_direction_dict2idx["index2label"][pred.item()],
                 }
-                for image_files, images in tqdm.tqdm(dataloader, desc="Classifying view_direction")
+                for image_files, images in verbosity_tqdm(
+                    dataloader, 
+                    desc="Classifying view_direction", 
+                    verbosity=verbosity,
+                    level=1
+                )
                 for image_file, pred in zip(
                     image_files,
                     torch.max(self.model(images.to(self.device, dtype=torch.float32)), 1)[1],
@@ -181,3 +196,4 @@ class ClassifierViewDirection(BaseClassifier):
             "results",
             save_format=save_format,
         )
+        return results
