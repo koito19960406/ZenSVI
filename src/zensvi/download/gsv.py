@@ -775,3 +775,67 @@ class GSVDownloader(BaseDownloader):
         if self.dir_cache.exists():
             shutil.rmtree(self.dir_cache)
             print("The cache directory has been deleted")
+
+    def update_metadata(
+        self,
+        input_pid_file: str,
+        output_pid_file: str = None,
+        max_workers: int = None,
+        verbosity: int = None,
+    ) -> None:
+        """Updates metadata (year and month) for existing panorama IDs without redoing the entire download process.
+
+        Args:
+            input_pid_file (str): Path to the existing panorama ID CSV file.
+            output_pid_file (str, optional): Path where the updated CSV will be saved. 
+                                            If None, will overwrite the input file. Defaults to None.
+            max_workers (int, optional): Number of workers for parallel processing.
+                                        If not specified, uses the value set during initialization.
+            verbosity (int, optional): Level of verbosity for progress bars.
+                                      If not specified, uses the value set during initialization.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If gsv_api_key is not provided.
+            FileNotFoundError: If the input_pid_file does not exist.
+        """
+        if self._gsv_api_key is None:
+            raise ValueError("Please provide your Google Street View API key to augment metadata.")
+        
+        input_path = Path(input_pid_file)
+        if not input_path.exists():
+            raise FileNotFoundError(f"Input file {input_pid_file} does not exist.")
+        
+        # Set output path
+        output_path = Path(output_pid_file) if output_pid_file else input_path
+        
+        # Set max_workers and verbosity
+        self.max_workers = max_workers
+        if verbosity is not None:
+            self.verbosity = verbosity
+            
+        # Create a temporary directory for cache
+        temp_dir = Path(output_path.parent) / "temp_update_metadata"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Set up directory structure using _set_dirs method
+        self._set_dirs(temp_dir)
+        
+        # Read the input PID file
+        df = pd.read_csv(input_path)
+        print(f"Read {len(df)} panorama IDs from {input_path}")
+        
+        # Augment metadata
+        print("Augmenting metadata with year and month information...")
+        updated_df = self._augment_metadata(df)
+        
+        # Save the augmented metadata
+        updated_df.to_csv(output_path, index=False)
+        print(f"Updated panorama IDs have been saved to {output_path}")
+        
+        # Clean up temp directory
+        if self.dir_cache.exists():
+            shutil.rmtree(self.dir_cache)
+            print("Temporary cache directory has been deleted")

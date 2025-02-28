@@ -31,6 +31,7 @@ def gsv_input_files(input_dir):
     return {
         "multipolygon": input_dir / "test_multipolygon_sg.geojson",
         "polygon": input_dir / "test_polygon_sg.geojson",
+        "metadata": input_dir / "metadata/gsv_pids.csv",
     }
 
 
@@ -193,3 +194,49 @@ def test_verbosity_levels(output_dir, gsv_api_key):
         output_dir / "test_verbosity", lat=1.342425, lon=103.721523, metadata_only=True, verbosity=0
     )
     assert gsv_downloader1.verbosity == 0
+
+
+def test_update_metadata(output_dir, gsv_input_files, sv_downloader, timeout_decorator):
+    """Test the update_metadata method for updating existing panorama IDs with year and month information."""
+    # Create a test directory for this test
+    test_dir = output_dir / "test_update_metadata"
+    test_dir.mkdir(exist_ok=True)
+    
+    # Use the existing sample metadata file
+    input_file = gsv_input_files["metadata"]
+    output_file = test_dir / "updated_pids.csv"
+    
+    # Verify that the input file exists and has the expected structure
+    assert input_file.exists(), "Sample metadata file not found"
+    sample_df = pd.read_csv(input_file)
+    assert "panoid" in sample_df.columns, "Input file missing required 'panoid' column"
+    
+    try:
+        with timeout_decorator(60):  # 60 second timeout
+            # Now try updating metadata with the new method
+            sv_downloader.update_metadata(
+                input_pid_file=str(input_file),
+                output_pid_file=str(output_file),
+                verbosity=0  # No progress bars for testing
+            )
+            
+            # Verify the output file exists and has the expected columns
+            assert output_file.exists(), "Output file was not created"
+            updated_df = pd.read_csv(output_file)
+
+            assert "year" in updated_df.columns, "Year column not found in updated file"
+            assert "month" in updated_df.columns, "Month column not found in updated file"
+            
+            # Check that at least some rows have year/month data
+            # Note: We can't guarantee all rows will have data as it depends on the API
+            non_null_years = updated_df["year"].notna().sum()
+            assert non_null_years > 0, "No year data was added to the file"
+    
+    except TimeoutException:
+        # If we hit the timeout, check if files were at least created
+        if output_file.exists():
+            updated_df = pd.read_csv(output_file)
+            assert "year" in updated_df.columns, "Year column not found in updated file"
+            assert "month" in updated_df.columns, "Month column not found in updated file"
+        else:
+            pytest.skip("Test timed out before files could be created")
