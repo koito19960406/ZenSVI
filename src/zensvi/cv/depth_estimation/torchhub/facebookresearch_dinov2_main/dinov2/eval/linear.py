@@ -381,9 +381,9 @@ def setup_linear_classifiers(sample_output, n_last_blocks_list, learning_rates, 
                     num_classes=num_classes,
                 )
                 linear_classifier = linear_classifier.cuda()
-                linear_classifiers_dict[f"classifier_{n}_blocks_avgpool_{avgpool}_lr_{lr:.5f}".replace(".", "_")] = (
-                    linear_classifier
-                )
+                linear_classifiers_dict[
+                    f"classifier_{n}_blocks_avgpool_{avgpool}_lr_{lr:.5f}".replace(".", "_")
+                ] = linear_classifier
                 optim_param_groups.append({"params": linear_classifier.parameters(), "lr": lr})
 
     linear_classifiers = AllClassifiers(linear_classifiers_dict)
