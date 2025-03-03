@@ -291,10 +291,10 @@ class ObjectDetector:
             for row in object_rows:
                 filename = row["filename_key"]
                 phrase = row["phrase"]
-                
+
                 if filename not in grouped_summary:
                     grouped_summary[filename] = {}
-                
+
                 if phrase not in grouped_summary[filename]:
                     grouped_summary[filename][phrase] = 1
                 else:
@@ -311,7 +311,7 @@ class ObjectDetector:
                 with open(json_path, "w") as f:
                     json.dump(object_rows, f, indent=2)
                 print(f"Saved detection summary to {json_path}")
-                
+
                 # Save grouped results if requested
                 if group_by_object and grouped_summary:
                     grouped_json_path = summary_dir / "detection_summary_grouped.json"
@@ -325,7 +325,7 @@ class ObjectDetector:
                 csv_path = summary_dir / "detection_summary.csv"
                 df.to_csv(csv_path, index=False)
                 print(f"Saved detection summary CSV to {csv_path}")
-                
+
                 # Save grouped results if requested
                 if group_by_object and grouped_summary:
                     # Convert nested dict to dataframe
@@ -333,7 +333,7 @@ class ObjectDetector:
                     for filename, objects in grouped_summary.items():
                         for phrase, count in objects.items():
                             rows.append({"filename_key": filename, "object": phrase, "count": count})
-                    
+
                     grouped_df = pd.DataFrame(rows)
                     grouped_csv_path = summary_dir / "detection_summary_grouped.csv"
                     grouped_df.to_csv(grouped_csv_path, index=False)

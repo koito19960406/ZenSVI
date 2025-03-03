@@ -71,9 +71,7 @@ def test_detect_objects_no_output_directories_error(output_dir, input_dir):
     detector = ObjectDetector(text_prompt="tree .", box_threshold=0.45, text_threshold=0.25)
     image_input = str(input_dir / "images")
     with pytest.raises(ValueError, match="At least one of dir_image_output or dir_summary_output must be provided"):
-        detector.detect_objects(
-            dir_input=image_input, dir_image_output=None, dir_summary_output=None, max_workers=1
-        )
+        detector.detect_objects(dir_input=image_input, dir_image_output=None, dir_summary_output=None, max_workers=1)
 
 
 def test_detect_objects_single_image_summary_only(output_dir, input_dir):
@@ -97,12 +95,12 @@ def test_detect_objects_grouped_summary(output_dir, input_dir):
         dir_image_output=None,
         dir_summary_output=summary_output,
         max_workers=1,
-        group_by_object=True
+        group_by_object=True,
     )
     # Check that both detailed and grouped summary files were created
     assert Path(summary_output).joinpath("detection_summary.json").exists()
     assert Path(summary_output).joinpath("detection_summary_grouped.json").exists()
-    
+
     # Additional test for CSV format
     summary_output_csv = str(output_dir / "grouped_summary_csv")
     detector.detect_objects(
@@ -111,7 +109,7 @@ def test_detect_objects_grouped_summary(output_dir, input_dir):
         dir_summary_output=summary_output_csv,
         max_workers=1,
         group_by_object=True,
-        save_format="csv"
+        save_format="csv",
     )
     # Check that both detailed and grouped summary CSV files were created
     assert Path(summary_output_csv).joinpath("detection_summary.csv").exists()
@@ -129,11 +127,11 @@ def test_detect_objects_combined_with_grouping(output_dir, input_dir):
         dir_summary_output=summary_output,
         max_workers=1,
         group_by_object=True,
-        save_format="json csv"
+        save_format="json csv",
     )
     # Check that images are created
     assert len(list(Path(dir_image_output).glob("*.jpg"))) > 0
-    
+
     # Check that all summary files were created
     assert Path(summary_output).joinpath("detection_summary.json").exists()
     assert Path(summary_output).joinpath("detection_summary_grouped.json").exists()
