@@ -182,10 +182,10 @@ class ImageTransformer:
         """
         # Implementation
         rows, cols = img.shape[:2]
-        
+
         # Determine if the input has an alpha channel
         has_alpha = img.shape[2] == 4 if len(img.shape) > 2 else False
-        
+
         R = cols / (2 * math.pi)
         D = int(2 * R)
         cx, cy = R, R
@@ -203,7 +203,7 @@ class ImageTransformer:
         new_img = np.zeros((D, D, 4), dtype=np.uint8)
         # Set the alpha channel to 0 (fully transparent)
         new_img[:, :, 3] = 0
-        
+
         # Only apply colors inside the mask, and set alpha to 255 (fully opaque)
         if has_alpha:
             # If input has alpha channel, copy it
@@ -225,10 +225,10 @@ class ImageTransformer:
             np.ndarray: Fisheye projected image with transparent background.
         """
         rows, cols = img.shape[:2]
-        
+
         # Determine if the input has an alpha channel
         has_alpha = img.shape[2] == 4 if len(img.shape) > 2 else False
-        
+
         R = cols / (2 * math.pi)
         D = int(2 * R)
         cx, cy = R, R
@@ -246,7 +246,7 @@ class ImageTransformer:
         new_img = np.zeros((D, D, 4), dtype=np.uint8)
         # Set the alpha channel to 0 (fully transparent)
         new_img[:, :, 3] = 0
-        
+
         # Only apply colors inside the mask, and set alpha to 255 (fully opaque)
         if has_alpha:
             # If input has alpha channel, copy it
@@ -268,10 +268,10 @@ class ImageTransformer:
             np.ndarray: Fisheye projected image with transparent background.
         """
         rows, cols = img.shape[:2]
-        
+
         # Determine if the input has an alpha channel
         has_alpha = img.shape[2] == 4 if len(img.shape) > 2 else False
-        
+
         R = cols / (2 * math.pi)
         D = int(2 * R)
         cx, cy = R, R
@@ -296,7 +296,7 @@ class ImageTransformer:
         new_img = np.zeros((D, D, 4), dtype=np.uint8)
         # Set the alpha channel to 0 (fully transparent)
         new_img[:, :, 3] = 0
-        
+
         # Only apply colors inside the mask, and set alpha to 255 (fully opaque)
         if has_alpha:
             # If input has alpha channel, copy it
@@ -318,10 +318,10 @@ class ImageTransformer:
             np.ndarray: Fisheye projected image with transparent background.
         """
         rows, cols = img.shape[:2]
-        
+
         # Determine if the input has an alpha channel
         has_alpha = img.shape[2] == 4 if len(img.shape) > 2 else False
-        
+
         R = cols / (2 * math.pi)
         D = int(2 * R)
         cx, cy = R, R
@@ -339,7 +339,7 @@ class ImageTransformer:
         new_img = np.zeros((D, D, 4), dtype=np.uint8)
         # Set the alpha channel to 0 (fully transparent)
         new_img[:, :, 3] = 0
-        
+
         # Only apply colors inside the mask, and set alpha to 255 (fully opaque)
         if has_alpha:
             # If input has alpha channel, copy it
@@ -441,11 +441,11 @@ class ImageTransformer:
         def run(path_input, path_output, show_size, style, theta, aspects, FOV):
             # Use IMREAD_UNCHANGED to preserve alpha channel if present
             img_raw = cv2.imread(str(path_input), cv2.IMREAD_UNCHANGED)
-            
+
             # If the image has no alpha channel, convert it to 3-channel BGR
             if len(img_raw.shape) == 2:  # Grayscale
                 img_raw = cv2.cvtColor(img_raw, cv2.COLOR_GRAY2BGR)
-            
+
             if use_upper_half:
                 img_raw = img_raw[: img_raw.shape[0] // 2, :]
             if style == "equidistant_fisheye":
