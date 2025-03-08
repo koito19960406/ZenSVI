@@ -2,6 +2,20 @@
 
 <!--next-version-placeholder-->
 
+## v1.2.0 (01/03/2025)
+- **GSV Metadata Update Capability**: Added new `update_metadata` method for GSVDownloader to update year/month metadata for existing panorama IDs without redoing the entire download process.
+
+## v1.1.0 (28/02/2025)
+- **KartaView API Fix**: Fixed KartaView download API and added retry decorator for improved reliability.
+- **Object Detection Enhancement**: Added new object detection functionality.
+- **Improved Segmentation**: Enhanced pixel ratio calculation in segmentation with improved normalization.
+- **Path Handling Improvement**: Using Path() for path_pid existence check for better cross-platform compatibility.
+- **Dependency Management**: Updated poetry.lock with new dependencies and version upgrades.
+- **Removed Deprecated Modules**: Cleaned up codebase by removing deprecated modules.
+- **Added Example Notebooks**: Included Jupyter notebooks demonstrating download, metadata, transform, and visualization capabilities.
+- **Verbosity Control**: Added enhanced verbosity control for better user experience.
+- **Documentation Update**: Updated README.md with improved documentation.
+
 ## v1.0.0 (10/12/2024)
 - **License Changed**: Changed license from CC BY-SA 4.0 to MIT License
 - **AMSDownloader Introduced**: New downloader for Amsterdam Street View Images (SVI). Usage: `from zensvi.download import AMSDownloader`.

@@ -42,6 +42,7 @@ This package is a one-stop solution for downloading, cleaning, and analyzing str
     - [Running Embeddings](#running-embeddings)
     - [Running Low-Level Feature Extraction](#running-low-level-feature-extraction)
     - [Transforming Images](#transforming-images)
+    - [Creating Point Clouds from Images](#creating-point-clouds-from-images)
     - [Visualizing Results](#visualizing-results)
   - [Contributing](#contributing)
   - [License](#license)
@@ -80,12 +81,12 @@ downloader.download_svi("path/to/output_directory", input_place_name="Singapore"
 
 ***KartaView***
 
-For downloading images from KartaView, utilize the KartaViewDownloader:
+For downloading images from KartaView, utilize the KVDownloader:
 
 ```python
-from zensvi.download import KartaViewDownloader
+from zensvi.download import KVDownloader
 
-downloader = KartaViewDownloader()
+downloader = KVDownloader()
 # with lat and lon:
 downloader.download_svi("path/to/output_directory", lat=1.290270, lon=103.851959)
 # with a csv file with lat and lon:
@@ -112,6 +113,23 @@ downloader.download_svi("path/to/output_directory", input_csv_file="path/to/csv_
 downloader.download_svi("path/to/output_directory", input_shp_file="path/to/shapefile.shp")
 # with a place name that works on OpenStreetMap:
 downloader.download_svi("path/to/output_directory", input_place_name="Amsterdam")
+```
+
+***Global Streetscapes***
+
+For downloading the NUS Global Streetscapes dataset, utilize the GSDownloader:
+
+```python
+from zensvi.download import GSDownloader
+
+downloader = GSDownloader()
+# Download all data
+downloader.download_all_data(local_dir="data/")
+# Or download specific subsets
+downloader.download_manual_labels(local_dir="manual_labels/")
+downloader.download_train(local_dir="manual_labels/train/")
+downloader.download_test(local_dir="manual_labels/test/")
+downloader.download_img_tar(local_dir="manual_labels/img/")
 ```
 
 ### Analyzing Metadata of Mapillary Images
@@ -181,6 +199,22 @@ classifier.classify(
 )
 ```
 
+You can also use the ViT version for perception classification:
+
+```python
+from zensvi.cv import ClassifierPerceptionViT
+
+classifier = ClassifierPerceptionViT(
+    perception_study="safer", # Other options are "livelier", "wealthier", "more beautiful", "more boring", "more depressing"
+)
+dir_input = "path/to/input"
+dir_summary_output = "path/to/summary_output"
+classifier.classify(
+    dir_input,
+    dir_summary_output=dir_summary_output
+)
+```
+
 ### Running Global Streetscapes Prediction
 To predict the Global Streetscapes indicators, use:
 - `ClassifierGlare`: Whether the image contains glare
@@ -213,8 +247,8 @@ from zensvi.cv import ObjectDetector
 
 detector = ObjectDetector(
     text_prompt="tree",  # specify the object(s) (e.g., single type: "building", multi-type: "car . tree")
-    box_threshold=0.45,
-    text_threshold=0.25
+    box_threshold=0.35,  # confidence threshold for box detection
+    text_threshold=0.25  # confidence threshold for text
 )
 
 detector.detect_objects(
@@ -293,24 +327,71 @@ image_transformer.transform_images(
 )
 ```
 
-### Visualizing Results
-To visualize the results, use the `plot_map` and `plot_image` functions:
+### Creating Point Clouds from Images
+To create a point cloud from images with depth information, use the `PointCloudProcessor`:
 
 ```python
-from zensvi.visualization import plot_map, plot_image
+from zensvi.transform import PointCloudProcessor
+import pandas as pd
+
+processor = PointCloudProcessor(
+    image_folder="path/to/image_directory",
+    depth_folder="path/to/depth_maps_directory",
+    output_coordinate_scale=45,  # scaling factor for output coordinates
+    depth_max=255  # maximum depth value for normalization
+)
+
+# Create a DataFrame with image information
+# The DataFrame should have columns similar to this structure:
+data = pd.DataFrame({
+    "id": ["Y2y7An1aRCeA5Y4nW7ITrg", "VSsVjWlr4orKerabFRy-dQ"],  # image identifiers
+    "heading": [3.627108491916069, 5.209303414492613],           # heading in radians
+    "lat": [40.77363963371641, 40.7757528007],                   # latitude
+    "lon": [-73.95482278589579, -73.95668603003708],             # longitude
+    "x_proj": [4979010.676803163, 4979321.30902424],             # projected x coordinate
+    "y_proj": [-8232613.214232705, -8232820.629621736]           # projected y coordinate
+})
+
+# Process images and save point clouds
+processor.process_multiple_images(
+    data=data,
+    output_dir="path/to/output_directory",
+    save_format="ply"  # output format, can be "pcd", "ply", "npz", or "csv"
+)
+```
+
+### Visualizing Results
+To visualize the results, use the `plot_map`, `plot_image`, `plot_hist`, and `plot_kde` functions:
+
+```python
+from zensvi.visualization import plot_map, plot_image, plot_hist, plot_kde
 
 # Plotting a map
 plot_map(
-    "path/to/pid_file.csv",  # path to the file containing latitudes and longitudes
+    path_pid="path/to/pid_file.csv",  # path to the file containing latitudes and longitudes
     variable_name="vegetation", 
     plot_type="point"  # this can be either "point", "line", or "hexagon"
 )
 
 # Plotting images in a grid
 plot_image(
-    "path/to/image_directory", 
-    4,  # number of rows
-    5  # number of columns
+    dir_image_input="path/to/image_directory", 
+    n_row=4,  # number of rows
+    n_col=5   # number of columns
+)
+
+# Plotting a histogram
+plot_hist(
+    dir_input="path/to/data.csv",
+    columns=["vegetation"],  # list of column names to plot histograms for
+    title="Vegetation Distribution by Neighborhood"
+)
+
+# Plotting a kernel density estimate
+plot_kde(
+    dir_input="path/to/data.csv",
+    columns=["vegetation"],  # list of column names to plot KDEs for
+    title="Vegetation Density by Neighborhood"
 )
 ```
 
