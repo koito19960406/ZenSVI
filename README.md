@@ -170,7 +170,7 @@ from zensvi.cv import ClassifierPlaces365
 
 # initialize the classifier
 classifier = ClassifierPlaces365(
-    device="cpu",  # device to use (either "cpu" or "gpu")
+    device="cpu",  # device to use (either "cpu", "cuda", or "mps)
 )
 
 # set arguments
