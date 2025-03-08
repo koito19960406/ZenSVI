@@ -112,7 +112,7 @@ def test_single_image(output_dir, input_dir, all_devices):
 
 def test_calculate_pixel_ratio_post_process(output_dir, input_dir):
     segmenter = Segmenter(dataset="mapillary", task="panoptic")
-    image_input = str(input_dir / "cityscapes_semantic")
+    image_input = str(input_dir / "mapillary_semantic")
     image_output = output_dir / "calculate_pixel_ratio_post_process"
     segmenter.calculate_pixel_ratio_post_process(image_input, image_output)
     assert len(list(image_output.glob("*"))) > 0
@@ -120,7 +120,7 @@ def test_calculate_pixel_ratio_post_process(output_dir, input_dir):
 
 def test_calculate_pixel_ratio_post_process_single_file(output_dir, input_dir):
     segmenter = Segmenter(dataset="mapillary", task="panoptic")
-    image_input = str(input_dir / "cityscapes_semantic/-3vfS0_iiYVZKh_LEVlHew_colored_segmented.png")
+    image_input = str(input_dir / "mapillary_semantic/-3vfS0_iiYVZKh_LEVlHew_colored_segmented.png")
     image_output = output_dir / "calculate_pixel_ratio_post_process_single_file"
     segmenter.calculate_pixel_ratio_post_process(image_input, image_output)
     assert len(list(image_output.glob("*"))) > 0
@@ -151,7 +151,7 @@ def test_transformed_segmentation_pixel_ratio(output_dir, input_dir):
     3. Verify that the pixel ratios for each image sum to 1 (within tolerance)
     """
     # Step 1: Transform segmented images to orthographic fish-eye projection
-    segmented_input = input_dir / "cityscapes_semantic"
+    segmented_input = input_dir / "mapillary_semantic"
 
     # Find all colored_segmented.png files
     segmented_files = [file for file in segmented_input.glob("*_colored_segmented.png")]
@@ -163,10 +163,10 @@ def test_transformed_segmentation_pixel_ratio(output_dir, input_dir):
     # Use the ImageTransformer to transform the images - just use orthographic_fisheye
     for file in segmented_files:
         transformer = ImageTransformer(str(file), str(transform_output), log_path=output_dir / "transformation.log")
-        transformer.transform_images(style_list="orthographic_fisheye")
+        transformer.transform_images(style_list="orthographic_fisheye", use_upper_half=True)
 
     # Step 2: Calculate pixel ratios on transformed images
-    segmenter = Segmenter(dataset="cityscapes", task="semantic")
+    segmenter = Segmenter(dataset="mapillary", task="semantic")
     orthographic_dir = transform_output / "orthographic_fisheye"
     ratio_output = output_dir / "transformed_pixel_ratios"
 
@@ -200,6 +200,22 @@ def test_transformed_segmentation_pixel_ratio(output_dir, input_dir):
         f"Only {valid_percentage * 100:.2f}% of rows sum to 1.0 within tolerance. "
         f"Expected at least {min_valid_percentage * 100:.2f}%"
     )
+    
+    # Additional check to ensure Lane Marking - General column doesn't have a value close to 0.210
+    # which would indicate that white background is still being counted
+    if 'Lane Marking - General' in df.columns:
+        lane_marking_values = df['Lane Marking - General']
+        # Check that no value is close to 0.210 (previous erroneous constant value)
+        # Use a reasonable tolerance range
+        error_tolerance = 0.01
+        error_value_present = np.any(np.abs(lane_marking_values - 0.210) < error_tolerance)
+        assert not error_value_present, (
+            f"Found values around 0.210 in Lane Marking - General column, "
+            f"which suggests the white background is still being counted."
+        )
+        
+        # Print for debugging
+        print(f"Lane Marking - General values: {lane_marking_values.describe()}")
 
     # Also check JSON file
     json_file = ratio_output / "pixel_ratios.json"
@@ -221,6 +237,20 @@ def test_transformed_segmentation_pixel_ratio(output_dir, input_dir):
     assert valid_json_percentage >= min_valid_percentage, (
         f"Only {valid_json_percentage * 100:.2f}% of images in JSON have ratio sums close to 1.0. "
         f"Expected at least {min_valid_percentage * 100:.2f}%"
+    )
+    
+    # Check JSON data for Lane Marking - General values close to 0.210
+    lane_marking_errors = 0
+    error_tolerance = 0.01  # Same tolerance as used for DataFrame check
+    for image_key, ratios in json_data.items():
+        if 'Lane Marking - General' in ratios:
+            if abs(ratios['Lane Marking - General'] - 0.210) < error_tolerance:
+                lane_marking_errors += 1
+                print(f"Image {image_key} has Lane Marking - General value: {ratios['Lane Marking - General']}")
+    
+    assert lane_marking_errors == 0, (
+        f"Found {lane_marking_errors} images with Lane Marking - General values around 0.210 in JSON data, "
+        f"which suggests the white background is still being counted."
     )
 
 
