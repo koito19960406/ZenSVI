@@ -178,10 +178,14 @@ class ImageTransformer:
             img (np.ndarray): Source image to transform.
 
         Returns:
-            np.ndarray: Fisheye projected image.
+            np.ndarray: Fisheye projected image with transparent background.
         """
-        # Implem
-        rows, cols, c = img.shape
+        # Implementation
+        rows, cols = img.shape[:2]
+
+        # Determine if the input has an alpha channel
+        has_alpha = img.shape[2] == 4 if len(img.shape) > 2 else False
+
         R = cols / (2 * math.pi)
         D = int(2 * R)
         cx, cy = R, R
@@ -195,9 +199,19 @@ class ImageTransformer:
 
         mask = r < R
 
-        new_img = np.zeros((D, D, c), dtype=np.uint8)
-        new_img.fill(255)
-        new_img[y[mask], x[mask]] = img[yp[mask], xp[mask]]
+        # Create a 4-channel RGBA image with transparent background
+        new_img = np.zeros((D, D, 4), dtype=np.uint8)
+        # Set the alpha channel to 0 (fully transparent)
+        new_img[:, :, 3] = 0
+
+        # Only apply colors inside the mask, and set alpha to 255 (fully opaque)
+        if has_alpha:
+            # If input has alpha channel, copy it
+            new_img[y[mask], x[mask]] = img[yp[mask], xp[mask]]
+        else:
+            # For RGB input, copy color channels and set alpha to 255
+            new_img[y[mask], x[mask], :3] = img[yp[mask], xp[mask]]
+            new_img[y[mask], x[mask], 3] = 255
 
         return new_img
 
@@ -208,9 +222,13 @@ class ImageTransformer:
             img (np.ndarray): Source image to transform.
 
         Returns:
-            np.ndarray: Fisheye projected image.
+            np.ndarray: Fisheye projected image with transparent background.
         """
-        rows, cols, c = img.shape
+        rows, cols = img.shape[:2]
+
+        # Determine if the input has an alpha channel
+        has_alpha = img.shape[2] == 4 if len(img.shape) > 2 else False
+
         R = cols / (2 * math.pi)
         D = int(2 * R)
         cx, cy = R, R
@@ -224,9 +242,19 @@ class ImageTransformer:
 
         mask = r < R
 
-        new_img = np.zeros((D, D, c), dtype=np.uint8)
-        new_img.fill(255)
-        new_img[y[mask], x[mask]] = img[yp[mask], xp[mask]]
+        # Create a 4-channel RGBA image with transparent background
+        new_img = np.zeros((D, D, 4), dtype=np.uint8)
+        # Set the alpha channel to 0 (fully transparent)
+        new_img[:, :, 3] = 0
+
+        # Only apply colors inside the mask, and set alpha to 255 (fully opaque)
+        if has_alpha:
+            # If input has alpha channel, copy it
+            new_img[y[mask], x[mask]] = img[yp[mask], xp[mask]]
+        else:
+            # For RGB input, copy color channels and set alpha to 255
+            new_img[y[mask], x[mask], :3] = img[yp[mask], xp[mask]]
+            new_img[y[mask], x[mask], 3] = 255
 
         return new_img
 
@@ -237,9 +265,13 @@ class ImageTransformer:
             img (np.ndarray): Source image to transform.
 
         Returns:
-            np.ndarray: Fisheye projected image.
+            np.ndarray: Fisheye projected image with transparent background.
         """
-        rows, cols, c = img.shape
+        rows, cols = img.shape[:2]
+
+        # Determine if the input has an alpha channel
+        has_alpha = img.shape[2] == 4 if len(img.shape) > 2 else False
+
         R = cols / (2 * math.pi)
         D = int(2 * R)
         cx, cy = R, R
@@ -260,11 +292,19 @@ class ImageTransformer:
         # Create a mask for the valid fisheye region
         mask = r <= R
 
-        # Initialize a new image and fill it with a white background
-        new_img = np.full((D, D, c), 255, dtype=np.uint8)
+        # Create a 4-channel RGBA image with transparent background
+        new_img = np.zeros((D, D, 4), dtype=np.uint8)
+        # Set the alpha channel to 0 (fully transparent)
+        new_img[:, :, 3] = 0
 
-        # Use advanced indexing to map the original pixels to the new image
-        new_img[y[mask], x[mask]] = img[yp[mask], xp[mask]]
+        # Only apply colors inside the mask, and set alpha to 255 (fully opaque)
+        if has_alpha:
+            # If input has alpha channel, copy it
+            new_img[y[mask], x[mask]] = img[yp[mask], xp[mask]]
+        else:
+            # For RGB input, copy color channels and set alpha to 255
+            new_img[y[mask], x[mask], :3] = img[yp[mask], xp[mask]]
+            new_img[y[mask], x[mask], 3] = 255
 
         return new_img
 
@@ -275,9 +315,13 @@ class ImageTransformer:
             img (np.ndarray): Source image to transform.
 
         Returns:
-            np.ndarray: Fisheye projected image.
+            np.ndarray: Fisheye projected image with transparent background.
         """
-        rows, cols, c = img.shape
+        rows, cols = img.shape[:2]
+
+        # Determine if the input has an alpha channel
+        has_alpha = img.shape[2] == 4 if len(img.shape) > 2 else False
+
         R = cols / (2 * math.pi)
         D = int(2 * R)
         cx, cy = R, R
@@ -291,9 +335,19 @@ class ImageTransformer:
 
         mask = r < R
 
-        new_img = np.zeros((D, D, c), dtype=np.uint8)
-        new_img.fill(255)
-        new_img[y[mask], x[mask]] = img[yp[mask], xp[mask]]
+        # Create a 4-channel RGBA image with transparent background
+        new_img = np.zeros((D, D, 4), dtype=np.uint8)
+        # Set the alpha channel to 0 (fully transparent)
+        new_img[:, :, 3] = 0
+
+        # Only apply colors inside the mask, and set alpha to 255 (fully opaque)
+        if has_alpha:
+            # If input has alpha channel, copy it
+            new_img[y[mask], x[mask]] = img[yp[mask], xp[mask]]
+        else:
+            # For RGB input, copy color channels and set alpha to 255
+            new_img[y[mask], x[mask], :3] = img[yp[mask], xp[mask]]
+            new_img[y[mask], x[mask], 3] = 255
 
         return new_img
 
@@ -385,27 +439,37 @@ class ImageTransformer:
         ]
 
         def run(path_input, path_output, show_size, style, theta, aspects, FOV):
-            img_raw = cv2.imread(str(path_input), cv2.IMREAD_COLOR)
+            # Use IMREAD_UNCHANGED to preserve alpha channel if present
+            img_raw = cv2.imread(str(path_input), cv2.IMREAD_UNCHANGED)
+
+            # If the image has no alpha channel, convert it to 3-channel BGR
+            if len(img_raw.shape) == 2:  # Grayscale
+                img_raw = cv2.cvtColor(img_raw, cv2.COLOR_GRAY2BGR)
+
             if use_upper_half:
                 img_raw = img_raw[: img_raw.shape[0] // 2, :]
             if style == "equidistant_fisheye":
                 if not path_output.exists():
                     img_new = self.equidistant_fisheye(img_raw)
+                    # Save with transparency (PNG format required for transparency)
                     cv2.imwrite(str(path_output), img_new)
 
             elif style == "orthographic_fisheye":
                 if not path_output.exists():
                     img_new = self.orthographic_fisheye(img_raw)
+                    # Save with transparency
                     cv2.imwrite(str(path_output), img_new)
 
             elif style == "stereographic_fisheye":
                 if not path_output.exists():
                     img_new = self.stereographic_fisheye(img_raw)
+                    # Save with transparency
                     cv2.imwrite(str(path_output), img_new)
 
             elif style == "equisolid_fisheye":
                 if not path_output.exists():
                     img_new = self.equisolid_fisheye(img_raw)
+                    # Save with transparency
                     cv2.imwrite(str(path_output), img_new)
 
             elif style == "perspective":
