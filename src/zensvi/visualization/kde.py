@@ -27,7 +27,7 @@ def plot_kde(
     using Seaborn.
 
     Args:
-        path_input (Union[str, Path]): Path to the CSV file.
+        dir_input (Union[str, Path]): Path to the CSV file.
         columns (List[str]): List of column names to plot KDEs for.
         path_output (Union[str, Path], optional): Path where the plotted figure will be saved. Defaults to None.
         legend (bool): Whether to add a legend to the plot. Defaults to True.
