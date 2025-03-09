@@ -8,6 +8,7 @@ from typing import List, Union
 
 import cv2
 import pandas as pd
+import torch
 from groundingdino.util.inference import annotate, load_image, load_model, predict
 from torch.utils.data import Dataset
 
@@ -98,6 +99,7 @@ class ObjectDetector:
         text_threshold (float): Text confidence threshold.
         model_lock (threading.Lock): Lock for thread-safe model inference.
         verbosity (int): Level of verbosity for progress reporting.
+        device: The device used for inference. Options: "cpu", "cuda", or "mps".
     """
 
     def __init__(
@@ -108,6 +110,7 @@ class ObjectDetector:
         box_threshold: float = 0.35,
         text_threshold: float = 0.25,
         verbosity: int = 1,
+        device=None,  # Options: "cpu", "cuda", or "mps"
     ):
         self.model = load_model(config_path, weights_path)
         self.text_prompt = text_prompt
@@ -116,6 +119,32 @@ class ObjectDetector:
         self.verbosity = verbosity
         # Create a lock to serialize access to the model inference
         self.model_lock = threading.Lock()
+        self.device = self._get_device(device)
+
+    def _get_device(self, device) -> torch.device:
+        """Get the appropriate device for running the model.
+
+        Args:
+            device (str, optional): Device to use. Options are "cpu", "cuda", or "mps".
+
+        Returns:
+            torch.device: The device to use for running the model.
+
+        Raises:
+            ValueError: If an unknown device type is specified.
+        """
+        if device is not None:
+            if device not in ["cpu", "cuda", "mps"]:
+                raise ValueError(f"Unknown device: {device}")
+            else:
+                print(f"Using {device.upper()}")
+                return torch.device(device)
+        if torch.cuda.is_available():
+            print("Using GPU")
+            return torch.device("cuda")
+        else:
+            print("Using CPU")
+            return torch.device("cpu")
 
     def _process_image(self, image_file: Path, dir_image_output: Union[str, Path, None]) -> dict:
         """Process a single image for object detection.
@@ -146,6 +175,7 @@ class ObjectDetector:
                 caption=self.text_prompt,
                 box_threshold=self.box_threshold,
                 text_threshold=self.text_threshold,
+                device=self.device,
             )
 
         # Convert boxes and logits to a format that can be JSON serialized
