@@ -31,6 +31,9 @@ preferred-citation:
     given-names: "Matias"
   - family-names: "Biljecki"
     given-names: "Filip"
-  title: "ZenSVI: An Open-Source Software for the Integrated Acquisition, Processing and Analysis of Street View Imagery Towards Scalable Urban Science"
-  journal: "arXiv preprint arXiv:2412.18641"
-  year: 2023 
+  title: "ZenSVI: An open-source software for the integrated acquisition, processing and analysis of street view imagery towards scalable urban science"
+  journal: "Computers, Environment and Urban Systems"
+  volume: 119
+  pages: 102283
+  doi: 10.1016/j.compenvurbsys.2025.102283
+  year: 2025 
