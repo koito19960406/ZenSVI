@@ -151,7 +151,7 @@ class KVDownloader(BaseDownloader):
 
     def _filter_pids_date(self, pid_df, start_date, end_date):
         # create a temporary column date from captured_at (milliseconds from Unix epoch)
-        pid_df["date"] = pd.to_datetime(pid_df["shotDate"], format="%Y-%m-%d %H:%M:%S")
+        pid_df["date"] = pd.to_datetime(pid_df["shotDate"], format="%Y-%m-%d %H:%M:%S.%f")
         # check if start_date and end_date are in the correct format with regex. If not, raise error
         if start_date is not None:
             try:
