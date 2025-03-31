@@ -406,11 +406,14 @@ Interested in contributing? Check out the contributing guidelines. Please note t
 Please cite the following paper if you use `zensvi` in a scientific publication:
 
 ```bibtex
-@article{ito2024zensvi,
-    title={ZenSVI: An Open-Source Software for the Integrated Acquisition, Processing and Analysis of Street View Imagery Towards Scalable Urban Science},
-    author={Ito, Koichi and Zhu, Yihan and Abdelrahman, Mahmoud and Liang, Xiucheng and Fan, Zicheng and Hou, Yujun and Zhao, Tianhong and Ma, Rui and Fujiwara, Kunihiko and Ouyang, Jiani and Quintana, Matias and Biljecki, Filip},
-    journal={arXiv preprint arXiv:2412.18641},
-    year={2024}
+@article{2025_ceus_zensvi,
+  author = {Ito, Koichi and Zhu, Yihan and Abdelrahman, Mahmoud and Liang, Xiucheng and Fan, Zicheng and Hou, Yujun and Zhao, Tianhong and Ma, Rui and Fujiwara, Kunihiko and Ouyang, Jiani and Quintana, Matias and Biljecki, Filip},
+  doi = {10.1016/j.compenvurbsys.2025.102283},
+  journal = {Computers, Environment and Urban Systems},
+  pages = {102283},
+  title = {ZenSVI: An open-source software for the integrated acquisition, processing and analysis of street view imagery towards scalable urban science},
+  volume = {119},
+  year = {2025}
 }
 ```
 
