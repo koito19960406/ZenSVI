@@ -253,7 +253,7 @@ detector = ObjectDetector(
 
 detector.detect_objects(
     dir_input="path/to/image_input_directory",
-    dir_output="path/to/image_output_directory",
+    dir_image_output="path/to/image_output_directory",
     dir_summary_output="path/to/detection_summary_output",
     save_format="json" # or "csv"
 )
