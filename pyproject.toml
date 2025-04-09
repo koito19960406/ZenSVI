@@ -87,6 +87,7 @@ sphinx-autoapi = "^3.0.0"
 sphinx-rtd-theme = "^2.0.0"
 sphinxcontrib-bibtex = "*"
 furo = "*"
+recommonmark = "*"
 
 [tool.black]
 line-length = 120
