@@ -122,7 +122,7 @@ class Logger:
         formatted_message = f"Called function '{func_name}' with: {', '.join(formatted_args)}"
         self.log_info(formatted_message)
 
-    def log_failed_tiles(self, failed_tile_name):
+    def log_failed_tile(self, failed_tile_name):
         """Logs the failed tiles to a log file.
 
         Args:
@@ -134,7 +134,7 @@ class Logger:
         """
         self.log_error(f"Failed to process tile: {failed_tile_name}")
 
-    def log_failed_pids(self, failed_pid):
+    def log_failed_pid(self, failed_pid):
         """Log failed panorama ID.
 
         Args:
