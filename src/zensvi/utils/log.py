@@ -134,7 +134,7 @@ class Logger:
         """
         self.log_error(f"Failed to process tile: {failed_tile_name}")
 
-    def log_failed_pid(self, failed_pid):
+    def log_failed_pids(self, failed_pid):
         """Log failed panorama ID.
 
         Args:
