@@ -236,11 +236,11 @@ class KVDownloader(BaseDownloader):
                     else:
                         if retry == max_retries - 1:  # Last retry
                             if self.logger is not None:
-                                self.logger.log_failed_pids(panoid)
+                                self.logger.log_failed_pid(panoid)
                 except Exception as e:
                     if retry == max_retries - 1:  # Last retry
                         if self.logger is not None:
-                            self.logger.log_failed_pids(panoid)
+                            self.logger.log_failed_pid(panoid)
                         print(f"Error: {e}")
                     else:
                         print(f"Retry {retry + 1}/{max_retries} failed: {e}")

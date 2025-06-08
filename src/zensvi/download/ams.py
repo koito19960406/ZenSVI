@@ -177,7 +177,7 @@ class AMSDownloader(BaseDownloader):
                 image = image.crop((0, 0, image.width, image.height // 2))
             image.save(img_path)
         except Exception:
-            self.logger.log_failed_pids(pid)
+            self.logger.log_failed_pid(pid)
 
     def download_svi(
         self,

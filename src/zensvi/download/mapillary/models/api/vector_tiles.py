@@ -309,7 +309,7 @@ class VectorTilesAdapter(object):
                         if retries > max_retries:
                             print(f"Failed to process tile {tile.x}_{tile.y}_{tile.z} after {max_retries} attempts.")
                             if kwargs["logger"]:
-                                kwargs["logger"].log_failed_tiles(f"{tile.x}_{tile.y}_{tile.z}")
+                                kwargs["logger"].log_failed_tile(f"{tile.x}_{tile.y}_{tile.z}")
 
         return geojson
 

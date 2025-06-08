@@ -279,7 +279,7 @@ class ImageTool:
                         errors += 1
                         failed_panoid = batch_panoids[jobs.index(job)]
                         if logger:
-                            logger.log_failed_pids(failed_panoid)
+                            logger.log_failed_pid(failed_panoid)
 
         print("Total images downloaded:", len(panoids) - errors, "Errors:", errors)
         if logger:
