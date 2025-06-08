@@ -139,13 +139,16 @@ class DepthEstimator:
         response.raise_for_status()
 
         total_size = int(response.headers.get("content-length", 0))
-        with open(checkpoint_path, "wb") as f, tqdm(
-            desc=f"Downloading {checkpoint_path.name}",
-            total=total_size,
-            unit="B",
-            unit_scale=True,
-            unit_divisor=1024,
-        ) as pbar:
+        with (
+            open(checkpoint_path, "wb") as f,
+            tqdm(
+                desc=f"Downloading {checkpoint_path.name}",
+                total=total_size,
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+            ) as pbar,
+        ):
             for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
@@ -169,13 +172,16 @@ class DepthEstimator:
         response.raise_for_status()
 
         total_size = int(response.headers.get("content-length", 0))
-        with open(checkpoint_path, "wb") as f, tqdm(
-            desc=f"Downloading {checkpoint_path.name}",
-            total=total_size,
-            unit="B",
-            unit_scale=True,
-            unit_divisor=1024,
-        ) as pbar:
+        with (
+            open(checkpoint_path, "wb") as f,
+            tqdm(
+                desc=f"Downloading {checkpoint_path.name}",
+                total=total_size,
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+            ) as pbar,
+        ):
             for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
