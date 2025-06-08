@@ -57,6 +57,7 @@ scikit-learn = "^1.5.2"
 addict = "^2.4.0"
 tenacity = "^9.0.0"
 groundingdino-py = "^0.4.0"
+huggingface_hub = "^0.30.0"
 
 [tool.poetry.group.dev.dependencies]
 bleach = "^3.3.0"

@@ -47,11 +47,8 @@ class BaseClassifier(ABC):
             ValueError: If an unknown device type is specified.
         """
         if device is not None:
-            if device not in ["cpu", "cuda", "mps"]:
-                raise ValueError(f"Unknown device: {device}")
-            else:
-                print(f"Using {device.upper()}")
-                return torch.device(device)
+            print(f"Using {device.upper()}")
+            return torch.device(device)
         if torch.cuda.is_available():
             print("Using GPU")
             return torch.device("cuda")
