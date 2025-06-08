@@ -107,6 +107,7 @@ extend-ignore = "E203, W503"
 [tool.pydocstyle]
 convention = "google"
 add-ignore = ["D100", "D104", "D415", "D107", "D205", "D105"]
+match-dir = "(?!.*DepthAnythingV2).*"
 
 [tool.pytest.ini_options]
 addopts = "--cov-config=.coveragerc"
