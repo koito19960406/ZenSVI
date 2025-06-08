@@ -58,6 +58,8 @@ addict = "^2.4.0"
 tenacity = "^9.0.0"
 groundingdino-py = "^0.4.0"
 huggingface_hub = "^0.30.0"
+gradio-imageslider = "^0.0.20"
+gradio = "4.29.0"
 
 [tool.poetry.group.dev.dependencies]
 bleach = "^3.3.0"
