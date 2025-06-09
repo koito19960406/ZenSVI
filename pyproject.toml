@@ -58,6 +58,8 @@ addict = "^2.4.0"
 tenacity = "^9.0.0"
 groundingdino-py = "^0.4.0"
 huggingface_hub = "^0.30.0"
+gradio-imageslider = "^0.0.20"
+gradio = "4.29.0"
 
 [tool.poetry.group.dev.dependencies]
 bleach = "^3.3.0"
@@ -105,6 +107,7 @@ extend-ignore = "E203, W503"
 [tool.pydocstyle]
 convention = "google"
 add-ignore = ["D100", "D104", "D415", "D107", "D205", "D105"]
+match-dir = "(?!.*DepthAnythingV2).*"
 
 [tool.pytest.ini_options]
 addopts = "--cov-config=.coveragerc"
