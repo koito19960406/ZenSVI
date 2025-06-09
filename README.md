@@ -266,7 +266,10 @@ To estimate the depth of the images, use the `DepthEstimator`:
 from zensvi.cv import DepthEstimator
 
 depth_estimator = DepthEstimator(
-    task="relative" # task to perform (either "relative" or "absolute")
+    device="cpu",  # device to use (either "cpu", "cuda", or "mps")
+    task="relative", # task to perform (either "relative" or "absolute")
+    encoder="vitl", # encoder variant ("vits", "vitb", "vitl", "vitg")
+    max_depth=80.0 # maximum depth for absolute estimation (only used when task="absolute")
 )
 
 dir_input = "path/to/input"
