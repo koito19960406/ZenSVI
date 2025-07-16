@@ -1,16 +1,15 @@
-import sys
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import List, Tuple, Union
+
 import cv2
 import numpy as np
-import requests
-import torch
-from PIL import Image
-from torch.utils.data import DataLoader, Dataset
-from tqdm import tqdm
 import open3d as o3d
 import plotly.graph_objects as go
+import torch
+from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
 
 
 class ImageDataset(Dataset):
@@ -60,15 +59,13 @@ class VGGTProcessor:
         Args:
             vggt_path: Path to VGGT model directory
         """
-        import torch
-        import sys
         import os
+        import sys
         from pathlib import Path
-        from tqdm import tqdm
-        import requests
+
+        import torch
 
         print("=== VGGT Processor Initialization Started ===")
-
         # Add vggt to Python path
         vggt_path = os.path.join(os.path.dirname(__file__), "vggt")
         print(f"VGGT Path: {vggt_path}")
@@ -150,9 +147,9 @@ class VGGTProcessor:
             Tuple containing (points, colors, confidence, camera poses)
         """
         try:
+            import numpy as np
             from vggt.utils.geometry import closed_form_inverse_se3
             from vggt.utils.pose_enc import pose_encoding_to_extri_intri
-            import numpy as np
 
             # Process pose encodings
             extrinsic, intrinsic = pose_encoding_to_extri_intri(
