@@ -53,10 +53,10 @@ class ImageDataset(Dataset):
 
 class VGGTProcessor:
     """A class for processing images using VGGT model to generate point clouds."""
-    
+
     def __init__(self, vggt_path: str = "vggt"):
         """Initialize VGGT processor.
-        
+
         Args:
             vggt_path: Path to VGGT model directory
         """
@@ -66,82 +66,86 @@ class VGGTProcessor:
         from pathlib import Path
         from tqdm import tqdm
         import requests
-        
+
         print("=== VGGT Processor Initialization Started ===")
-        
+
         # Add vggt to Python path
         vggt_path = os.path.join(os.path.dirname(__file__), "vggt")
         print(f"VGGT Path: {vggt_path}")
         if vggt_path not in sys.path:
             sys.path.append(vggt_path)
             print(f"Added VGGT path to sys.path")
-            
+
         # Add utils path
         utils_path = os.path.join(vggt_path, "vggt", "utils")
         print(f"Utils Path: {utils_path}")
         if utils_path not in sys.path:
             sys.path.append(utils_path)
             print(f"Added Utils path to sys.path")
-            
+
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"Using Device: {self.device}")
-        
+
         # bfloat16 is supported on Ampere GPUs (Compute Capability 8.0+)
-        self.dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.get_device_capability()[0] >= 8 else torch.float16
+        self.dtype = (
+            torch.bfloat16
+            if torch.cuda.is_available() and torch.cuda.get_device_capability()[0] >= 8
+            else torch.float16
+        )
         print(f"Data Type: {self.dtype}")
-        
+
         # Initialize model with optimized local weight management
         try:
             from vggt.models.vggt import VGGT
-            
+
             # Define local model path
             current_dir = Path(__file__).parent
             models_dir = current_dir.parent.parent.parent / "models"
             models_dir.mkdir(parents=True, exist_ok=True)
-            
+
             # Use from_pretrained with local cache directory for better performance
             print(f"Loading VGGT model with local cache: {models_dir}")
             self.model = VGGT.from_pretrained("facebook/VGGT-1B", cache_dir=str(models_dir))
-            
+
             # Move model to device and set to evaluation mode
             self.model = self.model.to(self.device)
             self.model.eval()
-            
+
             print("=== VGGT Processor Initialization Completed ===")
         except Exception as e:
             print(f"Failed to initialize VGGT model: {str(e)}")
             raise RuntimeError(f"Failed to initialize VGGT model: {str(e)}")
-    
+
     def process_images(self, image_paths: list) -> dict:
         """Process images and generate predictions.
-        
+
         Args:
             image_paths: List of paths to input images
-            
+
         Returns:
             Dictionary containing processed predictions
         """
         try:
             from vggt.utils.load_fn import load_and_preprocess_images
-            
+
             # Load and preprocess images
             images = load_and_preprocess_images(image_paths).to(self.device)
-            
+
             # Generate predictions
             with torch.no_grad():
                 with torch.cuda.amp.autocast(dtype=self.dtype):
                     predictions = self.model(images)
-                    
+
             return predictions
         except Exception as e:
             raise RuntimeError(f"Failed to process images: {str(e)}")
-        
+
     def generate_point_cloud(self, predictions: dict) -> tuple:
         """Generate point cloud from model predictions.
-        
+
         Args:
             predictions: Dictionary containing model predictions
-            
+
         Returns:
             Tuple containing (points, colors, confidence, camera poses)
         """
@@ -149,42 +153,41 @@ class VGGTProcessor:
             from vggt.utils.geometry import closed_form_inverse_se3
             from vggt.utils.pose_enc import pose_encoding_to_extri_intri
             import numpy as np
-            
+
             # Process pose encodings
             extrinsic, intrinsic = pose_encoding_to_extri_intri(
-                predictions["pose_enc"], 
-                predictions["images"].shape[-2:]
+                predictions["pose_enc"], predictions["images"].shape[-2:]
             )
             predictions["extrinsic"] = extrinsic
             predictions["intrinsic"] = intrinsic
-            
+
             # Convert tensors to numpy
             for key in predictions.keys():
                 if isinstance(predictions[key], torch.Tensor):
                     predictions[key] = predictions[key].cpu().numpy().squeeze(0)
-                    
+
             # Extract predictions
             images = predictions["images"]  # (S, 3, H, W)
             world_points = predictions["world_points"]  # (S, H, W, 3)
             conf = predictions["depth_conf"]  # (S, H, W)
-            
+
             # Process colors
             colors = images.transpose(0, 2, 3, 1)  # (S, H, W, 3)
             S, H, W, _ = world_points.shape
-            
+
             # Flatten arrays
             points = world_points.reshape(-1, 3)
             colors_flat = (colors.reshape(-1, 3) * 255).astype(np.uint8)
             conf_flat = conf.reshape(-1)
-            
+
             # Process camera poses
             cam_to_world_mat = closed_form_inverse_se3(predictions["extrinsic"])
             cam_to_world = cam_to_world_mat[:, :3, :]
-            
+
             # Center points
             scene_center = np.mean(points, axis=0)
             points_centered = points - scene_center
-            
+
             return points_centered, colors_flat, conf_flat, cam_to_world
         except Exception as e:
             raise RuntimeError(f"Failed to generate point cloud: {str(e)}")
@@ -197,7 +200,7 @@ class VGGTProcessor:
         dir_output: Path,
     ):
         """Process a batch of images to point cloud.
-        
+
         Args:
             image_files: List of image files
             image_paths: List of image paths
@@ -207,19 +210,19 @@ class VGGTProcessor:
         try:
             # Process images
             predictions = self.process_images(image_paths)
-            
+
             # Generate point cloud
             points, colors, conf, cam_to_world = self.generate_point_cloud(predictions)
-            
+
             # Create point cloud
             pcd = o3d.geometry.PointCloud()
             pcd.points = o3d.utility.Vector3dVector(points)
             pcd.colors = o3d.utility.Vector3dVector(colors / 255.0)
-            
+
             # Save point cloud
             output_file = dir_output / f"{image_files[0].stem}.ply"
             o3d.io.write_point_cloud(str(output_file), pcd)
-            
+
         except Exception as e:
             print(f"Failed to process batch: {str(e)}")
 
@@ -231,7 +234,7 @@ class VGGTProcessor:
         max_workers: int = 4,
     ):
         """Process images to generate point clouds using VGGT model.
-        
+
         Args:
             dir_input: Input directory or file containing images
             dir_output: Output directory for point cloud files
@@ -277,7 +280,16 @@ class VGGTProcessor:
             for future in tqdm(as_completed(futures), total=len(futures), desc="Generating point clouds"):
                 future.result()
 
-    def visualize_point_cloud(self, points, colors_flat, marker_size=1, opacity=0.8, sample_rate=0.1, camera_eye=dict(x=0, y=0, z=-1), camera_up=dict(x=0, y=-1, z=0)):
+    def visualize_point_cloud(
+        self,
+        points,
+        colors_flat,
+        marker_size=1,
+        opacity=0.8,
+        sample_rate=0.1,
+        camera_eye=dict(x=0, y=0, z=-1),
+        camera_up=dict(x=0, y=-1, z=0),
+    ):
         """Visualizes a point cloud using Plotly with random sampling.
 
         Args:
@@ -292,37 +304,32 @@ class VGGTProcessor:
         # Random sampling to reduce density
         num_points = len(points)
         sample_indices = np.random.choice(num_points, int(num_points * sample_rate), replace=False)
-        
+
         # Create visualization with sampled points
-        fig = go.Figure(data=[
-            go.Scatter3d(
-                x=points[sample_indices, 0],
-                y=points[sample_indices, 1],
-                z=points[sample_indices, 2],
-                mode='markers',
-                marker=dict(
-                    size=marker_size,
-                    color=colors_flat[sample_indices],
-                    opacity=opacity
+        fig = go.Figure(
+            data=[
+                go.Scatter3d(
+                    x=points[sample_indices, 0],
+                    y=points[sample_indices, 1],
+                    z=points[sample_indices, 2],
+                    mode="markers",
+                    marker=dict(size=marker_size, color=colors_flat[sample_indices], opacity=opacity),
                 )
-            )
-        ])
+            ]
+        )
 
         # Set layout
         fig.update_layout(
-            title=f'3D Point Cloud Visualization ({int(sample_rate*100)}% sampled)',
+            title=f"3D Point Cloud Visualization ({int(sample_rate*100)}% sampled)",
             scene=dict(
-                xaxis_title='X',
-                yaxis_title='Y', 
-                zaxis_title='Z',
-                aspectmode='data',
-                camera=dict(
-                    eye=camera_eye,
-                    up=camera_up
-                )
+                xaxis_title="X",
+                yaxis_title="Y",
+                zaxis_title="Z",
+                aspectmode="data",
+                camera=dict(eye=camera_eye, up=camera_up),
             ),
             showlegend=False,
-            margin=dict(l=0, r=0, b=0, t=30)
+            margin=dict(l=0, r=0, b=0, t=30),
         )
 
         fig.show()

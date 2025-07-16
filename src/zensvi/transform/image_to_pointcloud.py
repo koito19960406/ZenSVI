@@ -138,7 +138,7 @@ class PointCloudProcessor:
             for x in range(xs):
                 a = x * da
                 r_pixel = depth_img[y, x]
-                
+
                 if use_absolute_depth:
                     # Use absolute depth values
                     r = float(r_pixel)
@@ -226,7 +226,9 @@ class PointCloudProcessor:
         colors = np.asarray(pcd.colors)
         np.savez(output_path, points=points, colors=colors)
 
-    def process_multiple_images(self, data, depth_max=None, use_absolute_depth=True, output_dir=None, save_format="pcd"):
+    def process_multiple_images(
+        self, data, depth_max=None, use_absolute_depth=True, output_dir=None, save_format="pcd"
+    ):
         """Generates a point cloud for each entry in the data based on pre-loaded depth
         and color images.
 
@@ -249,7 +251,9 @@ class PointCloudProcessor:
                 depth_img = images[image_id]["depth"]
                 color_img = images[image_id]["color"]
 
-                pcd = self.convert_to_point_cloud(depth_img, color_img, depth_max=depth_max, use_absolute_depth=use_absolute_depth)
+                pcd = self.convert_to_point_cloud(
+                    depth_img, color_img, depth_max=depth_max, use_absolute_depth=use_absolute_depth
+                )
                 if output_dir:
                     output_path = Path(output_dir) / f"{image_id}.{save_format}"
                     if save_format == "pcd":
@@ -268,7 +272,9 @@ class PointCloudProcessor:
         if not output_dir:
             return pcd_list
 
-    def visualize_point_cloud(self, pcd,marker_size=3,opacity=0.8,camera_eye=dict(x=0, y=0, z=-1),camera_up=dict(x=0, y=-1, z=0)):
+    def visualize_point_cloud(
+        self, pcd, marker_size=3, opacity=0.8, camera_eye=dict(x=0, y=0, z=-1), camera_up=dict(x=0, y=-1, z=0)
+    ):
         """Visualizes a point cloud using Plotly.
 
         Args:
