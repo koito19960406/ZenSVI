@@ -70,14 +70,14 @@ class VGGTProcessor:
         print(f"VGGT Path: {vggt_path}")
         if vggt_path not in sys.path:
             sys.path.append(vggt_path)
-            print(f"Added VGGT path to sys.path")
+            print("Added VGGT path to sys.path")
 
         # Add utils path
         utils_path = os.path.join(vggt_path, "vggt", "utils")
         print(f"Utils Path: {utils_path}")
         if utils_path not in sys.path:
             sys.path.append(utils_path)
-            print(f"Added Utils path to sys.path")
+            print("Added Utils path to sys.path")
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"Using Device: {self.device}")
