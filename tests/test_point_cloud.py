@@ -36,6 +36,7 @@ def vggt_processor():
     """Fixture for VGGTProcessor with conditional loading."""
     try:
         import torch
+
         # Check if CUDA is available for GPU-accelerated testing
         if torch.cuda.is_available():
             return VGGTProcessor()
@@ -109,14 +110,14 @@ def test_visualize_point_cloud(processor, test_data):
 # VGGT Processor Tests
 @pytest.mark.skipif(
     not pytest.importorskip("torch", reason="PyTorch not available").cuda.is_available(),
-    reason="CUDA not available for VGGT tests"
+    reason="CUDA not available for VGGT tests",
 )
 def test_vggt_processor_initialization(vggt_processor):
     """Test VGGTProcessor initialization."""
     assert vggt_processor is not None
-    assert hasattr(vggt_processor, 'model')
-    assert hasattr(vggt_processor, 'device')
-    assert hasattr(vggt_processor, 'dtype')
+    assert hasattr(vggt_processor, "model")
+    assert hasattr(vggt_processor, "device")
+    assert hasattr(vggt_processor, "dtype")
 
 
 @pytest.mark.skipif(
@@ -161,7 +162,9 @@ def test_vggt_process_images_and_visualize_pointcloud(output_dir, vggt_processor
         points = np.asarray(pcd.points)
         colors = (np.asarray(pcd.colors) * 255).astype(np.uint8)
 
-        vggt_processor.visualize_point_cloud(points=points, colors_flat=colors, sample_rate=1)  # Use small sample for test
+        vggt_processor.visualize_point_cloud(
+            points=points, colors_flat=colors, sample_rate=1
+        )  # Use small sample for test
         assert True  # If no exception, test passes
     except Exception as e:
         pytest.fail(f"VGGT visualize point cloud raised an exception: {e}")
@@ -169,7 +172,7 @@ def test_vggt_process_images_and_visualize_pointcloud(output_dir, vggt_processor
 
 @pytest.mark.skipif(
     not pytest.importorskip("torch", reason="PyTorch not available").cuda.is_available(),
-    reason="CUDA not available for VGGT tests"
+    reason="CUDA not available for VGGT tests",
 )
 def test_vggt_process_images_error_handling(vggt_processor, tmp_path):
     """Test VGGTProcessor error handling with invalid inputs."""
@@ -177,18 +180,16 @@ def test_vggt_process_images_error_handling(vggt_processor, tmp_path):
     non_existent_dir = tmp_path / "non_existent"
     output_dir = tmp_path / "output"
     output_dir.mkdir()
-    
+
     with pytest.raises(ValueError, match="must be either a file or a directory"):
-        vggt_processor.process_images_to_pointcloud(
-            dir_input=non_existent_dir,
-            dir_output=output_dir
-        )
+        vggt_processor.process_images_to_pointcloud(dir_input=non_existent_dir, dir_output=output_dir)
 
 
 def test_vggt_processor_import():
     """Test that VGGTProcessor can be imported."""
     try:
         from zensvi.transform import VGGTProcessor
+
         assert VGGTProcessor is not None
     except ImportError as e:
         pytest.fail(f"Failed to import VGGTProcessor: {e}")
@@ -196,7 +197,7 @@ def test_vggt_processor_import():
 
 @pytest.mark.skipif(
     not pytest.importorskip("torch", reason="PyTorch not available").cuda.is_available(),
-    reason="CUDA not available for VGGT tests"
+    reason="CUDA not available for VGGT tests",
 )
 def test_vggt_empty_directory_handling(vggt_processor, tmp_path):
     """Test VGGTProcessor handling of empty directories."""
@@ -204,13 +205,10 @@ def test_vggt_empty_directory_handling(vggt_processor, tmp_path):
     empty_dir.mkdir()
     output_dir = tmp_path / "output"
     output_dir.mkdir()
-    
+
     # Should handle empty directory gracefully
-    vggt_processor.process_images_to_pointcloud(
-        dir_input=empty_dir,
-        dir_output=output_dir
-    )
-    
+    vggt_processor.process_images_to_pointcloud(dir_input=empty_dir, dir_output=output_dir)
+
     # Should not create any output files
     output_files = list(output_dir.glob("*.ply"))
     assert len(output_files) == 0, "Should not generate files from empty directory"
