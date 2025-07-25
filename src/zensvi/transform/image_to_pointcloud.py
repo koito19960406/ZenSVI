@@ -279,6 +279,10 @@ class PointCloudProcessor:
 
         Args:
             pcd (o3d.geometry.PointCloud): The point cloud object to visualize.
+            marker_size (int): Size of point markers.
+            opacity (float): Opacity of points.
+            camera_eye (dict): Camera position.
+            camera_up (dict): Camera up direction.
         """
         if self.logger:
             self.logger.log_args("PointCloudProcessor.visualize_point_cloud", pcd=pcd)

@@ -363,6 +363,50 @@ processor.process_multiple_images(
 )
 ```
 
+### Creating Point Clouds from Images with VGGT
+ZenSVI also supports generating 3D point clouds directly from a collection of images using the Visual Geometry Grounded Transformer (VGGT) model. VGGT is a powerful feed-forward neural network that can infer 3D geometry, including camera parameters and point clouds, from multiple views of a scene. This feature is particularly useful for reconstructing 3D scenes from unordered image collections.
+
+**Installation for VGGT**
+
+To use the VGGT-based point cloud generation, you need to initialize the `vggt` git submodule and install its specific dependencies.
+
+1.  **Initialize the git submodule:**
+    If you have cloned the ZenSVI repository, run the following command from the root directory to download the `vggt` submodule:
+    ```bash
+    git submodule update --init --recursive
+    ```
+
+2.  **Install dependencies:**
+    Install the required Python packages for `vggt`:
+    ```bash
+    pip install -r src/zensvi/transform/vggt/requirements.txt
+    ```
+
+**Usage**
+
+Once the setup is complete, you can use the `VGGTProcessor` to generate point clouds.
+
+```python
+from zensvi.transform import VGGTProcessor
+
+# Initialize the processor. This will download the model weights if not cached.
+# Note: VGGT requires a CUDA-enabled GPU.
+vggt_processor = VGGTProcessor()
+
+# Define input and output directories
+dir_input = "path/to/your/images"
+dir_output = "path/to/save/pointclouds"
+
+# Process images to generate point clouds
+# The processor will process images in batches and save the resulting point clouds as .ply files.
+vggt_processor.process_images_to_pointcloud(
+    dir_input=dir_input,
+    dir_output=dir_output,
+    batch_size=1,  # Adjust batch size based on your GPU memory
+    max_workers=4  # Adjust based on your system's capabilities
+)
+```
+
 ### Visualizing Results
 To visualize the results, use the `plot_map`, `plot_image`, `plot_hist`, and `plot_kde` functions:
 
