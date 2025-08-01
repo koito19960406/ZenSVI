@@ -1,0 +1,3 @@
+[submodule "src/zensvi/transform/vggt"]
+	path = src/zensvi/transform/vggt
+	url = https://github.com/facebookresearch/vggt.git

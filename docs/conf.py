@@ -98,7 +98,8 @@ def skip_util_classes(app, what, name, obj, skip, options):
         "low_level",
         "depth_estimation",
         "embeddings",
-        "object_detection"
+        "object_detection",
+        "vggt",
     ]
     skip_modules = [
         "base",
