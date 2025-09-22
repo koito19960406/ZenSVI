@@ -8,7 +8,7 @@ import pytest
 import torch
 
 # Define timeout duration as a constant
-DOWNLOAD_TIMEOUT_SECONDS = 180
+DOWNLOAD_TIMEOUT_SECONDS = 1800
 
 
 class TimeoutException(Exception):

@@ -99,3 +99,37 @@ def test_verbosity_levels(output_dir):
         output_dir / "test_verbosity", lat=52.356768, lon=4.907408, metadata_only=True, verbosity=0
     )
     assert default_downloader.verbosity == 0
+
+
+def test_async_download(output_dir, sv_downloader, timeout_decorator, timeout_seconds):
+    """Test async download functionality"""
+    output_dir = output_dir / "test_async"
+    try:
+        with timeout_decorator():
+            sv_downloader.download_svi(
+                output_dir,
+                lat=52.356768,
+                lon=4.907408,
+                buffer=50,
+                use_async=True,
+                max_concurrency=5,
+                metadata_only=False,
+            )
+            assert (output_dir / "ams_pids.csv").stat().st_size > 0
+    except TimeoutException:
+        assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
+
+
+def test_max_concurrency_property(output_dir):
+    """Test max_concurrency property works correctly"""
+    import os
+
+    ams_downloader = AMSDownloader(log_path=output_dir / "log.log")
+
+    # Test default value
+    ams_downloader.max_concurrency = None
+    assert ams_downloader.max_concurrency == min(100, os.cpu_count() * 4)
+
+    # Test setting custom value
+    ams_downloader.max_concurrency = 10
+    assert ams_downloader.max_concurrency == 10

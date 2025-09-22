@@ -208,3 +208,37 @@ def test_verbosity_levels(output_dir):
     # Test setting verbosity after initialization
     kv_downloader_1.verbosity = 2
     assert kv_downloader_1.verbosity == 2
+
+
+def test_async_download(output_dir, kv_input_files, timeout_decorator, timeout_seconds):
+    """Test async download functionality"""
+    output_dir = output_dir / "test_async"
+    kv_downloader = KVDownloader(log_path=output_dir / "log.log", max_workers=1, verbosity=0)
+
+    try:
+        with timeout_decorator():
+            kv_downloader.download_svi(
+                output_dir,
+                input_shp_file=str(kv_input_files["polygon"]),
+                use_async=True,
+                max_concurrency=5,
+                metadata_only=False,
+            )
+            assert (output_dir / "kv_pids.csv").stat().st_size > 0
+    except TimeoutException:
+        assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
+
+
+def test_max_concurrency_property(output_dir):
+    """Test max_concurrency property works correctly"""
+    import os
+
+    kv_downloader = KVDownloader(log_path=output_dir / "log.log")
+
+    # Test default value
+    kv_downloader.max_concurrency = None
+    assert kv_downloader.max_concurrency == min(100, os.cpu_count() * 4)
+
+    # Test setting custom value
+    kv_downloader.max_concurrency = 10
+    assert kv_downloader.max_concurrency == 10

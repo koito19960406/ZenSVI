@@ -55,11 +55,11 @@ def test_interface(output_dir, mly_input_files, mly_api_key, timeout_decorator, 
 @pytest.mark.parametrize(
     "input_type,expected_files,verbosity",
     [
-        ("coordinates", 1, 0),  # Test with no progress bars
-        ("csv", 1, 1),  # Test with outer progress bars only
-        ("polygon", 1, 2),  # Test with all progress bars
-        ("multipolygon", 1, 1),
-        ("place_name", 1, 1),
+        ("coordinates", 3, 0),  # Test with no progress bars
+        ("csv", 3, 1),  # Test with outer progress bars only
+        ("polygon", 3, 2),  # Test with all progress bars
+        ("multipolygon", 3, 1),
+        ("place_name", 3, 1),
     ],
 )
 def test_downloader_input_types(
@@ -200,3 +200,35 @@ def test_verbosity_levels(output_dir, mly_api_key, timeout_decorator, timeout_se
     # Change verbosity and check it updates
     mly_downloader_no_verbosity.verbosity = 2
     assert mly_downloader_no_verbosity.verbosity == 2
+
+
+def test_async_download(output_dir, mly_input_files, mly_api_key, timeout_decorator, timeout_seconds):
+    """Test async download functionality"""
+    output_dir = output_dir / "test_async"
+    mly_downloader = MLYDownloader(mly_api_key, log_path=output_dir / "log.log", max_workers=1, verbosity=0)
+
+    try:
+        with timeout_decorator():
+            mly_downloader.download_svi(
+                output_dir,
+                input_shp_file=str(mly_input_files["polygon"]),
+                use_async=True,
+                max_concurrency=5,
+                metadata_only=False,
+            )
+            assert (output_dir / "mly_pids.csv").stat().st_size > 0
+    except TimeoutException:
+        assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
+
+
+def test_max_concurrency_property(output_dir, mly_api_key):
+    """Test max_concurrency property works correctly"""
+    mly_downloader = MLYDownloader(mly_api_key, log_path=output_dir / "log.log")
+
+    # Test default value
+    mly_downloader.max_concurrency = None
+    assert mly_downloader.max_concurrency == min(100, os.cpu_count() * 4)
+
+    # Test setting custom value
+    mly_downloader.max_concurrency = 10
+    assert mly_downloader.max_concurrency == 10

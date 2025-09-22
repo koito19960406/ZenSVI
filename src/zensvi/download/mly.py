@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import glob
 import json
@@ -9,6 +10,7 @@ import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+import aiohttp
 import geopandas as gpd
 import osmnx as ox
 import pandas as pd
@@ -41,6 +43,7 @@ class MLYDownloader(BaseDownloader):
         self._mly_api_key = mly_api_key
         self._max_workers = max_workers
         self._verbosity = verbosity
+        self._max_concurrency = None
         mly.set_access_token(self.mly_api_key)
         # initialize the logger
         if log_path is not None:
@@ -89,6 +92,22 @@ class MLYDownloader(BaseDownloader):
     @verbosity.setter
     def verbosity(self, verbosity):
         self._verbosity = verbosity
+
+    @property
+    def max_concurrency(self):
+        """Property for the maximum concurrency for async operations.
+
+        Returns:
+            int: max_concurrency level
+        """
+        return self._max_concurrency
+
+    @max_concurrency.setter
+    def max_concurrency(self, max_concurrency):
+        if max_concurrency is None:
+            self._max_concurrency = min(100, os.cpu_count() * 4)
+        else:
+            self._max_concurrency = max_concurrency
 
     def _read_pids(self, path_pid):
         pid_df = pd.read_csv(path_pid)
@@ -270,7 +289,7 @@ class MLYDownloader(BaseDownloader):
                 shutil.rmtree(dir_cache_tiles)
                 print("The cache directory for tiles has been deleted")
 
-    def _get_urls_mly(self, path_pid, resolution=1024, additional_fields=["all"]):
+    def _get_urls_mly(self, path_pid, resolution=1024, additional_fields=["all"], use_async=False):
         # check if seld.cache_pids_urls exists
         if self.pids_url.exists():
             print("The panorama URLs have been read from the cache")
@@ -303,13 +322,40 @@ class MLYDownloader(BaseDownloader):
             print("All images have been downloaded")
             return
 
-        def worker(panoid, resolution):
-            result = mly.image_thumbnail(panoid, resolution=resolution, additional_fields=additional_fields)
-            return panoid, result
+        if use_async:
+            asyncio.run(
+                self._get_urls_mly_async(panoids, resolution, additional_fields, dir_cache_urls, checkpoint_start_index)
+            )
+        else:
+            self._get_urls_mly_sync(panoids, resolution, additional_fields, dir_cache_urls, checkpoint_start_index)
+
+        # Merge all checkpoints into a single dataframe
+        results_df = pd.concat(
+            [pd.read_csv(checkpoint) for checkpoint in glob.glob(str(dir_cache_urls / "*.csv"))],
+            ignore_index=True,
+        )
+        results_df.to_csv(self.pids_url, index=False)
+
+        if dir_cache_urls.exists():
+            shutil.rmtree(dir_cache_urls)
+
+    async def _get_urls_mly_async(self, panoids, resolution, additional_fields, dir_cache_urls, checkpoint_start_index):
+        """Async version of URL fetching using async/await for concurrency control."""
+
+        async def worker_async(semaphore, panoid, resolution):
+            async with semaphore:
+                # Run the synchronous mly.image_thumbnail function in an executor
+                loop = asyncio.get_event_loop()
+                result = await loop.run_in_executor(
+                    None,
+                    lambda: mly.image_thumbnail(panoid, resolution=resolution, additional_fields=additional_fields),
+                )
+                return panoid, result
 
         results = {}
         batch_size = 1000  # Modify this to a suitable value
         num_batches = (len(panoids) + batch_size - 1) // batch_size
+        semaphore = asyncio.Semaphore(self.max_concurrency)
 
         for i in verbosity_tqdm(
             range(num_batches),
@@ -317,28 +363,31 @@ class MLYDownloader(BaseDownloader):
             level=1,
             verbosity=self.verbosity,
         ):
-            with ThreadPoolExecutor() as executor:
-                batch_futures = {
-                    executor.submit(worker, panoid, resolution): panoid
-                    for panoid in panoids[i * batch_size : (i + 1) * batch_size]
-                }
+            batch_panoids = panoids[i * batch_size : (i + 1) * batch_size]
+            tasks = [worker_async(semaphore, panoid, resolution) for panoid in batch_panoids]
 
-                for future in verbosity_tqdm(
-                    as_completed(batch_futures),
-                    total=len(batch_futures),
-                    desc=f"Getting urls for batch #{i+1}",
-                    level=2,
-                    verbosity=self.verbosity,
-                ):
-                    current_panoid = batch_futures[future]
+            completed = 0
+            total_tasks = len(tasks)
+
+            with verbosity_tqdm(
+                tasks,
+                total=total_tasks,
+                desc=f"Getting urls for batch #{i+1}",
+                level=2,
+                verbosity=self.verbosity,
+            ) as pbar:
+                for task in asyncio.as_completed(tasks):
                     try:
-                        panoid, result = future.result()
+                        panoid, result = await task
                         results[panoid] = result
                     except Exception as e:
                         print(f"Error: {e}")
                         if self.logger is not None:
-                            self.logger.log_failed_pid(current_panoid)
-                        continue
+                            self.logger.log_failed_pid(panoid)
+                    finally:
+                        completed += 1
+                        if self.verbosity >= 2:
+                            pbar.update(1)
 
             if len(results) > 0:
                 df = (
@@ -353,15 +402,174 @@ class MLYDownloader(BaseDownloader):
                 )
             results = {}
 
-        # Merge all checkpoints into a single dataframe
-        results_df = pd.concat(
-            [pd.read_csv(checkpoint) for checkpoint in glob.glob(str(dir_cache_urls / "*.csv"))],
-            ignore_index=True,
-        )
-        results_df.to_csv(self.pids_url, index=False)
+    async def _get_urls_mly_async(self, panoids, resolution, additional_fields, dir_cache_urls, checkpoint_start_index):
+        """Async version of URL fetching using async/await for concurrency control."""
 
-        if dir_cache_urls.exists():
-            shutil.rmtree(dir_cache_urls)
+        async def worker_async(semaphore, panoid, resolution):
+            async with semaphore:
+                # Run the synchronous mly.image_thumbnail function in an executor
+                loop = asyncio.get_event_loop()
+                result = await loop.run_in_executor(
+                    None,
+                    lambda: mly.image_thumbnail(panoid, resolution=resolution, additional_fields=additional_fields),
+                )
+                return panoid, result
+
+        results = {}
+        batch_size = 1000  # Modify this to a suitable value
+        num_batches = (len(panoids) + batch_size - 1) // batch_size
+        semaphore = asyncio.Semaphore(self.max_concurrency)
+
+        for i in verbosity_tqdm(
+            range(num_batches),
+            desc=f"Getting urls by batch size {min(batch_size, len(panoids))}",
+            level=1,
+            verbosity=self.verbosity,
+        ):
+            batch_panoids = panoids[i * batch_size : (i + 1) * batch_size]
+            tasks = [worker_async(semaphore, panoid, resolution) for panoid in batch_panoids]
+
+            completed = 0
+            total_tasks = len(tasks)
+
+            # Create progress bar without using as context manager
+            pbar = verbosity_tqdm(
+                range(total_tasks),
+                desc=f"Getting urls for batch #{i+1}",
+                level=2,
+                verbosity=self.verbosity,
+            )
+
+            for task in asyncio.as_completed(tasks):
+                try:
+                    panoid, result = await task
+                    results[panoid] = result
+                except Exception as e:
+                    print(f"Error: {e}")
+                    if self.logger is not None:
+                        self.logger.log_failed_pid(panoid)
+                finally:
+                    completed += 1
+                    if hasattr(pbar, "update"):
+                        pbar.update(1)
+
+            if len(results) > 0:
+                df = (
+                    pd.DataFrame.from_dict(results, orient="index")
+                    .reset_index(drop=True)
+                    .rename(columns={f"thumb_{resolution}_url": "url"})
+                )
+                df = df[["id"] + [col for col in df.columns if col != "id"]]
+                df.to_csv(
+                    f"{dir_cache_urls}/checkpoint_batch_{checkpoint_start_index+i+1}.csv",
+                    index=False,
+                )
+            results = {}
+
+    async def _download_images_mly_async(self, path_pid, cropped, batch_size, start_date, end_date):
+        """Async version of image download with concurrency control."""
+        checkpoints = glob.glob(str(self.panorama_output / "**/*.png"), recursive=True)
+
+        # Read already downloaded images and convert to ids
+        downloaded_ids = set([Path(file_path).stem for file_path in checkpoints])
+
+        pid_df = pd.read_csv(path_pid).dropna(subset=["id"])
+        pid_df["id"] = pid_df["id"].astype("int64")
+        urls_df = pd.read_csv(self.pids_url)
+        urls_df["id"] = urls_df["id"].astype("int64")
+        # merge pid_df and urls_df, keeping only one instance of duplicated columns
+        urls_df = urls_df.merge(pid_df, on="id", how="left", suffixes=("", "_drop"))
+        urls_df = urls_df.loc[:, ~urls_df.columns.str.endswith("_drop")]
+        # filter out the rows by date
+        urls_df = self._filter_pids_date(urls_df, start_date, end_date)
+
+        # Filter out the ids that have already been processed
+        urls_df = urls_df[~urls_df["id"].isin(downloaded_ids)]
+
+        async def download_single_image(session, semaphore, row, output_dir, cropped):
+            """Download a single image with semaphore-controlled concurrency."""
+            async with semaphore:
+                url, panoid = row.url, row.id
+                user_agent = random.choice(self._user_agents)
+                proxy = random.choice(self._proxies)
+
+                image_name = f"{panoid}.png"
+                image_path = output_dir / image_name
+
+                try:
+                    proxy_url = f"http://{proxy['http']}" if proxy and "http" in proxy else None
+                    connector = aiohttp.TCPConnector() if not proxy_url else aiohttp.ProxyConnector.from_url(proxy_url)
+
+                    async with session.get(
+                        url, headers=user_agent, proxy=proxy_url, timeout=aiohttp.ClientTimeout(total=10)
+                    ) as response:
+                        if response.status == 200:
+                            content = await response.read()
+                            with open(image_path, "wb") as f:
+                                f.write(content)
+
+                            if cropped:
+                                img = Image.open(image_path)
+                                w, h = img.size
+                                img_cropped = img.crop((0, 0, w, h // 2))
+                                img_cropped.save(image_path)
+                        else:
+                            if self.logger is not None:
+                                self.logger.log_failed_pid(panoid)
+                except Exception as e:
+                    if self.logger is not None:
+                        self.logger.log_failed_pid(panoid)
+                    print(f"Error downloading {panoid}: {e}")
+
+        num_batches = (len(urls_df) + batch_size - 1) // batch_size
+
+        # Calculate current highest batch number
+        existing_batches = glob.glob(str(self.panorama_output / "batch_*"))
+        existing_batch_numbers = [int(Path(batch).name.split("_")[-1]) for batch in existing_batches]
+        start_batch_number = max(existing_batch_numbers, default=0)
+
+        # Create semaphore for concurrency control
+        semaphore = asyncio.Semaphore(self.max_concurrency)
+
+        for i in verbosity_tqdm(
+            range(start_batch_number, start_batch_number + num_batches),
+            desc=f"Downloading images by batch size {min(batch_size, len(urls_df))}",
+            level=1,
+            verbosity=self.verbosity,
+        ):
+            # Create a new sub-folder for each batch
+            batch_out_path = self.panorama_output / f"batch_{i+1}"
+            batch_out_path.mkdir(exist_ok=True)
+
+            batch_urls = urls_df.iloc[(i - start_batch_number) * batch_size : (i + 1 - start_batch_number) * batch_size]
+
+            async with aiohttp.ClientSession() as session:
+                tasks = [
+                    download_single_image(session, semaphore, row, batch_out_path, cropped)
+                    for row in batch_urls.itertuples()
+                ]
+
+                # Use asyncio.as_completed equivalent with progress tracking
+                completed = 0
+                total_tasks = len(tasks)
+
+                # Create progress bar without using as context manager
+                pbar = verbosity_tqdm(
+                    range(total_tasks),
+                    desc=f"Downloading images for batch #{i+1}",
+                    level=2,
+                    verbosity=self.verbosity,
+                )
+
+                for coro in asyncio.as_completed(tasks):
+                    try:
+                        await coro
+                    except Exception as e:
+                        print(f"Error in async download: {e}")
+                    finally:
+                        completed += 1
+                        if hasattr(pbar, 'update'):
+                            pbar.update(1)
 
     def _download_images_mly(self, path_pid, cropped, batch_size, start_date, end_date):
         checkpoints = glob.glob(str(self.panorama_output / "**/*.png"), recursive=True)
@@ -462,6 +670,8 @@ class MLYDownloader(BaseDownloader):
         metadata_only=False,
         use_cache=True,
         additional_fields=["all"],
+        use_async=False,
+        max_concurrency=None,
         **kwargs,
     ):
         """Downloads street view images from Mapillary using specified parameters.
@@ -484,6 +694,8 @@ class MLYDownloader(BaseDownloader):
             metadata_only (bool, optional): If True, skips downloading images and only fetches metadata. Defaults to False.
             use_cache (bool, optional): If True, uses cached data to speed up the operation. Defaults to True.
             additional_fields (list, optional): Additional fields to fetch from the API. Defaults to ["all"].
+            use_async (bool, optional): If True, uses async/await for concurrent downloads. Defaults to False.
+            max_concurrency (int, optional): Maximum number of concurrent async downloads. If None, defaults to min(100, os.cpu_count() * 4).
                 Possible fields include:
                 1. altitude - float, original altitude from Exif
                 2. atomic_scale - float, scale of the SfM reconstruction around the image
@@ -541,6 +753,9 @@ class MLYDownloader(BaseDownloader):
                 use_cache=use_cache,
                 **kwargs,
             )
+        # Set max_concurrency
+        self.max_concurrency = max_concurrency
+
         # set necessary directories
         self._set_dirs(dir_output)
 
@@ -586,7 +801,9 @@ class MLYDownloader(BaseDownloader):
 
         # get urls
         if path_pid.exists():
-            self._get_urls_mly(path_pid, resolution=resolution, additional_fields=additional_fields)
+            self._get_urls_mly(
+                path_pid, resolution=resolution, additional_fields=additional_fields, use_async=use_async
+            )
 
             # stop if metadata_only is True
             if metadata_only:
@@ -594,7 +811,29 @@ class MLYDownloader(BaseDownloader):
                 return
 
             # download images
-            self._download_images_mly(path_pid, cropped, batch_size, start_date, end_date)
+            if use_async:
+                # Run async download in event loop
+                try:
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        # If we're already in an async context, create a new thread
+                        import concurrent.futures
+
+                        with concurrent.futures.ThreadPoolExecutor() as executor:
+                            future = executor.submit(
+                                asyncio.run,
+                                self._download_images_mly_async(path_pid, cropped, batch_size, start_date, end_date),
+                            )
+                            future.result()
+                    else:
+                        loop.run_until_complete(
+                            self._download_images_mly_async(path_pid, cropped, batch_size, start_date, end_date)
+                        )
+                except RuntimeError:
+                    # No event loop exists, create one
+                    asyncio.run(self._download_images_mly_async(path_pid, cropped, batch_size, start_date, end_date))
+            else:
+                self._download_images_mly(path_pid, cropped, batch_size, start_date, end_date)
         else:
             print("There is no panorama ID to download within the given input parameters")
 

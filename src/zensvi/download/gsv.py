@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import glob
 import math
@@ -9,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import List, Union
 
+import aiohttp
 import geopandas as gpd
 import numpy as np
 import osmnx as ox
@@ -70,6 +72,7 @@ class GSVDownloader(BaseDownloader):
         self._grid_size = grid_size
         self._max_workers = max_workers
         self._verbosity = verbosity
+        self._max_concurrency = None
 
     @property
     def max_workers(self):
@@ -100,7 +103,23 @@ class GSVDownloader(BaseDownloader):
     def verbosity(self, verbosity):
         self._verbosity = verbosity
 
-    def _augment_metadata(self, df):
+    @property
+    def max_concurrency(self):
+        """Property for the maximum concurrency for async operations.
+
+        Returns:
+            int: max_concurrency level
+        """
+        return self._max_concurrency
+
+    @max_concurrency.setter
+    def max_concurrency(self, max_concurrency):
+        if max_concurrency is None:
+            self._max_concurrency = min(100, os.cpu_count() * 4)
+        else:
+            self._max_concurrency = max_concurrency
+
+    def _augment_metadata(self, df, use_async=False):
         if self.cache_pids_augmented.exists():
             df = pd.read_csv(self.cache_pids_augmented)
             print("The augmented panorama IDs have been read from the cache")
@@ -124,6 +143,111 @@ class GSVDownloader(BaseDownloader):
             # Filter df to get remaining indices to augment metadata for
             df = df.loc[~df.index.isin(completed_indices)]
 
+        if use_async:
+            return asyncio.run(self._augment_metadata_async(df, dir_cache_augmented_metadata, checkpoint_start_index))
+        else:
+            return self._augment_metadata_sync(df, dir_cache_augmented_metadata, checkpoint_start_index)
+
+    async def _augment_metadata_async(self, df, dir_cache_augmented_metadata, checkpoint_start_index):
+        async def get_year_month_async(session, semaphore, pid, proxies):
+            async with semaphore:
+                url = "https://maps.googleapis.com/maps/api/streetview/metadata?pano={}&key={}".format(
+                    pid, self._gsv_api_key
+                )
+                for attempt in range(3):  # Max 3 attempts
+                    proxy = random.choice(proxies)
+                    try:
+                        proxy_url = f"http://{proxy['http']}" if proxy and "http" in proxy else None
+                        async with session.get(
+                            url, proxy=proxy_url, timeout=aiohttp.ClientTimeout(total=5)
+                        ) as response:
+                            if response.status == 200:
+                                response_json = await response.json()
+                                if response_json["status"] == "OK":
+                                    # get year and month from date
+                                    try:
+                                        date = response_json["date"]
+                                        year = date.split("-")[0]
+                                        month = date.split("-")[1]
+                                    except Exception as e:
+                                        print(f"Error while getting year and month: {e}")
+                                        year = None
+                                        month = None
+                                    return {"year": year, "month": month}
+                    except Exception as e:
+                        if attempt == 2:  # Last attempt
+                            print(f"Proxy {proxy} failed after 3 attempts. Exception: {e}")
+                        continue
+                return {"year": None, "month": None}
+
+        batch_size = 1000  # Modify this to a suitable value
+        num_batches = (len(df) + batch_size - 1) // batch_size
+        semaphore = asyncio.Semaphore(self.max_concurrency)
+
+        for i in verbosity_tqdm(
+            range(num_batches),
+            desc=f"Augmenting metadata by batch size {min(batch_size, len(df))}",
+            verbosity=self.verbosity,
+            level=1,
+        ):
+            batch_df = df.iloc[i * batch_size : (i + 1) * batch_size].copy()
+
+            async with aiohttp.ClientSession() as session:
+                tasks = []
+                for row in batch_df.itertuples():
+                    task = get_year_month_async(session, semaphore, row.panoid, self._proxies)
+                    tasks.append((row.Index, task))
+
+                # Process all tasks for this batch
+                completed = 0
+                total_tasks = len(tasks)
+
+                with verbosity_tqdm(
+                    tasks,
+                    total=total_tasks,
+                    desc=f"Augmenting metadata for batch #{i+1}",
+                    verbosity=self.verbosity,
+                    level=2,
+                ) as pbar:
+                    for row_index, task in tasks:
+                        try:
+                            year_month = await task
+                            if year_month["year"] is not None:
+                                batch_df.at[row_index, "year"] = year_month["year"]
+                                batch_df.at[row_index, "month"] = year_month["month"]
+                        except Exception as e:
+                            print(f"Error processing row {row_index}: {e}")
+                        finally:
+                            completed += 1
+                            if self.verbosity >= 2:
+                                pbar.update(1)
+
+            # Save checkpoint for each batch
+            batch_df.to_csv(
+                f"{dir_cache_augmented_metadata}/checkpoint_batch_{checkpoint_start_index+i+1}.csv",
+                index=False,
+            )
+
+        # Merge all checkpoints into a single dataframe
+        df = pd.concat(
+            [pd.read_csv(checkpoint) for checkpoint in glob.glob(str(dir_cache_augmented_metadata / "*.csv"))],
+            ignore_index=True,
+        )
+
+        # save the augmented metadata
+        df.to_csv(self.cache_pids_augmented, index=False)
+        # delete cache_lat_lon
+        if self.cache_lat_lon.exists():
+            self.cache_lat_lon.unlink()
+        # delete cache_pids_raw
+        if self.cache_pids_raw.exists():
+            self.cache_pids_raw.unlink()
+        # delete the cache directory
+        if dir_cache_augmented_metadata.exists():
+            shutil.rmtree(dir_cache_augmented_metadata)
+        return df
+
+    def _augment_metadata_sync(self, df, dir_cache_augmented_metadata, checkpoint_start_index):
         def get_year_month(pid, proxies):
             url = "https://maps.googleapis.com/maps/api/streetview/metadata?pano={}&key={}".format(
                 pid, self._gsv_api_key
@@ -207,7 +331,7 @@ class GSVDownloader(BaseDownloader):
             shutil.rmtree(dir_cache_augmented_metadata)
         return df
 
-    def _get_pids_from_df(self, df, id_columns=None):
+    def _get_pids_from_df(self, df, id_columns=None, use_async=False):
         # 1. Create a new directory called "pids" to store each batch pids
         dir_cache_pids = self.dir_cache / "raw_pids"
         dir_cache_pids.mkdir(parents=True, exist_ok=True)
@@ -234,6 +358,128 @@ class GSVDownloader(BaseDownloader):
             # Filter out rows that come from the 'completed_ids' DataFrame
             df = merged[merged["_merge"] == "left_only"].drop(columns="_merge")
 
+        # set lat_lon_id if it doesn't exist
+        if "lat_lon_id" not in df.columns:
+            df["lat_lon_id"] = np.arange(1, len(df) + 1)
+
+        # if there's no rows to process, return completed_ids
+        if len(df) == 0:
+            try:
+                return completed_ids
+            except NameError:
+                # If completed_ids is not defined (no checkpoints), return empty DataFrame
+                return pd.DataFrame()
+
+        if use_async:
+            return asyncio.run(self._get_pids_from_df_async(df, id_columns, dir_cache_pids, checkpoint_start_index))
+        else:
+            return self._get_pids_from_df_sync(df, id_columns, dir_cache_pids, checkpoint_start_index)
+
+    async def _get_pids_from_df_async(self, df, id_columns, dir_cache_pids, checkpoint_start_index):
+        # Note: The panoids function isn't async, so we need to run it in executor
+        # But we can still use async for concurrency control
+
+        async def get_street_view_info_async(longitude, latitude, proxies):
+            # Run the synchronous panoids function in an executor
+            loop = asyncio.get_event_loop()
+            return await loop.run_in_executor(None, lambda: panoids(latitude, longitude, proxies))
+
+        async def worker_async(semaphore, row):
+            async with semaphore:
+                input_longitude = row.longitude
+                input_latitude = row.latitude
+                lat_lon_id = row.lat_lon_id
+                id_dict = {column: getattr(row, column) for column in id_columns} if id_columns else {}
+
+                row_results = await get_street_view_info_async(input_longitude, input_latitude, self._proxies)
+
+                return (
+                    lat_lon_id,
+                    (input_longitude, input_latitude),
+                    row_results,
+                    id_dict,
+                )
+
+        results = []
+        batch_size = 1000  # Modify this to a suitable value
+        num_batches = (len(df) + batch_size - 1) // batch_size
+        failed_rows = []
+        semaphore = asyncio.Semaphore(self.max_concurrency)
+
+        # if not, process the rows
+        for i in verbosity_tqdm(
+            range(num_batches),
+            desc=f"Getting pids by batch size {min(batch_size, len(df))}",
+            verbosity=self.verbosity,
+            level=1,
+        ):
+            batch_rows = df.iloc[i * batch_size : (i + 1) * batch_size]
+            tasks = [worker_async(semaphore, row) for row in batch_rows.itertuples()]
+
+            completed = 0
+            total_tasks = len(tasks)
+
+            with verbosity_tqdm(
+                tasks,
+                total=total_tasks,
+                desc=f"Getting pids for batch #{i+1}",
+                verbosity=self.verbosity,
+                level=2,
+            ) as pbar:
+                for task in asyncio.as_completed(tasks):
+                    try:
+                        (
+                            lat_lon_id,
+                            (input_longitude, input_latitude),
+                            row_results,
+                            id_dict,
+                        ) = await task
+                        for result in row_results:
+                            result["input_latitude"] = input_latitude
+                            result["input_longitude"] = input_longitude
+                            result["lat_lon_id"] = lat_lon_id
+                            result.update(id_dict)
+                            results.append(result)
+                    except Exception as e:
+                        print(f"Error: {e}")
+                        # Note: Can't easily identify failed rows in async context
+                        # but panoids function is quite reliable
+                    finally:
+                        completed += 1
+                        if self.verbosity >= 2:
+                            pbar.update(1)
+
+            # Save checkpoint for each batch
+            if len(results) > 0:
+                pd.DataFrame(results).to_csv(
+                    f"{dir_cache_pids}/checkpoint_batch_{checkpoint_start_index+i+1}.csv",
+                    index=False,
+                )
+            results = []  # Clear the results list for the next batch
+
+        # Continue with the rest of the method (merge checkpoints, etc.)
+        return self._finalize_pids_processing(dir_cache_pids, id_columns)
+
+    def _finalize_pids_processing(self, dir_cache_pids, id_columns):
+        """Finalize the PID processing by merging checkpoints and cleaning up."""
+        # Merge all checkpoints into a single dataframe
+        results_df = pd.concat(
+            [pd.read_csv(checkpoint) for checkpoint in glob.glob(str(dir_cache_pids / "*.csv"))],
+            ignore_index=True,
+        )
+
+        # now save results_df as a new cache after dropping lat_lon_id
+        results_df = results_df.drop(columns="lat_lon_id")
+        # drop duplicates in panoid and id_columns
+        results_df = results_df.drop_duplicates(subset=["panoid"] + (id_columns or []))
+        results_df.to_csv(self.cache_pids_raw, index=False)
+
+        # delete the cache directory
+        if dir_cache_pids.exists():
+            shutil.rmtree(dir_cache_pids)
+        return results_df
+
+    def _get_pids_from_df_sync(self, df, id_columns, dir_cache_pids, checkpoint_start_index):
         def get_street_view_info(longitude, latitude, proxies):
             results = panoids(
                 latitude,
@@ -254,21 +500,10 @@ class GSVDownloader(BaseDownloader):
                 id_dict,
             )
 
-        # set lat_lon_id if it doesn't exist
-        if "lat_lon_id" not in df.columns:
-            df["lat_lon_id"] = np.arange(1, len(df) + 1)
         results = []
         batch_size = 1000  # Modify this to a suitable value
         num_batches = (len(df) + batch_size - 1) // batch_size
         failed_rows = []
-
-        # if there's no rows to process, return completed_ids
-        if len(df) == 0:
-            try:
-                return completed_ids
-            except NameError:
-                # If completed_ids is not defined (no checkpoints), return empty DataFrame
-                return pd.DataFrame()
 
         # if not, process the rows
         for i in verbosity_tqdm(
@@ -314,12 +549,6 @@ class GSVDownloader(BaseDownloader):
                     )
                 results = []  # Clear the results list for the next batch
 
-        # Merge all checkpoints into a single dataframe
-        results_df = pd.concat(
-            [pd.read_csv(checkpoint) for checkpoint in glob.glob(str(dir_cache_pids / "*.csv"))],
-            ignore_index=True,
-        )
-
         # Retry failed rows
         if failed_rows:
             print("Retrying failed rows...")
@@ -351,20 +580,8 @@ class GSVDownloader(BaseDownloader):
             # Save the results of retried rows as another checkpoint
             if len(results) > 0:
                 pd.DataFrame(results).to_csv(f"{dir_cache_pids}/checkpoint_retry.csv", index=False)
-                # Merge the retry checkpoint into the final dataframe
-                retry_df = pd.read_csv(f"{dir_cache_pids}/checkpoint_retry.csv")
-                results_df = pd.concat([results_df, retry_df], ignore_index=True)
 
-        # now save results_df as a new cache after dropping lat_lon_id
-        results_df = results_df.drop(columns="lat_lon_id")
-        # drop duplicates in panoid and id_columns
-        results_df = results_df.drop_duplicates(subset=["panoid"] + id_columns)
-        results_df.to_csv(self.cache_pids_raw, index=False)
-
-        # delete the cache directory
-        if dir_cache_pids.exists():
-            shutil.rmtree(dir_cache_pids)
-        return results_df
+        return self._finalize_pids_processing(dir_cache_pids, id_columns)
 
     def _get_pids_from_gdf(self, gdf, **kwargs):
         """Get panorama IDs from a GeoDataFrame of polygons.
@@ -430,7 +647,9 @@ class GSVDownloader(BaseDownloader):
 
         # Get PIDs for these points
         results_df = self._get_pids_from_df(
-            points_within_polygons_df, kwargs["id_columns"] if "id_columns" in kwargs else None
+            points_within_polygons_df,
+            kwargs["id_columns"] if "id_columns" in kwargs else None,
+            kwargs.get("use_async", False),
         )
         return results_df
 
@@ -458,7 +677,7 @@ class GSVDownloader(BaseDownloader):
                 gdf = create_buffer_gdf(gdf, kwargs["buffer"])
                 pid = self._get_pids_from_gdf(gdf, **kwargs)
             else:
-                pid = self._get_pids_from_df(df, kwargs["id_columns"])
+                pid = self._get_pids_from_df(df, kwargs["id_columns"], kwargs.get("use_async", False))
         elif kwargs["input_shp_file"] != "":
             gdf = gpd.read_file(kwargs["input_shp_file"])
             if kwargs["buffer"] > 0:
@@ -494,7 +713,7 @@ class GSVDownloader(BaseDownloader):
         pid = self._get_raw_pids(**kwargs)
 
         if kwargs["augment_metadata"] & (self._gsv_api_key is not None):
-            pid = self._augment_metadata(pid)
+            pid = self._augment_metadata(pid, kwargs.get("use_async", False))
         elif kwargs["augment_metadata"] & (self._gsv_api_key is None):
             raise ValueError("Please set the gsv api key by calling the gsv_api_key method.")
         pid.to_csv(path_pid, index=False)
@@ -619,6 +838,8 @@ class GSVDownloader(BaseDownloader):
         download_depth=False,
         max_workers: int = None,
         verbosity: int = None,
+        use_async: bool = False,
+        max_concurrency: int = None,
         **kwargs,
     ) -> None:
         """Downloads street view images from Google Street View API using specified
@@ -648,6 +869,8 @@ class GSVDownloader(BaseDownloader):
                 If not specified, uses the value set during initialization.
             verbosity (int, optional): Level of verbosity for progress bars (0=no progress, 1=outer loops only, 2=all loops).
                 If not specified, uses the value set during initialization.
+            use_async (bool, optional): If True, uses async/await for concurrent downloads. Defaults to False.
+            max_concurrency (int, optional): Maximum number of concurrent async downloads. If None, defaults to min(100, os.cpu_count() * 4).
             **kwargs: Additional keyword arguments.
 
         Returns:
@@ -689,10 +912,11 @@ class GSVDownloader(BaseDownloader):
                 **kwargs,
             )
 
-        # Set max_workers and verbosity
+        # Set max_workers, verbosity, and max_concurrency
         self.max_workers = max_workers
         if verbosity is not None:
             self.verbosity = verbosity
+        self.max_concurrency = max_concurrency
 
         # set necessary directories
         self._set_dirs(dir_output)
@@ -714,6 +938,7 @@ class GSVDownloader(BaseDownloader):
                     id_columns=id_columns,
                     buffer=buffer,
                     augment_metadata=augment_metadata,
+                    use_async=use_async,
                     **kwargs,
                 )
         elif self.cache_pids_augmented.exists():
@@ -751,25 +976,49 @@ class GSVDownloader(BaseDownloader):
                 raise ValueError("zoom level should be between 0 and 6")
             h_tiles = 2**zoom
             v_tiles = math.ceil(h_tiles / 2)
-            ImageTool.dwl_multiple(
-                panoids_rest,
-                zoom,
-                v_tiles,
-                h_tiles,
-                self.panorama_output,
-                UAs,
-                self._proxies,
-                cropped,
-                full,
-                batch_size=batch_size,
-                logger=self.logger,
-                max_workers=self.max_workers,
-                verbosity=self.verbosity,
-            )
+
+            if use_async:
+                # Run async download
+                asyncio.run(
+                    ImageTool.dwl_multiple_async(
+                        panoids_rest,
+                        zoom,
+                        v_tiles,
+                        h_tiles,
+                        self.panorama_output,
+                        UAs,
+                        self._proxies,
+                        cropped,
+                        full,
+                        batch_size=batch_size,
+                        logger=self.logger,
+                        max_concurrency=self.max_concurrency,
+                        verbosity=self.verbosity,
+                    )
+                )
+            else:
+                # Run synchronous download
+                ImageTool.dwl_multiple(
+                    panoids_rest,
+                    zoom,
+                    v_tiles,
+                    h_tiles,
+                    self.panorama_output,
+                    UAs,
+                    self._proxies,
+                    cropped,
+                    full,
+                    batch_size=batch_size,
+                    logger=self.logger,
+                    max_workers=self.max_workers,
+                    verbosity=self.verbosity,
+                )
         else:
             print("All images have been downloaded")
 
         if download_depth:
+            # Note: For GSV, async is not implemented for main image downloads due to tile assembly complexity
+            # Async could be implemented for depth downloads in the future
             self._download_depth(path_pid, dir_output, zoom=zoom)
 
         # delete the cache directory
@@ -830,7 +1079,7 @@ class GSVDownloader(BaseDownloader):
 
         # Augment metadata
         print("Augmenting metadata with year and month information...")
-        updated_df = self._augment_metadata(df)
+        updated_df = self._augment_metadata(df, use_async=False)  # Use sync for update_metadata method
 
         # Save the augmented metadata
         updated_df.to_csv(output_path, index=False)

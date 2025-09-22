@@ -20,7 +20,7 @@ from zensvi.utils.log import verbosity_tqdm
 _Model = namedtuple("Model", ["name", "layer", "layer_output_size"])
 
 _models_dict = {
-    "resnet-18": _Model("resnet18", "avgpool", 512),
+    "resnet18": _Model("resnet18", "avgpool", 512),
     "alexnet": _Model("alexnet", "classifier", 4096),
     "vgg": _Model("vgg11", "classifier", 4096),
     "densenet": _Model("densenet121", "classifier", 1024),
@@ -81,7 +81,7 @@ class Embeddings:
 
     def __init__(
         self,
-        model_name: str = "resnet-18",
+        model_name: str = "resnet18",
         cuda: bool = False,
         tensor: bool = True,
         verbosity: int = 1,
@@ -100,7 +100,7 @@ class Embeddings:
 
         Args:
             model_name: Name of the model to be used for extracting embeddings.
-                Default is 'resnet-18'. Other options include 'alexnet', 'vgg',
+                Default is 'resnet18'. Other options include 'alexnet', 'vgg',
                 'densenet', and 'efficientnet_b0' through 'efficientnet_b7'.
             cuda: Whether to use CUDA for GPU acceleration. Default is False.
             tensor: Whether to return the embedding as a PyTorch tensor.

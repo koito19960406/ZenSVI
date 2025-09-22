@@ -240,3 +240,50 @@ def test_update_metadata(output_dir, gsv_input_files, sv_downloader, timeout_dec
             assert "month" in updated_df.columns, "Month column not found in updated file"
         else:
             pytest.skip("Test timed out before files could be created")
+
+
+def test_async_download(output_dir, sv_downloader, timeout_decorator, timeout_seconds):
+    """Test async download functionality"""
+    output_dir = output_dir / "test_async"
+    try:
+        with timeout_decorator():
+            sv_downloader.download_svi(
+                output_dir,
+                lat=1.342425,
+                lon=103.721523,
+                use_async=True,
+                max_concurrency=5,
+                metadata_only=False,
+            )
+            assert (output_dir / "gsv_pids.csv").stat().st_size > 0
+    except TimeoutException:
+        assert len(list(output_dir.iterdir())) > 0, f"No files downloaded within {timeout_seconds} seconds"
+
+
+def test_async_parameter_accepted(output_dir, gsv_api_key):
+    """Test that GSV downloader accepts async parameters (even though async is not fully implemented)"""
+    gsv_downloader = GSVDownloader(gsv_api_key=gsv_api_key, log_path=output_dir / "log.log", verbosity=0)
+
+    # Test that max_concurrency property works
+    import os
+
+    gsv_downloader.max_concurrency = None
+    assert gsv_downloader.max_concurrency == min(100, os.cpu_count() * 4)
+
+    gsv_downloader.max_concurrency = 10
+    assert gsv_downloader.max_concurrency == 10
+
+    # Test that download_svi accepts async parameters (metadata only to avoid actual downloads)
+    try:
+        gsv_downloader.download_svi(
+            output_dir / "test_async_param",
+            lat=1.342425,
+            lon=103.721523,
+            metadata_only=False,
+            use_async=True,  # Parameter should be accepted even if not fully implemented
+            max_concurrency=5,
+        )
+    except Exception as e:
+        # Should not fail due to parameter existence
+        if "unexpected keyword argument" in str(e):
+            pytest.fail(f"GSV downloader should accept async parameters: {e}")

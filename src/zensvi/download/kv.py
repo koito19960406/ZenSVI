@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import glob
 import logging
@@ -7,6 +8,7 @@ import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+import aiohttp
 import geopandas as gpd
 import osmnx as ox
 import pandas as pd
@@ -37,6 +39,7 @@ class KVDownloader(BaseDownloader):
         super().__init__(log_path)
         self._max_workers = max_workers
         self._verbosity = verbosity
+        self._max_concurrency = None
         # initialize the logger
         if log_path is not None:
             # make log directory
@@ -73,6 +76,22 @@ class KVDownloader(BaseDownloader):
     @verbosity.setter
     def verbosity(self, verbosity):
         self._verbosity = verbosity
+
+    @property
+    def max_concurrency(self):
+        """Property for the maximum concurrency for async operations.
+
+        Returns:
+            int: max_concurrency level
+        """
+        return self._max_concurrency
+
+    @max_concurrency.setter
+    def max_concurrency(self, max_concurrency):
+        if max_concurrency is None:
+            self._max_concurrency = min(100, os.cpu_count() * 4)
+        else:
+            self._max_concurrency = max_concurrency
 
     def _read_pids(self, path_pid):
         pid_df = pd.read_csv(path_pid)
@@ -194,6 +213,116 @@ class KVDownloader(BaseDownloader):
         urls = pid[["id", "fileurlProc"]].rename(columns={"fileurlProc": "url"})
         urls.to_csv(self.pids_url, index=False)
 
+    async def _download_images_kv_async(self, path_pid, cropped, batch_size, start_date, end_date):
+        """Async version of image download with concurrency control."""
+        checkpoints = glob.glob(str(self.panorama_output / "**/*.png"), recursive=True)
+
+        # Read already downloaded images and convert to ids
+        downloaded_ids = set([int(Path(file_path).stem) for file_path in checkpoints])
+
+        pid_df = pd.read_csv(path_pid).dropna(subset=["id"])
+        pid_df["id"] = pid_df["id"].astype("int64")
+        urls_df = pd.read_csv(self.pids_url)
+        urls_df["id"] = urls_df["id"].astype("int64")
+        # merge pid_df and urls_df
+        urls_df = urls_df.merge(pid_df, on="id", how="left")
+        # filter out the rows by date
+        urls_df = self._filter_pids_date(urls_df, start_date, end_date)
+
+        # Filter out the ids that have already been processed
+        urls_df = urls_df[~urls_df["id"].isin(downloaded_ids)]
+
+        async def download_single_image(session, semaphore, row, output_dir, cropped, max_retries=5):
+            """Download a single image with semaphore-controlled concurrency."""
+            async with semaphore:
+                url, panoid = row.url, row.id
+                user_agent = random.choice(self._user_agents)
+                proxy = random.choice(self._proxies)
+
+                image_name = f"{panoid}.png"
+                image_path = output_dir / image_name
+
+                for retry in range(max_retries):
+                    try:
+                        proxy_url = f"http://{proxy['http']}" if proxy and "http" in proxy else None
+
+                        async with session.get(
+                            url, headers=user_agent, proxy=proxy_url, timeout=aiohttp.ClientTimeout(total=10)
+                        ) as response:
+                            if response.status == 200:
+                                content = await response.read()
+                                with open(image_path, "wb") as f:
+                                    f.write(content)
+
+                                if cropped:
+                                    img = Image.open(image_path)
+                                    w, h = img.size
+                                    img_cropped = img.crop((0, 0, w, h // 2))
+                                    img_cropped.save(image_path)
+                                break
+                            else:
+                                if retry == max_retries - 1:  # Last retry
+                                    if self.logger is not None:
+                                        self.logger.log_failed_pid(panoid)
+                    except Exception as e:
+                        if retry == max_retries - 1:  # Last retry
+                            if self.logger is not None:
+                                self.logger.log_failed_pid(panoid)
+                            print(f"Error: {e}")
+                        else:
+                            print(f"Retry {retry + 1}/{max_retries} failed: {e}")
+
+        num_batches = (len(urls_df) + batch_size - 1) // batch_size
+
+        # Calculate current highest batch number
+        existing_batches = glob.glob(str(self.panorama_output / "batch_*"))
+        existing_batch_numbers = [int(Path(batch).name.split("_")[-1]) for batch in existing_batches]
+        start_batch_number = max(existing_batch_numbers, default=0)
+
+        # Create semaphore for concurrency control
+        semaphore = asyncio.Semaphore(self.max_concurrency)
+
+        for i in verbosity_tqdm(
+            range(start_batch_number, start_batch_number + num_batches),
+            desc=f"Downloading images by batch size {min(batch_size, len(urls_df))}",
+            level=1,
+            verbosity=self.verbosity,
+        ):
+            # Create a new sub-folder for each batch
+            batch_out_path = self.panorama_output / f"batch_{i+1}"
+            batch_out_path.mkdir(exist_ok=True)
+
+            batch_urls = urls_df.iloc[(i - start_batch_number) * batch_size : (i + 1 - start_batch_number) * batch_size]
+
+            async with aiohttp.ClientSession() as session:
+                tasks = [
+                    download_single_image(session, semaphore, row, batch_out_path, cropped)
+                    for row in batch_urls.itertuples()
+                ]
+
+                # Use asyncio.as_completed equivalent with progress tracking
+                completed = 0
+                total_tasks = len(tasks)
+
+                # Create progress bar without using as context manager
+                pbar = verbosity_tqdm(
+                    range(total_tasks),
+                    desc=f"Downloading images for batch #{i+1}",
+                    level=2,
+                    verbosity=self.verbosity,
+                )
+
+                for coro in asyncio.as_completed(tasks):
+                    try:
+                        await coro
+                        completed += 1
+                        if hasattr(pbar, 'update'):
+                            pbar.update(1)
+                    except Exception as e:
+                        print(f"Task failed: {e}")
+                        if hasattr(pbar, 'update'):
+                            pbar.update(1)
+
     def _download_images_kv(self, path_pid, cropped, batch_size, start_date, end_date):
         checkpoints = glob.glob(str(self.panorama_output / "**/*.png"), recursive=True)
 
@@ -298,6 +427,8 @@ class KVDownloader(BaseDownloader):
         end_date=None,
         metadata_only=False,
         max_workers=None,
+        use_async=False,
+        max_concurrency=None,
     ):
         """Downloads street view images from KartaView using specified parameters.
 
@@ -317,6 +448,8 @@ class KVDownloader(BaseDownloader):
             end_date (str, optional): End date (YYYY-MM-DD) to filter images by capture date.
             metadata_only (bool, optional): If True, skips downloading images and only fetches metadata. Defaults to False.
             max_workers (int, optional): Number of workers for parallel processing. If None, it will be set to min(32, os.cpu_count() + 4).
+            use_async (bool, optional): If True, uses async/await for concurrent downloads. Defaults to False.
+            max_concurrency (int, optional): Maximum number of concurrent async downloads. If None, defaults to min(100, os.cpu_count() * 4).
 
         Returns:
             None: This method does not return a value but will save files directly to the specified output directory.
@@ -348,8 +481,9 @@ class KVDownloader(BaseDownloader):
                 metadata_only=metadata_only,
                 max_workers=max_workers,
             )
-        # Set max_workers
+        # Set max_workers and max_concurrency
         self.max_workers = max_workers
+        self.max_concurrency = max_concurrency
 
         # set necessary directories
         self._set_dirs(dir_output)
@@ -401,7 +535,29 @@ class KVDownloader(BaseDownloader):
         if path_pid.exists():
             self._get_urls_kv(path_pid)
             # download images
-            self._download_images_kv(path_pid, cropped, batch_size, start_date, end_date)
+            if use_async:
+                # Run async download in event loop
+                try:
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        # If we're already in an async context, create a new thread
+                        import concurrent.futures
+
+                        with concurrent.futures.ThreadPoolExecutor() as executor:
+                            future = executor.submit(
+                                asyncio.run,
+                                self._download_images_kv_async(path_pid, cropped, batch_size, start_date, end_date),
+                            )
+                            future.result()
+                    else:
+                        loop.run_until_complete(
+                            self._download_images_kv_async(path_pid, cropped, batch_size, start_date, end_date)
+                        )
+                except RuntimeError:
+                    # No event loop exists, create one
+                    asyncio.run(self._download_images_kv_async(path_pid, cropped, batch_size, start_date, end_date))
+            else:
+                self._download_images_kv(path_pid, cropped, batch_size, start_date, end_date)
         else:
             print("There is no imagae ID to download within the given input parameters")
 
