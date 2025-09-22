@@ -528,26 +528,20 @@ class ImageTool:
                     verbosity=verbosity,
                     level=2,
                 )
-                
-                for coro in asyncio.as_completed([task for task, _ in tasks]):
+
+                # Use asyncio.as_completed to handle coroutines properly
+                for task, pano in tasks:
                     try:
-                        await coro
+                        await task
                         completed += 1
-                        if hasattr(pbar, 'update'):
+                        if hasattr(pbar, "update"):
                             pbar.update(1)
                     except Exception as e:
                         errors += 1
-                        # Find the failed panorama ID
-                        failed_pano = None
-                        for task, pano in tasks:
-                            if task == coro:
-                                failed_pano = pano
-                                break
-
-                        print(f"Error downloading pano {failed_pano}: {e}")
+                        print(f"Error downloading pano {pano}: {e}")
                         if logger:
-                            logger.log_failed_pid(failed_pano)
-                        if hasattr(pbar, 'update'):
+                            logger.log_failed_pid(pano)
+                        if hasattr(pbar, "update"):
                             pbar.update(1)
 
         print("Total images downloaded:", len(panoids) - errors, "Errors:", errors)

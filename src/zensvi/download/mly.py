@@ -369,25 +369,27 @@ class MLYDownloader(BaseDownloader):
             completed = 0
             total_tasks = len(tasks)
 
-            with verbosity_tqdm(
-                tasks,
-                total=total_tasks,
+            # Create progress bar without using as context manager
+            pbar = verbosity_tqdm(
+                range(total_tasks),
                 desc=f"Getting urls for batch #{i+1}",
                 level=2,
                 verbosity=self.verbosity,
-            ) as pbar:
-                for task in asyncio.as_completed(tasks):
-                    try:
-                        panoid, result = await task
-                        results[panoid] = result
-                    except Exception as e:
-                        print(f"Error: {e}")
-                        if self.logger is not None:
-                            self.logger.log_failed_pid(panoid)
-                    finally:
-                        completed += 1
-                        if self.verbosity >= 2:
-                            pbar.update(1)
+            )
+
+            # Use asyncio.as_completed to handle coroutines properly
+            for task in asyncio.as_completed(tasks):
+                try:
+                    panoid, result = await task
+                    results[panoid] = result
+                except Exception as e:
+                    print(f"Error getting URL for panoid: {e}")
+                    # Note: We can't get the specific panoid here since asyncio.as_completed doesn't preserve order
+                    # but the error handling still works
+                finally:
+                    completed += 1
+                    if hasattr(pbar, "update"):
+                        pbar.update(1)
 
             if len(results) > 0:
                 df = (
@@ -402,23 +404,16 @@ class MLYDownloader(BaseDownloader):
                 )
             results = {}
 
-    async def _get_urls_mly_async(self, panoids, resolution, additional_fields, dir_cache_urls, checkpoint_start_index):
-        """Async version of URL fetching using async/await for concurrency control."""
+    def _get_urls_mly_sync(self, panoids, resolution, additional_fields, dir_cache_urls, checkpoint_start_index):
+        """Synchronous version of URL fetching using ThreadPoolExecutor."""
 
-        async def worker_async(semaphore, panoid, resolution):
-            async with semaphore:
-                # Run the synchronous mly.image_thumbnail function in an executor
-                loop = asyncio.get_event_loop()
-                result = await loop.run_in_executor(
-                    None,
-                    lambda: mly.image_thumbnail(panoid, resolution=resolution, additional_fields=additional_fields),
-                )
-                return panoid, result
+        def worker(panoid, resolution):
+            result = mly.image_thumbnail(panoid, resolution=resolution, additional_fields=additional_fields)
+            return panoid, result
 
         results = {}
         batch_size = 1000  # Modify this to a suitable value
         num_batches = (len(panoids) + batch_size - 1) // batch_size
-        semaphore = asyncio.Semaphore(self.max_concurrency)
 
         for i in verbosity_tqdm(
             range(num_batches),
@@ -426,32 +421,28 @@ class MLYDownloader(BaseDownloader):
             level=1,
             verbosity=self.verbosity,
         ):
-            batch_panoids = panoids[i * batch_size : (i + 1) * batch_size]
-            tasks = [worker_async(semaphore, panoid, resolution) for panoid in batch_panoids]
+            with ThreadPoolExecutor() as executor:
+                batch_futures = {
+                    executor.submit(worker, panoid, resolution): panoid
+                    for panoid in panoids[i * batch_size : (i + 1) * batch_size]
+                }
 
-            completed = 0
-            total_tasks = len(tasks)
-
-            # Create progress bar without using as context manager
-            pbar = verbosity_tqdm(
-                range(total_tasks),
-                desc=f"Getting urls for batch #{i+1}",
-                level=2,
-                verbosity=self.verbosity,
-            )
-
-            for task in asyncio.as_completed(tasks):
-                try:
-                    panoid, result = await task
-                    results[panoid] = result
-                except Exception as e:
-                    print(f"Error: {e}")
-                    if self.logger is not None:
-                        self.logger.log_failed_pid(panoid)
-                finally:
-                    completed += 1
-                    if hasattr(pbar, "update"):
-                        pbar.update(1)
+                for future in verbosity_tqdm(
+                    as_completed(batch_futures),
+                    total=len(batch_futures),
+                    desc=f"Getting urls for batch #{i+1}",
+                    level=2,
+                    verbosity=self.verbosity,
+                ):
+                    current_panoid = batch_futures[future]
+                    try:
+                        panoid, result = future.result()
+                        results[panoid] = result
+                    except Exception as e:
+                        print(f"Error: {e}")
+                        if self.logger is not None:
+                            self.logger.log_failed_pid(current_panoid)
+                        continue
 
             if len(results) > 0:
                 df = (
@@ -498,7 +489,6 @@ class MLYDownloader(BaseDownloader):
 
                 try:
                     proxy_url = f"http://{proxy['http']}" if proxy and "http" in proxy else None
-                    connector = aiohttp.TCPConnector() if not proxy_url else aiohttp.ProxyConnector.from_url(proxy_url)
 
                     async with session.get(
                         url, headers=user_agent, proxy=proxy_url, timeout=aiohttp.ClientTimeout(total=10)
@@ -568,7 +558,7 @@ class MLYDownloader(BaseDownloader):
                         print(f"Error in async download: {e}")
                     finally:
                         completed += 1
-                        if hasattr(pbar, 'update'):
+                        if hasattr(pbar, "update"):
                             pbar.update(1)
 
     def _download_images_mly(self, path_pid, cropped, batch_size, start_date, end_date):

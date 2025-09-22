@@ -1,53 +1,54 @@
 {
-    "type": "FeatureCollection",
-    "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
-    "features": [
-      {
-        "type": "Feature",
-        "properties": {
-          "place_id": 260190579,
-          "osm_type": "way", 
-          "osm_id": 795876723,
-          "display_name": "Clementi (Reduced), Southwest, Singapore",
-          "class": "place",
-          "type": "suburb"
-        },
-        "geometry": {
-          "type": "Polygon",
-          "coordinates": [
-            [
-              [103.75930, 1.30640],
-              [103.75935, 1.30640],
-              [103.75935, 1.30645],
-              [103.75930, 1.30645],
-              [103.75930, 1.30640]
-            ]
-          ]
-        }
+  "type": "FeatureCollection",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "place_id": 260190579,
+        "osm_type": "way", 
+        "osm_id": 795876723,
+        "display_name": "Clementi (Reduced), Southwest, Singapore",
+        "class": "place",
+        "type": "suburb",
+        "name": "Clementi (Reduced)"
       },
-      {
-        "type": "Feature",
-        "properties": {
-          "place_id": 260190580,
-          "osm_type": "way",
-          "osm_id": 795876724,
-          "display_name": "West Coast (Reduced), Southwest, Singapore", 
-          "class": "place",
-          "type": "suburb",
-          "name": "West Coast (Reduced)"
-        },
-        "geometry": {
-          "type": "Polygon",
-          "coordinates": [
-            [
-              [103.75960, 1.30600],
-              [103.75965, 1.30600],
-              [103.75965, 1.30605],
-              [103.75960, 1.30605],
-              [103.75960, 1.30600]
-            ]
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [103.75905, 1.30625],
+            [103.75955, 1.30625],
+            [103.75955, 1.30675],
+            [103.75905, 1.30675],
+            [103.75905, 1.30625]
           ]
-        }
+        ]
       }
-    ]
-  }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "place_id": 260190580,
+        "osm_type": "way",
+        "osm_id": 795876724,
+        "display_name": "West Coast (Reduced), Southwest, Singapore", 
+        "class": "place",
+        "type": "suburb",
+        "name": "West Coast (Reduced)"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [103.75935, 1.30575],
+            [103.75985, 1.30575],
+            [103.75985, 1.30625],
+            [103.75935, 1.30625],
+            [103.75935, 1.30575]
+          ]
+        ]
+      }
+    }
+  ]
+}

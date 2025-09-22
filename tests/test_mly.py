@@ -102,7 +102,7 @@ def test_downloader_input_types(
         pass  # Allow timeout, we'll check results next
 
     # Check if files were downloaded within the 60-second window
-    files = list(output_dir.iterdir())
+    files = list((output_dir / "mly_svi/batch_1").iterdir())
     assert len(files) >= expected_files, f"No files downloaded within {timeout_seconds} seconds for {input_type}"
 
 

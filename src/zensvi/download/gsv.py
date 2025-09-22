@@ -403,7 +403,6 @@ class GSVDownloader(BaseDownloader):
         results = []
         batch_size = 1000  # Modify this to a suitable value
         num_batches = (len(df) + batch_size - 1) // batch_size
-        failed_rows = []
         semaphore = asyncio.Semaphore(self.max_concurrency)
 
         # if not, process the rows

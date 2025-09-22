@@ -316,11 +316,11 @@ class KVDownloader(BaseDownloader):
                     try:
                         await coro
                         completed += 1
-                        if hasattr(pbar, 'update'):
+                        if hasattr(pbar, "update"):
                             pbar.update(1)
                     except Exception as e:
                         print(f"Task failed: {e}")
-                        if hasattr(pbar, 'update'):
+                        if hasattr(pbar, "update"):
                             pbar.update(1)
 
     def _download_images_kv(self, path_pid, cropped, batch_size, start_date, end_date):

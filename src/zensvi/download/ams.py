@@ -445,7 +445,6 @@ class AMSDownloader(BaseDownloader):
                                     async with session.get(image_url, headers=headers, proxy=proxy_url) as img_response:
                                         if img_response.status == 200:
                                             img_content = await img_response.read()
-                                            img_path = os.path.join(self.dir_output, f"{pid}.jpg")
 
                                             # Use asyncio to run file I/O and image processing in executor
                                             loop = asyncio.get_event_loop()
