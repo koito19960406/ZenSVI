@@ -86,9 +86,9 @@ def all_devices(request):
 
 
 @pytest.fixture(autouse=True, scope="function")
-def cleanup_after_test(output_dir):
+def cleanup_after_test(base_output_dir):
     """Fixture to clean up downloaded files after each test function"""
     yield  # Wait for the test function to complete
-    if output_dir.exists():
-        print(f"Cleaning up {output_dir} after test function")  # Optional: for debugging
-        shutil.rmtree(output_dir)
+    if base_output_dir.exists():
+        print(f"Cleaning up {base_output_dir} after test function")  # Optional: for debugging
+        shutil.rmtree(base_output_dir)

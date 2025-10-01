@@ -68,7 +68,7 @@ class PointCloudProcessor:
             self.logger.log_args("PointCloudProcessor._load_images", data=data)
 
         images = {}
-        extensions = [".jpg", ".jpeg", ".png"]
+        extensions = [".jpg", ".jpeg", ".png", ".tiff"]
 
         for image_id in data["id"].unique():
             depth_found = color_found = False
@@ -96,13 +96,15 @@ class PointCloudProcessor:
                 print(f"Warning: Missing images for ID {image_id}")
         return images
 
-    def convert_to_point_cloud(self, depth_img, color_img, depth_max):
+    def convert_to_point_cloud(self, depth_img, color_img, depth_max=None, use_absolute_depth=False):
         """Converts a single depth and color image pair to a point cloud.
 
         Args:
             depth_img (np.ndarray): The depth image.
             color_img (np.ndarray): The corresponding color image.
-            depth_max (float): Maximum value for depth normalization.
+            depth_max (float, optional): Maximum value for depth normalization. If None, will be extracted from depth_img.
+            use_absolute_depth (bool): If True, uses absolute depth values for point cloud generation.
+                                     If False, uses relative depth values (normalized).
 
         Returns:
             o3d.geometry.PointCloud: The generated point cloud with color.
@@ -113,7 +115,16 @@ class PointCloudProcessor:
                 depth_img=depth_img,
                 color_img=color_img,
                 depth_max=depth_max,
+                use_absolute_depth=use_absolute_depth,
             )
+
+        # Extract depth_max from depth_img if not provided
+        if depth_max is None:
+            depth_max = np.max(depth_img)
+
+        # Ensure depth and color images have same dimensions
+        if depth_img.shape[0] != color_img.shape[0] or depth_img.shape[1] != color_img.shape[1]:
+            color_img = np.array(Image.fromarray(color_img).resize((depth_img.shape[1], depth_img.shape[0])))
 
         xs, ys = depth_img.shape[1], depth_img.shape[0]
 
@@ -126,16 +137,30 @@ class PointCloudProcessor:
             b = -0.5 * np.pi + y * db
             for x in range(xs):
                 a = x * da
-                r1 = depth_img[y, x]
-                r2 = (255 - r1) / depth_max
+                r_pixel = depth_img[y, x]
 
-                xx = 3 * r2**4 * np.cos(a) * np.cos(b) / (np.log(1.1 + 5 * (y / (ys - 1))))
-                yy = 3 * r2**4 * np.sin(a) * np.cos(b) / (np.log(1.1 + 5 * (y / (ys - 1))))
-                zz = (2 * r2) ** 2 * np.sin(b)
+                if use_absolute_depth:
+                    # Use absolute depth values
+                    r = float(r_pixel)
+                    if r <= 0 or r > depth_max:
+                        continue
+                    # Convert spherical to Cartesian coordinates
+                    X = r * np.cos(b) * np.cos(a)
+                    Y = r * np.cos(b) * np.sin(a)
+                    Z = r * np.sin(b)
+                else:
+                    # Use relative depth values (normalized)
+                    r1 = r_pixel
+                    r2 = (depth_max - r1) / depth_max
 
-                c = color_img[y, x] / 255.0  # Normalizing color
-                points.append([xx, yy, zz])
-                colors.append(c)
+                    xx = 3 * r2**4 * np.cos(a) * np.cos(b) / (np.log(1.1 + 5 * (y / (ys - 1))))
+                    yy = 3 * r2**4 * np.sin(a) * np.cos(b) / (np.log(1.1 + 5 * (y / (ys - 1))))
+                    zz = (2 * r2) ** 2 * np.sin(b)
+                    X, Y, Z = xx, yy, zz
+
+                color = color_img[y, x] / 255.0
+                points.append([X, Y, Z])
+                colors.append(color)
 
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(np.array(points))
@@ -201,7 +226,9 @@ class PointCloudProcessor:
         colors = np.asarray(pcd.colors)
         np.savez(output_path, points=points, colors=colors)
 
-    def process_multiple_images(self, data, output_dir=None, save_format="pcd"):
+    def process_multiple_images(
+        self, data, depth_max=None, use_absolute_depth=True, output_dir=None, save_format="pcd"
+    ):
         """Generates a point cloud for each entry in the data based on pre-loaded depth
         and color images.
 
@@ -224,7 +251,9 @@ class PointCloudProcessor:
                 depth_img = images[image_id]["depth"]
                 color_img = images[image_id]["color"]
 
-                pcd = self.convert_to_point_cloud(depth_img, color_img, self.depth_max)
+                pcd = self.convert_to_point_cloud(
+                    depth_img, color_img, depth_max=depth_max, use_absolute_depth=use_absolute_depth
+                )
                 if output_dir:
                     output_path = Path(output_dir) / f"{image_id}.{save_format}"
                     if save_format == "pcd":
@@ -243,11 +272,22 @@ class PointCloudProcessor:
         if not output_dir:
             return pcd_list
 
-    def visualize_point_cloud(self, pcd):
+    def visualize_point_cloud(
+        self, pcd, marker_size=3, opacity=0.8, camera_eye=dict(x=0, y=0, z=-1), camera_up=dict(x=0, y=-1, z=0)
+    ):
         """Visualizes a point cloud using Plotly.
 
         Args:
             pcd (o3d.geometry.PointCloud): The point cloud object to visualize.
+            marker_size (int, optional): Size of the markers in the plot. Defaults to 3.
+            opacity (float, optional): Opacity of the markers (0.0 to 1.0). Defaults to 0.8.
+            camera_eye (dict, optional): Dictionary specifying the position of the camera eye. 
+                Should contain keys 'x', 'y', and 'z'. Defaults to {'x': 0, 'y': 0, 'z': -1}.
+            camera_up (dict, optional): Dictionary specifying the up direction of the camera. 
+                Should contain keys 'x', 'y', and 'z'. Defaults to {'x': 0, 'y': -1, 'z': 0}.
+
+        Returns:
+            None: Displays an interactive 3D plot of the point cloud.
         """
         if self.logger:
             self.logger.log_args("PointCloudProcessor.visualize_point_cloud", pcd=pcd)
@@ -262,9 +302,9 @@ class PointCloudProcessor:
                     z=points[:, 2],
                     mode="markers",
                     marker=dict(
-                        size=3,
+                        size=marker_size,
                         color=colors,  # Color mapping
-                        opacity=0.8,  # Slightly transparent
+                        opacity=opacity,  # Slightly transparent
                     ),
                 )
             ],
@@ -274,6 +314,10 @@ class PointCloudProcessor:
                     yaxis=dict(visible=True),
                     zaxis=dict(visible=True),
                     aspectmode="data",  # this controls the scale of the axes
+                    camera=dict(
+                        eye=camera_eye,
+                        up=camera_up,
+                    ),
                 )
             ),
         )
