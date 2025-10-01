@@ -31,9 +31,10 @@ def test_batch_processing_generates_separate_files(temp_output_dir, sample_image
     """Test that batch processing generates separate point cloud files for each image."""
 
     # Mock the heavy dependencies
-    with patch("zensvi.transform.image_to_pointcloud_vggt.torch"), patch(
-        "zensvi.transform.image_to_pointcloud_vggt.o3d"
-    ) as mock_o3d:
+    with (
+        patch("zensvi.transform.image_to_pointcloud_vggt.torch"),
+        patch("zensvi.transform.image_to_pointcloud_vggt.o3d") as mock_o3d,
+    ):
 
         # Mock the VGGT model initialization to avoid loading the actual model
         with patch.object(VGGTProcessor, "__init__", return_value=None):
@@ -94,9 +95,10 @@ def test_batch_processing_with_single_image(temp_output_dir):
     image_file = temp_output_dir / "single_test.jpg"
     image_file.touch()
 
-    with patch("zensvi.transform.image_to_pointcloud_vggt.torch"), patch(
-        "zensvi.transform.image_to_pointcloud_vggt.o3d"
-    ) as mock_o3d:
+    with (
+        patch("zensvi.transform.image_to_pointcloud_vggt.torch"),
+        patch("zensvi.transform.image_to_pointcloud_vggt.o3d") as mock_o3d,
+    ):
 
         with patch.object(VGGTProcessor, "__init__", return_value=None):
             processor = VGGTProcessor.__new__(VGGTProcessor)
