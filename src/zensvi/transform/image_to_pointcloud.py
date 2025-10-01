@@ -279,15 +279,10 @@ class PointCloudProcessor:
 
         Args:
             pcd (o3d.geometry.PointCloud): The point cloud object to visualize.
-            marker_size (int, optional): Size of the markers in the plot. Defaults to 3.
-            opacity (float, optional): Opacity of the markers (0.0 to 1.0). Defaults to 0.8.
-            camera_eye (dict, optional): Dictionary specifying the position of the camera eye. 
-                Should contain keys 'x', 'y', and 'z'. Defaults to {'x': 0, 'y': 0, 'z': -1}.
-            camera_up (dict, optional): Dictionary specifying the up direction of the camera. 
-                Should contain keys 'x', 'y', and 'z'. Defaults to {'x': 0, 'y': -1, 'z': 0}.
-
-        Returns:
-            None: Displays an interactive 3D plot of the point cloud.
+            marker_size (int): Size of point markers.
+            opacity (float): Opacity of points.
+            camera_eye (dict): Camera position.
+            camera_up (dict): Camera up direction.
         """
         if self.logger:
             self.logger.log_args("PointCloudProcessor.visualize_point_cloud", pcd=pcd)
