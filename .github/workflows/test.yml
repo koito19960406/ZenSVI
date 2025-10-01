@@ -67,11 +67,11 @@ jobs:
 
     - name: Check coverage file
       run: cat coverage-service.xml
-    
+        
     - name: Upload coverage reports to Codecov
       shell: bash
       run: |
-        ./codecov --verbose upload-process --fail-on-error -t ${{ secrets.CODECOV_TOKEN }} -n '${{ matrix.os }}-py${{ matrix.python-version }}-${{ github.run_id }}' -F service -f coverage-service.xml
+        ./codecov --verbose upload-process --fail-on-error -t ${{ secrets.CODECOV_TOKEN }} -n "${{ matrix.os }}-py${{ matrix.python-version }}-${{ github.run_id }}" -F service -f coverage-service.xml
     
     # Cleanup after tests
     - name: Cleanup test artifacts
