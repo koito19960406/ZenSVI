@@ -204,20 +204,22 @@ class VGGTProcessor:
             dir_output: Output directory
         """
         try:
-            # Process images
-            predictions = self.process_images(image_paths)
+            # Process each image individually to generate separate point clouds
+            for i, (image_file, image_path, original_size) in enumerate(zip(image_files, image_paths, original_sizes)):
+                # Process single image
+                predictions = self.process_images([image_path])
 
-            # Generate point cloud
-            points, colors, conf, cam_to_world = self.generate_point_cloud(predictions)
+                # Generate point cloud
+                points, colors, conf, cam_to_world = self.generate_point_cloud(predictions)
 
-            # Create point cloud
-            pcd = o3d.geometry.PointCloud()
-            pcd.points = o3d.utility.Vector3dVector(points)
-            pcd.colors = o3d.utility.Vector3dVector(colors / 255.0)
+                # Create point cloud
+                pcd = o3d.geometry.PointCloud()
+                pcd.points = o3d.utility.Vector3dVector(points)
+                pcd.colors = o3d.utility.Vector3dVector(colors / 255.0)
 
-            # Save point cloud
-            output_file = dir_output / f"{image_files[0].stem}.ply"
-            o3d.io.write_point_cloud(str(output_file), pcd)
+                # Save point cloud with correct filename for each image
+                output_file = dir_output / f"{image_file.stem}.ply"
+                o3d.io.write_point_cloud(str(output_file), pcd)
 
         except Exception as e:
             print(f"Failed to process batch: {str(e)}")
