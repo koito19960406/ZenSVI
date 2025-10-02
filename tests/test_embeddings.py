@@ -63,7 +63,7 @@ def test_search_similar_images(output_dir, input_dir, cuda):
 def test_all_models(output_dir, input_dir, cuda):
     _Model = namedtuple("Model", ["name", "layer", "layer_output_size"])
     models_dict = {
-        "resnet-18": _Model("resnet18", "avgpool", 512),
+        "resnet18": _Model("resnet18", "avgpool", 512),
         "alexnet": _Model("alexnet", "classifier", 4096),
         "vgg": _Model("vgg11", "classifier", 4096),
         "densenet": _Model("densenet", "classifier", 1024),

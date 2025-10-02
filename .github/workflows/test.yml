@@ -11,6 +11,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: recursive
     
     # Clear disk space (Linux only)
     - name: Free disk space
@@ -39,7 +41,10 @@ jobs:
       run: |
         poetry lock
         poetry install --no-interaction --with dev
-    
+
+    - name: Install VGGT dependencies
+      run: poetry run pip install -r src/zensvi/transform/vggt/requirements.txt
+
     - name: Run tests with coverage
       run: poetry run pytest --cov=src/zensvi --cov-report=xml:coverage-service.xml
       env:
@@ -62,11 +67,11 @@ jobs:
 
     - name: Check coverage file
       run: cat coverage-service.xml
-    
+        
     - name: Upload coverage reports to Codecov
       shell: bash
       run: |
-        ./codecov --verbose upload-process --fail-on-error -t ${{ secrets.CODECOV_TOKEN }} -n '${{ matrix.os }}-py${{ matrix.python-version }}-${{ github.run_id }}' -F service -f coverage-service.xml
+        ./codecov --verbose upload-process --fail-on-error -t ${{ secrets.CODECOV_TOKEN }} -n "${{ matrix.os }}-py${{ matrix.python-version }}-${{ github.run_id }}" -F service -f coverage-service.xml
     
     # Cleanup after tests
     - name: Cleanup test artifacts

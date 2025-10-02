@@ -47,7 +47,9 @@ open3d>=0.18.0
 scikit-learn>=1.5.2
 addict>=2.4.0
 groundingdino>=0.4.0
-
+einops>=0.8.1
+huggingface_hub>=0.33.0
+safetensors>=0.4.2
 # Development dependencies
 pytest>=8.0.0
 pytest-cov>=6.0.0
