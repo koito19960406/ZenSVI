@@ -1,6 +1,18 @@
 # Changelog
 
 <!--next-version-placeholder-->
+## v1.4.0 (02/10/2025)
+- **Dependency Updates**: Updated core dependencies and bumped package version for improved stability and compatibility.
+- **VGGT Integration**: Added new `VGGT` enhancement module for advanced 3D reconstruction workflows.
+- **Point Cloud Improvements**: Improved point cloud generation and processing features, enhancing performance and accuracy.
+- **General Enhancements**: Miscellaneous improvements and code cleanups across multiple modules.
+
+## v1.3.0 (09/06/2025)
+- **Object Detection Enhancement**: Added flexible output options and grouped summaries for improved analytics.
+- **Image Transformation Update**: Added alpha channel support to enable more accurate sky view factor calculations.
+- **Dependency Upgrades**: Updated dependencies and package versions in `poetry.lock` and `pyproject.toml` for better compatibility.
+- **Device Setting Simplification**: Simplified device selection and configuration for streamlined model usage.
+- **DepthAnythingV2 Module**: Added DepthAnythingV2 models and assets to improve depth estimation capabilities.
 
 ## v1.2.0 (01/03/2025)
 - **GSV Metadata Update Capability**: Added new `update_metadata` method for GSVDownloader to update year/month metadata for existing panorama IDs without redoing the entire download process.
