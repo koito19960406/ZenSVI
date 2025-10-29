@@ -194,3 +194,4 @@ class ClassifierWeather(BaseClassifier):
             "results",
             save_format=save_format,
         )
+        return results
