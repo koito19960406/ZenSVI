@@ -6,6 +6,8 @@
 
 # -- Project information -----------------------------------------------------
 
+from recommonmark.transform import AutoStructify
+
 project = "zensvi"
 copyright = "2024, koito19960406"
 author = "koito19960406"
@@ -44,7 +46,7 @@ nb_execution_mode = "off"
 # Bibtex settings
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "plain"
-autoapi_dirs = ["../src"]
+autoapi_dirs = ["../src/zensvi"]
 
 autoapi_options = [
     "members",
@@ -89,6 +91,7 @@ html_favicon = "_static/favicon.ico"  # Make sure you have a favicon file
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]
 
+
 def skip_util_classes(app, what, name, obj, skip, options):
     skip_packages = [
         "mapillary",
@@ -100,6 +103,7 @@ def skip_util_classes(app, what, name, obj, skip, options):
         "embeddings",
         "object_detection",
         "vggt",
+        "DepthAnythingV2",
     ]
     skip_modules = [
         "base",
@@ -120,8 +124,11 @@ def skip_util_classes(app, what, name, obj, skip, options):
         "config"
     ]
     skip_classes = ["ImageDataset", "GSVDownloader", "Logger"]
-    skip_keywords = ["utils", "torchhub", "zoedepth", "depth_anything", "dinov2"]
-
+    skip_keywords = ["util", "utils", "torchhub", "zoedepth", "depth_anything", "dinov2"]
+    
+    # if zensvi is not in the name, skip it
+    if "zensvi" not in name:
+        return True
     if what == "package" and any(pkg in name for pkg in skip_packages):
         return True
     if what == "module" and any(mod in name for mod in skip_modules):
@@ -147,7 +154,3 @@ def setup(app):
         True,
     )
     app.add_transform(AutoStructify)
-
-
-# Add this new import at the top of the file
-from recommonmark.transform import AutoStructify
