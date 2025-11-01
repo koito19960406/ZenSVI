@@ -385,3 +385,4 @@ class ClassifierPlaces365(BaseClassifier):
                 save_format=save_format,
                 csv_format=csv_format,
             )
+        return results

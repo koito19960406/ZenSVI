@@ -216,3 +216,4 @@ class ClassifierPanorama(BaseClassifier):
             "results",
             save_format=save_format,
         )
+        return results
