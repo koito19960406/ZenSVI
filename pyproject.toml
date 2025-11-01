@@ -5,6 +5,7 @@ description = "This package handles downloading, cleaning, analyzing street view
 authors = ["koito19960406"]
 license = "MIT"
 readme = "README.md"
+exclude = ["src/zensvi/transform/vggt"]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"
