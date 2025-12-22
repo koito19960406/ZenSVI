@@ -304,11 +304,11 @@ class ClassifierPerceptionViT(BaseClassifier):
         We temporarily register the module in sys.modules so torch.load can find it.
         """
         # Import the actual module that contains Net
-        from .utils.Model_01 import Net
-
         # Temporarily register Model_01 as a top-level module for torch.load
         # This is needed because the checkpoint was saved with 'Model_01.Net' as the class path
         import types
+
+        from .utils.Model_01 import Net
 
         model_01_module = types.ModuleType("Model_01")
         model_01_module.Net = Net
