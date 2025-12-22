@@ -1,4 +1,3 @@
-import os
 import sys
 from pathlib import Path
 from typing import List, Tuple, Union
@@ -273,15 +272,6 @@ class ClassifierPerceptionViT(BaseClassifier):
         )
         checkpoint_path = model_load_path + "/" + file_name
 
-        # PATCH: Fix for 'No module named Model_01' error during torch.load
-        # The saved weights require 'Model_01' to be available in the global sys.modules
-        try:
-            from .utils import Model_01
-
-            sys.modules["Model_01"] = Model_01
-        except (ImportError, AttributeError):
-            pass
-
         # Now load the model
         self.model = Net(num_classes=5)
         self.model = self._load_checkpoint(self.model, checkpoint_path)
@@ -308,7 +298,30 @@ class ClassifierPerceptionViT(BaseClassifier):
             df.to_json(file_path, orient="records")
 
     def _load_checkpoint(self, model, checkpoint_path):
-        model = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
+        """Load model checkpoint with proper module mapping for legacy checkpoints.
+        
+        The checkpoint was saved with a reference to 'Model_01.Net' as a top-level module.
+        We temporarily register the module in sys.modules so torch.load can find it.
+        """
+        # Import the actual module that contains Net
+        from .utils.Model_01 import Net
+        
+        # Temporarily register Model_01 as a top-level module for torch.load
+        # This is needed because the checkpoint was saved with 'Model_01.Net' as the class path
+        import types
+        model_01_module = types.ModuleType("Model_01")
+        model_01_module.Net = Net
+        sys.modules["Model_01"] = model_01_module
+        
+        try:
+            # Load the checkpoint (torch.load will use the registered module)
+            model = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
+        finally:
+            # Clean up: remove the temporary module registration
+            # Only remove if we added it (don't remove if it was already there)
+            if "Model_01" in sys.modules and sys.modules["Model_01"] is model_01_module:
+                del sys.modules["Model_01"]
+        
         return model
 
     def classify(
