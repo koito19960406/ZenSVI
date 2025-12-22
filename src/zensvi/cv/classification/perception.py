@@ -257,6 +257,8 @@ class ClassifierPerceptionViT(BaseClassifier):
             "safer": "safety.pth",
             "livelier": "lively.pth",
             "wealthy": "wealthy.pth",
+            # PATCH: Add alias for 'wealthier' to match documentation/user expectation
+            "wealthier": "wealthy.pth",
             "more beautiful": "beautiful.pth",
             "more boring": "boring.pth",
             "more depressing": "depressing.pth",
@@ -271,8 +273,14 @@ class ClassifierPerceptionViT(BaseClassifier):
         )
         checkpoint_path = model_load_path + "/" + file_name
 
-        # add the path for model file
-        sys.path.append(os.path.dirname(os.path.abspath("src/zensvi/cv/classification/utils/Model_01.py")))
+        # PATCH: Fix for 'No module named Model_01' error during torch.load
+        # The saved weights require 'Model_01' to be available in the global sys.modules
+        try:
+            from .utils import Model_01
+
+            sys.modules["Model_01"] = Model_01
+        except (ImportError, AttributeError):
+            pass
 
         # Now load the model
         self.model = Net(num_classes=5)
