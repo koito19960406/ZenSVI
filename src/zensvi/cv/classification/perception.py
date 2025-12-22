@@ -299,20 +299,21 @@ class ClassifierPerceptionViT(BaseClassifier):
 
     def _load_checkpoint(self, model, checkpoint_path):
         """Load model checkpoint with proper module mapping for legacy checkpoints.
-        
+
         The checkpoint was saved with a reference to 'Model_01.Net' as a top-level module.
         We temporarily register the module in sys.modules so torch.load can find it.
         """
         # Import the actual module that contains Net
         from .utils.Model_01 import Net
-        
+
         # Temporarily register Model_01 as a top-level module for torch.load
         # This is needed because the checkpoint was saved with 'Model_01.Net' as the class path
         import types
+
         model_01_module = types.ModuleType("Model_01")
         model_01_module.Net = Net
         sys.modules["Model_01"] = model_01_module
-        
+
         try:
             # Load the checkpoint (torch.load will use the registered module)
             model = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
@@ -321,7 +322,7 @@ class ClassifierPerceptionViT(BaseClassifier):
             # Only remove if we added it (don't remove if it was already there)
             if "Model_01" in sys.modules and sys.modules["Model_01"] is model_01_module:
                 del sys.modules["Model_01"]
-        
+
         return model
 
     def classify(
