@@ -84,7 +84,18 @@ Before you submit a pull request, check that it meets these guidelines:
 
 ## Code Style
 
-This project uses `black` for code formatting and `flake8` for linting. Please ensure your code adheres to these standards before submitting a pull request.
+This project uses `black` for code formatting, `isort` for import sorting, and `flake8` for linting. Please ensure your code adheres to these standards before submitting a pull request.
+
+To format your code, run:
+```
+black src
+isort src
+```
+
+To check linting:
+```
+flake8 src
+```
 
 ## Commit Messages
 
