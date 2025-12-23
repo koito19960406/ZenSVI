@@ -1,4 +1,3 @@
-import os
 import sys
 from pathlib import Path
 from typing import List, Tuple, Union
@@ -275,12 +274,14 @@ class ClassifierPerceptionViT(BaseClassifier):
 
         # PATCH: Fix for 'No module named Model_01' error during torch.load
         # The saved weights require 'Model_01' to be available in the global sys.modules
-        try:
-            from .utils import Model_01
+        # We check if it exists first to avoid race conditions in multi-threaded environments
+        if "Model_01" not in sys.modules:
+            try:
+                from .utils import Model_01
 
-            sys.modules["Model_01"] = Model_01
-        except (ImportError, AttributeError):
-            pass
+                sys.modules["Model_01"] = Model_01
+            except (ImportError, AttributeError):
+                pass
 
         # Now load the model
         self.model = Net(num_classes=5)
