@@ -10,6 +10,7 @@ https://www.mapillary.com/developer/api-documentation/
 - Copyright: (c) 2021 Facebook
 - License: MIT LICENSE
 """
+
 import json
 import os
 from typing import Union

@@ -297,10 +297,8 @@ class Entities:
                             if Config.use_strict:
 
                                 # Raising ValueError if strict mode is enabled
-                                raise ValueError(
-                                    f"""{key} must be in the ISO 8601 format. For example:
-                                    '2022-08-16T16:42:46Z'."""
-                                )
+                                raise ValueError(f"""{key} must be in the ISO 8601 format. For example:
+                                    '2022-08-16T16:42:46Z'.""")
 
                             else:
 
