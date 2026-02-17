@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
@@ -14,7 +14,7 @@ from tqdm import tqdm
 class ImageDataset(Dataset):
     """Dataset class for loading images."""
 
-    def __init__(self, image_files: List[Path], task="relative"):
+    def __init__(self, image_files: List[Path], task: str = "relative") -> None:
         self.image_files = [
             image_file
             for image_file in image_files
@@ -52,7 +52,7 @@ class ImageDataset(Dataset):
 class VGGTProcessor:
     """A class for processing images using VGGT model to generate point clouds."""
 
-    def __init__(self, vggt_path: str = "vggt"):
+    def __init__(self, vggt_path: str = "vggt") -> None:
         """Initialize VGGT processor.
 
         Args:
@@ -112,7 +112,7 @@ class VGGTProcessor:
             print(f"Failed to initialize VGGT model: {str(e)}")
             raise RuntimeError(f"Failed to initialize VGGT model: {str(e)}")
 
-    def process_images(self, image_paths: list) -> dict:
+    def process_images(self, image_paths: List[str]) -> Dict[str, Any]:
         """Process images and generate predictions.
 
         Args:
@@ -136,7 +136,7 @@ class VGGTProcessor:
         except Exception as e:
             raise RuntimeError(f"Failed to process images: {str(e)}")
 
-    def generate_point_cloud(self, predictions: dict) -> tuple:
+    def generate_point_cloud(self, predictions: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Generate point cloud from model predictions.
 
         Args:
@@ -194,7 +194,7 @@ class VGGTProcessor:
         image_paths: List[str],
         original_sizes: List[Tuple[int, int]],
         dir_output: Path,
-    ):
+    ) -> None:
         """Process a batch of images to point cloud.
 
         Args:
@@ -230,7 +230,7 @@ class VGGTProcessor:
         dir_output: Union[str, Path],
         batch_size: int = 1,
         max_workers: int = 4,
-    ):
+    ) -> None:
         """Process images to generate point clouds using VGGT model.
 
         Args:
@@ -280,14 +280,14 @@ class VGGTProcessor:
 
     def visualize_point_cloud(
         self,
-        points,
-        colors_flat,
-        marker_size=1,
-        opacity=0.8,
-        sample_rate=0.1,
-        camera_eye=dict(x=0, y=0, z=-1),
-        camera_up=dict(x=0, y=-1, z=0),
-    ):
+        points: np.ndarray,
+        colors_flat: np.ndarray,
+        marker_size: int = 1,
+        opacity: float = 0.8,
+        sample_rate: float = 0.1,
+        camera_eye: Optional[Dict[str, float]] = None,
+        camera_up: Optional[Dict[str, float]] = None,
+    ) -> None:
         """Visualizes a point cloud using Plotly with random sampling.
 
         Args:
@@ -299,6 +299,10 @@ class VGGTProcessor:
             camera_eye (dict): Camera position.
             camera_up (dict): Camera up direction.
         """
+        if camera_eye is None:
+            camera_eye = dict(x=0, y=0, z=-1)
+        if camera_up is None:
+            camera_up = dict(x=0, y=-1, z=0)
         # Random sampling to reduce density
         num_points = len(points)
         sample_indices = np.random.choice(num_points, int(num_points * sample_rate), replace=False)

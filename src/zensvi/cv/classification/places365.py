@@ -1,11 +1,15 @@
 from pathlib import Path
-from typing import Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
 import pandas as pd
-import pkg_resources
 import torch
+
+try:
+    from importlib.resources import files
+except ImportError:
+    from importlib_resources import files
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms as trn
 from torchvision.io import read_image
@@ -24,21 +28,21 @@ class ImageDataset(Dataset):
         transform: Optional transform to apply to images
     """
 
-    def __init__(self, img_paths, transform=None):
+    def __init__(self, img_paths: List[Path], transform: Optional[trn.Compose] = None) -> None:
         self.img_paths = img_paths
         self.transform = transform
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.img_paths)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, str]:
         img_path = self.img_paths[idx]
         image = read_image(str(img_path))
         if self.transform:
             image = self.transform(image)
         return image, str(img_path)
 
-    def collate_fn(self, batch):
+    def collate_fn(self, batch: List[Tuple[torch.Tensor, str]]) -> Tuple[torch.Tensor, List[str]]:
         """Collate function for batching images.
 
         Args:
@@ -52,7 +56,7 @@ class ImageDataset(Dataset):
         return images, list(paths)
 
 
-def _returnTF():
+def _returnTF() -> trn.Compose:
     """Returns the image transformer for Places365 model.
 
     Returns:
@@ -68,7 +72,7 @@ def _returnTF():
     return tf
 
 
-def _recursion_change_bn(module):
+def _recursion_change_bn(module: torch.nn.Module) -> torch.nn.Module:
     """Recursively changes BatchNorm2d layers to use track_running_stats.
 
     Args:
@@ -85,7 +89,7 @@ def _recursion_change_bn(module):
     return module
 
 
-def _returnCAM(feature_conv, weight_softmax, class_idx):
+def _returnCAM(feature_conv: np.ndarray, weight_softmax: np.ndarray, class_idx: List[int]) -> List[np.ndarray]:
     """Generate class activation maps.
 
     Args:
@@ -119,17 +123,17 @@ class ClassifierPlaces365(BaseClassifier):
                                   0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, device=None, verbosity=1):
+    def __init__(self, device: Optional[str] = None, verbosity: int = 1) -> None:
         super().__init__(device, verbosity)
         self.device = self._get_device(device)
         self.classes, self.labels_IO, self.labels_attribute, self.W_attribute = self._load_labels()
-        self.features_blobs = []
+        self.features_blobs: List[np.ndarray] = []
         self.model = self._load_model()
         self.model.eval()
         self.model.to(self.device)
         self.weight_softmax = self._load_weight_softmax()
 
-    def _load_labels(self):
+    def _load_labels(self) -> Tuple[Tuple[str, ...], np.ndarray, List[str], np.ndarray]:
         """Load category, indoor/outdoor, and attribute labels.
 
         Returns:
@@ -141,9 +145,7 @@ class ClassifierPlaces365(BaseClassifier):
         """
         # prepare all the labels
         # scene category relevant
-        file_name_category = pkg_resources.resource_filename(
-            "zensvi.cv.classification.utils", "categories_places365.txt"
-        )
+        file_name_category = str(files("zensvi.cv.classification.utils").joinpath("categories_places365.txt"))
         classes = list()
         with open(file_name_category) as class_file:
             for line in class_file:
@@ -151,7 +153,7 @@ class ClassifierPlaces365(BaseClassifier):
         classes = tuple(classes)
 
         # indoor and outdoor relevant
-        file_name_IO = pkg_resources.resource_filename("zensvi.cv.classification.utils", "IO_places365.txt")
+        file_name_IO = str(files("zensvi.cv.classification.utils").joinpath("IO_places365.txt"))
         with open(file_name_IO) as f:
             lines = f.readlines()
             labels_IO = []
@@ -161,20 +163,16 @@ class ClassifierPlaces365(BaseClassifier):
         labels_IO = np.array(labels_IO)
 
         # scene attribute relevant
-        file_name_attribute = pkg_resources.resource_filename(
-            "zensvi.cv.classification.utils", "labels_sunattribute.txt"
-        )
+        file_name_attribute = str(files("zensvi.cv.classification.utils").joinpath("labels_sunattribute.txt"))
         with open(file_name_attribute) as f:
             lines = f.readlines()
             labels_attribute = [item.rstrip() for item in lines]
-        file_name_W = pkg_resources.resource_filename(
-            "zensvi.cv.classification.utils", "W_sceneattribute_wideresnet18.npy"
-        )
+        file_name_W = str(files("zensvi.cv.classification.utils").joinpath("W_sceneattribute_wideresnet18.npy"))
         W_attribute = np.load(file_name_W)
 
         return classes, labels_IO, labels_attribute, W_attribute
 
-    def _hook_feature(self, module, input, output):
+    def _hook_feature(self, module: torch.nn.Module, input: Any, output: torch.Tensor) -> None:
         """Hook function to capture features during forward pass.
 
         Args:
@@ -184,13 +182,13 @@ class ClassifierPlaces365(BaseClassifier):
         """
         self.features_blobs.append(np.squeeze(output.data.cpu().numpy()))
 
-    def _load_model(self):
+    def _load_model(self) -> torch.nn.Module:
         """Load and configure the Places365 model.
 
         Returns:
             torch.nn.Module: Configured Places365 model
         """
-        model_file = pkg_resources.resource_filename("zensvi.cv.classification.utils", "wideresnet18_places365.pth.tar")
+        model_file = str(files("zensvi.cv.classification.utils").joinpath("wideresnet18_places365.pth.tar"))
         model = wideresnet.resnet18(num_classes=365)
         checkpoint = torch.load(model_file, map_location=self.device, weights_only=False)
         state_dict = {str.replace(k, "module.", ""): v for k, v in checkpoint["state_dict"].items()}
@@ -211,7 +209,7 @@ class ClassifierPlaces365(BaseClassifier):
             model._modules.get(name).register_forward_hook(self._hook_feature)
         return model
 
-    def _load_weight_softmax(self):
+    def _load_weight_softmax(self) -> np.ndarray:
         """Load and process the softmax weights.
 
         Returns:
@@ -222,7 +220,7 @@ class ClassifierPlaces365(BaseClassifier):
         weight_softmax[weight_softmax < 0] = 0
         return weight_softmax
 
-    def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json", csv_format="long"):
+    def _save_results_to_file(self, results: List[Dict[str, Any]], dir_output: Union[str, Path], file_name: str, save_format: str = "csv json", csv_format: str = "long") -> None:
         """Save classification results to file.
 
         Args:
@@ -257,8 +255,8 @@ class ClassifierPlaces365(BaseClassifier):
         save_image_options: str = "cam_image blend_image",
         save_format: str = "json csv",
         csv_format: str = "long",
-        verbosity: int = None,
-    ):
+        verbosity: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
         """Classifies images based on scene recognition using the Places365 model.
 
         The output file can be saved in JSON and/or CSV format and will contain the scene

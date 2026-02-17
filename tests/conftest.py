@@ -1,6 +1,8 @@
 import platform
 import shutil
 import signal
+import sys
+import threading
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -28,18 +30,32 @@ def timeout(seconds=DOWNLOAD_TIMEOUT_SECONDS):
         TimeoutException: If execution time exceeds the specified seconds
     """
 
-    def signal_handler(signum, frame):
-        raise TimeoutException(f"Operation timed out after {seconds} seconds")
+    if sys.platform != "win32" and hasattr(signal, "SIGALRM"):
+        def signal_handler(signum, frame):
+            raise TimeoutException(f"Operation timed out after {seconds} seconds")
 
-    # Register the signal handler and set the alarm
-    signal.signal(signal.SIGALRM, signal_handler)
-    signal.alarm(seconds)
+        signal.signal(signal.SIGALRM, signal_handler)
+        signal.alarm(seconds)
 
-    try:
-        yield
-    finally:
-        # Disable the alarm
-        signal.alarm(0)
+        try:
+            yield
+        finally:
+            signal.alarm(0)
+    else:
+        # Windows fallback: threading-based timeout (best-effort, cannot interrupt blocking I/O)
+        timer_fired = threading.Event()
+
+        def _timeout_handler():
+            timer_fired.set()
+
+        timer = threading.Timer(seconds, _timeout_handler)
+        timer.start()
+        try:
+            yield
+            if timer_fired.is_set():
+                raise TimeoutException(f"Operation timed out after {seconds} seconds")
+        finally:
+            timer.cancel()
 
 
 @pytest.fixture(scope="session")

@@ -2,20 +2,21 @@ import glob
 import os
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import requests
 from PIL import Image
 from requests.exceptions import ProxyError
 
-from zensvi.utils.log import verbosity_tqdm
+from zensvi.utils.log import Logger, verbosity_tqdm
 
 
 class ImageTool:
     """A class containing static methods for image manipulation and downloading."""
 
     @staticmethod
-    def concat_horizontally(im1, im2):
+    def concat_horizontally(im1: Image.Image, im2: Image.Image) -> Image.Image:
         """Horizontally concatenates two images.
 
         Args:
@@ -31,7 +32,7 @@ class ImageTool:
         return dst
 
     @staticmethod
-    def concat_vertically(im1, im2):
+    def concat_vertically(im1: Image.Image, im2: Image.Image) -> Image.Image:
         """Vertically concatenates two images.
 
         Args:
@@ -47,7 +48,9 @@ class ImageTool:
         return dst
 
     @staticmethod
-    def fetch_image_with_proxy(pano_id, zoom, x, y, ua, proxies):
+    def fetch_image_with_proxy(
+        pano_id: str, zoom: int, x: int, y: int, ua: Dict[str, str], proxies: List[Dict[str, str]]
+    ) -> Image.Image:
         """Fetches a Google Street View image tile using a random proxy.
 
         Args:
@@ -76,7 +79,7 @@ class ImageTool:
                 continue
 
     @staticmethod
-    def is_bottom_black(image, row_count=3, intensity_threshold=10):
+    def is_bottom_black(image: Image.Image, row_count: int = 3, intensity_threshold: int = 10) -> bool:
         """Check if the bottom rows of an image are near black.
 
         Uses linear computation instead of nested loops for faster execution.
@@ -95,7 +98,7 @@ class ImageTool:
         return np.all(bottom_rows <= intensity_threshold)
 
     @staticmethod
-    def process_image(image, zoom):
+    def process_image(image: Image.Image, zoom: int) -> Image.Image:
         """Process an image by cropping and resizing based on zoom level.
 
         Only processes the image if the bottom is black.
@@ -122,17 +125,17 @@ class ImageTool:
 
     @staticmethod
     def get_and_save_image(
-        pano_id,
-        identif,
-        zoom,
-        vertical_tiles,
-        horizontal_tiles,
-        out_path,
-        ua,
-        proxies,
-        cropped=False,
-        full=True,
-    ):
+        pano_id: str,
+        identif: str,
+        zoom: int,
+        vertical_tiles: int,
+        horizontal_tiles: int,
+        out_path: Union[str, os.PathLike],
+        ua: Dict[str, str],
+        proxies: List[Dict[str, str]],
+        cropped: bool = False,
+        full: bool = True,
+    ) -> str:
         """Download and compose a complete Street View image from individual tiles.
 
         Args:
@@ -185,20 +188,20 @@ class ImageTool:
 
     @staticmethod
     def dwl_multiple(
-        panoids,
-        zoom,
-        v_tiles,
-        h_tiles,
-        out_path,
-        uas,
-        proxies,
-        cropped,
-        full,
-        batch_size=1000,
-        logger=None,
-        max_workers=None,
-        verbosity=1,
-    ):
+        panoids: List[str],
+        zoom: int,
+        v_tiles: int,
+        h_tiles: int,
+        out_path: Union[str, os.PathLike],
+        uas: List[Dict[str, str]],
+        proxies: List[Dict[str, str]],
+        cropped: bool,
+        full: bool,
+        batch_size: int = 1000,
+        logger: Optional[Logger] = None,
+        max_workers: Optional[int] = None,
+        verbosity: int = 1,
+    ) -> None:
         """Download multiple Street View images in parallel using batched processing.
 
         Args:

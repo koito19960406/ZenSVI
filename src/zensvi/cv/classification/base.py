@@ -1,7 +1,7 @@
 # abstract class
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import torch
 
@@ -17,12 +17,12 @@ class BaseClassifier(ABC):
                                   0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, device=None, verbosity=1):
+    def __init__(self, device: Optional[str] = None, verbosity: int = 1) -> None:
         self.device = self._get_device(device)
         self._verbosity = verbosity
 
     @property
-    def verbosity(self):
+    def verbosity(self) -> int:
         """Property for the verbosity level of progress bars.
 
         Returns:
@@ -31,10 +31,10 @@ class BaseClassifier(ABC):
         return self._verbosity
 
     @verbosity.setter
-    def verbosity(self, verbosity):
+    def verbosity(self, verbosity: int) -> None:
         self._verbosity = verbosity
 
-    def _get_device(self, device) -> torch.device:
+    def _get_device(self, device: Optional[str]) -> torch.device:
         """Get the appropriate device for running the model.
 
         Args:
@@ -66,7 +66,7 @@ class BaseClassifier(ABC):
         save_image_options: str = "cam_image blend_image",
         save_format: str = "json csv",
         csv_format: str = "long",  # "long" or "wide"
-        verbosity: int = None,
+        verbosity: Optional[int] = None,
     ) -> None:
         """Classify images in a directory.
 

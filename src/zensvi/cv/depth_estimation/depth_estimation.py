@@ -1,7 +1,7 @@
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
@@ -15,7 +15,7 @@ from tqdm import tqdm
 class ImageDataset(Dataset):
     """Dataset class for loading images."""
 
-    def __init__(self, image_files: List[Path], task="relative"):
+    def __init__(self, image_files: List[Path], task: str = "relative") -> None:
         self.image_files = [
             image_file
             for image_file in image_files
@@ -51,7 +51,7 @@ class ImageDataset(Dataset):
 class DepthEstimator:
     """A class for estimating depth in images using DepthAnythingV2."""
 
-    def __init__(self, device=None, task="relative", encoder="vitl", max_depth=80.0):
+    def __init__(self, device: Optional[str] = None, task: str = "relative", encoder: str = "vitl", max_depth: float = 80.0) -> None:
         self.task = task
         self.encoder = encoder
         self.max_depth = max_depth
@@ -75,7 +75,7 @@ class DepthEstimator:
         else:
             self._setup_relative_depth()
 
-    def _setup_relative_depth(self):
+    def _setup_relative_depth(self) -> None:
         """Sets up the model for relative depth estimation."""
         # Add the DepthAnythingV2 path to sys.path (exactly like the working run.py)
         depth_anything_path = str(Path(__file__).parent / "DepthAnythingV2")
@@ -98,7 +98,7 @@ class DepthEstimator:
         self.depth_anything.load_state_dict(torch.load(str(checkpoint_path), map_location="cpu"))
         self.depth_anything = self.depth_anything.to(self.device).eval()
 
-    def _setup_absolute_depth(self):
+    def _setup_absolute_depth(self) -> None:
         """Sets up the model for absolute depth estimation."""
         # Add the metric depth path to sys.path
         metric_depth_path = str(Path(__file__).parent / "DepthAnythingV2")
@@ -121,7 +121,7 @@ class DepthEstimator:
         self.depth_anything.load_state_dict(torch.load(str(checkpoint_path), map_location="cpu"))
         self.depth_anything = self.depth_anything.to(self.device).eval()
 
-    def _download_relative_model(self, checkpoint_path: Path):
+    def _download_relative_model(self, checkpoint_path: Path) -> None:
         """Downloads the relative depth model weights."""
         checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -154,7 +154,7 @@ class DepthEstimator:
                     f.write(chunk)
                     pbar.update(len(chunk))
 
-    def _download_absolute_model(self, checkpoint_path: Path):
+    def _download_absolute_model(self, checkpoint_path: Path) -> None:
         """Downloads the absolute depth model weights."""
         checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -187,7 +187,7 @@ class DepthEstimator:
                     f.write(chunk)
                     pbar.update(len(chunk))
 
-    def _infer_image_with_device(self, raw_image, input_size=518):
+    def _infer_image_with_device(self, raw_image: np.ndarray, input_size: int = 518) -> np.ndarray:
         """Custom inference method that respects our device setting."""
         from torchvision.transforms import Compose
 
@@ -230,7 +230,7 @@ class DepthEstimator:
 
         return depth.cpu().numpy()
 
-    def _process_images(self, image_files, image_paths, original_sizes, dir_output):
+    def _process_images(self, image_files: List[Path], image_paths: List[str], original_sizes: List[Tuple[int, int]], dir_output: Union[str, Path]) -> None:
         """Processes images to estimate depth and save the results."""
         for image_file, image_path, original_size in zip(image_files, image_paths, original_sizes):
             # Read image (exactly like the working run.py)
@@ -258,7 +258,7 @@ class DepthEstimator:
         dir_image_output: Union[str, Path],
         batch_size: int = 1,
         max_workers: int = 4,
-    ):
+    ) -> None:
         """Estimates depth in the images and saves the depth maps."""
         dir_input = Path(dir_input)
 

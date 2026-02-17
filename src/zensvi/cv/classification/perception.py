@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
@@ -23,7 +23,7 @@ class ImageDataset(Dataset):
         image_files (List[Path]): List of paths to image files.
     """
 
-    def __init__(self, image_files: List[Path], vit=False):
+    def __init__(self, image_files: List[Path], vit: bool = False) -> None:
         self.image_files = [
             image_file
             for image_file in image_files
@@ -92,7 +92,7 @@ class ClassifierPerception(BaseClassifier):
                                   0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, perception_study, device=None, verbosity=1):
+    def __init__(self, perception_study: str, device: Optional[str] = None, verbosity: int = 1) -> None:
         super().__init__(device, verbosity)
         self.device = self._get_device(device)
         self.perception_study = perception_study
@@ -110,7 +110,7 @@ class ClassifierPerception(BaseClassifier):
         self.model.eval()
         self.model.to(self.device)
 
-    def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json"):
+    def _save_results_to_file(self, results: List[Dict[str, Any]], dir_output: Union[str, Path], file_name: str, save_format: str = "csv json") -> None:
         """Save results to file in specified format.
 
         Args:
@@ -129,7 +129,7 @@ class ClassifierPerception(BaseClassifier):
             file_path = dir_output / f"{file_name}.json"
             df.to_json(file_path, orient="records")
 
-    def _load_checkpoint(self, model, checkpoint_path):
+    def _load_checkpoint(self, model: torch.nn.Module, checkpoint_path: Union[str, Path]) -> torch.nn.Module:
         """Load model weights from checkpoint file.
 
         Args:
@@ -147,10 +147,10 @@ class ClassifierPerception(BaseClassifier):
         self,
         dir_input: Union[str, Path],
         dir_summary_output: Union[str, Path],
-        batch_size=1,
-        save_format="json csv",
-        verbosity: int = None,
-    ) -> List[str]:
+        batch_size: int = 1,
+        save_format: str = "json csv",
+        verbosity: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
         """Classifies images based on human perception of streetscapes from the specified perception study.
 
         Args:
@@ -243,7 +243,7 @@ class ClassifierPerceptionViT(BaseClassifier):
                                   0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, perception_study, device=None, verbosity=1):
+    def __init__(self, perception_study: str, device: Optional[str] = None, verbosity: int = 1) -> None:
         super().__init__(device, verbosity)
         self.device = self._get_device(device)
         self.perception_study = perception_study
@@ -289,7 +289,7 @@ class ClassifierPerceptionViT(BaseClassifier):
         self.model.eval()
         self.model.to(self.device)
 
-    def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json"):
+    def _save_results_to_file(self, results: List[Dict[str, Any]], dir_output: Union[str, Path], file_name: str, save_format: str = "csv json") -> None:
         """Save results to file in specified format.
 
         Args:
@@ -308,7 +308,7 @@ class ClassifierPerceptionViT(BaseClassifier):
             file_path = dir_output / f"{file_name}.json"
             df.to_json(file_path, orient="records")
 
-    def _load_checkpoint(self, model, checkpoint_path):
+    def _load_checkpoint(self, model: torch.nn.Module, checkpoint_path: Union[str, Path]) -> torch.nn.Module:
         model = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
         return model
 
@@ -316,10 +316,10 @@ class ClassifierPerceptionViT(BaseClassifier):
         self,
         dir_input: Union[str, Path],
         dir_summary_output: Union[str, Path],
-        batch_size=1,
-        save_format="json csv",
-        verbosity: int = None,
-    ) -> List[str]:
+        batch_size: int = 1,
+        save_format: str = "json csv",
+        verbosity: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
         """Classifies images based on human perception of streetscapes from the specified perception study.
 
         Args:

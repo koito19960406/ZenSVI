@@ -1,6 +1,6 @@
 import copy
 from pathlib import Path
-from typing import Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import open3d as o3d
@@ -35,8 +35,8 @@ class PointCloudProcessor:
         depth_folder: str,
         output_coordinate_scale: float = 45,
         depth_max: float = 255,
-        log_path: Union[str, Path] = None,
-    ):
+        log_path: Optional[Union[str, Path]] = None,
+    ) -> None:
         self.image_folder = Path(image_folder)
         self.depth_folder = Path(depth_folder)
         self.output_coordinate_scale = output_coordinate_scale
@@ -48,13 +48,13 @@ class PointCloudProcessor:
         else:
             self.logger = None
 
-    def _validate_paths(self):
+    def _validate_paths(self) -> None:
         if not self.image_folder.exists():
             raise FileNotFoundError(f"Image folder {self.image_folder} does not exist")
         if not self.depth_folder.exists():
             raise FileNotFoundError(f"Depth folder {self.depth_folder} does not exist")
 
-    def _load_images(self, data):
+    def _load_images(self, data: pd.DataFrame) -> Dict[str, Dict[str, np.ndarray]]:
         """Preloads all images specified in the data DataFrame to optimize the point
         cloud generation process.
 
@@ -96,7 +96,7 @@ class PointCloudProcessor:
                 print(f"Warning: Missing images for ID {image_id}")
         return images
 
-    def convert_to_point_cloud(self, depth_img, color_img, depth_max=None, use_absolute_depth=False):
+    def convert_to_point_cloud(self, depth_img: np.ndarray, color_img: np.ndarray, depth_max: Optional[float] = None, use_absolute_depth: bool = False) -> "o3d.geometry.PointCloud":
         """Converts a single depth and color image pair to a point cloud.
 
         Args:
@@ -167,7 +167,7 @@ class PointCloudProcessor:
         pcd.colors = o3d.utility.Vector3dVector(np.array(colors))
         return pcd
 
-    def transform_point_cloud(self, pcd, origin_x, origin_y, angle, box_extent, box_center):
+    def transform_point_cloud(self, pcd: "o3d.geometry.PointCloud", origin_x: float, origin_y: float, angle: float, box_extent: List[float], box_center: List[float]) -> "o3d.geometry.PointCloud":
         """Transforms the point cloud by translating, rotating, and cropping based on
         given parameters.
 
@@ -203,7 +203,7 @@ class PointCloudProcessor:
         pcd_mv = pcd_mv.crop(obb)
         return pcd_mv
 
-    def save_point_cloud_csv(self, pcd, output_path):
+    def save_point_cloud_csv(self, pcd: "o3d.geometry.PointCloud", output_path: Union[str, Path]) -> None:
         """Saves the point cloud in CSV format.
 
         Args:
@@ -215,7 +215,7 @@ class PointCloudProcessor:
         df = pd.DataFrame(np.hstack((points, colors)), columns=["x", "y", "z", "r", "g", "b"])
         df.to_csv(output_path, index=False)
 
-    def save_point_cloud_numpy(self, pcd, output_path):
+    def save_point_cloud_numpy(self, pcd: "o3d.geometry.PointCloud", output_path: Union[str, Path]) -> None:
         """Saves the point cloud as a NumPy array.
 
         Args:
@@ -227,8 +227,8 @@ class PointCloudProcessor:
         np.savez(output_path, points=points, colors=colors)
 
     def process_multiple_images(
-        self, data, depth_max=None, use_absolute_depth=True, output_dir=None, save_format="pcd"
-    ):
+        self, data: pd.DataFrame, depth_max: Optional[float] = None, use_absolute_depth: bool = True, output_dir: Optional[Union[str, Path]] = None, save_format: str = "pcd"
+    ) -> Optional[List["o3d.geometry.PointCloud"]]:
         """Generates a point cloud for each entry in the data based on pre-loaded depth
         and color images.
 
@@ -273,8 +273,8 @@ class PointCloudProcessor:
             return pcd_list
 
     def visualize_point_cloud(
-        self, pcd, marker_size=3, opacity=0.8, camera_eye=dict(x=0, y=0, z=-1), camera_up=dict(x=0, y=-1, z=0)
-    ):
+        self, pcd: "o3d.geometry.PointCloud", marker_size: int = 3, opacity: float = 0.8, camera_eye: Optional[Dict[str, float]] = None, camera_up: Optional[Dict[str, float]] = None
+    ) -> None:
         """Visualizes a point cloud using Plotly.
 
         Args:
@@ -284,6 +284,10 @@ class PointCloudProcessor:
             camera_eye (dict): Camera position.
             camera_up (dict): Camera up direction.
         """
+        if camera_eye is None:
+            camera_eye = dict(x=0, y=0, z=-1)
+        if camera_up is None:
+            camera_up = dict(x=0, y=-1, z=0)
         if self.logger:
             self.logger.log_args("PointCloudProcessor.visualize_point_cloud", pcd=pcd)
         points = np.asarray(pcd.points)

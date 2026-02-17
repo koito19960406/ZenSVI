@@ -1,13 +1,14 @@
 import logging
 from pathlib import Path
+from typing import Any, Dict, Iterable, Optional, Union
 
 
 class Logger:
     """A singleton logger class that handles logging to files."""
 
-    _loggers = {}
+    _loggers: Dict[str, "Logger"] = {}
 
-    def __new__(cls, log_file_path, level=logging.INFO):
+    def __new__(cls, log_file_path: Union[str, Path], level: int = logging.INFO) -> "Logger":
         """Create or retrieve a logger instance.
 
         This method implements the singleton pattern, ensuring only one logger exists
@@ -27,17 +28,13 @@ class Logger:
         return cls._loggers[log_file_path]
 
     @classmethod
-    def _initialize_logger(cls, instance, log_file_path, level):
+    def _initialize_logger(cls, instance: "Logger", log_file_path: Union[str, Path], level: int) -> None:
         """Initialize a new logger instance.
 
         Args:
-          instance: Logger instance to initialize
-          log_file_path: Path to the log file
-          level: Logging level to use
-
-        Returns:
-          : None
-
+            instance: Logger instance to initialize
+            log_file_path: Path to the log file
+            level: Logging level to use
         """
         instance.logger = logging.getLogger(str(log_file_path))
         if not instance.logger.handlers:
@@ -53,65 +50,45 @@ class Logger:
             # Add the handler to the logger
             instance.logger.addHandler(fh)
 
-    def log_info(self, message):
+    def log_info(self, message: str) -> None:
         """Log an info message.
 
         Args:
-          message: Message to log
-
-        Returns:
-          : None
-
+            message: Message to log
         """
         self.logger.info(message)
 
-    def log_error(self, message):
+    def log_error(self, message: str) -> None:
         """Log an error message.
 
         Args:
-          message: Message to log
-
-        Returns:
-          : None
-
+            message: Message to log
         """
         self.logger.error(message)
 
-    def log_warning(self, message):
+    def log_warning(self, message: str) -> None:
         """Log a warning message.
 
         Args:
-          message: Message to log
-
-        Returns:
-          : None
-
+            message: Message to log
         """
         self.logger.warning(message)
 
-    def log_debug(self, message):
+    def log_debug(self, message: str) -> None:
         """Log a debug message.
 
         Args:
-          message: Message to log
-
-        Returns:
-          : None
-
+            message: Message to log
         """
         self.logger.debug(message)
 
-    def log_args(self, func_name, *args, **kwargs):
+    def log_args(self, func_name: str, *args: Any, **kwargs: Any) -> None:
         """Logs the arguments of a function call along with the function's name.
 
         Args:
-          func_name: Name of the function being logged
-          *args: Positional arguments passed to the function
-          **kwargs: Keyword arguments passed to the function
-
-        Returns:
-          : None
-
+            func_name: Name of the function being logged
+            *args: Positional arguments passed to the function
+            **kwargs: Keyword arguments passed to the function
         """
         formatted_args = []
         for i, arg in enumerate(args):
@@ -122,28 +99,32 @@ class Logger:
         formatted_message = f"Called function '{func_name}' with: {', '.join(formatted_args)}"
         self.log_info(formatted_message)
 
-    def log_failed_tile(self, failed_tile_name):
+    def log_failed_tile(self, failed_tile_name: str) -> None:
         """Logs the failed tiles to a log file.
 
         Args:
-          failed_tile_name: Name of the tile that failed processing
-
-        Returns:
-          : None
-
+            failed_tile_name: Name of the tile that failed processing
         """
         self.log_error(f"Failed to process tile: {failed_tile_name}")
 
-    def log_failed_pid(self, failed_pid):
+    def log_failed_pid(self, failed_pid: Union[str, int]) -> None:
         """Log failed panorama ID.
 
         Args:
-            failed_pid (str): The failed panorama ID.
+            failed_pid: The failed panorama ID.
         """
         self.log_error(f"Failed to process pid: {failed_pid}")
 
 
-def verbosity_tqdm(iterable, desc=None, total=None, disable=False, verbosity=1, level=1, **kwargs):
+def verbosity_tqdm(
+    iterable: Iterable,
+    desc: Optional[str] = None,
+    total: Optional[int] = None,
+    disable: bool = False,
+    verbosity: int = 1,
+    level: int = 1,
+    **kwargs: Any,
+) -> Iterable:
     """A wrapper around tqdm that respects verbosity levels.
 
     Args:

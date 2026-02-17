@@ -1,6 +1,6 @@
 import glob
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,7 +10,7 @@ from PIL import Image
 from .font_property import _get_font_properties
 
 
-def _clean_pattern(pattern, image_extensions):
+def _clean_pattern(pattern: str, image_extensions: List[str]) -> str:
     # find the image file extensions used in the pattern
     pattern_extensions = [ext for ext in image_extensions if ext in pattern][0]
     pattern = pattern.replace(pattern_extensions, "")
@@ -27,14 +27,14 @@ def plot_image(
     n_col: int,
     subplot_width: int = 3,
     subplot_height: int = 3,
-    dir_csv_input: Union[str, Path] = None,
+    dir_csv_input: Optional[Union[str, Path]] = None,
     csv_file_pattern: str = "*.csv",
-    image_file_pattern: str = None,
+    image_file_pattern: Optional[str] = None,
     sort_by: str = "random",
     ascending: bool = True,
     use_all: bool = False,
-    title: str = None,
-    path_output: Union[str, Path] = None,
+    title: Optional[str] = None,
+    path_output: Optional[Union[str, Path]] = None,
     random_seed: int = 42,
     font_size: int = 30,
     dark_mode: bool = False,

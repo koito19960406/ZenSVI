@@ -1,10 +1,11 @@
 import random
 import re
+from typing import Any, Dict, List
 
 import requests
 
 
-def _panoids_url(lat, lon):
+def _panoids_url(lat: float, lon: float) -> str:
     """Construct URL for Google Street View panorama metadata.
 
     Args:
@@ -18,7 +19,7 @@ def _panoids_url(lat, lon):
     return url.format(lat, lon)
 
 
-def _panoids_data(lat, lon, proxies):
+def _panoids_data(lat: float, lon: float, proxies: List[Dict[str, str]]) -> str:
     """Fetch panorama metadata from Google Street View API using proxies.
 
     Args:
@@ -43,7 +44,7 @@ def _panoids_data(lat, lon, proxies):
             continue
 
 
-def panoids(lat, lon, proxies):
+def panoids(lat: float, lon: float, proxies: List[Dict[str, str]]) -> List[Dict[str, Any]]:
     """Get panorama IDs and metadata for a location from Google Street View.
 
     Args:

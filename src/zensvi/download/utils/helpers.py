@@ -1,7 +1,9 @@
+import geopandas as gpd
 import osmnx as ox
+import pandas as pd
 
 
-def standardize_column_names(df):
+def standardize_column_names(df: pd.DataFrame) -> pd.DataFrame:
     """Standardizes column names for latitude and longitude in a DataFrame.
 
     Converts various common column names for latitude and longitude coordinates
@@ -25,7 +27,7 @@ def standardize_column_names(df):
     return df
 
 
-def create_buffer_gdf(gdf, buffer_distance):
+def create_buffer_gdf(gdf: gpd.GeoDataFrame, buffer_distance: float) -> gpd.GeoDataFrame:
     """Creates a buffer around geometries in a GeoDataFrame.
 
     Projects the GeoDataFrame if needed, creates a buffer of specified distance
@@ -53,7 +55,7 @@ def create_buffer_gdf(gdf, buffer_distance):
     return gdf
 
 
-def check_and_buffer(gdf, buffer):
+def check_and_buffer(gdf: gpd.GeoDataFrame, buffer: float) -> gpd.GeoDataFrame:
     """Checks geometry type and creates buffer if appropriate.
 
     Validates that point and line geometries have non-zero buffers,

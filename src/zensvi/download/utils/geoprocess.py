@@ -1,4 +1,5 @@
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import geopandas as gpd
 import networkx
@@ -6,7 +7,7 @@ import numpy as np
 import osmnx as ox
 import pandas as pd
 from pyproj import Transformer
-from shapely.geometry import Point
+from shapely.geometry import Point, Polygon
 from tqdm.auto import tqdm
 
 from zensvi.utils.log import verbosity_tqdm
@@ -33,7 +34,16 @@ class GeoProcessor:
             custom_filter (str): Custom OSM filter query.
     """
 
-    def __init__(self, gdf, distance=1, grid=False, grid_size=1, id_columns=[], verbosity=1, **kwargs):
+    def __init__(
+        self,
+        gdf: gpd.GeoDataFrame,
+        distance: float = 1,
+        grid: bool = False,
+        grid_size: float = 1,
+        id_columns: List[str] = [],
+        verbosity: int = 1,
+        **kwargs: Any,
+    ) -> None:
         self.gdf = gdf
         self.distance = distance
         self.processing_functions = {
@@ -59,7 +69,7 @@ class GeoProcessor:
         else:
             self.custom_filter = None
 
-    def get_lat_lon(self):
+    def get_lat_lon(self) -> pd.DataFrame:
         """Extract latitude and longitude points from input geometries.
 
         Processes each geometry type using the appropriate method and combines results.
@@ -80,7 +90,7 @@ class GeoProcessor:
         result_gdf = pd.concat(gdf_list)
         return result_gdf
 
-    def process_point(self, gdf):
+    def process_point(self, gdf: gpd.GeoDataFrame) -> pd.DataFrame:
         """Process Point geometries.
 
         Args:
@@ -93,7 +103,7 @@ class GeoProcessor:
         gdf["latitude"] = gdf.geometry.y
         return gdf[self.id_columns + ["longitude", "latitude"]]
 
-    def process_multipoint(self, gdf):
+    def process_multipoint(self, gdf: gpd.GeoDataFrame) -> pd.DataFrame:
         """Process MultiPoint geometries by exploding into individual points.
 
         Args:
@@ -105,7 +115,7 @@ class GeoProcessor:
         gdf = gdf.explode("geometry").reset_index(drop=True)
         return self.process_point(gdf)
 
-    def process_linestring(self, gdf):
+    def process_linestring(self, gdf: gpd.GeoDataFrame) -> pd.DataFrame:
         """Process LineString geometries by interpolating points along lines.
 
         Args:
@@ -134,7 +144,7 @@ class GeoProcessor:
         gdf_utm["longitude"], gdf_utm["latitude"] = zip(*self.utm_to_lat_lon(gdf_utm["sample_points"], self.utm_crs))
         return gdf_utm[self.id_columns + ["longitude", "latitude"]]
 
-    def process_multilinestring(self, gdf):
+    def process_multilinestring(self, gdf: gpd.GeoDataFrame) -> pd.DataFrame:
         """Process MultiLineString geometries by exploding into individual LineStrings.
 
         Args:
@@ -146,7 +156,7 @@ class GeoProcessor:
         gdf = gdf.explode("geometry").reset_index(drop=True)
         return self.process_linestring(gdf)
 
-    def get_street_points(self, polygon):
+    def get_street_points(self, polygon: Polygon) -> Tuple[List, Any]:
         """Extract points along street network within a polygon.
 
         Args:
@@ -166,7 +176,7 @@ class GeoProcessor:
         edges_utm = edges_utm.explode("sample_points").reset_index(drop=True)
         return edges_utm["sample_points"].tolist(), utm_crs
 
-    def create_point_grid(self, polygon, grid_size, crs="EPSG:4326"):
+    def create_point_grid(self, polygon: Any, grid_size: float, crs: str = "EPSG:4326") -> Tuple[List, Any]:
         """Create a regular grid of points within a polygon's bounding box.
 
         Args:
@@ -193,7 +203,7 @@ class GeoProcessor:
 
         return [(point.x, point.y) for point in points_utm], utm_crs
 
-    def utm_to_lat_lon(self, utm_points, utm_crs):
+    def utm_to_lat_lon(self, utm_points: List, utm_crs: Any) -> List[Tuple[float, float]]:
         """Convert UTM coordinates to latitude/longitude.
 
         Args:
@@ -206,7 +216,7 @@ class GeoProcessor:
         transformer = Transformer.from_crs(utm_crs, "EPSG:4326", always_xy=True)
         return [transformer.transform(*point) for point in utm_points]
 
-    def process_polygon(self, gdf):
+    def process_polygon(self, gdf: gpd.GeoDataFrame) -> pd.DataFrame:
         """Process Polygon geometries by extracting points from street network or grid.
 
         Args:
@@ -294,7 +304,7 @@ class GeoProcessor:
 
         return gdf_exploded[self.id_columns + ["longitude", "latitude"]]
 
-    def process_multipolygon(self, gdf):
+    def process_multipolygon(self, gdf: gpd.GeoDataFrame) -> pd.DataFrame:
         """Process MultiPolygon geometries by exploding into individual Polygons.
 
         Args:

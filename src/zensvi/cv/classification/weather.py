@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
@@ -71,7 +71,7 @@ class ClassifierWeather(BaseClassifier):
                                   0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, device=None, verbosity=1):
+    def __init__(self, device: Optional[str] = None, verbosity: int = 1) -> None:
         super().__init__(device, verbosity)
         self.device = self._get_device(device)
 
@@ -94,7 +94,7 @@ class ClassifierWeather(BaseClassifier):
         self.model.eval()
         self.model.to(self.device)
 
-    def _save_results_to_file(self, results, dir_output, file_name, save_format="csv json"):
+    def _save_results_to_file(self, results: List[Dict[str, str]], dir_output: Union[str, Path], file_name: str, save_format: str = "csv json") -> None:
         """Save classification results to file in specified formats.
 
         Args:
@@ -117,10 +117,10 @@ class ClassifierWeather(BaseClassifier):
         self,
         dir_input: Union[str, Path],
         dir_summary_output: Union[str, Path],
-        batch_size=1,
-        save_format="json csv",
-        verbosity: int = None,
-    ) -> List[str]:
+        batch_size: int = 1,
+        save_format: str = "json csv",
+        verbosity: Optional[int] = None,
+    ) -> List[Dict[str, str]]:
         """Classifies images based on weather.
 
         Args:
