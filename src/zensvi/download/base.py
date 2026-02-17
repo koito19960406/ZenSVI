@@ -1,9 +1,16 @@
 import csv
 import os
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 import pandas as pd
-import pkg_resources
+
+# Use importlib.resources for Python 3.9+ compatibility
+try:
+    from importlib.resources import files
+except ImportError:
+    # Fallback for Python 3.8 and earlier
+    from importlib_resources import files
 
 
 class BaseDownloader(ABC):
@@ -54,18 +61,26 @@ class BaseDownloader(ABC):
         Returns:
             list: List of dictionaries containing proxy information
         """
-        proxies_file = pkg_resources.resource_filename("zensvi.download.utils", "proxies.csv")
-        proxies = []
-        # open with "utf-8" encoding to avoid UnicodeDecodeError
-        with open(proxies_file, "r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                ip = row["ip"]
-                port = row["port"]
-                protocols = row["protocols"]
-                proxy_dict = {protocols: f"{ip}:{port}"}
-                proxies.append(proxy_dict)
-        return proxies
+        # Use importlib.resources to access package data files
+        try:
+            utils_files = files("zensvi.download.utils")
+            proxies_file = utils_files / "proxies.csv"
+
+            # Read the file content
+            with proxies_file.open("r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                proxies = []
+                for row in reader:
+                    ip = row["ip"]
+                    port = row["port"]
+                    protocols = row["protocols"]
+                    proxy_dict = {protocols: f"{ip}:{port}"}
+                    proxies.append(proxy_dict)
+            return proxies
+        except Exception as e:
+            # Fallback: return empty list if file not found
+            # This ensures the package works even without proxy file
+            return []
 
     def _get_ua(self):
         """Get list of user agents from CSV file.
@@ -73,13 +88,21 @@ class BaseDownloader(ABC):
         Returns:
             list: List of dictionaries containing user agent strings
         """
-        user_agent_file = pkg_resources.resource_filename("zensvi.download.utils", "UserAgent.csv")
-        UA = []
-        with open(user_agent_file, "r") as f:
-            for line in f:
-                ua = {"user_agent": line.strip()}
-                UA.append(ua)
-        return UA
+        # Use importlib.resources to access package data files
+        try:
+            utils_files = files("zensvi.download.utils")
+            user_agent_file = utils_files / "UserAgent.csv"
+
+            # Read the file content
+            UA = []
+            with user_agent_file.open("r", encoding="utf-8") as f:
+                for line in f:
+                    ua = {"user_agent": line.strip()}
+                    UA.append(ua)
+            return UA
+        except Exception as e:
+            # Fallback: return a default user agent if file not found
+            return [{"user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}]
 
     def _log_write(self, pids):
         """Write panorama IDs to log file.
