@@ -220,7 +220,14 @@ class ClassifierPlaces365(BaseClassifier):
         weight_softmax[weight_softmax < 0] = 0
         return weight_softmax
 
-    def _save_results_to_file(self, results: List[Dict[str, Any]], dir_output: Union[str, Path], file_name: str, save_format: str = "csv json", csv_format: str = "long") -> None:
+    def _save_results_to_file(
+        self,
+        results: List[Dict[str, Any]],
+        dir_output: Union[str, Path],
+        file_name: str,
+        save_format: str = "csv json",
+        csv_format: str = "long",
+    ) -> None:
         """Save classification results to file.
 
         Args:

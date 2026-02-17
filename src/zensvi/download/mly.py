@@ -37,7 +37,9 @@ class MLYDownloader(BaseDownloader):
                                   0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, mly_api_key: str, log_path: Optional[str] = None, max_workers: Optional[int] = None, verbosity: int = 1) -> None:
+    def __init__(
+        self, mly_api_key: str, log_path: Optional[str] = None, max_workers: Optional[int] = None, verbosity: int = 1
+    ) -> None:
         super().__init__(log_path)
         self._mly_api_key = mly_api_key
         self._max_workers = max_workers
@@ -111,7 +113,9 @@ class MLYDownloader(BaseDownloader):
         self.cache_lat_lon = self.dir_cache / "lat_lon.csv"
         self.cache_pids_raw = self.dir_cache / "pids_raw.csv"
 
-    def _get_pids_from_gdf(self, gdf: gpd.GeoDataFrame, mly_kwargs: Dict[str, Any], **kwargs: Any) -> Optional[pd.DataFrame]:
+    def _get_pids_from_gdf(
+        self, gdf: gpd.GeoDataFrame, mly_kwargs: Dict[str, Any], **kwargs: Any
+    ) -> Optional[pd.DataFrame]:
         # set crs to EPSG:4326 if it's None
         if gdf.crs is None:
             gdf = gdf.set_crs("EPSG:4326")
@@ -203,7 +207,9 @@ class MLYDownloader(BaseDownloader):
 
         return pid
 
-    def _filter_pids_date(self, pid_df: pd.DataFrame, start_date: Optional[str], end_date: Optional[str]) -> pd.DataFrame:
+    def _filter_pids_date(
+        self, pid_df: pd.DataFrame, start_date: Optional[str], end_date: Optional[str]
+    ) -> pd.DataFrame:
         # create a temporary column date from captured_at (milliseconds from Unix epoch)
         pid_df["date"] = pd.to_datetime(pid_df["captured_at"], unit="ms")
         # check if start_date and end_date are in the correct format with regex. If not, raise error
@@ -271,7 +277,9 @@ class MLYDownloader(BaseDownloader):
                 shutil.rmtree(dir_cache_tiles)
                 print("The cache directory for tiles has been deleted")
 
-    def _get_urls_mly(self, path_pid: Union[str, Path], resolution: int = 1024, additional_fields: List[str] = ["all"]) -> None:
+    def _get_urls_mly(
+        self, path_pid: Union[str, Path], resolution: int = 1024, additional_fields: List[str] = ["all"]
+    ) -> None:
         # check if seld.cache_pids_urls exists
         if self.pids_url.exists():
             print("The panorama URLs have been read from the cache")
@@ -364,7 +372,14 @@ class MLYDownloader(BaseDownloader):
         if dir_cache_urls.exists():
             shutil.rmtree(dir_cache_urls)
 
-    def _download_images_mly(self, path_pid: Union[str, Path], cropped: bool, batch_size: int, start_date: Optional[str], end_date: Optional[str]) -> None:
+    def _download_images_mly(
+        self,
+        path_pid: Union[str, Path],
+        cropped: bool,
+        batch_size: int,
+        start_date: Optional[str],
+        end_date: Optional[str],
+    ) -> None:
         checkpoints = glob.glob(str(self.panorama_output / "**/*.png"), recursive=True)
 
         # Read already downloaded images and convert to ids

@@ -1,6 +1,6 @@
 import copy
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import open3d as o3d
@@ -96,7 +96,13 @@ class PointCloudProcessor:
                 print(f"Warning: Missing images for ID {image_id}")
         return images
 
-    def convert_to_point_cloud(self, depth_img: np.ndarray, color_img: np.ndarray, depth_max: Optional[float] = None, use_absolute_depth: bool = False) -> "o3d.geometry.PointCloud":
+    def convert_to_point_cloud(
+        self,
+        depth_img: np.ndarray,
+        color_img: np.ndarray,
+        depth_max: Optional[float] = None,
+        use_absolute_depth: bool = False,
+    ) -> "o3d.geometry.PointCloud":
         """Converts a single depth and color image pair to a point cloud.
 
         Args:
@@ -167,7 +173,15 @@ class PointCloudProcessor:
         pcd.colors = o3d.utility.Vector3dVector(np.array(colors))
         return pcd
 
-    def transform_point_cloud(self, pcd: "o3d.geometry.PointCloud", origin_x: float, origin_y: float, angle: float, box_extent: List[float], box_center: List[float]) -> "o3d.geometry.PointCloud":
+    def transform_point_cloud(
+        self,
+        pcd: "o3d.geometry.PointCloud",
+        origin_x: float,
+        origin_y: float,
+        angle: float,
+        box_extent: List[float],
+        box_center: List[float],
+    ) -> "o3d.geometry.PointCloud":
         """Transforms the point cloud by translating, rotating, and cropping based on
         given parameters.
 
@@ -227,7 +241,12 @@ class PointCloudProcessor:
         np.savez(output_path, points=points, colors=colors)
 
     def process_multiple_images(
-        self, data: pd.DataFrame, depth_max: Optional[float] = None, use_absolute_depth: bool = True, output_dir: Optional[Union[str, Path]] = None, save_format: str = "pcd"
+        self,
+        data: pd.DataFrame,
+        depth_max: Optional[float] = None,
+        use_absolute_depth: bool = True,
+        output_dir: Optional[Union[str, Path]] = None,
+        save_format: str = "pcd",
     ) -> Optional[List["o3d.geometry.PointCloud"]]:
         """Generates a point cloud for each entry in the data based on pre-loaded depth
         and color images.
@@ -273,7 +292,12 @@ class PointCloudProcessor:
             return pcd_list
 
     def visualize_point_cloud(
-        self, pcd: "o3d.geometry.PointCloud", marker_size: int = 3, opacity: float = 0.8, camera_eye: Optional[Dict[str, float]] = None, camera_up: Optional[Dict[str, float]] = None
+        self,
+        pcd: "o3d.geometry.PointCloud",
+        marker_size: int = 3,
+        opacity: float = 0.8,
+        camera_eye: Optional[Dict[str, float]] = None,
+        camera_up: Optional[Dict[str, float]] = None,
     ) -> None:
         """Visualizes a point cloud using Plotly.
 

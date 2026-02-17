@@ -136,7 +136,9 @@ class VGGTProcessor:
         except Exception as e:
             raise RuntimeError(f"Failed to process images: {str(e)}")
 
-    def generate_point_cloud(self, predictions: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def generate_point_cloud(
+        self, predictions: Dict[str, Any]
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Generate point cloud from model predictions.
 
         Args:

@@ -136,9 +136,7 @@ class BaseDownloader(ABC):
         all_panoids = list(set(all_panoids) - name_r)
         return all_panoids
 
-    def _read_pids(
-        self, path_pid: Union[str, Path], start_date: Optional[str], end_date: Optional[str]
-    ) -> List[str]:
+    def _read_pids(self, path_pid: Union[str, Path], start_date: Optional[str], end_date: Optional[str]) -> List[str]:
         """Read and filter panorama IDs from CSV file.
 
         Args:

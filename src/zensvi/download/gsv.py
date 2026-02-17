@@ -7,7 +7,7 @@ import shutil
 import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, List, Optional, Union
 
 import geopandas as gpd
 import numpy as np
@@ -512,7 +512,9 @@ class GSVDownloader(BaseDownloader):
         self.cache_pids_raw = self.dir_cache / "pids_raw.csv"
         self.cache_pids_augmented = self.dir_cache / "pids_augemented.csv"
 
-    def _filter_pids_date(self, pid_df: pd.DataFrame, start_date: Optional[str], end_date: Optional[str]) -> pd.DataFrame:
+    def _filter_pids_date(
+        self, pid_df: pd.DataFrame, start_date: Optional[str], end_date: Optional[str]
+    ) -> pd.DataFrame:
         # create a temporary column date from year and month
         # Fill NA values with a placeholder value
         pid_df["year"] = pid_df["year"].fillna(-1)

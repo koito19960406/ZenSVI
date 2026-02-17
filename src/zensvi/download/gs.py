@@ -1,5 +1,5 @@
 import os
-from typing import List, Optional
+from typing import Optional
 
 from huggingface_hub import HfApi, hf_hub_download
 

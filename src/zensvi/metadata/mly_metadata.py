@@ -1,6 +1,6 @@
 import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
 import geopandas as gpd
 import h3
@@ -28,14 +28,29 @@ def _calculate_angle(line: list) -> Optional[float]:
         return None
 
 
+def _latlng_to_h3(lat: float, lon: float, resolution: int) -> str:
+    """Convert lat/lon to H3 cell, compatible with h3 v3 and v4."""
+    if hasattr(h3, "latlng_to_cell"):
+        return h3.latlng_to_cell(lat, lon, resolution)
+    return h3.geo_to_h3(lat, lon, resolution)
+
+
+def _h3_to_geo_boundary(hex_id: str) -> list:
+    """Get boundary coordinates for an H3 cell in GeoJSON order (lng, lat)."""
+    if hasattr(h3, "cell_to_boundary"):
+        boundary = h3.cell_to_boundary(hex_id)
+        return [(lng, lat) for lat, lng in boundary]
+    return h3.h3_to_geo_boundary(hex_id, geo_json=True)
+
+
 def _create_hexagon(df: pl.DataFrame, resolution: int = 7) -> gpd.GeoDataFrame:
     df = df.with_columns(
-        pl.struct(["lat", "lon"]).apply(lambda x: h3.geo_to_h3(x["lat"], x["lon"], resolution)).alias("h3_id")
+        pl.struct(["lat", "lon"]).apply(lambda x: _latlng_to_h3(x["lat"], x["lon"], resolution)).alias("h3_id")
     )
     unique_h3_ids = df.select("h3_id").unique()
     hex_gdf = gpd.GeoDataFrame(
         unique_h3_ids.to_pandas(),
-        geometry=[Polygon(h3.h3_to_geo_boundary(h, geo_json=True)) for h in unique_h3_ids["h3_id"]],
+        geometry=[Polygon(_h3_to_geo_boundary(h)) for h in unique_h3_ids["h3_id"]],
         crs=4326,
     )
     return hex_gdf
@@ -396,7 +411,7 @@ class MLYMetadata:
             self.metadata = self.metadata.with_columns(
                 pl.struct(["lat", "lon"])
                 .map_elements(
-                    lambda x: h3.geo_to_h3(x["lat"], x["lon"], res),
+                    lambda x: _latlng_to_h3(x["lat"], x["lon"], res),
                     return_dtype=pl.String,
                 )
                 .alias(f"h3_{res}")

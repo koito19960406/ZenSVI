@@ -6,6 +6,8 @@ import pytest
 
 from zensvi.download import GSDownloader
 
+pytestmark = [pytest.mark.network, pytest.mark.slow]
+
 
 class TimeoutException(Exception):
     pass

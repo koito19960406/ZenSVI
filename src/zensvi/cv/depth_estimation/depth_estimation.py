@@ -1,7 +1,7 @@
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
@@ -51,7 +51,9 @@ class ImageDataset(Dataset):
 class DepthEstimator:
     """A class for estimating depth in images using DepthAnythingV2."""
 
-    def __init__(self, device: Optional[str] = None, task: str = "relative", encoder: str = "vitl", max_depth: float = 80.0) -> None:
+    def __init__(
+        self, device: Optional[str] = None, task: str = "relative", encoder: str = "vitl", max_depth: float = 80.0
+    ) -> None:
         self.task = task
         self.encoder = encoder
         self.max_depth = max_depth
@@ -230,7 +232,13 @@ class DepthEstimator:
 
         return depth.cpu().numpy()
 
-    def _process_images(self, image_files: List[Path], image_paths: List[str], original_sizes: List[Tuple[int, int]], dir_output: Union[str, Path]) -> None:
+    def _process_images(
+        self,
+        image_files: List[Path],
+        image_paths: List[str],
+        original_sizes: List[Tuple[int, int]],
+        dir_output: Union[str, Path],
+    ) -> None:
         """Processes images to estimate depth and save the results."""
         for image_file, image_path, original_size in zip(image_files, image_paths, original_sizes):
             # Read image (exactly like the working run.py)

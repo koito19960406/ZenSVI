@@ -9,6 +9,8 @@ from zensvi.download.kv import KVDownloader
 
 from .conftest import TimeoutException
 
+pytestmark = [pytest.mark.network, pytest.mark.slow]
+
 
 @pytest.fixture(scope="function")  # Explicitly set function scope
 def output_dir(base_output_dir, ensure_dir):

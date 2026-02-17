@@ -110,7 +110,9 @@ class ClassifierPerception(BaseClassifier):
         self.model.eval()
         self.model.to(self.device)
 
-    def _save_results_to_file(self, results: List[Dict[str, Any]], dir_output: Union[str, Path], file_name: str, save_format: str = "csv json") -> None:
+    def _save_results_to_file(
+        self, results: List[Dict[str, Any]], dir_output: Union[str, Path], file_name: str, save_format: str = "csv json"
+    ) -> None:
         """Save results to file in specified format.
 
         Args:
@@ -289,7 +291,9 @@ class ClassifierPerceptionViT(BaseClassifier):
         self.model.eval()
         self.model.to(self.device)
 
-    def _save_results_to_file(self, results: List[Dict[str, Any]], dir_output: Union[str, Path], file_name: str, save_format: str = "csv json") -> None:
+    def _save_results_to_file(
+        self, results: List[Dict[str, Any]], dir_output: Union[str, Path], file_name: str, save_format: str = "csv json"
+    ) -> None:
         """Save results to file in specified format.
 
         Args:

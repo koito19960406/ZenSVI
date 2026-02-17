@@ -79,7 +79,9 @@ class AMSDownloader(BaseDownloader):
         self.cache_lat_lon = self.dir_cache / "lat_lon.csv"
         self.cache_pids_raw = self.dir_cache / "pids_raw.csv"
 
-    def _get_pids_from_df(self, df: Union[pd.DataFrame, gpd.GeoDataFrame], id_columns: Optional[List[str]] = None) -> pd.DataFrame:
+    def _get_pids_from_df(
+        self, df: Union[pd.DataFrame, gpd.GeoDataFrame], id_columns: Optional[List[str]] = None
+    ) -> pd.DataFrame:
         if self.cache_lat_lon.exists():
             df = pd.read_csv(self.cache_lat_lon)
             print("The lat and lon have been read from the cache")
@@ -154,7 +156,9 @@ class AMSDownloader(BaseDownloader):
                 print(f"Attempt {attempt + 1} failed: {e}")
                 continue
 
-    def _filter_pids_date(self, pid_df: pd.DataFrame, start_date: Optional[str], end_date: Optional[str]) -> pd.DataFrame:
+    def _filter_pids_date(
+        self, pid_df: pd.DataFrame, start_date: Optional[str], end_date: Optional[str]
+    ) -> pd.DataFrame:
         """Filter panorama IDs by date."""
         pid_df["date"] = pd.to_datetime(pid_df["timestamp"], unit="ms")
         return pid_df[(pid_df["date"] >= start_date) & (pid_df["date"] <= end_date)]

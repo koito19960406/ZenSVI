@@ -1,7 +1,7 @@
 import os
 from collections import namedtuple
 from concurrent.futures import ThreadPoolExecutor
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import faiss
 import numpy as np

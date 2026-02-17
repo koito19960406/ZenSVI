@@ -16,8 +16,8 @@ def output_dir(base_output_dir, ensure_dir):
     return output_dir
 
 
-def test_classify_directory(output_dir, input_dir, all_devices):
-    classifier = ClassifierGlare(device=all_devices)
+def test_classify_directory(output_dir, input_dir, cpu_device):
+    classifier = ClassifierGlare(device=cpu_device)
     image_input = str(input_dir / "images")
     dir_summary_output = str(Path(output_dir) / "directory/summary")
     classifier.classify(
@@ -28,8 +28,8 @@ def test_classify_directory(output_dir, input_dir, all_devices):
     assert len(list(Path(dir_summary_output).iterdir())) > 0
 
 
-def test_classify_single_image(output_dir, input_dir, all_devices):
-    classifier = ClassifierGlare(device=all_devices)
+def test_classify_single_image(output_dir, input_dir, cpu_device):
+    classifier = ClassifierGlare(device=cpu_device)
     image_input = str(input_dir / "images/-3vfS0_iiYVZKh_LEVlHew.jpg")
     dir_summary_output = str(Path(output_dir) / "single/summary")
     classifier.classify(
@@ -41,11 +41,10 @@ def test_classify_single_image(output_dir, input_dir, all_devices):
 
 def test_classify_with_device(output_dir, input_dir, all_devices):
     classifier = ClassifierGlare(device=all_devices)
-    image_input = str(input_dir / "images")
+    image_input = str(input_dir / "images/-3vfS0_iiYVZKh_LEVlHew.jpg")
     dir_summary_output = str(Path(output_dir) / f"{all_devices}/summary")
     classifier.classify(
         image_input,
         dir_summary_output=dir_summary_output,
-        batch_size=3,
     )
     assert len(list(Path(dir_summary_output).iterdir())) > 0

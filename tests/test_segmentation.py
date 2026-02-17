@@ -19,10 +19,10 @@ def output_dir(base_output_dir, ensure_dir):
     return output_dir
 
 
-def test_mapillary_panoptic(output_dir, input_dir, all_devices):
-    segmenter = Segmenter(dataset="mapillary", task="panoptic", device=all_devices)
-    image_output = output_dir / f"{all_devices}/mapillary_panoptic"
-    summary_output = output_dir / f"{all_devices}/mapillary_panoptic_summary"
+def test_mapillary_panoptic(output_dir, input_dir, cpu_device):
+    segmenter = Segmenter(dataset="mapillary", task="panoptic", device=cpu_device)
+    image_output = output_dir / f"{cpu_device}/mapillary_panoptic"
+    summary_output = output_dir / f"{cpu_device}/mapillary_panoptic_summary"
     segmenter.segment(
         input_dir / "images",
         dir_image_output=image_output,
@@ -34,10 +34,10 @@ def test_mapillary_panoptic(output_dir, input_dir, all_devices):
     assert len(list(summary_output.glob("*"))) > 0
 
 
-def test_mapillary_semantic(output_dir, input_dir, all_devices):
-    segmenter = Segmenter(dataset="mapillary", task="semantic", device=all_devices)
-    image_output = output_dir / f"{all_devices}/mapillary_semantic"
-    summary_output = output_dir / f"{all_devices}/mapillary_semantic_summary"
+def test_mapillary_semantic(output_dir, input_dir, cpu_device):
+    segmenter = Segmenter(dataset="mapillary", task="semantic", device=cpu_device)
+    image_output = output_dir / f"{cpu_device}/mapillary_semantic"
+    summary_output = output_dir / f"{cpu_device}/mapillary_semantic_summary"
     segmenter.segment(
         input_dir / "images",
         dir_image_output=image_output,
@@ -49,10 +49,10 @@ def test_mapillary_semantic(output_dir, input_dir, all_devices):
     assert len(list(summary_output.glob("*"))) > 0
 
 
-def test_cityscapes_panoptic(output_dir, input_dir, all_devices):
-    segmenter = Segmenter(dataset="cityscapes", task="panoptic", device=all_devices)
-    image_output = output_dir / f"{all_devices}/cityscapes_panoptic"
-    summary_output = output_dir / f"{all_devices}/cityscapes_panoptic_summary"
+def test_cityscapes_panoptic(output_dir, input_dir, cpu_device):
+    segmenter = Segmenter(dataset="cityscapes", task="panoptic", device=cpu_device)
+    image_output = output_dir / f"{cpu_device}/cityscapes_panoptic"
+    summary_output = output_dir / f"{cpu_device}/cityscapes_panoptic_summary"
     segmenter.segment(
         input_dir / "images",
         dir_image_output=image_output,
@@ -64,10 +64,10 @@ def test_cityscapes_panoptic(output_dir, input_dir, all_devices):
     assert len(list(summary_output.glob("*"))) > 0
 
 
-def test_cityscapes_semantic(output_dir, input_dir, all_devices):
-    segmenter = Segmenter(dataset="cityscapes", task="semantic", device=all_devices)
-    image_output = output_dir / f"{all_devices}/cityscapes_semantic"
-    summary_output = output_dir / f"{all_devices}/cityscapes_semantic_summary"
+def test_cityscapes_semantic(output_dir, input_dir, cpu_device):
+    segmenter = Segmenter(dataset="cityscapes", task="semantic", device=cpu_device)
+    image_output = output_dir / f"{cpu_device}/cityscapes_semantic"
+    summary_output = output_dir / f"{cpu_device}/cityscapes_semantic_summary"
     segmenter.segment(
         input_dir / "images",
         dir_image_output=image_output,
@@ -79,10 +79,10 @@ def test_cityscapes_semantic(output_dir, input_dir, all_devices):
     assert len(list(summary_output.glob("*"))) > 0
 
 
-def test_large_image(output_dir, input_dir, all_devices):
-    segmenter = Segmenter(dataset="mapillary", task="panoptic", device=all_devices)
-    image_output = output_dir / f"{all_devices}/large_image"
-    summary_output = output_dir / f"{all_devices}/large_image_summary"
+def test_large_image(output_dir, input_dir, cpu_device):
+    segmenter = Segmenter(dataset="mapillary", task="panoptic", device=cpu_device)
+    image_output = output_dir / f"{cpu_device}/large_image"
+    summary_output = output_dir / f"{cpu_device}/large_image_summary"
     segmenter.segment(
         input_dir / "large_images",
         dir_image_output=image_output,
@@ -94,11 +94,11 @@ def test_large_image(output_dir, input_dir, all_devices):
     assert len(list(summary_output.glob("*"))) > 0
 
 
-def test_single_image(output_dir, input_dir, all_devices):
-    segmenter = Segmenter(dataset="mapillary", task="panoptic", device=all_devices)
+def test_single_image(output_dir, input_dir, cpu_device):
+    segmenter = Segmenter(dataset="mapillary", task="panoptic", device=cpu_device)
     image_input = str(input_dir / "images/-3vfS0_iiYVZKh_LEVlHew.jpg")
-    image_output = output_dir / f"{all_devices}/single_image"
-    summary_output = output_dir / f"{all_devices}/single_image_summary"
+    image_output = output_dir / f"{cpu_device}/single_image"
+    summary_output = output_dir / f"{cpu_device}/single_image_summary"
     segmenter.segment(
         image_input,
         dir_image_output=image_output,
@@ -126,11 +126,11 @@ def test_calculate_pixel_ratio_post_process_single_file(output_dir, input_dir):
     assert len(list(image_output.glob("*"))) > 0
 
 
-def test_long_format(output_dir, input_dir, all_devices):
-    segmenter = Segmenter(device=all_devices)
+def test_long_format(output_dir, input_dir, cpu_device):
+    segmenter = Segmenter(device=cpu_device)
     image_input = str(input_dir / "images")
-    image_output = output_dir / f"{all_devices}/long_format"
-    summary_output = output_dir / f"{all_devices}/long_format_summary"
+    image_output = output_dir / f"{cpu_device}/long_format"
+    summary_output = output_dir / f"{cpu_device}/long_format_summary"
     segmenter.segment(
         image_input,
         dir_image_output=image_output,

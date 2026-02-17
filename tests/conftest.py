@@ -31,6 +31,7 @@ def timeout(seconds=DOWNLOAD_TIMEOUT_SECONDS):
     """
 
     if sys.platform != "win32" and hasattr(signal, "SIGALRM"):
+
         def signal_handler(signum, frame):
             raise TimeoutException(f"Operation timed out after {seconds} seconds")
 
@@ -91,6 +92,7 @@ def ensure_dir():
 
 @pytest.fixture(params=["cpu", "cuda", "mps"])
 def all_devices(request):
+    """Parametrized fixture for testing on all devices. Use sparingly - prefer cpu_device for functional tests."""
     device = request.param
     # Skip CUDA tests if not available
     if device == "cuda" and not torch.cuda.is_available():
@@ -99,6 +101,23 @@ def all_devices(request):
     if device == "mps" and platform.system() != "Darwin":
         pytest.skip("MPS device only available on Mac")
     return device
+
+
+@pytest.fixture
+def cpu_device():
+    """Fixture that returns 'cpu'. Use for functional tests that don't need multi-device validation."""
+    return "cpu"
+
+
+@pytest.fixture
+def cpu_device():
+    """Returns cpu device. Use for functional tests that don't need multi-device validation."""
+    return "cpu"
+
+
+@pytest.fixture
+def cpu_device():
+    return "cpu"
 
 
 @pytest.fixture(autouse=True, scope="function")

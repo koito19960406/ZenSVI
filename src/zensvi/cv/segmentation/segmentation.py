@@ -324,7 +324,9 @@ class Segmenter:
         None
     """
 
-    def __init__(self, dataset: str = "cityscapes", task: str = "semantic", device: Optional[str] = None, verbosity: int = 1) -> None:
+    def __init__(
+        self, dataset: str = "cityscapes", task: str = "semantic", device: Optional[str] = None, verbosity: int = 1
+    ) -> None:
         """Initializes the Segmenter with a model and dataset.
 
         Args:
@@ -409,7 +411,7 @@ class Segmenter:
         labels = [label for label in labels if label.trainId != -1]
         train_ids = np.array([label.trainId for label in labels], dtype=np.uint8)
         colors = np.array([label.color for label in labels], dtype=np.uint8)
-        max_train_id = np.max(train_ids) + 1
+        max_train_id = int(np.max(train_ids)) + 1
         color_map = np.zeros((max_train_id, 3), dtype=np.uint8)
         color_map[train_ids] = colors
 
@@ -641,7 +643,9 @@ class Segmenter:
                 cv2.cvtColor(blend_img, cv2.COLOR_RGB2BGR),
             )
 
-    def _save_semantic_segmentation_image(self, image_file: str, img: np.ndarray, dir_output: Path, output: torch.Tensor) -> None:
+    def _save_semantic_segmentation_image(
+        self, image_file: str, img: np.ndarray, dir_output: Path, output: torch.Tensor
+    ) -> None:
         """Saves the semantic segmentation image as a colored segmented image and/or a
         blended image with the original input image.
 
@@ -1031,7 +1035,9 @@ class Segmenter:
             # Delete the "pixel_ratio_checkpoints" directory
             shutil.rmtree(dir_cache_segmentation_summary, ignore_errors=True)
 
-    def calculate_pixel_ratio_post_process(self, dir_input: Union[str, Path], dir_output: Union[str, Path], save_format: str = "json csv") -> None:
+    def calculate_pixel_ratio_post_process(
+        self, dir_input: Union[str, Path], dir_output: Union[str, Path], save_format: str = "json csv"
+    ) -> None:
         """Calculates the pixel ratio of different classes present in the segmented
         images and saves the results in either JSON or CSV format.
 

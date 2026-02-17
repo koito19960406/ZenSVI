@@ -1,7 +1,9 @@
 """Tests for the base downloader module."""
 
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
+
 from zensvi.download.base import BaseDownloader
 
 

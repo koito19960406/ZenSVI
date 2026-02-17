@@ -111,7 +111,9 @@ class ClassifierGlare(BaseClassifier):
         self.model.eval()
         self.model.to(self.device)
 
-    def _save_results_to_file(self, results: List[Dict[str, str]], dir_output: Union[str, Path], file_name: str, save_format: str = "csv json") -> None:
+    def _save_results_to_file(
+        self, results: List[Dict[str, str]], dir_output: Union[str, Path], file_name: str, save_format: str = "csv json"
+    ) -> None:
         """Saves classification results to file(s) in specified format(s).
 
         Args:

@@ -16,12 +16,18 @@ from .font_property import _get_font_properties
 
 def _lat_lng_to_h3(row: pd.Series, resolution: int = 7) -> str:
     """Convert latitude and longitude to H3 hex ID at the specified resolution."""
+    if hasattr(h3, "latlng_to_cell"):
+        return h3.latlng_to_cell(row["lat"], row["lon"], resolution)
     return h3.geo_to_h3(row["lat"], row["lon"], resolution)
 
 
 def _h3_to_polygon(hex_id: str) -> Polygon:
     """Convert H3 hex ID to a Shapely polygon."""
-    vertices = h3.h3_to_geo_boundary(hex_id, geo_json=True)
+    if hasattr(h3, "cell_to_boundary"):
+        boundary = h3.cell_to_boundary(hex_id)
+        vertices = [(lng, lat) for lat, lng in boundary]
+    else:
+        vertices = h3.h3_to_geo_boundary(hex_id, geo_json=True)
     return Polygon(vertices)
 
 
@@ -52,7 +58,9 @@ def _create_line(gdf: gpd.GeoDataFrame, variable_name: Optional[str] = None) -> 
     return line_gdf.to_crs(3857)
 
 
-def _create_hexagon(gdf: gpd.GeoDataFrame, resolution: int = 7, variable_name: Optional[str] = None) -> gpd.GeoDataFrame:
+def _create_hexagon(
+    gdf: gpd.GeoDataFrame, resolution: int = 7, variable_name: Optional[str] = None
+) -> gpd.GeoDataFrame:
     gdf = gdf.to_crs(4326)
     gdf["h3_id"] = gdf.apply(_lat_lng_to_h3, resolution=resolution, axis=1)
     if variable_name:

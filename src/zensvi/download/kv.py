@@ -6,7 +6,7 @@ import random
 import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, List, Optional, Union
 
 import geopandas as gpd
 import osmnx as ox
@@ -150,7 +150,9 @@ class KVDownloader(BaseDownloader):
 
         return pid
 
-    def _filter_pids_date(self, pid_df: pd.DataFrame, start_date: Optional[str], end_date: Optional[str]) -> pd.DataFrame:
+    def _filter_pids_date(
+        self, pid_df: pd.DataFrame, start_date: Optional[str], end_date: Optional[str]
+    ) -> pd.DataFrame:
         # create a temporary column date from captured_at (milliseconds from Unix epoch)
         pid_df["date"] = pd.to_datetime(pid_df["shotDate"], format="%Y-%m-%d %H:%M:%S.%f")
         # check if start_date and end_date are in the correct format with regex. If not, raise error
@@ -195,7 +197,14 @@ class KVDownloader(BaseDownloader):
         urls = pid[["id", "fileurlProc"]].rename(columns={"fileurlProc": "url"})
         urls.to_csv(self.pids_url, index=False)
 
-    def _download_images_kv(self, path_pid: Union[str, Path], cropped: bool, batch_size: int, start_date: Optional[str], end_date: Optional[str]) -> None:
+    def _download_images_kv(
+        self,
+        path_pid: Union[str, Path],
+        cropped: bool,
+        batch_size: int,
+        start_date: Optional[str],
+        end_date: Optional[str],
+    ) -> None:
         checkpoints = glob.glob(str(self.panorama_output / "**/*.png"), recursive=True)
 
         # Read already downloaded images and convert to ids

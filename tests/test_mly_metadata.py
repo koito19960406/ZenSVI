@@ -4,6 +4,8 @@ import pytest
 
 from zensvi.metadata import MLYMetadata
 
+pytestmark = pytest.mark.slow
+
 
 @pytest.fixture(scope="function")  # Explicitly set function scope
 def output_dir(base_output_dir, ensure_dir):

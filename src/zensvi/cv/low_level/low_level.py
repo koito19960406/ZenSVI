@@ -2,7 +2,7 @@ import json
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, Optional, Union
 
 import cv2
 import pandas as pd
@@ -81,7 +81,9 @@ def _detect_blob_single_image(image_path: Path, dir_image_output: Optional[Union
     return {"blob_count": len(keypoints)}
 
 
-def _detect_blur_single_image(image_path: Path, dir_image_output: Optional[Union[str, Path]] = None) -> Dict[str, float]:
+def _detect_blur_single_image(
+    image_path: Path, dir_image_output: Optional[Union[str, Path]] = None
+) -> Dict[str, float]:
     """Detect blur in a single image.
 
     Args:
@@ -104,7 +106,9 @@ def _detect_blur_single_image(image_path: Path, dir_image_output: Optional[Union
     return {"blur_measure": variance_of_laplacian, "is_blurry": is_blurry}
 
 
-def _calculate_hsl_single_image(image_path: Path, dir_image_output: Optional[Union[str, Path]] = None) -> Dict[str, float]:
+def _calculate_hsl_single_image(
+    image_path: Path, dir_image_output: Optional[Union[str, Path]] = None
+) -> Dict[str, float]:
     """Calculate the average HSL values of a single image.
 
     Args:
@@ -132,7 +136,9 @@ def _calculate_hsl_single_image(image_path: Path, dir_image_output: Optional[Uni
     }
 
 
-def _detect_all_features_single_image(image_path: Path, dir_image_output: Optional[Union[str, Path]] = None) -> Dict[str, Union[str, float, int]]:
+def _detect_all_features_single_image(
+    image_path: Path, dir_image_output: Optional[Union[str, Path]] = None
+) -> Dict[str, Union[str, float, int]]:
     """Aggregate all feature detection results for a single image.
 
     Args:

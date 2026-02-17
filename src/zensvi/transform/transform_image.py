@@ -1,7 +1,7 @@
 import math
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Iterator, List, Optional, Tuple, Union
+from typing import Iterator, Optional, Tuple, Union
 
 import cv2
 import numpy as np
@@ -438,7 +438,15 @@ class ImageTransformer:
             ".heif",
         ]
 
-        def run(path_input: Path, path_output: Path, show_size: Union[int, float], style: str, theta: Union[int, float], aspects: tuple, FOV: Union[int, float]) -> None:
+        def run(
+            path_input: Path,
+            path_output: Path,
+            show_size: Union[int, float],
+            style: str,
+            theta: Union[int, float],
+            aspects: tuple,
+            FOV: Union[int, float],
+        ) -> None:
             # Use IMREAD_UNCHANGED to preserve alpha channel if present
             img_raw = cv2.imread(str(path_input), cv2.IMREAD_UNCHANGED)
 
@@ -487,7 +495,16 @@ class ImageTransformer:
                         img_new = self.perspective(img_raw, FOV, theta, phi, height, width)
                         cv2.imwrite(str(path_output_raw), img_new)
 
-        def process_image(dir_input: Path, dir_output: Path, file_path: Path, show_size: Union[int, float], style: str, theta: Union[int, float], aspects: tuple, FOV: Union[int, float]) -> Tuple[Path, Path, Union[int, float], str, Union[int, float], tuple, Union[int, float]]:
+        def process_image(
+            dir_input: Path,
+            dir_output: Path,
+            file_path: Path,
+            show_size: Union[int, float],
+            style: str,
+            theta: Union[int, float],
+            aspects: tuple,
+            FOV: Union[int, float],
+        ) -> Tuple[Path, Path, Union[int, float], str, Union[int, float], tuple, Union[int, float]]:
             relative_path = file_path.relative_to(dir_input)
             path_output = dir_output / relative_path.with_suffix(".png")
             path_output.parent.mkdir(parents=True, exist_ok=True)

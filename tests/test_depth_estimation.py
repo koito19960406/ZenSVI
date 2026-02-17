@@ -16,10 +16,10 @@ def output_dir(base_output_dir, ensure_dir):
     return output_dir
 
 
-def test_classify_directory(output_dir, input_dir, all_devices):
-    classifier = DepthEstimator(device=all_devices)
+def test_classify_directory(output_dir, input_dir, cpu_device):
+    classifier = DepthEstimator(device=cpu_device)
     image_input = str(input_dir / "images")
-    dir_image_output = str(Path(output_dir) / f"{all_devices}/directory/summary")
+    dir_image_output = str(Path(output_dir) / f"{cpu_device}/directory/summary")
     classifier.estimate_depth(
         image_input,
         dir_image_output=dir_image_output,
@@ -28,10 +28,10 @@ def test_classify_directory(output_dir, input_dir, all_devices):
     assert len(list(Path(dir_image_output).iterdir())) > 0
 
 
-def test_classify_single_image(output_dir, input_dir, all_devices):
-    classifier = DepthEstimator(device=all_devices)
+def test_classify_single_image(output_dir, input_dir, cpu_device):
+    classifier = DepthEstimator(device=cpu_device)
     image_input = str(input_dir / "images/-3vfS0_iiYVZKh_LEVlHew.jpg")
-    dir_image_output = str(Path(output_dir) / f"{all_devices}/single/summary")
+    dir_image_output = str(Path(output_dir) / f"{cpu_device}/single/summary")
     classifier.estimate_depth(
         image_input,
         dir_image_output=dir_image_output,
@@ -39,10 +39,10 @@ def test_classify_single_image(output_dir, input_dir, all_devices):
     assert len(list(Path(dir_image_output).iterdir())) > 0
 
 
-def test_classify_relative_depth(output_dir, input_dir, all_devices):
-    classifier = DepthEstimator(device=all_devices, task="relative")
+def test_classify_relative_depth(output_dir, input_dir, cpu_device):
+    classifier = DepthEstimator(device=cpu_device, task="relative")
     image_input = str(input_dir / "images")
-    dir_image_output = str(Path(output_dir) / f"{all_devices}/relative/summary")
+    dir_image_output = str(Path(output_dir) / f"{cpu_device}/relative/summary")
     classifier.estimate_depth(
         image_input,
         dir_image_output=dir_image_output,
