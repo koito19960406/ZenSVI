@@ -1,0 +1,57 @@
+name: Test MLY Metadata
+
+on:
+  push:
+    paths:
+      - 'src/zensvi/metadata/**'
+      - 'tests/test_mly_metadata.py'
+      - '.github/workflows/test_mly_metadata.yml'
+  pull_request:
+    paths:
+      - 'src/zensvi/metadata/**'
+      - 'tests/test_mly_metadata.py'
+      - '.github/workflows/test_mly_metadata.yml'
+  workflow_dispatch:
+
+jobs:
+  test-mly-metadata:
+    strategy:
+      max-parallel: 2
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Free disk space
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+        sudo apt-get clean
+        df -h
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+
+    - name: Install Poetry
+      run: |
+        pip install poetry
+        poetry config virtualenvs.in-project true
+
+    - name: Install dependencies
+      run: |
+        poetry lock
+        poetry install --no-interaction --with dev
+
+    - name: Run MLY metadata tests
+      run: poetry run pytest tests/test_mly_metadata.py -v --tb=long
+      env:
+        MLY_API_KEY: ${{ secrets.MLY_API_KEY }}

@@ -96,7 +96,7 @@ def _compute_speed(df: pl.DataFrame) -> pl.DataFrame:
     )
 
     # Project to a local CRS once
-    gdf = ox.project_gdf(gdf)
+    gdf = ox.projection.project_gdf(gdf)
 
     # Convert projected coordinates to WKB
     gdf["geometry_wkb"] = gdf["geometry"].apply(lambda geom: wkb_dumps(geom, output_dimension=2))
@@ -433,6 +433,10 @@ class MLYMetadata:
             relevant_geometries = self.metadata_geometry.copy()
 
         # Compute intersections with buffer only for potentially intersecting geometries
+        if len(relevant_geometries) == 0:
+            self.metadata = self.metadata.with_columns(pl.lit(0.0).alias("coverage"))
+            return
+
         relevant_geometries["intersection"] = relevant_geometries["geometry"].intersection(buffer)
 
         # Calculate coverage based on the type of the geometries
