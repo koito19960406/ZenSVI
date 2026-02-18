@@ -9,8 +9,31 @@ from typing import Dict, List, Optional, Union
 import cv2
 import pandas as pd
 import torch
-from groundingdino.util.inference import annotate, load_image, load_model, predict
 from torch.utils.data import Dataset
+from transformers.modeling_utils import PreTrainedModel
+
+# groundingdino-py 0.4.0 is incompatible with transformers >= 5 in two ways:
+# 1. PreTrainedModel.get_head_mask was removed.
+# 2. get_extended_attention_mask(mask, shape, device, dtype) lost the 'device' positional arg.
+# These shims restore backward compatibility.
+if not hasattr(PreTrainedModel, "get_head_mask"):
+
+    def _get_head_mask(self, head_mask, num_hidden_layers, is_attention_chunked=False):
+        return [None] * num_hidden_layers if head_mask is None else head_mask
+
+    PreTrainedModel.get_head_mask = _get_head_mask
+
+import inspect as _inspect
+
+if "device" not in _inspect.signature(PreTrainedModel.get_extended_attention_mask).parameters:
+    _orig_get_extended = PreTrainedModel.get_extended_attention_mask
+
+    def _get_extended_attention_mask(self, attention_mask, input_shape, device=None, dtype=None):
+        return _orig_get_extended(self, attention_mask, input_shape, dtype=dtype)
+
+    PreTrainedModel.get_extended_attention_mask = _get_extended_attention_mask
+
+from groundingdino.util.inference import annotate, load_image, load_model, predict
 
 from zensvi.utils.log import verbosity_tqdm
 

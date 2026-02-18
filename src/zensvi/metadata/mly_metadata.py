@@ -8,7 +8,7 @@ import numpy as np
 import osmnx as ox
 import pandas as pd
 import polars as pl
-import pytz
+
 from astral import LocationInfo, sun
 from shapely.geometry import LineString, Polygon
 from timezonefinder import TimezoneFinder
@@ -68,8 +68,8 @@ def _day_or_night(df: pl.DataFrame) -> pl.DataFrame:
                 "lat": row[0],
                 "lon": row[1],
                 "date": row[2],
-                "sunrise": s["sunrise"].astimezone(pytz.UTC),
-                "sunset": s["sunset"].astimezone(pytz.UTC),
+                "sunrise": s["sunrise"].astimezone(datetime.timezone.utc),
+                "sunset": s["sunset"].astimezone(datetime.timezone.utc),
             }
         )
     sun_times_df = pl.DataFrame(sun_times_list)

@@ -108,7 +108,7 @@ class ClassifierPanorama(BaseClassifier):
 
         # Now load the model
         self.model = GlobalStreetScapesClassificationModel.load_from_checkpoint(
-            checkpoint_path, num_classes=num_classes, weight=None, strict=False
+            checkpoint_path, num_classes=num_classes, weight=None, strict=False, weights_only=False
         )
         self.model.eval()
         self.model.to(self.device)

@@ -142,8 +142,8 @@ class GSVDownloader(BaseDownloader):
                 # get year and month from date
                 try:
                     date = response["date"]
-                    year = date.split("-")[0]
-                    month = date.split("-")[1]
+                    year = int(date.split("-")[0])
+                    month = int(date.split("-")[1])
                 except Exception as e:
                     print(f"Error while getting year and month: {e}")
                     year = None
