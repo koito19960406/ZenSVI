@@ -8,7 +8,6 @@ import numpy as np
 import osmnx as ox
 import pandas as pd
 import polars as pl
-
 from astral import LocationInfo, sun
 from shapely.geometry import LineString, Polygon
 from timezonefinder import TimezoneFinder
