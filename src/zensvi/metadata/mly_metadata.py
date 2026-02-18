@@ -172,16 +172,22 @@ def _season_expr(datetime_col: str = "local_datetime", lat_col: str = "lat") -> 
     is_north = pl.col(lat_col) >= 0
     # Northern hemisphere mapping
     north = (
-        pl.when(month.is_in([12, 1, 2])).then(pl.lit("Winter"))
-        .when(month.is_in([3, 4, 5])).then(pl.lit("Spring"))
-        .when(month.is_in([6, 7, 8])).then(pl.lit("Summer"))
+        pl.when(month.is_in([12, 1, 2]))
+        .then(pl.lit("Winter"))
+        .when(month.is_in([3, 4, 5]))
+        .then(pl.lit("Spring"))
+        .when(month.is_in([6, 7, 8]))
+        .then(pl.lit("Summer"))
         .otherwise(pl.lit("Autumn"))
     )
     # Southern hemisphere mapping (shifted 6 months)
     south = (
-        pl.when(month.is_in([12, 1, 2])).then(pl.lit("Summer"))
-        .when(month.is_in([3, 4, 5])).then(pl.lit("Autumn"))
-        .when(month.is_in([6, 7, 8])).then(pl.lit("Winter"))
+        pl.when(month.is_in([12, 1, 2]))
+        .then(pl.lit("Summer"))
+        .when(month.is_in([3, 4, 5]))
+        .then(pl.lit("Autumn"))
+        .when(month.is_in([6, 7, 8]))
+        .then(pl.lit("Winter"))
         .otherwise(pl.lit("Spring"))
     )
     return pl.when(is_north).then(north).otherwise(south)
@@ -306,13 +312,10 @@ class MLYMetadata:
 
     def _compute_timezones(self, df: pl.DataFrame, lat_col: str, lon_col: str) -> pl.DataFrame:
         # Deduplicate by rounding to 0.01° (~1km) — points this close share a timezone
-        unique_coords = (
-            df.select(
-                pl.col(lat_col).round(2).alias("_lat_r"),
-                pl.col(lon_col).round(2).alias("_lon_r"),
-            )
-            .unique()
-        )
+        unique_coords = df.select(
+            pl.col(lat_col).round(2).alias("_lat_r"),
+            pl.col(lon_col).round(2).alias("_lon_r"),
+        ).unique()
 
         # Lookup timezone only for unique rounded coordinates
         tz_list = [
@@ -340,9 +343,7 @@ class MLYMetadata:
         local_parts = []
         for (tz_str,), group in df.group_by([timezone_col]):
             local_parts.append(
-                group.with_columns(
-                    pl.col("datetime_utc").dt.convert_time_zone(tz_str).alias("local_datetime")
-                )
+                group.with_columns(pl.col("datetime_utc").dt.convert_time_zone(tz_str).alias("local_datetime"))
             )
         df = pl.concat(local_parts).sort("_row_idx").drop("_row_idx")
 
@@ -880,9 +881,7 @@ class MLYMetadata:
         # run the appropriate function to compute metadata based on the unit of analysis
         if unit == "image":
             # after here, there's no gpd.GeoDataFrame conversion, so let's convert local_datetime to datetime for Polars
-            self.df = self.df.with_columns(
-                pl.col("local_datetime").dt.replace_time_zone(None).alias("local_datetime")
-            )
+            self.df = self.df.with_columns(pl.col("local_datetime").dt.replace_time_zone(None).alias("local_datetime"))
             df = self._compute_image_metadata(indicator_list)
         elif unit == "grid":
             self.metadata_geometry = _create_hexagon(
