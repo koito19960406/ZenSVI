@@ -45,7 +45,9 @@ def _h3_to_geo_boundary(hex_id: str) -> list:
 
 def _create_hexagon(df: pl.DataFrame, resolution: int = 7) -> gpd.GeoDataFrame:
     df = df.with_columns(
-        pl.struct(["lat", "lon"]).map_elements(lambda x: _latlng_to_h3(x["lat"], x["lon"], resolution), return_dtype=pl.String).alias("h3_id")
+        pl.struct(["lat", "lon"])
+        .map_elements(lambda x: _latlng_to_h3(x["lat"], x["lon"], resolution), return_dtype=pl.String)
+        .alias("h3_id")
     )
     unique_h3_ids = df.select("h3_id").unique()
     hex_gdf = gpd.GeoDataFrame(
