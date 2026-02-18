@@ -157,3 +157,6 @@ models/*
 
 # auxiliary
 test_download_folder.py
+
+plan.md
+CLAUDE.md
