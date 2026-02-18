@@ -11,8 +11,6 @@ import polars as pl
 import pytz
 from astral import LocationInfo, sun
 from shapely.geometry import LineString, Polygon
-from shapely.wkb import dumps as wkb_dumps
-from shapely.wkb import loads as wkb_loads
 from timezonefinder import TimezoneFinder
 from tqdm.auto import tqdm
 
@@ -98,79 +96,34 @@ def _compute_speed(df: pl.DataFrame) -> pl.DataFrame:
     # Project to a local CRS once
     gdf = ox.projection.project_gdf(gdf)
 
-    # Convert projected coordinates to WKB
-    gdf["geometry_wkb"] = gdf["geometry"].apply(lambda geom: wkb_dumps(geom, output_dimension=2))
+    # Sort by sequence_id and datetime_utc for consecutive-point distance calc
+    gdf = gdf.sort_values(["sequence_id", "datetime_utc"]).reset_index(drop=True)
 
-    # Convert back to Polars DataFrame
-    df = pl.DataFrame(gdf.drop(columns=["geometry"]))
+    # Vectorized distance: shift geometry within each sequence, compute distance
+    shifted_geom = gdf.groupby("sequence_id")["geometry"].shift(-1)
+    shifted_dt = gdf.groupby("sequence_id")["datetime_utc"].shift(-1)
 
-    # Sort the DataFrame by sequence_id and datetime_utc
-    df = df.sort(["sequence_id", "datetime_utc"])
+    # Vectorized distance between consecutive points (GeoSeries.distance)
+    distance_m = gdf["geometry"].distance(shifted_geom)
 
-    # Convert datetime_utc to datetime if it's a string
-    if df.schema["datetime_utc"] == pl.Utf8:
-        df = df.with_columns(
-            pl.col("datetime_utc").str.strptime(pl.Datetime, format="%Y-%m-%d %H:%M:%S").alias("datetime_utc")
-        )
+    # Time difference in hours
+    time_diff_hrs = (shifted_dt - gdf["datetime_utc"]).dt.total_seconds() / 3600
 
-    # Create shifted columns for sequence ID, geometry, and datetime
-    df = df.with_columns(
-        [
-            df["sequence_id"].shift(-1).alias("shifted_sequence_id"),
-            df["geometry_wkb"].shift(-1).alias("shifted_geometry_wkb"),
-            df["datetime_utc"].shift(-1).alias("shifted_datetime"),
-        ]
-    )
+    # Speed in km/h
+    gdf["speed_kmh"] = (distance_m / 1000) / time_diff_hrs
 
-    # Explicitly filter out null geometries and mismatched sequence IDs before any calculations
-    valid_rows = df.filter(
-        (df["sequence_id"] == df["shifted_sequence_id"])
-        & df["sequence_id"].is_not_null()
-        & df["geometry_wkb"].is_not_null()
-        & df["shifted_geometry_wkb"].is_not_null()
-    )
+    # Convert back to Polars, dropping geometry column
+    result = pl.DataFrame(gdf.drop(columns=["geometry"]))
 
-    # Now compute distances and time differences on the pre-filtered data
-    def compute_distance(row: dict) -> Optional[float]:
-        if row["geometry_wkb"] is None or row["shifted_geometry_wkb"] is None:
-            return None
-        geom1 = wkb_loads(row["geometry_wkb"])
-        geom2 = wkb_loads(row["shifted_geometry_wkb"])
-        return geom1.distance(geom2)
-
-    valid_rows = valid_rows.with_columns(
-        [
-            pl.struct(["geometry_wkb", "shifted_geometry_wkb"])
-            .map_elements(compute_distance, return_dtype=pl.Float64, skip_nulls=False)
-            .alias("distance_m"),
-            ((pl.col("shifted_datetime") - pl.col("datetime_utc")).dt.total_seconds() / 3600).alias("time_diff_hrs"),
-        ]
-    )
-
-    # Calculate speed in km/h
-    valid_rows = valid_rows.with_columns((pl.col("distance_m") / 1000 / pl.col("time_diff_hrs")).alias("speed_kmh"))
-
-    # Drop unnecessary columns and combine with the original dataframe to retain all rows
-    valid_rows = valid_rows.select(["sequence_id", "datetime_utc", "speed_kmh"])
-    df = df.join(valid_rows, on=["sequence_id", "datetime_utc"], how="left")
-    df = df.drop(
-        [
-            "shifted_sequence_id",
-            "shifted_geometry_wkb",
-            "shifted_datetime",
-            "geometry_wkb",
-        ]
-    )
-
-    # Convert Inf, "", and NaN to None
-    df = df.with_columns(
+    # Convert Inf and NaN to None
+    result = result.with_columns(
         pl.when(pl.col("speed_kmh").is_null() | pl.col("speed_kmh").is_nan() | pl.col("speed_kmh").is_infinite())
         .then(None)
         .otherwise(pl.col("speed_kmh"))
         .alias("speed_kmh")
     )
 
-    return df
+    return result
 
 
 def _datetime_to_season(local_datetime: Union[datetime.datetime, str], lat: float) -> str:
@@ -211,6 +164,27 @@ def _datetime_to_season(local_datetime: Union[datetime.datetime, str], lat: floa
         raise ValueError("local_datetime must be either a datetime object or a string")
 
     return season_month_north[month] if lat >= 0 else season_month_south[month]
+
+
+def _season_expr(datetime_col: str = "local_datetime", lat_col: str = "lat") -> pl.Expr:
+    """Vectorized Polars expression that maps (month, hemisphere) to season string."""
+    month = pl.col(datetime_col).dt.month()
+    is_north = pl.col(lat_col) >= 0
+    # Northern hemisphere mapping
+    north = (
+        pl.when(month.is_in([12, 1, 2])).then(pl.lit("Winter"))
+        .when(month.is_in([3, 4, 5])).then(pl.lit("Spring"))
+        .when(month.is_in([6, 7, 8])).then(pl.lit("Summer"))
+        .otherwise(pl.lit("Autumn"))
+    )
+    # Southern hemisphere mapping (shifted 6 months)
+    south = (
+        pl.when(month.is_in([12, 1, 2])).then(pl.lit("Summer"))
+        .when(month.is_in([3, 4, 5])).then(pl.lit("Autumn"))
+        .when(month.is_in([6, 7, 8])).then(pl.lit("Winter"))
+        .otherwise(pl.lit("Spring"))
+    )
+    return pl.when(is_north).then(north).otherwise(south)
 
 
 class MLYMetadata:
@@ -331,43 +305,47 @@ class MLYMetadata:
         }
 
     def _compute_timezones(self, df: pl.DataFrame, lat_col: str, lon_col: str) -> pl.DataFrame:
-        # Extract latitude and longitude data as lists for batch processing
-        lats = df[lat_col].to_list()
-        lons = df[lon_col].to_list()
+        # Deduplicate by rounding to 0.01° (~1km) — points this close share a timezone
+        unique_coords = (
+            df.select(
+                pl.col(lat_col).round(2).alias("_lat_r"),
+                pl.col(lon_col).round(2).alias("_lon_r"),
+            )
+            .unique()
+        )
 
-        # Calculate timezones (batch operation)
-        timezones = [
-            self._tf_instance.timezone_at(lat=lat, lng=lon)
-            for lat, lon in tqdm(zip(lats, lons), total=len(lats), desc="Computing timezones")
+        # Lookup timezone only for unique rounded coordinates
+        tz_list = [
+            self._tf_instance.timezone_at(lat=row[0], lng=row[1])
+            for row in tqdm(unique_coords.iter_rows(), total=len(unique_coords), desc="Computing timezones")
         ]
+        unique_coords = unique_coords.with_columns(pl.Series("timezone", tz_list))
 
-        # Add timezones as a new column
-        df = df.with_columns(pl.Series("timezone", timezones))
+        # Map back to original rows via rounded coordinates
+        df = df.with_columns(
+            pl.col(lat_col).round(2).alias("_lat_r"),
+            pl.col(lon_col).round(2).alias("_lon_r"),
+        )
+        df = df.join(unique_coords, on=["_lat_r", "_lon_r"], how="left", coalesce=True).drop(["_lat_r", "_lon_r"])
         return df
 
     def _compute_datetimes(self, df: pl.DataFrame, timestamp_col: str, timezone_col: str) -> pl.DataFrame:
-        # Extract timestamps and timezones
-        timestamps = df[timestamp_col].to_list()
-        timezones = df[timezone_col].to_list()
-
-        # Compute UTC and local datetimes
-        datetimes_utc = []
-        datetimes_local = []
-        for timestamp, timezone_str in tqdm(
-            zip(timestamps, timezones),
-            total=len(timestamps),
-            desc="Computing datetimes",
-        ):
-            dt_utc = datetime.datetime.fromtimestamp(timestamp / 1000, tz=datetime.timezone.utc)
-            dt_local = dt_utc.astimezone(pytz.timezone(timezone_str))
-            datetimes_utc.append(dt_utc)
-            datetimes_local.append(dt_local.isoformat())
-
-        # Add new columns to the DataFrame
+        # Convert millisecond timestamps to UTC datetimes using Polars native ops
         df = df.with_columns(
-            pl.Series("datetime_utc", datetimes_utc),
-            pl.Series("local_datetime", datetimes_local),
+            pl.from_epoch(pl.col(timestamp_col), time_unit="ms").dt.replace_time_zone("UTC").alias("datetime_utc"),
+            pl.arange(0, pl.len()).alias("_row_idx"),
         )
+
+        # Convert to local datetimes by processing each timezone group
+        local_parts = []
+        for (tz_str,), group in df.group_by([timezone_col]):
+            local_parts.append(
+                group.with_columns(
+                    pl.col("datetime_utc").dt.convert_time_zone(tz_str).alias("local_datetime")
+                )
+            )
+        df = pl.concat(local_parts).sort("_row_idx").drop("_row_idx")
+
         return df
 
     def _compute_year_metadata_image(self) -> None:
@@ -607,23 +585,12 @@ class MLYMetadata:
         )
 
     def _compute_number_of_spring_metadata_grid_street(self) -> None:
-        # number of points captured during spring
-        # calculate the number of points captured during spring using _datetime_to_season function
-        grouped = self.joined
+        season_col = _season_expr("local_datetime", "lat")
         grouped = (
-            grouped.with_columns(
-                pl.struct(["local_datetime", "lat"])
-                .map_elements(
-                    lambda x: _datetime_to_season(x["local_datetime"], x["lat"]),
-                    return_dtype=pl.String,
-                )
-                .eq(pl.lit("Spring"))
-                .alias("spring")
-            )
+            self.joined.with_columns(season_col.eq(pl.lit("Spring")).alias("spring"))
             .group_by(self.columns_to_group_by)
             .agg(pl.col("spring").sum().alias("number_of_spring"))
         )
-        # Join self.metadata with grouped on the specified columns, only including the 'number_of_spring' column
         self.metadata = self.metadata.join(
             grouped.select([self.columns_to_group_by, "number_of_spring"]),
             on=self.columns_to_group_by,
@@ -631,23 +598,12 @@ class MLYMetadata:
         )
 
     def _compute_number_of_summer_metadata_grid_street(self) -> None:
-        # number of points captured during summer
-        # calculate the number of points captured during summer using _datetime_to_season function
-        grouped = self.joined
+        season_col = _season_expr("local_datetime", "lat")
         grouped = (
-            grouped.with_columns(
-                pl.struct(["local_datetime", "lat"])
-                .map_elements(
-                    lambda x: _datetime_to_season(x["local_datetime"], x["lat"]),
-                    return_dtype=pl.String,
-                )
-                .eq(pl.lit("Summer"))
-                .alias("summer")
-            )
+            self.joined.with_columns(season_col.eq(pl.lit("Summer")).alias("summer"))
             .group_by(self.columns_to_group_by)
             .agg(pl.col("summer").sum().alias("number_of_summer"))
         )
-        # Join self.metadata with grouped on the specified columns, only including the 'number_of_summer' column
         self.metadata = self.metadata.join(
             grouped.select([self.columns_to_group_by, "number_of_summer"]),
             on=self.columns_to_group_by,
@@ -655,23 +611,12 @@ class MLYMetadata:
         )
 
     def _compute_number_of_autumn_metadata_grid_street(self) -> None:
-        # number of points captured during autumn
-        # calculate the number of points captured during autumn using _datetime_to_season function
-        grouped = self.joined
+        season_col = _season_expr("local_datetime", "lat")
         grouped = (
-            grouped.with_columns(
-                pl.struct(["local_datetime", "lat"])
-                .map_elements(
-                    lambda x: _datetime_to_season(x["local_datetime"], x["lat"]),
-                    return_dtype=pl.String,
-                )
-                .eq(pl.lit("Autumn"))
-                .alias("autumn")
-            )
+            self.joined.with_columns(season_col.eq(pl.lit("Autumn")).alias("autumn"))
             .group_by(self.columns_to_group_by)
             .agg(pl.col("autumn").sum().alias("number_of_autumn"))
         )
-        # Join self.metadata with grouped on the specified columns, only including the 'number_of_autumn' column
         self.metadata = self.metadata.join(
             grouped.select([self.columns_to_group_by, "number_of_autumn"]),
             on=self.columns_to_group_by,
@@ -679,23 +624,12 @@ class MLYMetadata:
         )
 
     def _compute_number_of_winter_metadata_grid_street(self) -> None:
-        # number of points captured during winter
-        # calculate the number of points captured during winter using _datetime_to_season function
-        grouped = self.joined
+        season_col = _season_expr("local_datetime", "lat")
         grouped = (
-            grouped.with_columns(
-                pl.struct(["local_datetime", "lat"])
-                .map_elements(
-                    lambda x: _datetime_to_season(x["local_datetime"], x["lat"]),
-                    return_dtype=pl.String,
-                )
-                .eq(pl.lit("Winter"))
-                .alias("winter")
-            )
+            self.joined.with_columns(season_col.eq(pl.lit("Winter")).alias("winter"))
             .group_by(self.columns_to_group_by)
             .agg(pl.col("winter").sum().alias("number_of_winter"))
         )
-        # Join self.metadata with grouped on the specified columns, only including the 'number_of_winter' column
         self.metadata = self.metadata.join(
             grouped.select([self.columns_to_group_by, "number_of_winter"]),
             on=self.columns_to_group_by,
@@ -910,14 +844,7 @@ class MLYMetadata:
             or "autumn" in indicator_list
             or "winter" in indicator_list
         ):
-            self.df = self.df.with_columns(
-                pl.struct(["local_datetime", "lat"])
-                .map_elements(
-                    lambda x: _datetime_to_season(x["local_datetime"], x["lat"]),
-                    return_dtype=pl.String,
-                )
-                .alias("season")
-            )
+            self.df = self.df.with_columns(_season_expr("local_datetime", "lat").alias("season"))
 
         # check indicator_list and pre-compute metadata, e.g., speed
         if "all" in indicator_list or "speed" in indicator_list:
@@ -954,10 +881,7 @@ class MLYMetadata:
         if unit == "image":
             # after here, there's no gpd.GeoDataFrame conversion, so let's convert local_datetime to datetime for Polars
             self.df = self.df.with_columns(
-                pl.col("local_datetime")
-                .str.replace(r"([+-]\d{2}:\d{2})$", "")
-                .str.strptime(pl.Datetime, format="%Y-%m-%dT%H:%M:%S%.f")
-                .alias("local_datetime")
+                pl.col("local_datetime").dt.replace_time_zone(None).alias("local_datetime")
             )
             df = self._compute_image_metadata(indicator_list)
         elif unit == "grid":
@@ -976,10 +900,7 @@ class MLYMetadata:
             self.metadata = pl.DataFrame(self.metadata_geometry.drop(columns="geometry"))
             # after here, there's no gpd.GeoDataFrame conversion, so let's convert local_datetime to datetime for Polars
             self.joined = self.joined.with_columns(
-                pl.col("local_datetime")
-                .str.replace(r"([+-]\d{2}:\d{2})$", "")
-                .str.strptime(pl.Datetime, format="%Y-%m-%dT%H:%M:%S%.f")
-                .alias("local_datetime")
+                pl.col("local_datetime").dt.replace_time_zone(None).alias("local_datetime")
             )
             # Get a list of all columns that contain 'index_right'
             self.columns_to_group_by = "key_col"
@@ -998,10 +919,7 @@ class MLYMetadata:
             self.metadata = pl.DataFrame(self.metadata_geometry.drop(columns="geometry"))
             # after here, there's no gpd.GeoDataFrame conversion, so let's convert local_datetime to datetime for Polars
             self.joined = self.joined.with_columns(
-                pl.col("local_datetime")
-                .str.replace(r"([+-]\d{2}:\d{2})$", "")
-                .str.strptime(pl.Datetime, format="%Y-%m-%dT%H:%M:%S%.f")
-                .alias("local_datetime")
+                pl.col("local_datetime").dt.replace_time_zone(None).alias("local_datetime")
             )
             self.columns_to_group_by = "key_col"
             df = self._compute_street_metadata(indicator_list)
