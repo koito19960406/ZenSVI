@@ -146,6 +146,8 @@ class KVDownloader(BaseDownloader):
         gdf = check_and_buffer(gdf, kwargs["buffer"])
         # get pid
         pid = self._get_pids_from_gdf(gdf)
+        if pid is None:
+            return pid
         pid = self._filter_pids_date(pid, kwargs["start_date"], kwargs["end_date"])
 
         return pid

@@ -109,17 +109,6 @@ def cpu_device():
     return "cpu"
 
 
-@pytest.fixture
-def cpu_device():
-    """Returns cpu device. Use for functional tests that don't need multi-device validation."""
-    return "cpu"
-
-
-@pytest.fixture
-def cpu_device():
-    return "cpu"
-
-
 @pytest.fixture(autouse=True, scope="function")
 def cleanup_after_test(base_output_dir):
     """Fixture to clean up downloaded files after each test function"""

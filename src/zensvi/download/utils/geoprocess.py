@@ -189,7 +189,7 @@ class GeoProcessor:
         """
         west, south, east, north = polygon.bounds
 
-        polygon_geom = ox.utils_geo.bbox_to_poly(north, south, east, west)
+        polygon_geom = ox.utils_geo.bbox_to_poly(bbox=(west, south, east, north))
         bounding_box = gpd.GeoDataFrame({"geometry": [polygon_geom]}, crs=crs)
         bounding_box_utm = ox.projection.project_gdf(bounding_box)
         utm_crs = bounding_box_utm.crs

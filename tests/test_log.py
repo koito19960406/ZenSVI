@@ -1,10 +1,5 @@
 """Tests for zensvi.utils.log module."""
 
-import logging
-from pathlib import Path
-
-import pytest
-
 from zensvi.utils.log import Logger, verbosity_tqdm
 
 

@@ -1,6 +1,6 @@
 """Tests for the base downloader module."""
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -96,7 +96,7 @@ class TestBaseDownloader:
         """Test that importlib.resources is being used (not pkg_resources)."""
         # This test ensures that the package can be imported without pkg_resources
         try:
-            from zensvi.download.base import BaseDownloader
+            import zensvi.download.base  # noqa: F401
 
             assert True
         except ImportError as e:
