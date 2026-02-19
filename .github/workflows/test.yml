@@ -73,7 +73,7 @@ jobs:
       env:
         CODECOV_NAME: ${{ matrix.os }}-py${{ matrix.python-version }}
       run: |
-        ./codecov upload-process --fail-on-error -t ${{ secrets.CODECOV_TOKEN }} -F service -f coverage-service.xml --verbose
+        ./codecov upload-process --fail-on-error -t ${{ secrets.CODECOV_TOKEN }} -F service -f coverage-service.xml
     
     # Cleanup after tests
     - name: Cleanup test artifacts
