@@ -17,10 +17,10 @@ def output_dir(base_output_dir, ensure_dir):
     return output_dir
 
 
-def test_classify_directory(output_dir, input_dir, all_devices):
-    classifier = ClassifierPerception(perception_study="more boring", device=all_devices)
+def test_classify_directory(output_dir, input_dir, cpu_device):
+    classifier = ClassifierPerception(perception_study="more boring", device=cpu_device)
     image_input = str(input_dir / "images")
-    dir_summary_output = str(output_dir / f"{all_devices}/directory/summary")
+    dir_summary_output = str(output_dir / f"{cpu_device}/directory/summary")
     classifier.classify(
         image_input,
         dir_summary_output=dir_summary_output,
@@ -29,10 +29,10 @@ def test_classify_directory(output_dir, input_dir, all_devices):
     assert len(list(Path(dir_summary_output).iterdir())) > 0
 
 
-def test_classify_single_image(output_dir, input_dir, all_devices):
-    classifier = ClassifierPerception(perception_study="more boring", device=all_devices)
+def test_classify_single_image(output_dir, input_dir, cpu_device):
+    classifier = ClassifierPerception(perception_study="more boring", device=cpu_device)
     image_input = str(input_dir / "images/test1.jpg")
-    dir_summary_output = str(output_dir / f"{all_devices}/single/summary")
+    dir_summary_output = str(output_dir / f"{cpu_device}/single/summary")
     classifier.classify(
         image_input,
         dir_summary_output=dir_summary_output,
@@ -40,10 +40,10 @@ def test_classify_single_image(output_dir, input_dir, all_devices):
     assert len(list(Path(dir_summary_output).iterdir())) > 0
 
 
-def test_classify_directory_vit(output_dir, input_dir, all_devices):
-    classifier = ClassifierPerceptionViT(perception_study="more boring", device=all_devices)
+def test_classify_directory_vit(output_dir, input_dir, cpu_device):
+    classifier = ClassifierPerceptionViT(perception_study="more boring", device=cpu_device)
     image_input = str(input_dir / "images")
-    dir_summary_output = str(output_dir / f"{all_devices}/directory_vit/summary")
+    dir_summary_output = str(output_dir / f"{cpu_device}/directory_vit/summary")
     classifier.classify(
         image_input,
         dir_summary_output=dir_summary_output,

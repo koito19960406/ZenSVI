@@ -1,7 +1,11 @@
+from typing import Tuple
+
 from matplotlib import font_manager
 
 
-def _get_font_properties(font_size):
+def _get_font_properties(
+    font_size: int,
+) -> Tuple[font_manager.FontProperties, font_manager.FontProperties, font_manager.FontProperties]:
     prop_title = font_manager.FontProperties(
         family="Arial Narrow", weight="bold", size=font_size
     )  # Specify your font properties

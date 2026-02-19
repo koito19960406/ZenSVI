@@ -1,6 +1,6 @@
 import glob
 from pathlib import Path
-from typing import Any, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 
 import contextily as ctx
 import geopandas as gpd
@@ -14,18 +14,24 @@ from shapely.geometry import Polygon
 from .font_property import _get_font_properties
 
 
-def _lat_lng_to_h3(row, resolution=7):
+def _lat_lng_to_h3(row: pd.Series, resolution: int = 7) -> str:
     """Convert latitude and longitude to H3 hex ID at the specified resolution."""
+    if hasattr(h3, "latlng_to_cell"):
+        return h3.latlng_to_cell(row["lat"], row["lon"], resolution)
     return h3.geo_to_h3(row["lat"], row["lon"], resolution)
 
 
-def _h3_to_polygon(hex_id):
+def _h3_to_polygon(hex_id: str) -> Polygon:
     """Convert H3 hex ID to a Shapely polygon."""
-    vertices = h3.h3_to_geo_boundary(hex_id, geo_json=True)
+    if hasattr(h3, "cell_to_boundary"):
+        boundary = h3.cell_to_boundary(hex_id)
+        vertices = [(lng, lat) for lat, lng in boundary]
+    else:
+        vertices = h3.h3_to_geo_boundary(hex_id, geo_json=True)
     return Polygon(vertices)
 
 
-def _create_line(gdf, variable_name=None):
+def _create_line(gdf: gpd.GeoDataFrame, variable_name: Optional[str] = None) -> gpd.GeoDataFrame:
     # gdf is a point GeoDataFrame, so convert it to polygon by taking convex hull
     polygon = gdf["geometry"].buffer(100).to_crs(4326).unary_union
     # then use osmnx to get street network graph_from_polygon
@@ -52,7 +58,9 @@ def _create_line(gdf, variable_name=None):
     return line_gdf.to_crs(3857)
 
 
-def _create_hexagon(gdf, resolution=7, variable_name=None):
+def _create_hexagon(
+    gdf: gpd.GeoDataFrame, resolution: int = 7, variable_name: Optional[str] = None
+) -> gpd.GeoDataFrame:
     gdf = gdf.to_crs(4326)
     gdf["h3_id"] = gdf.apply(_lat_lng_to_h3, resolution=resolution, axis=1)
     if variable_name:
@@ -67,18 +75,18 @@ def _create_hexagon(gdf, resolution=7, variable_name=None):
 
 
 def _add_colorbar(
-    fig,
-    ax,
-    vmin,
-    vmax,
-    cmap,
-    legend_title,
-    prop,
-    prop_legend,
-    font_color,
-    orientation="vertical",
-    dark_mode=False,
-):
+    fig: plt.Figure,
+    ax: plt.Axes,
+    vmin: float,
+    vmax: float,
+    cmap: str,
+    legend_title: Optional[str],
+    prop: Any,
+    prop_legend: Any,
+    font_color: str,
+    orientation: str = "vertical",
+    dark_mode: bool = False,
+) -> None:
     """Adds a colorbar to the figure based on given parameters, with optional dark
     mode.
     """
@@ -97,16 +105,16 @@ def _add_colorbar(
 def plot_map(
     path_pid: Union[str, Path],
     pid_column: str = "panoid",
-    dir_input: Union[str, Path] = None,
+    dir_input: Optional[Union[str, Path]] = None,
     csv_file_pattern: str = "*.csv",
-    variable_name: str = None,
+    variable_name: Optional[str] = None,
     plot_type: str = "point",
-    path_output: Union[str, Path] = None,
+    path_output: Optional[Union[str, Path]] = None,
     resolution: int = 7,
     cmap: str = "viridis",
     legend: bool = True,
-    title: str = None,
-    legend_title: str = None,
+    title: Optional[str] = None,
+    legend_title: Optional[str] = None,
     basemap_source: Any = ctx.providers.CartoDB.PositronNoLabels,
     figure_size: Tuple[int, int] = (10, 10),
     dpi: int = 300,

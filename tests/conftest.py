@@ -1,6 +1,8 @@
 import platform
 import shutil
 import signal
+import sys
+import threading
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -28,18 +30,33 @@ def timeout(seconds=DOWNLOAD_TIMEOUT_SECONDS):
         TimeoutException: If execution time exceeds the specified seconds
     """
 
-    def signal_handler(signum, frame):
-        raise TimeoutException(f"Operation timed out after {seconds} seconds")
+    if sys.platform != "win32" and hasattr(signal, "SIGALRM"):
 
-    # Register the signal handler and set the alarm
-    signal.signal(signal.SIGALRM, signal_handler)
-    signal.alarm(seconds)
+        def signal_handler(signum, frame):
+            raise TimeoutException(f"Operation timed out after {seconds} seconds")
 
-    try:
-        yield
-    finally:
-        # Disable the alarm
-        signal.alarm(0)
+        signal.signal(signal.SIGALRM, signal_handler)
+        signal.alarm(seconds)
+
+        try:
+            yield
+        finally:
+            signal.alarm(0)
+    else:
+        # Windows fallback: threading-based timeout (best-effort, cannot interrupt blocking I/O)
+        timer_fired = threading.Event()
+
+        def _timeout_handler():
+            timer_fired.set()
+
+        timer = threading.Timer(seconds, _timeout_handler)
+        timer.start()
+        try:
+            yield
+            if timer_fired.is_set():
+                raise TimeoutException(f"Operation timed out after {seconds} seconds")
+        finally:
+            timer.cancel()
 
 
 @pytest.fixture(scope="session")
@@ -75,6 +92,7 @@ def ensure_dir():
 
 @pytest.fixture(params=["cpu", "cuda", "mps"])
 def all_devices(request):
+    """Parametrized fixture for testing on all devices. Use sparingly - prefer cpu_device for functional tests."""
     device = request.param
     # Skip CUDA tests if not available
     if device == "cuda" and not torch.cuda.is_available():
@@ -83,6 +101,12 @@ def all_devices(request):
     if device == "mps" and platform.system() != "Darwin":
         pytest.skip("MPS device only available on Mac")
     return device
+
+
+@pytest.fixture
+def cpu_device():
+    """Fixture that returns 'cpu'. Use for functional tests that don't need multi-device validation."""
+    return "cpu"
 
 
 @pytest.fixture(autouse=True, scope="function")

@@ -8,6 +8,7 @@ import shutil
 import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 import geopandas as gpd
 import osmnx as ox
@@ -36,7 +37,9 @@ class MLYDownloader(BaseDownloader):
                                   0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, mly_api_key, log_path=None, max_workers=None, verbosity=1):
+    def __init__(
+        self, mly_api_key: str, log_path: Optional[str] = None, max_workers: Optional[int] = None, verbosity: int = 1
+    ) -> None:
         super().__init__(log_path)
         self._mly_api_key = mly_api_key
         self._max_workers = max_workers
@@ -49,7 +52,7 @@ class MLYDownloader(BaseDownloader):
             self.logger = None
 
     @property
-    def mly_api_key(self):
+    def mly_api_key(self) -> str:
         """Property for Mapillary API key.
 
         Returns:
@@ -58,11 +61,11 @@ class MLYDownloader(BaseDownloader):
         return self._mly_api_key
 
     @mly_api_key.setter
-    def mly_api_key(self, mly_api_key):
+    def mly_api_key(self, mly_api_key: str) -> None:
         self._mly_api_key = mly_api_key
 
     @property
-    def max_workers(self):
+    def max_workers(self) -> Optional[int]:
         """Property for the number of workers for parallel processing.
 
         Returns:
@@ -71,14 +74,14 @@ class MLYDownloader(BaseDownloader):
         return self._max_workers
 
     @max_workers.setter
-    def max_workers(self, max_workers):
+    def max_workers(self, max_workers: Optional[int]) -> None:
         if max_workers is None:
             self._max_workers = min(32, os.cpu_count() + 4)
         else:
             self._max_workers = max_workers
 
     @property
-    def verbosity(self):
+    def verbosity(self) -> int:
         """Property for the verbosity level of progress bars.
 
         Returns:
@@ -87,10 +90,10 @@ class MLYDownloader(BaseDownloader):
         return self._verbosity
 
     @verbosity.setter
-    def verbosity(self, verbosity):
+    def verbosity(self, verbosity: int) -> None:
         self._verbosity = verbosity
 
-    def _read_pids(self, path_pid):
+    def _read_pids(self, path_pid: Union[str, Path]) -> List[int]:
         pid_df = pd.read_csv(path_pid)
         # drop NA values in id columns
         pid_df = pid_df.dropna(subset=["id"])
@@ -98,7 +101,7 @@ class MLYDownloader(BaseDownloader):
         pids = pid_df["id"].astype("int64").unique().tolist()
         return pids
 
-    def _set_dirs(self, dir_output):
+    def _set_dirs(self, dir_output: Union[str, Path]) -> None:
         # set dir_output as attribute and create the directory
         self.dir_output = Path(dir_output)
         self.dir_output.mkdir(parents=True, exist_ok=True)
@@ -110,7 +113,9 @@ class MLYDownloader(BaseDownloader):
         self.cache_lat_lon = self.dir_cache / "lat_lon.csv"
         self.cache_pids_raw = self.dir_cache / "pids_raw.csv"
 
-    def _get_pids_from_gdf(self, gdf, mly_kwargs, **kwargs):
+    def _get_pids_from_gdf(
+        self, gdf: gpd.GeoDataFrame, mly_kwargs: Dict[str, Any], **kwargs: Any
+    ) -> Optional[pd.DataFrame]:
         # set crs to EPSG:4326 if it's None
         if gdf.crs is None:
             gdf = gdf.set_crs("EPSG:4326")
@@ -151,7 +156,7 @@ class MLYDownloader(BaseDownloader):
 
         return result_df
 
-    def _get_raw_pids(self, **kwargs):
+    def _get_raw_pids(self, **kwargs: Any) -> Optional[pd.DataFrame]:
         mly_allowed_keys = {
             "compass_angle",
             "image_type",
@@ -202,7 +207,9 @@ class MLYDownloader(BaseDownloader):
 
         return pid
 
-    def _filter_pids_date(self, pid_df, start_date, end_date):
+    def _filter_pids_date(
+        self, pid_df: pd.DataFrame, start_date: Optional[str], end_date: Optional[str]
+    ) -> pd.DataFrame:
         # create a temporary column date from captured_at (milliseconds from Unix epoch)
         pid_df["date"] = pd.to_datetime(pid_df["captured_at"], unit="ms")
         # check if start_date and end_date are in the correct format with regex. If not, raise error
@@ -224,7 +231,7 @@ class MLYDownloader(BaseDownloader):
         pid_df = pid_df.drop(columns="date")
         return pid_df
 
-    def _get_pids(self, path_pid, **kwargs):
+    def _get_pids(self, path_pid: Union[str, Path], **kwargs: Any) -> None:
         # get raw pid
         pid = self._get_raw_pids(**kwargs)
 
@@ -270,7 +277,9 @@ class MLYDownloader(BaseDownloader):
                 shutil.rmtree(dir_cache_tiles)
                 print("The cache directory for tiles has been deleted")
 
-    def _get_urls_mly(self, path_pid, resolution=1024, additional_fields=["all"]):
+    def _get_urls_mly(
+        self, path_pid: Union[str, Path], resolution: int = 1024, additional_fields: List[str] = ["all"]
+    ) -> None:
         # check if seld.cache_pids_urls exists
         if self.pids_url.exists():
             print("The panorama URLs have been read from the cache")
@@ -363,7 +372,14 @@ class MLYDownloader(BaseDownloader):
         if dir_cache_urls.exists():
             shutil.rmtree(dir_cache_urls)
 
-    def _download_images_mly(self, path_pid, cropped, batch_size, start_date, end_date):
+    def _download_images_mly(
+        self,
+        path_pid: Union[str, Path],
+        cropped: bool,
+        batch_size: int,
+        start_date: Optional[str],
+        end_date: Optional[str],
+    ) -> None:
         checkpoints = glob.glob(str(self.panorama_output / "**/*.png"), recursive=True)
 
         # Read already downloaded images and convert to ids
@@ -445,25 +461,25 @@ class MLYDownloader(BaseDownloader):
 
     def download_svi(
         self,
-        dir_output,
-        path_pid=None,
-        lat=None,
-        lon=None,
-        input_csv_file="",
-        input_shp_file="",
-        input_place_name="",
-        buffer=0,
-        update_pids=False,
-        resolution=1024,
-        cropped=False,
-        batch_size=1000,
-        start_date=None,
-        end_date=None,
-        metadata_only=False,
-        use_cache=True,
-        additional_fields=["all"],
-        **kwargs,
-    ):
+        dir_output: str,
+        path_pid: Optional[str] = None,
+        lat: Optional[float] = None,
+        lon: Optional[float] = None,
+        input_csv_file: str = "",
+        input_shp_file: str = "",
+        input_place_name: str = "",
+        buffer: int = 0,
+        update_pids: bool = False,
+        resolution: int = 1024,
+        cropped: bool = False,
+        batch_size: int = 1000,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        metadata_only: bool = False,
+        use_cache: bool = True,
+        additional_fields: List[str] = ["all"],
+        **kwargs: Any,
+    ) -> None:
         """Downloads street view images from Mapillary using specified parameters.
 
         Args:

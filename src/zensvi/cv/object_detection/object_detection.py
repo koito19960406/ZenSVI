@@ -4,21 +4,44 @@ import threading
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import List, Union
+from typing import Dict, List, Optional, Union
 
 import cv2
 import pandas as pd
 import torch
-from groundingdino.util.inference import annotate, load_image, load_model, predict
 from torch.utils.data import Dataset
+from transformers.modeling_utils import PreTrainedModel
+
+# groundingdino-py 0.4.0 is incompatible with transformers >= 5 in two ways:
+# 1. PreTrainedModel.get_head_mask was removed.
+# 2. get_extended_attention_mask(mask, shape, device, dtype) lost the 'device' positional arg.
+# These shims restore backward compatibility.
+if not hasattr(PreTrainedModel, "get_head_mask"):
+
+    def _get_head_mask(self, head_mask, num_hidden_layers, is_attention_chunked=False):
+        return [None] * num_hidden_layers if head_mask is None else head_mask
+
+    PreTrainedModel.get_head_mask = _get_head_mask
+
+import inspect as _inspect
+
+if "device" not in _inspect.signature(PreTrainedModel.get_extended_attention_mask).parameters:
+    _orig_get_extended = PreTrainedModel.get_extended_attention_mask
+
+    def _get_extended_attention_mask(self, attention_mask, input_shape, device=None, dtype=None):
+        return _orig_get_extended(self, attention_mask, input_shape, dtype=dtype)
+
+    PreTrainedModel.get_extended_attention_mask = _get_extended_attention_mask
+
+from groundingdino.util.inference import annotate, load_image, load_model, predict
 
 from zensvi.utils.log import verbosity_tqdm
 
 current_dir = os.path.dirname(__file__)
-models_dir = Path(__file__).parent.parent.parent.parent.parent / "models"
+models_dir = Path.home() / ".cache" / "zensvi" / "models"
 
 
-def _download_weights():
+def _download_weights() -> None:
     weights_dir = models_dir / "groundingdino"
     weights_file = weights_dir / "groundingdino_swint_ogc.pth"
     if not weights_file.exists():
@@ -29,11 +52,6 @@ def _download_weights():
         print("Downloading GroundingDINO weights...")
         urllib.request.urlretrieve(url_weights, str(weights_file))
         print(f"Weights downloaded to {weights_file}")
-    else:
-        print("Weights file already exists.")
-
-
-_download_weights()
 
 
 class ImageDataset(Dataset):
@@ -49,7 +67,7 @@ class ImageDataset(Dataset):
         image_files (List[Path]): The filtered list of valid image file paths.
     """
 
-    def __init__(self, image_files: List[Path]):
+    def __init__(self, image_files: List[Path]) -> None:
         self.image_files = [
             image_file
             for image_file in image_files
@@ -110,8 +128,9 @@ class ObjectDetector:
         box_threshold: float = 0.35,
         text_threshold: float = 0.25,
         verbosity: int = 1,
-        device=None,  # Options: "cpu", "cuda", or "mps"
-    ):
+        device: Optional[str] = None,  # Options: "cpu", "cuda", or "mps"
+    ) -> None:
+        _download_weights()
         self.model = load_model(config_path, weights_path)
         self.text_prompt = text_prompt
         self.box_threshold = box_threshold
@@ -121,7 +140,7 @@ class ObjectDetector:
         self.model_lock = threading.Lock()
         self.device = self._get_device(device)
 
-    def _get_device(self, device) -> torch.device:
+    def _get_device(self, device: Optional[str]) -> torch.device:
         """Get the appropriate device for running the model.
 
         Args:
@@ -143,7 +162,7 @@ class ObjectDetector:
             print("Using CPU")
             return torch.device("cpu")
 
-    def _process_image(self, image_file: Path, dir_image_output: Union[str, Path, None]) -> dict:
+    def _process_image(self, image_file: Path, dir_image_output: Union[str, Path, None]) -> Dict[str, Union[str, list]]:
         """Process a single image for object detection.
 
         Loads an image, runs object detection, annotates with bounding boxes and labels,
@@ -206,9 +225,9 @@ class ObjectDetector:
         dir_summary_output: Union[str, Path, None] = None,
         save_format: str = "json",  # Options: "json", "csv", or "json csv"
         max_workers: int = 4,
-        verbosity: int = None,
+        verbosity: Optional[int] = None,
         group_by_object: bool = False,  # Group detections by object type per image
-    ):
+    ) -> None:
         """Detect objects in images and save results.
 
         Processes images from input directory/file, saves annotated images and detection summaries.

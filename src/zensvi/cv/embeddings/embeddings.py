@@ -1,7 +1,7 @@
 import os
 from collections import namedtuple
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Union
+from typing import List, Optional, Tuple, Union
 
 import faiss
 import numpy as np
@@ -43,14 +43,14 @@ class ImageDataset(Dataset):
         transform: Optional transform to be applied on the images.
     """
 
-    def __init__(self, image_paths, transform=None):
+    def __init__(self, image_paths: List[str], transform: Optional[transforms.Compose] = None) -> None:
         self.image_paths = image_paths
         self.transform = transform
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.image_paths)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Tuple[str, Union[Image.Image, torch.Tensor]]:
         image_path = self.image_paths[idx]
         img = Image.open(image_path)
         image = img.resize((224, 224))
@@ -58,7 +58,7 @@ class ImageDataset(Dataset):
             image = self.transform(image)
         return str(image_path), image
 
-    def collate_fn(self, data):
+    def collate_fn(self, data: List[Tuple[str, torch.Tensor]]) -> Tuple[List[str], torch.Tensor]:
         """Custom collate function for batching data.
 
         Args:

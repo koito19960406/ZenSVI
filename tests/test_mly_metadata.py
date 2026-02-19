@@ -1,8 +1,11 @@
 import shutil
 
+import polars as pl
 import pytest
 
 from zensvi.metadata import MLYMetadata
+
+pytestmark = pytest.mark.slow
 
 
 @pytest.fixture(scope="function")  # Explicitly set function scope
@@ -15,12 +18,38 @@ def output_dir(base_output_dir, ensure_dir):
     return output_dir
 
 
+@pytest.fixture(scope="module")
+def _metadata_cached(input_dir):
+    """Download OSM street network once per module (expensive network call)."""
+    return MLYMetadata(str(input_dir / "metadata/mly_pids.csv"))
+
+
 @pytest.fixture
-def metadata(input_dir, output_dir):
-    return MLYMetadata(
-        str(input_dir / "metadata/mly_pids.csv"),
-        log_path=output_dir / "log.log",
-    )
+def metadata(_metadata_cached):
+    """Create a lightweight copy that reuses the cached street network and projected CRS.
+
+    MLYMetadata.__init__ downloads the OSM street network (slow network call).
+    We do that once in _metadata_cached (module scope), then create fresh instances
+    that share the immutable network data but have their own mutable state.
+    """
+    md = object.__new__(MLYMetadata)
+    # Shared immutable state from cached instance
+    md._tf_instance = _metadata_cached._tf_instance
+    md.path_input = _metadata_cached.path_input
+    md.projected_crs = _metadata_cached.projected_crs
+    # Per-test mutable state (fresh copies)
+    md.logger = None
+    md.df = pl.read_csv(md.path_input)
+    md.metadata = None
+    md.street_network = _metadata_cached.street_network.copy()
+    # Rebuild method dicts bound to this new instance
+    md.indicator_metadata_image = {
+        k: getattr(md, v.__name__) for k, v in _metadata_cached.indicator_metadata_image.items()
+    }
+    md.indicator_metadata_grid_street = {
+        k: getattr(md, v.__name__) for k, v in _metadata_cached.indicator_metadata_grid_street.items()
+    }
+    return md
 
 
 def test_image_level_metadata(output_dir, metadata):

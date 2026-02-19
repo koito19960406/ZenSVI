@@ -8,6 +8,8 @@ from zensvi.download import GSVDownloader
 
 from .conftest import TimeoutException
 
+pytestmark = [pytest.mark.network, pytest.mark.slow]
+
 
 @pytest.fixture
 def output_dir(base_output_dir, ensure_dir):

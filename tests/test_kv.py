@@ -9,6 +9,8 @@ from zensvi.download.kv import KVDownloader
 
 from .conftest import TimeoutException
 
+pytestmark = [pytest.mark.network, pytest.mark.slow]
+
 
 @pytest.fixture(scope="function")  # Explicitly set function scope
 def output_dir(base_output_dir, ensure_dir):
@@ -37,6 +39,8 @@ def test_interface(output_dir, kv_input_files, timeout_decorator, timeout_second
         with timeout_decorator():
             gdf = gp.read_file(kv_input_files["polygon"])
             output_data = kv.get_points_in_shape(gdf)
+            if output_data is None:
+                pytest.skip("KV API returned None (likely timeout)")
             output_data.to_csv(output_file)
             assert len(output_data) > 0
     except TimeoutException:

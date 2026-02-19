@@ -7,7 +7,7 @@ import shutil
 import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import List, Union
+from typing import Any, List, Optional, Union
 
 import geopandas as gpd
 import numpy as np
@@ -48,14 +48,14 @@ class GSVDownloader(BaseDownloader):
 
     def __init__(
         self,
-        gsv_api_key: str = None,
-        log_path: str = None,
+        gsv_api_key: Optional[str] = None,
+        log_path: Optional[str] = None,
         distance: int = 1,
         grid: bool = False,
         grid_size: int = 1,
-        max_workers: int = None,
+        max_workers: Optional[int] = None,
         verbosity: int = 1,
-    ):
+    ) -> None:
         super().__init__(log_path)
         if gsv_api_key is None:
             warnings.warn("Please provide your Google Street View API key to augment metadata.")
@@ -72,7 +72,7 @@ class GSVDownloader(BaseDownloader):
         self._verbosity = verbosity
 
     @property
-    def max_workers(self):
+    def max_workers(self) -> Optional[int]:
         """Property for the number of workers for parallel processing.
 
         Returns:
@@ -81,14 +81,14 @@ class GSVDownloader(BaseDownloader):
         return self._max_workers
 
     @max_workers.setter
-    def max_workers(self, max_workers):
+    def max_workers(self, max_workers: Optional[int]) -> None:
         if max_workers is None:
             self._max_workers = min(32, os.cpu_count() + 4)
         else:
             self._max_workers = max_workers
 
     @property
-    def verbosity(self):
+    def verbosity(self) -> int:
         """Property for the verbosity level of progress bars.
 
         Returns:
@@ -97,10 +97,10 @@ class GSVDownloader(BaseDownloader):
         return self._verbosity
 
     @verbosity.setter
-    def verbosity(self, verbosity):
+    def verbosity(self, verbosity: int) -> None:
         self._verbosity = verbosity
 
-    def _augment_metadata(self, df):
+    def _augment_metadata(self, df: pd.DataFrame) -> pd.DataFrame:
         if self.cache_pids_augmented.exists():
             df = pd.read_csv(self.cache_pids_augmented)
             print("The augmented panorama IDs have been read from the cache")
@@ -142,8 +142,8 @@ class GSVDownloader(BaseDownloader):
                 # get year and month from date
                 try:
                     date = response["date"]
-                    year = date.split("-")[0]
-                    month = date.split("-")[1]
+                    year = int(date.split("-")[0])
+                    month = int(date.split("-")[1])
                 except Exception as e:
                     print(f"Error while getting year and month: {e}")
                     year = None
@@ -207,7 +207,7 @@ class GSVDownloader(BaseDownloader):
             shutil.rmtree(dir_cache_augmented_metadata)
         return df
 
-    def _get_pids_from_df(self, df, id_columns=None):
+    def _get_pids_from_df(self, df: pd.DataFrame, id_columns: Optional[List[str]] = None) -> pd.DataFrame:
         # 1. Create a new directory called "pids" to store each batch pids
         dir_cache_pids = self.dir_cache / "raw_pids"
         dir_cache_pids.mkdir(parents=True, exist_ok=True)
@@ -366,7 +366,7 @@ class GSVDownloader(BaseDownloader):
             shutil.rmtree(dir_cache_pids)
         return results_df
 
-    def _get_pids_from_gdf(self, gdf, **kwargs):
+    def _get_pids_from_gdf(self, gdf: gpd.GeoDataFrame, **kwargs: Any) -> pd.DataFrame:
         """Get panorama IDs from a GeoDataFrame of polygons.
 
         Args:
@@ -434,7 +434,7 @@ class GSVDownloader(BaseDownloader):
         )
         return results_df
 
-    def _get_raw_pids(self, **kwargs):
+    def _get_raw_pids(self, **kwargs: Any) -> pd.DataFrame:
         if self.cache_pids_raw.exists():
             pid = pd.read_csv(self.cache_pids_raw)
             print("The raw panorama IDs have been read from the cache")
@@ -478,7 +478,7 @@ class GSVDownloader(BaseDownloader):
 
         return pid
 
-    def _get_pids(self, path_pid, **kwargs):
+    def _get_pids(self, path_pid: Union[str, Path], **kwargs: Any) -> None:
         id_columns = kwargs["id_columns"]
         if id_columns is not None:
             if isinstance(id_columns, str):
@@ -500,7 +500,7 @@ class GSVDownloader(BaseDownloader):
         pid.to_csv(path_pid, index=False)
         print("The panorama IDs have been saved to {}".format(path_pid))
 
-    def _set_dirs(self, dir_output):
+    def _set_dirs(self, dir_output: Union[str, Path]) -> None:
         # set dir_output as attribute and create the directory
         self.dir_output = Path(dir_output)
         self.dir_output.mkdir(parents=True, exist_ok=True)
@@ -512,7 +512,9 @@ class GSVDownloader(BaseDownloader):
         self.cache_pids_raw = self.dir_cache / "pids_raw.csv"
         self.cache_pids_augmented = self.dir_cache / "pids_augemented.csv"
 
-    def _filter_pids_date(self, pid_df, start_date, end_date):
+    def _filter_pids_date(
+        self, pid_df: pd.DataFrame, start_date: Optional[str], end_date: Optional[str]
+    ) -> pd.DataFrame:
         # create a temporary column date from year and month
         # Fill NA values with a placeholder value
         pid_df["year"] = pid_df["year"].fillna(-1)
@@ -599,27 +601,27 @@ class GSVDownloader(BaseDownloader):
     def download_svi(
         self,
         dir_output: str,
-        path_pid: str = None,
+        path_pid: Optional[str] = None,
         zoom: int = 2,
         cropped: bool = False,
         full: bool = True,
-        lat: float = None,
-        lon: float = None,
+        lat: Optional[float] = None,
+        lon: Optional[float] = None,
         input_csv_file: str = "",
         input_shp_file: str = "",
         input_place_name: str = "",
-        id_columns: Union[str, List[str]] = None,
+        id_columns: Optional[Union[str, List[str]]] = None,
         buffer: int = 0,
         augment_metadata: bool = False,
         batch_size: int = 1000,
         update_pids: bool = False,
-        start_date: str = None,
-        end_date: str = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
         metadata_only: bool = False,
-        download_depth=False,
-        max_workers: int = None,
-        verbosity: int = None,
-        **kwargs,
+        download_depth: bool = False,
+        max_workers: Optional[int] = None,
+        verbosity: Optional[int] = None,
+        **kwargs: Any,
     ) -> None:
         """Downloads street view images from Google Street View API using specified
         parameters.
@@ -780,9 +782,9 @@ class GSVDownloader(BaseDownloader):
     def update_metadata(
         self,
         input_pid_file: str,
-        output_pid_file: str = None,
-        max_workers: int = None,
-        verbosity: int = None,
+        output_pid_file: Optional[str] = None,
+        max_workers: Optional[int] = None,
+        verbosity: Optional[int] = None,
     ) -> None:
         """Updates metadata (year and month) for existing panorama IDs without redoing the entire download process.
 

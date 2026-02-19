@@ -5,7 +5,7 @@ from collections import defaultdict, namedtuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from math import ceil
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
@@ -50,7 +50,7 @@ _Label = namedtuple(
 )
 
 
-def _create_cityscapes_label_colormap():
+def _create_cityscapes_label_colormap() -> List[_Label]:
     """Creates a label colormap used in CITYSCAPES segmentation benchmark.
 
     Args:
@@ -100,7 +100,7 @@ def _create_cityscapes_label_colormap():
     return labels
 
 
-def _create_mapillary_vistas_label_colormap():
+def _create_mapillary_vistas_label_colormap() -> List[_Label]:
     """Creates a label colormap used in Mapillary Vistas segmentation benchmark.
 
     Args:
@@ -324,7 +324,9 @@ class Segmenter:
         None
     """
 
-    def __init__(self, dataset="cityscapes", task="semantic", device=None, verbosity=1):
+    def __init__(
+        self, dataset: str = "cityscapes", task: str = "semantic", device: Optional[str] = None, verbosity: int = 1
+    ) -> None:
         """Initializes the Segmenter with a model and dataset.
 
         Args:
@@ -373,7 +375,7 @@ class Segmenter:
         else:
             raise ValueError(f"Unknown dataset: {dataset}")
 
-    def _get_model_processor(self, model_name):
+    def _get_model_processor(self, model_name: str) -> Tuple:
         """Get the model and processor for the given model name.
 
         Args:
@@ -389,7 +391,7 @@ class Segmenter:
             model = Mask2FormerForUniversalSegmentation.from_pretrained(model_name).to(self.device)
         return model, processor
 
-    def _create_color_map(self, dataset):
+    def _create_color_map(self, dataset: str) -> np.ndarray:
         """Create a color map based on the given dataset.
 
         Args:
@@ -409,7 +411,7 @@ class Segmenter:
         labels = [label for label in labels if label.trainId != -1]
         train_ids = np.array([label.trainId for label in labels], dtype=np.uint8)
         colors = np.array([label.color for label in labels], dtype=np.uint8)
-        max_train_id = np.max(train_ids) + 1
+        max_train_id = int(np.max(train_ids)) + 1
         color_map = np.zeros((max_train_id, 3), dtype=np.uint8)
         color_map[train_ids] = colors
 
@@ -418,7 +420,7 @@ class Segmenter:
 
         return color_map
 
-    def _create_label_map(self, dataset):
+    def _create_label_map(self, dataset: str) -> Dict[Tuple, _Label]:
         """Create a label map based on the given dataset.
 
         Args:
@@ -442,7 +444,7 @@ class Segmenter:
 
         return color_to_label
 
-    def _create_id_to_name_map(self, dataset):
+    def _create_id_to_name_map(self, dataset: str) -> Dict[int, str]:
         """Create a mapping from train IDs to label names based on the dataset.
 
         Args:
@@ -457,7 +459,7 @@ class Segmenter:
             labels = _create_mapillary_vistas_label_colormap()
         return {label.trainId: label.name for label in labels}
 
-    def _get_device(self, device) -> torch.device:
+    def _get_device(self, device: Optional[str]) -> torch.device:
         """Get the appropriate device for running the model.
 
         Args:
@@ -479,7 +481,7 @@ class Segmenter:
             print("Using CPU")
             return torch.device("cpu")
 
-    def _calculate_pixel_ratios(self, segmented_img):
+    def _calculate_pixel_ratios(self, segmented_img: np.ndarray) -> Dict[str, float]:
         """Calculate pixel ratios for each class in the segmented image.
 
         Args:
@@ -531,7 +533,7 @@ class Segmenter:
 
         pixel_ratios_df.to_csv(dir_output / Path(value_name + ".csv"))
 
-    def _panoptic_segmentation(self, images, original_img_shape):
+    def _panoptic_segmentation(self, images: List[np.ndarray], original_img_shape: List[Tuple[int, int]]) -> list:
         """Perform panoptic segmentation on the given images.
 
         Args:
@@ -548,7 +550,7 @@ class Segmenter:
             outputs, target_sizes=original_img_shape, label_ids_to_fuse=set([])
         )
 
-    def _semantic_segmentation(self, images, original_img_shape):
+    def _semantic_segmentation(self, images: List[np.ndarray], original_img_shape: List[Tuple[int, int]]) -> list:
         """Perform semantic segmentation on the given images.
 
         Args:
@@ -565,7 +567,7 @@ class Segmenter:
         segmentations = self.processor.post_process_semantic_segmentation(outputs, target_sizes=original_img_shape)
         return segmentations
 
-    def _trainid_to_color(self, segmented_img):
+    def _trainid_to_color(self, segmented_img: np.ndarray) -> np.ndarray:
         """Convert segmented image with train IDs to a colored image.
 
         Args:
@@ -641,7 +643,9 @@ class Segmenter:
                 cv2.cvtColor(blend_img, cv2.COLOR_RGB2BGR),
             )
 
-    def _save_semantic_segmentation_image(self, image_file, img, dir_output, output):
+    def _save_semantic_segmentation_image(
+        self, image_file: str, img: np.ndarray, dir_output: Path, output: torch.Tensor
+    ) -> None:
         """Saves the semantic segmentation image as a colored segmented image and/or a
         blended image with the original input image.
 
@@ -672,7 +676,7 @@ class Segmenter:
                 cv2.cvtColor(blend_img, cv2.COLOR_RGB2BGR),
             )
 
-    def _panoptic_count_labels(self, output):
+    def _panoptic_count_labels(self, output: dict) -> Dict[str, int]:
         """Count the occurrences of each label in the panoptic segmentation output.
 
         Args:
@@ -698,7 +702,7 @@ class Segmenter:
                 label_counts[label_name] = 1
         return label_counts
 
-    def _panoptic_segment_to_label(self, output):
+    def _panoptic_segment_to_label(self, output: dict) -> torch.Tensor:
         """This function converts the output of post_process_panoptic_segmentation
         function from segment_id to label_id.
 
@@ -727,14 +731,14 @@ class Segmenter:
 
     def _process_images(
         self,
-        task,
-        image_files,
-        images,
-        dir_output,
-        pixel_ratio_dict,
-        original_img_shape,
-        panoptic_dict=None,
-    ):
+        task: str,
+        image_files: List[str],
+        images: List[np.ndarray],
+        dir_output: Optional[Path],
+        pixel_ratio_dict: Dict[str, Dict[str, float]],
+        original_img_shape: List[Tuple[int, int]],
+        panoptic_dict: Optional[Dict[str, Dict[str, int]]] = None,
+    ) -> None:
         """Process the input images for segmentation and save the output images.
 
         Args:
@@ -781,12 +785,12 @@ class Segmenter:
         dir_input: Union[str, Path],
         dir_image_output: Union[str, Path, None] = None,
         dir_summary_output: Union[str, Path, None] = None,
-        batch_size=1,
-        save_image_options="segmented_image blend_image",
-        save_format="json csv",
-        csv_format="long",  # "long" or "wide"
-        max_workers: Union[int, None] = None,
-    ):
+        batch_size: int = 1,
+        save_image_options: str = "segmented_image blend_image",
+        save_format: str = "json csv",
+        csv_format: str = "long",  # "long" or "wide"
+        max_workers: Optional[int] = None,
+    ) -> None:
         """Processes a batch of images for segmentation, saves the segmented images and
         summary statistics.
 
@@ -1031,7 +1035,9 @@ class Segmenter:
             # Delete the "pixel_ratio_checkpoints" directory
             shutil.rmtree(dir_cache_segmentation_summary, ignore_errors=True)
 
-    def calculate_pixel_ratio_post_process(self, dir_input, dir_output, save_format="json csv"):
+    def calculate_pixel_ratio_post_process(
+        self, dir_input: Union[str, Path], dir_output: Union[str, Path], save_format: str = "json csv"
+    ) -> None:
         """Calculates the pixel ratio of different classes present in the segmented
         images and saves the results in either JSON or CSV format.
 

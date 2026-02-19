@@ -5,6 +5,7 @@ import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from io import BytesIO
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 import geopandas as gpd
 import osmnx as ox
@@ -32,7 +33,7 @@ class AMSDownloader(BaseDownloader):
                                   0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, log_path=None, max_workers=None, verbosity=1):
+    def __init__(self, log_path: Optional[str] = None, max_workers: Optional[int] = None, verbosity: int = 1) -> None:
         super().__init__(log_path)
         self._max_workers = max_workers
         self._verbosity = verbosity
@@ -42,7 +43,7 @@ class AMSDownloader(BaseDownloader):
             self.logger = None
 
     @property
-    def max_workers(self):
+    def max_workers(self) -> Optional[int]:
         """Property for the number of workers for parallel processing.
 
         Returns:
@@ -51,14 +52,14 @@ class AMSDownloader(BaseDownloader):
         return self._max_workers
 
     @max_workers.setter
-    def max_workers(self, max_workers):
+    def max_workers(self, max_workers: Optional[int]) -> None:
         if max_workers is None:
             self._max_workers = min(32, os.cpu_count() + 4)
         else:
             self._max_workers = max_workers
 
     @property
-    def verbosity(self):
+    def verbosity(self) -> int:
         """Property for the verbosity level of progress bars.
 
         Returns:
@@ -67,10 +68,10 @@ class AMSDownloader(BaseDownloader):
         return self._verbosity
 
     @verbosity.setter
-    def verbosity(self, verbosity):
+    def verbosity(self, verbosity: int) -> None:
         self._verbosity = verbosity
 
-    def _set_dirs(self, dir_output):
+    def _set_dirs(self, dir_output: Union[str, Path]) -> None:
         self.dir_output = Path(dir_output)
         self.dir_output.mkdir(parents=True, exist_ok=True)
         self.dir_cache = self.dir_output / "cache_zensvi"
@@ -78,7 +79,9 @@ class AMSDownloader(BaseDownloader):
         self.cache_lat_lon = self.dir_cache / "lat_lon.csv"
         self.cache_pids_raw = self.dir_cache / "pids_raw.csv"
 
-    def _get_pids_from_df(self, df, id_columns=None):
+    def _get_pids_from_df(
+        self, df: Union[pd.DataFrame, gpd.GeoDataFrame], id_columns: Optional[List[str]] = None
+    ) -> pd.DataFrame:
         if self.cache_lat_lon.exists():
             df = pd.read_csv(self.cache_lat_lon)
             print("The lat and lon have been read from the cache")
@@ -132,7 +135,7 @@ class AMSDownloader(BaseDownloader):
 
         return results_df
 
-    def _get_raw_pids(self, lat, lon, buffer):
+    def _get_raw_pids(self, lat: float, lon: float, buffer: int) -> List[str]:
         """Get raw panorama IDs from the Amsterdam Street View API."""
         url = f"https://api.data.amsterdam.nl/panorama/panoramas/?near={lon},{lat}&radius={buffer}&srid=4326"
 
@@ -153,12 +156,14 @@ class AMSDownloader(BaseDownloader):
                 print(f"Attempt {attempt + 1} failed: {e}")
                 continue
 
-    def _filter_pids_date(self, pid_df, start_date, end_date):
+    def _filter_pids_date(
+        self, pid_df: pd.DataFrame, start_date: Optional[str], end_date: Optional[str]
+    ) -> pd.DataFrame:
         """Filter panorama IDs by date."""
         pid_df["date"] = pd.to_datetime(pid_df["timestamp"], unit="ms")
         return pid_df[(pid_df["date"] >= start_date) & (pid_df["date"] <= end_date)]
 
-    def _save_image(self, pid, data, cropped):
+    def _save_image(self, pid: str, data: Dict[str, Any], cropped: bool) -> None:
         """Save an image to disk."""
         img_path = os.path.join(self.dir_output, f"{pid}.jpg")
         try:
@@ -182,23 +187,23 @@ class AMSDownloader(BaseDownloader):
     def download_svi(
         self,
         dir_output: str,
-        path_pid: str = None,
+        path_pid: Optional[str] = None,
         cropped: bool = False,
-        lat: float = None,
-        lon: float = None,
+        lat: Optional[float] = None,
+        lon: Optional[float] = None,
         input_csv_file: str = "",
         input_shp_file: str = "",
         input_place_name: str = "",
         buffer: int = 0,
         distance: int = 10,
-        start_date: str = None,
-        end_date: str = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
         metadata_only: bool = False,
         grid: bool = False,
         grid_size: int = 100,
-        max_workers: int = None,
-        verbosity: int = None,
-    ):
+        max_workers: Optional[int] = None,
+        verbosity: Optional[int] = None,
+    ) -> None:
         """Download street view images from Amsterdam Street View API using specified
         parameters.
 

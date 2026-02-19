@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 from huggingface_hub import HfApi, hf_hub_download
 
@@ -14,7 +15,7 @@ class GSDownloader(BaseDownloader):
     `cv/classification/utils/global_streetscapes.py`
     """
 
-    def __init__(self, log_path=None):
+    def __init__(self, log_path: Optional[str] = None) -> None:
         super().__init__(log_path)
         self._repo_id = "NUS-UAL/global-streetscapes"
         self._repo_type = "dataset"
@@ -25,16 +26,16 @@ class GSDownloader(BaseDownloader):
         else:
             self.logger = None
 
-    def _filter_pids_date(self):
+    def _filter_pids_date(self) -> None:
         """Required abstract methods from parent class."""
         pass
 
-    def download_svi(self):
+    def download_svi(self) -> None:
         """Required abstract methods from parent class."""
         pass
 
     @property
-    def repo_id(self):
+    def repo_id(self) -> str:
         """Property for Huggingface download.
 
         :return: repo_id
@@ -43,7 +44,7 @@ class GSDownloader(BaseDownloader):
         return self._repo_id
 
     @property
-    def repo_type(self):
+    def repo_type(self) -> str:
         """Property for Huggingface download.
 
         :return: repo_type
@@ -51,7 +52,7 @@ class GSDownloader(BaseDownloader):
         """
         return self._repo_type
 
-    def _download_folder(self, folder_path, local_dir):
+    def _download_folder(self, folder_path: str, local_dir: str) -> None:
         """Download an entire folder from a huggingface dataset repository.
 
         :param folder_path: Folder path within the repository
@@ -71,7 +72,7 @@ class GSDownloader(BaseDownloader):
         for file_path in files_list:
             hf_hub_download(repo_id=self.repo_id, repo_type=self.repo_type, filename=file_path, local_dir=local_dir)
 
-    def download_all_data(self, local_dir="data/"):
+    def download_all_data(self, local_dir: str = "data/") -> None:
         """Download all folders and files, recursively, from `data/` This folder
         contains all metadata (csv) for all images of the Global Streetscapes dataset.
 
@@ -80,7 +81,7 @@ class GSDownloader(BaseDownloader):
         """
         self._download_folder("data/", local_dir)
 
-    def download_manual_labels(self, local_dir="manual_labels/"):
+    def download_manual_labels(self, local_dir: str = "manual_labels/") -> None:
         """Download all folders and files, recursively, from `manual_labels/` This
         folder contains all the manual labels (csv) for train and test images as well as
         the raw images compressed in in tar.gz.
@@ -90,7 +91,7 @@ class GSDownloader(BaseDownloader):
         """
         self._download_folder("manual_labels/", local_dir)
 
-    def download_train(self, local_dir="manual_labels/train/"):
+    def download_train(self, local_dir: str = "manual_labels/train/") -> None:
         """Download all folders and files, recursively, from `manual_labels/train/` This
         folder contains all the manual labels (csv) for only the train images.
 
@@ -99,7 +100,7 @@ class GSDownloader(BaseDownloader):
         """
         self._download_folder("manual_labels/train/", local_dir)
 
-    def download_test(self, local_dir="manual_labels/test/"):
+    def download_test(self, local_dir: str = "manual_labels/test/") -> None:
         """Download all folders and files, recursively, from `manual_labels/test/` This
         folder contains all the manual labels (csv) for only the test images.
 
@@ -108,7 +109,7 @@ class GSDownloader(BaseDownloader):
         """
         self._download_folder("manual_labels/test/", local_dir)
 
-    def download_img_tar(self, local_dir="manual_labels/img/"):
+    def download_img_tar(self, local_dir: str = "manual_labels/img/") -> None:
         """Download all folders and files, recursively, from `manual_labels/img/` This
         folder contains all the raw images, compressed in tar.gz.
 

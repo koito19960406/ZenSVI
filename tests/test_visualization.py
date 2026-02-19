@@ -16,6 +16,7 @@ def output_dir(base_output_dir, ensure_dir):
     return output_dir
 
 
+@pytest.mark.slow
 def test_plot_map(output_dir, input_dir):
     path_pid = str(input_dir / "visualization/gsv_pids.csv")
     dir_input = str(input_dir / "visualization/cityscapes_semantic_summary")
@@ -44,6 +45,7 @@ def test_plot_map(output_dir, input_dir):
             assert output_path.exists() and output_path.stat().st_size > 0
 
 
+@pytest.mark.slow
 def test_plot_map_edge_color(output_dir, input_dir):
     path_pid = str(input_dir / "visualization/gsv_pids.csv")
     dir_input = str(input_dir / "visualization/cityscapes_semantic_summary")
@@ -70,6 +72,7 @@ def test_plot_map_edge_color(output_dir, input_dir):
     assert output_path.exists() and output_path.stat().st_size > 0
 
 
+@pytest.mark.slow
 def test_plot_map_batch(output_dir, input_dir):
     path_pid = str(input_dir / "visualization/gsv_pids.csv")
     dir_input = str(input_dir / "visualization/cityscapes_semantic_summary")

@@ -6,6 +6,7 @@ import random
 import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any, List, Optional, Union
 
 import geopandas as gpd
 import osmnx as ox
@@ -33,7 +34,7 @@ class KVDownloader(BaseDownloader):
                                   0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, log_path=None, max_workers=None, verbosity=1):
+    def __init__(self, log_path: Optional[str] = None, max_workers: Optional[int] = None, verbosity: int = 1) -> None:
         super().__init__(log_path)
         self._max_workers = max_workers
         self._verbosity = verbosity
@@ -46,7 +47,7 @@ class KVDownloader(BaseDownloader):
             self.logger = None
 
     @property
-    def max_workers(self):
+    def max_workers(self) -> Optional[int]:
         """Property for the number of workers for parallel processing.
 
         Returns:
@@ -55,14 +56,14 @@ class KVDownloader(BaseDownloader):
         return self._max_workers
 
     @max_workers.setter
-    def max_workers(self, max_workers):
+    def max_workers(self, max_workers: Optional[int]) -> None:
         if max_workers is None:
             self._max_workers = min(32, os.cpu_count() + 4)
         else:
             self._max_workers = max_workers
 
     @property
-    def verbosity(self):
+    def verbosity(self) -> int:
         """Property for the verbosity level of progress bars.
 
         Returns:
@@ -71,10 +72,10 @@ class KVDownloader(BaseDownloader):
         return self._verbosity
 
     @verbosity.setter
-    def verbosity(self, verbosity):
+    def verbosity(self, verbosity: int) -> None:
         self._verbosity = verbosity
 
-    def _read_pids(self, path_pid):
+    def _read_pids(self, path_pid: Union[str, Path]) -> List[int]:
         pid_df = pd.read_csv(path_pid)
         # drop NA values in id columns
         pid_df = pid_df.dropna(subset=["id"])
@@ -82,7 +83,7 @@ class KVDownloader(BaseDownloader):
         pids = pid_df["id"].astype("int64").unique().tolist()
         return pids
 
-    def _set_dirs(self, dir_output):
+    def _set_dirs(self, dir_output: Union[str, Path]) -> None:
         # set dir_output as attribute and create the directory
         self.dir_output = Path(dir_output)
         self.dir_output.mkdir(parents=True, exist_ok=True)
@@ -94,7 +95,7 @@ class KVDownloader(BaseDownloader):
         # self.cache_lat_lon = self.dir_cache / "lat_lon_kv.csv"
         # self.cache_pids_raw = self.dir_cache / "pids_raw_kv.csv"
 
-    def _get_pids_from_gdf(self, gdf):
+    def _get_pids_from_gdf(self, gdf: gpd.GeoDataFrame) -> pd.DataFrame:
         # set crs to EPSG:4326 if it's None
         if gdf.crs is None:
             gdf = gdf.set_crs("EPSG:4326")
@@ -105,7 +106,7 @@ class KVDownloader(BaseDownloader):
         result_df = kv.get_points_in_shape(gdf)
         return result_df
 
-    def _get_raw_pids(self, **kwargs):
+    def _get_raw_pids(self, **kwargs: Any) -> pd.DataFrame:
         # if self.cache_pids_raw.exists():
         #     pid = pd.read_csv(self.cache_pids_raw)
         #     print("The raw image IDs have been read from the cache")
@@ -145,11 +146,15 @@ class KVDownloader(BaseDownloader):
         gdf = check_and_buffer(gdf, kwargs["buffer"])
         # get pid
         pid = self._get_pids_from_gdf(gdf)
+        if pid is None:
+            return pid
         pid = self._filter_pids_date(pid, kwargs["start_date"], kwargs["end_date"])
 
         return pid
 
-    def _filter_pids_date(self, pid_df, start_date, end_date):
+    def _filter_pids_date(
+        self, pid_df: pd.DataFrame, start_date: Optional[str], end_date: Optional[str]
+    ) -> pd.DataFrame:
         # create a temporary column date from captured_at (milliseconds from Unix epoch)
         pid_df["date"] = pd.to_datetime(pid_df["shotDate"], format="%Y-%m-%d %H:%M:%S.%f")
         # check if start_date and end_date are in the correct format with regex. If not, raise error
@@ -171,7 +176,7 @@ class KVDownloader(BaseDownloader):
         pid_df = pid_df.drop(columns="date")
         return pid_df
 
-    def _get_pids(self, path_pid, **kwargs):
+    def _get_pids(self, path_pid: Union[str, Path], **kwargs: Any) -> None:
         # get raw pid
         pid = self._get_raw_pids(**kwargs)
 
@@ -185,7 +190,7 @@ class KVDownloader(BaseDownloader):
         pid.to_csv(path_pid, index=False)
         print("The image IDs have been saved to {}".format(path_pid))
 
-    def _get_urls_kv(self, path_pid):
+    def _get_urls_kv(self, path_pid: Union[str, Path]) -> None:
 
         pid = pd.read_csv(path_pid)
         if len(pid) == 0:
@@ -194,7 +199,14 @@ class KVDownloader(BaseDownloader):
         urls = pid[["id", "fileurlProc"]].rename(columns={"fileurlProc": "url"})
         urls.to_csv(self.pids_url, index=False)
 
-    def _download_images_kv(self, path_pid, cropped, batch_size, start_date, end_date):
+    def _download_images_kv(
+        self,
+        path_pid: Union[str, Path],
+        cropped: bool,
+        batch_size: int,
+        start_date: Optional[str],
+        end_date: Optional[str],
+    ) -> None:
         checkpoints = glob.glob(str(self.panorama_output / "**/*.png"), recursive=True)
 
         # Read already downloaded images and convert to ids
@@ -283,22 +295,22 @@ class KVDownloader(BaseDownloader):
 
     def download_svi(
         self,
-        dir_output,
-        path_pid=None,
-        lat=None,
-        lon=None,
-        input_csv_file="",
-        input_shp_file="",
-        input_place_name="",
-        buffer=10,
-        update_pids=False,
-        cropped=False,
-        batch_size=1000,
-        start_date=None,
-        end_date=None,
-        metadata_only=False,
-        max_workers=None,
-    ):
+        dir_output: str,
+        path_pid: Optional[str] = None,
+        lat: Optional[float] = None,
+        lon: Optional[float] = None,
+        input_csv_file: str = "",
+        input_shp_file: str = "",
+        input_place_name: str = "",
+        buffer: int = 10,
+        update_pids: bool = False,
+        cropped: bool = False,
+        batch_size: int = 1000,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        metadata_only: bool = False,
+        max_workers: Optional[int] = None,
+    ) -> None:
         """Downloads street view images from KartaView using specified parameters.
 
         Args:

@@ -1,24 +1,22 @@
 import datetime
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import geopandas as gpd
 import h3
 import numpy as np
 import osmnx as ox
+import pandas as pd
 import polars as pl
-import pytz
 from astral import LocationInfo, sun
 from shapely.geometry import LineString, Polygon
-from shapely.wkb import dumps as wkb_dumps
-from shapely.wkb import loads as wkb_loads
 from timezonefinder import TimezoneFinder
 from tqdm.auto import tqdm
 
 from zensvi.utils.log import Logger
 
 
-def _calculate_angle(line):
+def _calculate_angle(line: list) -> Optional[float]:
     if len(line) > 1:
         start, end = line[0], line[-1]
         angle = np.arctan2(end[1] - start[1], end[0] - start[0])
@@ -27,20 +25,37 @@ def _calculate_angle(line):
         return None
 
 
-def _create_hexagon(df, resolution=7):
+def _latlng_to_h3(lat: float, lon: float, resolution: int) -> str:
+    """Convert lat/lon to H3 cell, compatible with h3 v3 and v4."""
+    if hasattr(h3, "latlng_to_cell"):
+        return h3.latlng_to_cell(lat, lon, resolution)
+    return h3.geo_to_h3(lat, lon, resolution)
+
+
+def _h3_to_geo_boundary(hex_id: str) -> list:
+    """Get boundary coordinates for an H3 cell in GeoJSON order (lng, lat)."""
+    if hasattr(h3, "cell_to_boundary"):
+        boundary = h3.cell_to_boundary(hex_id)
+        return [(lng, lat) for lat, lng in boundary]
+    return h3.h3_to_geo_boundary(hex_id, geo_json=True)
+
+
+def _create_hexagon(df: pl.DataFrame, resolution: int = 7) -> gpd.GeoDataFrame:
     df = df.with_columns(
-        pl.struct(["lat", "lon"]).apply(lambda x: h3.geo_to_h3(x["lat"], x["lon"], resolution)).alias("h3_id")
+        pl.struct(["lat", "lon"])
+        .map_elements(lambda x: _latlng_to_h3(x["lat"], x["lon"], resolution), return_dtype=pl.String)
+        .alias("h3_id")
     )
     unique_h3_ids = df.select("h3_id").unique()
     hex_gdf = gpd.GeoDataFrame(
         unique_h3_ids.to_pandas(),
-        geometry=[Polygon(h3.h3_to_geo_boundary(h, geo_json=True)) for h in unique_h3_ids["h3_id"]],
+        geometry=[Polygon(_h3_to_geo_boundary(h)) for h in unique_h3_ids["h3_id"]],
         crs=4326,
     )
     return hex_gdf
 
 
-def _day_or_night(df):
+def _day_or_night(df: pl.DataFrame) -> pl.DataFrame:
     df = df.with_columns(pl.col("local_datetime").dt.date().alias("date"))
     unique_locations_dates = df.select(["lat", "lon", "date", "timezone"]).unique()
     sun_times_list = []
@@ -52,8 +67,8 @@ def _day_or_night(df):
                 "lat": row[0],
                 "lon": row[1],
                 "date": row[2],
-                "sunrise": s["sunrise"].astimezone(pytz.UTC),
-                "sunset": s["sunset"].astimezone(pytz.UTC),
+                "sunrise": s["sunrise"].astimezone(datetime.timezone.utc),
+                "sunset": s["sunset"].astimezone(datetime.timezone.utc),
             }
         )
     sun_times_df = pl.DataFrame(sun_times_list)
@@ -70,7 +85,7 @@ def _day_or_night(df):
     return df.drop(["date", "sunrise", "sunset"])
 
 
-def _compute_speed(df):
+def _compute_speed(df: pl.DataFrame) -> pl.DataFrame:
     # Convert DataFrame to GeoDataFrame
     gdf = gpd.GeoDataFrame(
         df.to_pandas(),
@@ -78,84 +93,39 @@ def _compute_speed(df):
     )
 
     # Project to a local CRS once
-    gdf = ox.project_gdf(gdf)
+    gdf = ox.projection.project_gdf(gdf)
 
-    # Convert projected coordinates to WKB
-    gdf["geometry_wkb"] = gdf["geometry"].apply(lambda geom: wkb_dumps(geom, output_dimension=2))
+    # Sort by sequence_id and datetime_utc for consecutive-point distance calc
+    gdf = gdf.sort_values(["sequence_id", "datetime_utc"]).reset_index(drop=True)
 
-    # Convert back to Polars DataFrame
-    df = pl.DataFrame(gdf.drop(columns=["geometry"]))
+    # Vectorized distance: shift geometry within each sequence, compute distance
+    shifted_geom = gdf.groupby("sequence_id")["geometry"].shift(-1)
+    shifted_dt = gdf.groupby("sequence_id")["datetime_utc"].shift(-1)
 
-    # Sort the DataFrame by sequence_id and datetime_utc
-    df = df.sort(["sequence_id", "datetime_utc"])
+    # Vectorized distance between consecutive points (GeoSeries.distance)
+    distance_m = gdf["geometry"].distance(shifted_geom)
 
-    # Convert datetime_utc to datetime if it's a string
-    if df.schema["datetime_utc"] == pl.Utf8:
-        df = df.with_columns(
-            pl.col("datetime_utc").str.strptime(pl.Datetime, format="%Y-%m-%d %H:%M:%S").alias("datetime_utc")
-        )
+    # Time difference in hours
+    time_diff_hrs = (shifted_dt - gdf["datetime_utc"]).dt.total_seconds() / 3600
 
-    # Create shifted columns for sequence ID, geometry, and datetime
-    df = df.with_columns(
-        [
-            df["sequence_id"].shift(-1).alias("shifted_sequence_id"),
-            df["geometry_wkb"].shift(-1).alias("shifted_geometry_wkb"),
-            df["datetime_utc"].shift(-1).alias("shifted_datetime"),
-        ]
-    )
+    # Speed in km/h
+    gdf["speed_kmh"] = (distance_m / 1000) / time_diff_hrs
 
-    # Explicitly filter out null geometries and mismatched sequence IDs before any calculations
-    valid_rows = df.filter(
-        (df["sequence_id"] == df["shifted_sequence_id"])
-        & df["sequence_id"].is_not_null()
-        & df["geometry_wkb"].is_not_null()
-        & df["shifted_geometry_wkb"].is_not_null()
-    )
+    # Convert back to Polars, dropping geometry column
+    result = pl.DataFrame(gdf.drop(columns=["geometry"]))
 
-    # Now compute distances and time differences on the pre-filtered data
-    def compute_distance(row):
-        if row["geometry_wkb"] is None or row["shifted_geometry_wkb"] is None:
-            return None
-        geom1 = wkb_loads(row["geometry_wkb"])
-        geom2 = wkb_loads(row["shifted_geometry_wkb"])
-        return geom1.distance(geom2)
-
-    valid_rows = valid_rows.with_columns(
-        [
-            pl.struct(["geometry_wkb", "shifted_geometry_wkb"])
-            .map_elements(compute_distance, return_dtype=pl.Float64, skip_nulls=False)
-            .alias("distance_m"),
-            ((pl.col("shifted_datetime") - pl.col("datetime_utc")).dt.total_seconds() / 3600).alias("time_diff_hrs"),
-        ]
-    )
-
-    # Calculate speed in km/h
-    valid_rows = valid_rows.with_columns((pl.col("distance_m") / 1000 / pl.col("time_diff_hrs")).alias("speed_kmh"))
-
-    # Drop unnecessary columns and combine with the original dataframe to retain all rows
-    valid_rows = valid_rows.select(["sequence_id", "datetime_utc", "speed_kmh"])
-    df = df.join(valid_rows, on=["sequence_id", "datetime_utc"], how="left")
-    df = df.drop(
-        [
-            "shifted_sequence_id",
-            "shifted_geometry_wkb",
-            "shifted_datetime",
-            "geometry_wkb",
-        ]
-    )
-
-    # Convert Inf, "", and NaN to None
-    df = df.with_columns(
+    # Convert Inf and NaN to None
+    result = result.with_columns(
         pl.when(pl.col("speed_kmh").is_null() | pl.col("speed_kmh").is_nan() | pl.col("speed_kmh").is_infinite())
         .then(None)
         .otherwise(pl.col("speed_kmh"))
         .alias("speed_kmh")
     )
 
-    return df
+    return result
 
 
-def _datetime_to_season(local_datetime, lat):
+def _datetime_to_season(local_datetime: Union[datetime.datetime, str], lat: float) -> str:
     season_month_north = {
         12: "Winter",
         1: "Winter",
@@ -195,6 +165,33 @@ def _datetime_to_season(local_datetime, lat):
     return season_month_north[month] if lat >= 0 else season_month_south[month]
 
 
+def _season_expr(datetime_col: str = "local_datetime", lat_col: str = "lat") -> pl.Expr:
+    """Vectorized Polars expression that maps (month, hemisphere) to season string."""
+    month = pl.col(datetime_col).dt.month()
+    is_north = pl.col(lat_col) >= 0
+    # Northern hemisphere mapping
+    north = (
+        pl.when(month.is_in([12, 1, 2]))
+        .then(pl.lit("Winter"))
+        .when(month.is_in([3, 4, 5]))
+        .then(pl.lit("Spring"))
+        .when(month.is_in([6, 7, 8]))
+        .then(pl.lit("Summer"))
+        .otherwise(pl.lit("Autumn"))
+    )
+    # Southern hemisphere mapping (shifted 6 months)
+    south = (
+        pl.when(month.is_in([12, 1, 2]))
+        .then(pl.lit("Summer"))
+        .when(month.is_in([3, 4, 5]))
+        .then(pl.lit("Autumn"))
+        .when(month.is_in([6, 7, 8]))
+        .then(pl.lit("Winter"))
+        .otherwise(pl.lit("Spring"))
+    )
+    return pl.when(is_north).then(north).otherwise(south)
+
+
 class MLYMetadata:
     """A class to compute metadata for the MLY dataset.
 
@@ -205,7 +202,7 @@ class MLYMetadata:
             "creator_id", "sequence_id", "organization_id", "is_pano".
     """
 
-    def __init__(self, path_input: Union[str, Path], log_path: Union[str, Path] = None):
+    def __init__(self, path_input: Union[str, Path], log_path: Optional[Union[str, Path]] = None) -> None:
         """Initialize the MLYMetadata class.
 
         Args:
@@ -264,7 +261,7 @@ class MLYMetadata:
 
         # Continue with the rest of the initialization
         self.street_network = self.street_network.with_columns(
-            pl.col("geometry_list").apply(lambda x: _calculate_angle(x)).alias("angle")
+            pl.col("geometry_list").map_elements(lambda x: _calculate_angle(x), return_dtype=pl.Float64).alias("angle")
         )
         self.street_network = self.street_network.drop("geometry_list")
         self.street_network = gpd.GeoDataFrame(
@@ -312,47 +309,46 @@ class MLYMetadata:
             "average_speed_kmh": self._compute_speed_metadata_grid_street,
         }
 
-    def _compute_timezones(self, df, lat_col, lon_col):
-        # Extract latitude and longitude data as lists for batch processing
-        lats = df[lat_col].to_list()
-        lons = df[lon_col].to_list()
+    def _compute_timezones(self, df: pl.DataFrame, lat_col: str, lon_col: str) -> pl.DataFrame:
+        # Deduplicate by rounding to 0.01° (~1km) — points this close share a timezone
+        unique_coords = df.select(
+            pl.col(lat_col).round(2).alias("_lat_r"),
+            pl.col(lon_col).round(2).alias("_lon_r"),
+        ).unique()
 
-        # Calculate timezones (batch operation)
-        timezones = [
-            self._tf_instance.timezone_at(lat=lat, lng=lon)
-            for lat, lon in tqdm(zip(lats, lons), total=len(lats), desc="Computing timezones")
+        # Lookup timezone only for unique rounded coordinates
+        tz_list = [
+            self._tf_instance.timezone_at(lat=row[0], lng=row[1])
+            for row in tqdm(unique_coords.iter_rows(), total=len(unique_coords), desc="Computing timezones")
         ]
+        unique_coords = unique_coords.with_columns(pl.Series("timezone", tz_list))
 
-        # Add timezones as a new column
-        df = df.with_columns(pl.Series("timezone", timezones))
-        return df
-
-    def _compute_datetimes(self, df, timestamp_col, timezone_col):
-        # Extract timestamps and timezones
-        timestamps = df[timestamp_col].to_list()
-        timezones = df[timezone_col].to_list()
-
-        # Compute UTC and local datetimes
-        datetimes_utc = []
-        datetimes_local = []
-        for timestamp, timezone_str in tqdm(
-            zip(timestamps, timezones),
-            total=len(timestamps),
-            desc="Computing datetimes",
-        ):
-            dt_utc = datetime.datetime.fromtimestamp(timestamp / 1000, tz=datetime.timezone.utc)
-            dt_local = dt_utc.astimezone(pytz.timezone(timezone_str))
-            datetimes_utc.append(dt_utc)
-            datetimes_local.append(dt_local.isoformat())
-
-        # Add new columns to the DataFrame
+        # Map back to original rows via rounded coordinates
         df = df.with_columns(
-            pl.Series("datetime_utc", datetimes_utc),
-            pl.Series("local_datetime", datetimes_local),
+            pl.col(lat_col).round(2).alias("_lat_r"),
+            pl.col(lon_col).round(2).alias("_lon_r"),
         )
+        df = df.join(unique_coords, on=["_lat_r", "_lon_r"], how="left", coalesce=True).drop(["_lat_r", "_lon_r"])
         return df
 
-    def _compute_year_metadata_image(self):
+    def _compute_datetimes(self, df: pl.DataFrame, timestamp_col: str, timezone_col: str) -> pl.DataFrame:
+        # Convert millisecond timestamps to UTC datetimes using Polars native ops
+        df = df.with_columns(
+            pl.from_epoch(pl.col(timestamp_col), time_unit="ms").dt.replace_time_zone("UTC").alias("datetime_utc"),
+            pl.arange(0, pl.len()).alias("_row_idx"),
+        )
+
+        # Convert to local datetimes by processing each timezone group
+        local_parts = []
+        for (tz_str,), group in df.group_by([timezone_col]):
+            local_parts.append(
+                group.with_columns(pl.col("datetime_utc").dt.convert_time_zone(tz_str).alias("local_datetime"))
+            )
+        df = pl.concat(local_parts).sort("_row_idx").drop("_row_idx")
+
+        return df
+
+    def _compute_year_metadata_image(self) -> None:
         self.metadata = self.metadata.with_columns(
             # First remove the timezone information, then parse the datetime
             pl.col("local_datetime")
@@ -360,48 +356,48 @@ class MLYMetadata:
             .alias("year")
         )
 
-    def _compute_month_metadata_image(self):
+    def _compute_month_metadata_image(self) -> None:
         self.metadata = self.metadata.with_columns(pl.col("local_datetime").dt.month().alias("month"))
 
-    def _compute_day_metadata_image(self):
+    def _compute_day_metadata_image(self) -> None:
         self.metadata = self.metadata.with_columns(pl.col("local_datetime").dt.day().alias("day"))
 
-    def _compute_hour_metadata_image(self):
+    def _compute_hour_metadata_image(self) -> None:
         self.metadata = self.metadata.with_columns(pl.col("local_datetime").dt.hour().alias("hour"))
 
-    def _compute_day_of_week_metadata_image(self):
+    def _compute_day_of_week_metadata_image(self) -> None:
         self.metadata = self.metadata.with_columns(pl.col("local_datetime").dt.weekday().alias("day_of_week"))
 
-    def _compute_daytime_nighttime_metadata_image(self):
+    def _compute_daytime_nighttime_metadata_image(self) -> None:
         self.metadata = _day_or_night(self.metadata)
 
-    def _compute_season_metadata_image(self):
+    def _compute_season_metadata_image(self) -> None:
         # place holder for season metadata because it is already computed in the compute_metadata function
         pass
 
-    def _compute_relative_angle_metadata_image(self):
+    def _compute_relative_angle_metadata_image(self) -> None:
         # Assuming nearest_line and self.metadata are Polars DataFrames
         nearest_line = pl.DataFrame(self.nearest_line[["id", "relative_angle"]])
         # Perform the left join using Polars
         self.metadata = self.metadata.join(nearest_line, on="id", how="left")
 
-    def _compute_speed_metadata_image(self):
+    def _compute_speed_metadata_image(self) -> None:
         # place holder for speed metadata because it is already computed in the compute_metadata function
         pass
 
-    def _compute_h3_id_metadata_image(self):
+    def _compute_h3_id_metadata_image(self) -> None:
         ls_res = [x for x in range(16)]
         for res in ls_res:
             self.metadata = self.metadata.with_columns(
                 pl.struct(["lat", "lon"])
                 .map_elements(
-                    lambda x: h3.geo_to_h3(x["lat"], x["lon"], res),
+                    lambda x: _latlng_to_h3(x["lat"], x["lon"], res),
                     return_dtype=pl.String,
                 )
                 .alias(f"h3_{res}")
             )
 
-    def _compute_coverage_metadata_grid_street(self):
+    def _compute_coverage_metadata_grid_street(self) -> None:
         # check if self.metadata is geopandas
         if not isinstance(self.metadata_geometry, gpd.GeoDataFrame):
             self.metadata_geometry = gpd.GeoDataFrame(geometry=self.metadata_geometry)
@@ -415,6 +411,10 @@ class MLYMetadata:
             relevant_geometries = self.metadata_geometry.copy()
 
         # Compute intersections with buffer only for potentially intersecting geometries
+        if len(relevant_geometries) == 0:
+            self.metadata = self.metadata.with_columns(pl.lit(0.0).alias("coverage"))
+            return
+
         relevant_geometries["intersection"] = relevant_geometries["geometry"].intersection(buffer)
 
         # Calculate coverage based on the type of the geometries
@@ -430,13 +430,13 @@ class MLYMetadata:
         # Store the results back into the original metadata DataFrame
         self.metadata = self.metadata.with_columns(pl.Series("coverage", relevant_geometries["coverage"]))
 
-    def _compute_count_metadata_grid_street(self):
+    def _compute_count_metadata_grid_street(self) -> None:
         # Group by the specified columns and count the rows in each group
         grouped = self.joined.group_by(self.columns_to_group_by).agg(pl.len().alias("count"))
         # join self.metadata with join on index and index_right
         self.metadata = self.metadata.join(grouped, on=self.columns_to_group_by, how="left")
 
-    def _compute_days_elapsed_metadata_grid_street(self):
+    def _compute_days_elapsed_metadata_grid_street(self) -> None:
         # number of days between the most recent and oldest point (self.gdf) within self.metadata
         # calculate the time elapsed
         # Group by the specified columns and calculate the max and min datetimes
@@ -457,7 +457,7 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_most_recent_date_metadata_grid_street(self):
+    def _compute_most_recent_date_metadata_grid_street(self) -> None:
         # number of days between the most recent point (self.gdf) and the most recent point within self.metadata
         # calculate the age of the most recent point
         # Group by the specified columns and calculate the max datetime
@@ -471,7 +471,7 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_oldest_date_metadata_grid_street(self):
+    def _compute_oldest_date_metadata_grid_street(self) -> None:
         # number of days between the oldest point (self.gdf) and the oldest point within self.metadata
         # calculate the age of the oldest point
         # Group by the specified columns and calculate the min datetime
@@ -485,7 +485,7 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_number_of_years_metadata_grid_street(self):
+    def _compute_number_of_years_metadata_grid_street(self) -> None:
         # number of unique years in the dataset
         # spaital join self.gdf to self.metadata
         # Extract the year from 'local_datetime' and create a new column
@@ -499,7 +499,7 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_number_of_months_metadata_grid_street(self):
+    def _compute_number_of_months_metadata_grid_street(self) -> None:
         # number of unique months in the dataset
         # spaital join self.gdf to self.metadata
         # Extract the month from 'local_datetime' and create a new column
@@ -513,7 +513,7 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_number_of_days_metadata_grid_street(self):
+    def _compute_number_of_days_metadata_grid_street(self) -> None:
         # number of unique days in the dataset
         # spaital join self.gdf to self.metadata
         # Extract the day from 'local_datetime' and create a new column
@@ -527,7 +527,7 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_number_of_hours_metadata_grid_street(self):
+    def _compute_number_of_hours_metadata_grid_street(self) -> None:
         # number of unique hours in the dataset
         # spaital join self.gdf to self.metadata
         # Extract the hour from 'local_datetime' and create a new column
@@ -541,7 +541,7 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_number_of_days_of_week_metadata_grid_street(self):
+    def _compute_number_of_days_of_week_metadata_grid_street(self) -> None:
         # number of unique days of week in the dataset
         # spaital join self.gdf to self.metadata
         # Extract the day of week from 'local_datetime' and create a new column
@@ -557,7 +557,7 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_number_of_daytime_metadata_grid_street(self):
+    def _compute_number_of_daytime_metadata_grid_street(self) -> None:
         # number of points captured during daytime
         # calculate the number of points captured during daytime using _day_or_night function
         grouped = _day_or_night(self.joined)
@@ -571,7 +571,7 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_number_of_nighttime_metadata_grid_street(self):
+    def _compute_number_of_nighttime_metadata_grid_street(self) -> None:
         # number of points captured during nighttime
         grouped = _day_or_night(self.joined)
         grouped = grouped.with_columns(pl.col("daytime_nighttime").eq(pl.lit("nighttime")).alias("nighttime"))
@@ -584,103 +584,59 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_number_of_spring_metadata_grid_street(self):
-        # number of points captured during spring
-        # calculate the number of points captured during spring using _datetime_to_season function
-        grouped = self.joined
+    def _compute_number_of_spring_metadata_grid_street(self) -> None:
+        season_col = _season_expr("local_datetime", "lat")
         grouped = (
-            grouped.with_columns(
-                pl.struct(["local_datetime", "lat"])
-                .map_elements(
-                    lambda x: _datetime_to_season(x["local_datetime"], x["lat"]),
-                    return_dtype=pl.String,
-                )
-                .eq(pl.lit("Spring"))
-                .alias("spring")
-            )
+            self.joined.with_columns(season_col.eq(pl.lit("Spring")).alias("spring"))
             .group_by(self.columns_to_group_by)
             .agg(pl.col("spring").sum().alias("number_of_spring"))
         )
-        # Join self.metadata with grouped on the specified columns, only including the 'number_of_spring' column
         self.metadata = self.metadata.join(
             grouped.select([self.columns_to_group_by, "number_of_spring"]),
             on=self.columns_to_group_by,
             how="left",
         )
 
-    def _compute_number_of_summer_metadata_grid_street(self):
-        # number of points captured during summer
-        # calculate the number of points captured during summer using _datetime_to_season function
-        grouped = self.joined
+    def _compute_number_of_summer_metadata_grid_street(self) -> None:
+        season_col = _season_expr("local_datetime", "lat")
         grouped = (
-            grouped.with_columns(
-                pl.struct(["local_datetime", "lat"])
-                .map_elements(
-                    lambda x: _datetime_to_season(x["local_datetime"], x["lat"]),
-                    return_dtype=pl.String,
-                )
-                .eq(pl.lit("Summer"))
-                .alias("summer")
-            )
+            self.joined.with_columns(season_col.eq(pl.lit("Summer")).alias("summer"))
             .group_by(self.columns_to_group_by)
             .agg(pl.col("summer").sum().alias("number_of_summer"))
         )
-        # Join self.metadata with grouped on the specified columns, only including the 'number_of_summer' column
         self.metadata = self.metadata.join(
             grouped.select([self.columns_to_group_by, "number_of_summer"]),
             on=self.columns_to_group_by,
             how="left",
         )
 
-    def _compute_number_of_autumn_metadata_grid_street(self):
-        # number of points captured during autumn
-        # calculate the number of points captured during autumn using _datetime_to_season function
-        grouped = self.joined
+    def _compute_number_of_autumn_metadata_grid_street(self) -> None:
+        season_col = _season_expr("local_datetime", "lat")
         grouped = (
-            grouped.with_columns(
-                pl.struct(["local_datetime", "lat"])
-                .map_elements(
-                    lambda x: _datetime_to_season(x["local_datetime"], x["lat"]),
-                    return_dtype=pl.String,
-                )
-                .eq(pl.lit("Autumn"))
-                .alias("autumn")
-            )
+            self.joined.with_columns(season_col.eq(pl.lit("Autumn")).alias("autumn"))
             .group_by(self.columns_to_group_by)
             .agg(pl.col("autumn").sum().alias("number_of_autumn"))
         )
-        # Join self.metadata with grouped on the specified columns, only including the 'number_of_autumn' column
         self.metadata = self.metadata.join(
             grouped.select([self.columns_to_group_by, "number_of_autumn"]),
             on=self.columns_to_group_by,
             how="left",
         )
 
-    def _compute_number_of_winter_metadata_grid_street(self):
-        # number of points captured during winter
-        # calculate the number of points captured during winter using _datetime_to_season function
-        grouped = self.joined
+    def _compute_number_of_winter_metadata_grid_street(self) -> None:
+        season_col = _season_expr("local_datetime", "lat")
         grouped = (
-            grouped.with_columns(
-                pl.struct(["local_datetime", "lat"])
-                .map_elements(
-                    lambda x: _datetime_to_season(x["local_datetime"], x["lat"]),
-                    return_dtype=pl.String,
-                )
-                .eq(pl.lit("Winter"))
-                .alias("winter")
-            )
+            self.joined.with_columns(season_col.eq(pl.lit("Winter")).alias("winter"))
             .group_by(self.columns_to_group_by)
             .agg(pl.col("winter").sum().alias("number_of_winter"))
         )
-        # Join self.metadata with grouped on the specified columns, only including the 'number_of_winter' column
         self.metadata = self.metadata.join(
             grouped.select([self.columns_to_group_by, "number_of_winter"]),
             on=self.columns_to_group_by,
             how="left",
         )
 
-    def _compute_average_compass_angle_metadata_grid_street(self):
+    def _compute_average_compass_angle_metadata_grid_street(self) -> None:
         # average compass angle of the points within self.metadata
         # calculate the average compass angle
         grouped = self.joined.group_by(self.columns_to_group_by).agg(
@@ -693,7 +649,7 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_average_relative_angle_metadata_grid_street(self):
+    def _compute_average_relative_angle_metadata_grid_street(self) -> None:
         # average relative angle of the points within self.metadata
         nearest_line = pl.DataFrame(self.nearest_line[["id", "relative_angle"]])
         grouped = self.joined.join(nearest_line, on="id", how="left")
@@ -708,7 +664,7 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_average_is_pano_metadata_grid_street(self):
+    def _compute_average_is_pano_metadata_grid_street(self) -> None:
         # average is_pano of the points within self.metadata
         # calculate the average is_pano
         grouped = self.joined.group_by(self.columns_to_group_by).agg(pl.col("is_pano").mean().alias("average_is_pano"))
@@ -719,7 +675,7 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_number_of_users_metadata_grid_street(self):
+    def _compute_number_of_users_metadata_grid_street(self) -> None:
         # number of unique users in the dataset
         # calculate the number of unique users
         grouped = self.joined.group_by(self.columns_to_group_by).agg(
@@ -732,7 +688,7 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_number_of_sequences_metadata_grid_street(self):
+    def _compute_number_of_sequences_metadata_grid_street(self) -> None:
         # number of unique sequences in the dataset
         # calculate the number of unique sequences
         grouped = self.joined.group_by(self.columns_to_group_by).agg(
@@ -745,7 +701,7 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_number_of_organizations_metadata_grid_street(self):
+    def _compute_number_of_organizations_metadata_grid_street(self) -> None:
         # number of unique organizations in the dataset
         # calculate the number of unique organizations
         grouped = self.joined.group_by(self.columns_to_group_by).agg(
@@ -758,7 +714,7 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_speed_metadata_grid_street(self):
+    def _compute_speed_metadata_grid_street(self) -> None:
         # average speed of the points within self.metadata
         # calculate the average speed
         grouped = self.joined.group_by(self.columns_to_group_by).agg(
@@ -771,7 +727,7 @@ class MLYMetadata:
             how="left",
         )
 
-    def _compute_image_metadata(self, indicator_list):
+    def _compute_image_metadata(self, indicator_list: str) -> pl.DataFrame:
         # define self.metadata as a copy of the input DataFrame with only "id" column
         self.metadata = self.df
         if indicator_list == "all":
@@ -787,7 +743,7 @@ class MLYMetadata:
                 self.metadata = self.metadata.drop(key)
         return self.metadata
 
-    def _compute_grid_metadata(self, indicator_list):
+    def _compute_grid_metadata(self, indicator_list: str) -> pl.DataFrame:
         if indicator_list == "all":
             indicator_list = self.indicator_metadata_grid_street.keys()
         else:
@@ -801,7 +757,7 @@ class MLYMetadata:
                 self.metadata = self.metadata.drop(key)
         return self.metadata
 
-    def _compute_street_metadata(self, indicator_list):
+    def _compute_street_metadata(self, indicator_list: str) -> pl.DataFrame:
         if indicator_list == "all":
             indicator_list = self.indicator_metadata_grid_street.keys()
         else:
@@ -817,9 +773,9 @@ class MLYMetadata:
         grid_resolution: int = 7,
         coverage_buffer: int = 50,
         indicator_list: str = "all",
-        path_output: Union[str, Path] = None,
+        path_output: Optional[Union[str, Path]] = None,
         max_distance: int = 50,
-    ):
+    ) -> "pd.DataFrame":
         """Compute metadata for the dataset.
 
         Args:
@@ -888,14 +844,7 @@ class MLYMetadata:
             or "autumn" in indicator_list
             or "winter" in indicator_list
         ):
-            self.df = self.df.with_columns(
-                pl.struct(["local_datetime", "lat"])
-                .map_elements(
-                    lambda x: _datetime_to_season(x["local_datetime"], x["lat"]),
-                    return_dtype=pl.String,
-                )
-                .alias("season")
-            )
+            self.df = self.df.with_columns(_season_expr("local_datetime", "lat").alias("season"))
 
         # check indicator_list and pre-compute metadata, e.g., speed
         if "all" in indicator_list or "speed" in indicator_list:
@@ -931,12 +880,7 @@ class MLYMetadata:
         # run the appropriate function to compute metadata based on the unit of analysis
         if unit == "image":
             # after here, there's no gpd.GeoDataFrame conversion, so let's convert local_datetime to datetime for Polars
-            self.df = self.df.with_columns(
-                pl.col("local_datetime")
-                .str.replace(r"([+-]\d{2}:\d{2})$", "")
-                .str.strptime(pl.Datetime, format="%Y-%m-%dT%H:%M:%S%.f")
-                .alias("local_datetime")
-            )
+            self.df = self.df.with_columns(pl.col("local_datetime").dt.replace_time_zone(None).alias("local_datetime"))
             df = self._compute_image_metadata(indicator_list)
         elif unit == "grid":
             self.metadata_geometry = _create_hexagon(
@@ -954,10 +898,7 @@ class MLYMetadata:
             self.metadata = pl.DataFrame(self.metadata_geometry.drop(columns="geometry"))
             # after here, there's no gpd.GeoDataFrame conversion, so let's convert local_datetime to datetime for Polars
             self.joined = self.joined.with_columns(
-                pl.col("local_datetime")
-                .str.replace(r"([+-]\d{2}:\d{2})$", "")
-                .str.strptime(pl.Datetime, format="%Y-%m-%dT%H:%M:%S%.f")
-                .alias("local_datetime")
+                pl.col("local_datetime").dt.replace_time_zone(None).alias("local_datetime")
             )
             # Get a list of all columns that contain 'index_right'
             self.columns_to_group_by = "key_col"
@@ -976,10 +917,7 @@ class MLYMetadata:
             self.metadata = pl.DataFrame(self.metadata_geometry.drop(columns="geometry"))
             # after here, there's no gpd.GeoDataFrame conversion, so let's convert local_datetime to datetime for Polars
             self.joined = self.joined.with_columns(
-                pl.col("local_datetime")
-                .str.replace(r"([+-]\d{2}:\d{2})$", "")
-                .str.strptime(pl.Datetime, format="%Y-%m-%dT%H:%M:%S%.f")
-                .alias("local_datetime")
+                pl.col("local_datetime").dt.replace_time_zone(None).alias("local_datetime")
             )
             self.columns_to_group_by = "key_col"
             df = self._compute_street_metadata(indicator_list)

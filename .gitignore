@@ -157,3 +157,7 @@ models/*
 
 # auxiliary
 test_download_folder.py
+
+# AI related markdown
+plan.md
+CLAUDE.md

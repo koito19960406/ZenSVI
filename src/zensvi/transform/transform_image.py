@@ -1,7 +1,7 @@
 import math
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Union
+from typing import Iterator, Optional, Tuple, Union
 
 import cv2
 import numpy as np
@@ -9,7 +9,7 @@ import numpy as np
 from zensvi.utils.log import Logger, verbosity_tqdm
 
 
-def _xyz2lonlat(xyz):
+def _xyz2lonlat(xyz: np.ndarray) -> np.ndarray:
     """Converts 3D Cartesian coordinates (x, y, z) to geographic coordinates (longitude,
     latitude).
 
@@ -36,7 +36,7 @@ def _xyz2lonlat(xyz):
     return out
 
 
-def _lonlat2XY(lonlat, shape):
+def _lonlat2XY(lonlat: np.ndarray, shape: Tuple[int, int]) -> np.ndarray:
     """Converts geographic coordinates (longitude, latitude) to pixel coordinates (X, Y)
     based on an image shape.
 
@@ -71,9 +71,9 @@ class ImageTransformer:
         self,
         dir_input: Union[str, Path],
         dir_output: Union[str, Path],
-        log_path: Union[str, Path] = None,
+        log_path: Optional[Union[str, Path]] = None,
         verbosity: int = 1,
-    ):
+    ) -> None:
         if isinstance(dir_input, str):
             dir_input = Path(dir_input)
         elif not isinstance(dir_input, Path):
@@ -93,7 +93,7 @@ class ImageTransformer:
         self.verbosity = verbosity
 
     @property
-    def dir_input(self):
+    def dir_input(self) -> Path:
         """Property for the input directory.
 
         Returns:
@@ -102,7 +102,7 @@ class ImageTransformer:
         return self._dir_input
 
     @dir_input.setter
-    def dir_input(self, value):
+    def dir_input(self, value: Union[str, Path]) -> None:
         if isinstance(value, str):
             value = Path(value)
         elif not isinstance(value, Path):
@@ -110,7 +110,7 @@ class ImageTransformer:
         self._dir_input = value
 
     @property
-    def dir_output(self):
+    def dir_output(self) -> Path:
         """Property for the output directory.
 
         Returns:
@@ -119,14 +119,14 @@ class ImageTransformer:
         return self._dir_output
 
     @dir_output.setter
-    def dir_output(self, value):
+    def dir_output(self, value: Union[str, Path]) -> None:
         if isinstance(value, str):
             value = Path(value)
         elif not isinstance(value, Path):
             raise TypeError("dir_output must be a str or Path object.")
         self._dir_output = value
 
-    def perspective(self, img, FOV, THETA, PHI, height, width):
+    def perspective(self, img: np.ndarray, FOV: float, THETA: float, PHI: float, height: int, width: int) -> np.ndarray:
         """Transforms an image to simulate a perspective view from specific angles.
 
         Args:
@@ -171,7 +171,7 @@ class ImageTransformer:
         persp = cv2.remap(img, XY[..., 0], XY[..., 1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP)
         return persp
 
-    def equidistant_fisheye(self, img):
+    def equidistant_fisheye(self, img: np.ndarray) -> np.ndarray:
         """Transforms an image to an equidistant fisheye projection.
 
         Args:
@@ -215,7 +215,7 @@ class ImageTransformer:
 
         return new_img
 
-    def orthographic_fisheye(self, img):
+    def orthographic_fisheye(self, img: np.ndarray) -> np.ndarray:
         """Transforms an image to an orthographic fisheye projection.
 
         Args:
@@ -258,7 +258,7 @@ class ImageTransformer:
 
         return new_img
 
-    def stereographic_fisheye(self, img):
+    def stereographic_fisheye(self, img: np.ndarray) -> np.ndarray:
         """Transforms an image to a stereographic fisheye projection.
 
         Args:
@@ -308,7 +308,7 @@ class ImageTransformer:
 
         return new_img
 
-    def equisolid_fisheye(self, img):
+    def equisolid_fisheye(self, img: np.ndarray) -> np.ndarray:
         """Transforms an image to an equisolid fisheye projection.
 
         Args:
@@ -360,8 +360,8 @@ class ImageTransformer:
         aspects: tuple = (9, 16),
         show_size: Union[int, float] = 100,
         use_upper_half: bool = False,
-        verbosity: int = None,
-    ):
+        verbosity: Optional[int] = None,
+    ) -> None:
         """Applies specified transformations to all images in the input directory and
         saves them in the output directory.
 
@@ -438,7 +438,15 @@ class ImageTransformer:
             ".heif",
         ]
 
-        def run(path_input, path_output, show_size, style, theta, aspects, FOV):
+        def run(
+            path_input: Path,
+            path_output: Path,
+            show_size: Union[int, float],
+            style: str,
+            theta: Union[int, float],
+            aspects: tuple,
+            FOV: Union[int, float],
+        ) -> None:
             # Use IMREAD_UNCHANGED to preserve alpha channel if present
             img_raw = cv2.imread(str(path_input), cv2.IMREAD_UNCHANGED)
 
@@ -487,14 +495,23 @@ class ImageTransformer:
                         img_new = self.perspective(img_raw, FOV, theta, phi, height, width)
                         cv2.imwrite(str(path_output_raw), img_new)
 
-        def process_image(dir_input, dir_output, file_path, show_size, style, theta, aspects, FOV):
+        def process_image(
+            dir_input: Path,
+            dir_output: Path,
+            file_path: Path,
+            show_size: Union[int, float],
+            style: str,
+            theta: Union[int, float],
+            aspects: tuple,
+            FOV: Union[int, float],
+        ) -> Tuple[Path, Path, Union[int, float], str, Union[int, float], tuple, Union[int, float]]:
             relative_path = file_path.relative_to(dir_input)
             path_output = dir_output / relative_path.with_suffix(".png")
             path_output.parent.mkdir(parents=True, exist_ok=True)
             return file_path, path_output, show_size, style, theta, aspects, FOV
 
         # Recursive function to get all image files
-        def get_image_files(directory):
+        def get_image_files(directory: Path) -> Iterator[Path]:
             for item in directory.iterdir():
                 if item.is_file() and item.suffix.lower() in image_extensions:
                     yield item

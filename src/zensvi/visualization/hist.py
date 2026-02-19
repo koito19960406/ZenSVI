@@ -1,6 +1,6 @@
 import glob
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -13,10 +13,10 @@ def plot_hist(
     dir_input: Union[str, Path],
     columns: List[str],
     csv_file_pattern: str = "*.csv",
-    path_output: Union[str, Path] = None,
+    path_output: Optional[Union[str, Path]] = None,
     legend: bool = True,
-    title: str = None,
-    legend_title: str = None,
+    title: Optional[str] = None,
+    legend_title: Optional[str] = None,
     fig_size: Tuple[int, int] = (10, 10),
     dpi: int = 300,
     font_size: int = 30,

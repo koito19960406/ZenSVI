@@ -2,7 +2,7 @@ import json
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Union
+from typing import Dict, Optional, Union
 
 import cv2
 import pandas as pd
@@ -10,7 +10,7 @@ import pandas as pd
 from zensvi.utils.log import verbosity_tqdm
 
 
-def _detect_edges_single_image(image_path: Path, dir_image_output: Union[str, Path]) -> dict:
+def _detect_edges_single_image(image_path: Path, dir_image_output: Union[str, Path]) -> Dict[str, float]:
     """Detect edges in a single image using various techniques.
 
     Args:
@@ -45,7 +45,7 @@ def _detect_edges_single_image(image_path: Path, dir_image_output: Union[str, Pa
     return edge_ratios
 
 
-def _detect_blob_single_image(image_path: Path, dir_image_output: Union[str, Path] = None) -> dict:
+def _detect_blob_single_image(image_path: Path, dir_image_output: Optional[Union[str, Path]] = None) -> Dict[str, int]:
     """Detect blobs in a single image.
 
     Args:
@@ -81,7 +81,9 @@ def _detect_blob_single_image(image_path: Path, dir_image_output: Union[str, Pat
     return {"blob_count": len(keypoints)}
 
 
-def _detect_blur_single_image(image_path: Path, dir_image_output: Union[str, Path] = None) -> dict:
+def _detect_blur_single_image(
+    image_path: Path, dir_image_output: Optional[Union[str, Path]] = None
+) -> Dict[str, float]:
     """Detect blur in a single image.
 
     Args:
@@ -104,7 +106,9 @@ def _detect_blur_single_image(image_path: Path, dir_image_output: Union[str, Pat
     return {"blur_measure": variance_of_laplacian, "is_blurry": is_blurry}
 
 
-def _calculate_hsl_single_image(image_path: Path, dir_image_output: Union[str, Path] = None) -> dict:
+def _calculate_hsl_single_image(
+    image_path: Path, dir_image_output: Optional[Union[str, Path]] = None
+) -> Dict[str, float]:
     """Calculate the average HSL values of a single image.
 
     Args:
@@ -132,7 +136,9 @@ def _calculate_hsl_single_image(image_path: Path, dir_image_output: Union[str, P
     }
 
 
-def _detect_all_features_single_image(image_path: Path, dir_image_output: Union[str, Path] = None) -> dict:
+def _detect_all_features_single_image(
+    image_path: Path, dir_image_output: Optional[Union[str, Path]] = None
+) -> Dict[str, Union[str, float, int]]:
     """Aggregate all feature detection results for a single image.
 
     Args:
@@ -154,8 +160,8 @@ def _detect_all_features_single_image(image_path: Path, dir_image_output: Union[
 
 def get_low_level_features(
     dir_input: Union[str, Path],
-    dir_image_output: Union[str, Path] = None,
-    dir_summary_output: Union[str, Path] = None,
+    dir_image_output: Optional[Union[str, Path]] = None,
+    dir_summary_output: Optional[Union[str, Path]] = None,
     save_format: str = "json csv",
     csv_format: str = "long",
     verbosity: int = 1,
