@@ -289,9 +289,7 @@ class MLYMetadata:
         geometry_list = [list(line.coords) for line in sn["geometry"]]
         sn["geometry_list"] = geometry_list
         sn_data = sn.drop(columns=[col for col in sn.columns if col not in ["geometry_list", "geometry"]])
-        sn_pl = pl.DataFrame(
-            {"geometry_list": pl.Series(sn_data["geometry_list"], dtype=pl.List(pl.List(pl.Float64)))}
-        )
+        sn_pl = pl.DataFrame({"geometry_list": pl.Series(sn_data["geometry_list"], dtype=pl.List(pl.List(pl.Float64)))})
         sn_pl = sn_pl.with_columns(
             pl.col("geometry_list").map_elements(lambda x: _calculate_angle(x), return_dtype=pl.Float64).alias("angle")
         ).drop("geometry_list")
