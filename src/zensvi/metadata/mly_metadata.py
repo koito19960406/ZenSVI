@@ -215,9 +215,8 @@ class MLYMetadata:
         This method initializes the MLYMetadata class by:
         1. Setting up logging if a log path is provided.
         2. Reading the input CSV file.
-        3. Fetching the street network data for the area covered by the input data.
-        4. Calculating street segment angles.
-        5. Setting up dictionaries of metadata computation functions for image and grid/street levels.
+        3. Setting up dictionaries of metadata computation functions for image and grid/street levels.
+        The street network is loaded lazily the first time it is needed.
         """
         self._tf_instance = TimezoneFinder()
         self.path_input = Path(path_input)
@@ -227,47 +226,9 @@ class MLYMetadata:
             self.logger = None
         self.df = pl.read_csv(self.path_input)
         self.metadata = None
-        # get street network in the extent of the dataset with OSMnx
-        self.street_network = ox.graph_from_bbox(
-            bbox=(
-                self.df["lat"].min(),
-                self.df["lat"].max(),
-                self.df["lon"].min(),
-                self.df["lon"].max(),
-            ),
-            network_type="all",
-        )
-        self.street_network = ox.convert.graph_to_gdfs(self.street_network, nodes=False)
-        self.street_network = ox.projection.project_gdf(self.street_network)
-        self.projected_crs = self.street_network.crs
-        # calculate angle of the street segments
-        # Prepare the data for the Polars DataFrame
-        # Assuming self.street_network["geometry"] contains LineString objects
-        geometry_list = [list(line.coords) for line in self.street_network["geometry"]]
-        self.street_network["geometry_list"] = geometry_list
-        street_network_data = self.street_network.drop(
-            columns=[col for col in self.street_network.columns if col not in ["geometry_list", "geometry"]]
-        )
-
-        # Create the Polars DataFrame with specified data types
-        self.street_network = pl.DataFrame(
-            {
-                "geometry_list": pl.Series(
-                    street_network_data["geometry_list"],
-                    dtype=pl.List(pl.List(pl.Float64)),
-                )
-            }
-        )
-
-        # Continue with the rest of the initialization
-        self.street_network = self.street_network.with_columns(
-            pl.col("geometry_list").map_elements(lambda x: _calculate_angle(x), return_dtype=pl.Float64).alias("angle")
-        )
-        self.street_network = self.street_network.drop("geometry_list")
-        self.street_network = gpd.GeoDataFrame(
-            self.street_network.to_pandas(),
-            geometry=street_network_data.reset_index().geometry,
-        )
+        # Street network is loaded lazily via _ensure_street_network()
+        self.street_network = None
+        self.projected_crs = None
 
         # create a dictionary of functions to compute metadata for each indicator at the image level
         self.indicator_metadata_image = {
@@ -308,6 +269,33 @@ class MLYMetadata:
             "number_of_organizations": self._compute_number_of_organizations_metadata_grid_street,
             "average_speed_kmh": self._compute_speed_metadata_grid_street,
         }
+
+    def _ensure_street_network(self) -> None:
+        """Lazily load and prepare the street network. No-op if already loaded."""
+        if self.street_network is not None:
+            return
+        graph = ox.graph_from_bbox(
+            bbox=(
+                self.df["lat"].min(),
+                self.df["lat"].max(),
+                self.df["lon"].min(),
+                self.df["lon"].max(),
+            ),
+            network_type="all",
+        )
+        sn = ox.convert.graph_to_gdfs(graph, nodes=False)
+        sn = ox.projection.project_gdf(sn)
+        self.projected_crs = sn.crs
+        geometry_list = [list(line.coords) for line in sn["geometry"]]
+        sn["geometry_list"] = geometry_list
+        sn_data = sn.drop(columns=[col for col in sn.columns if col not in ["geometry_list", "geometry"]])
+        sn_pl = pl.DataFrame(
+            {"geometry_list": pl.Series(sn_data["geometry_list"], dtype=pl.List(pl.List(pl.Float64)))}
+        )
+        sn_pl = sn_pl.with_columns(
+            pl.col("geometry_list").map_elements(lambda x: _calculate_angle(x), return_dtype=pl.Float64).alias("angle")
+        ).drop("geometry_list")
+        self.street_network = gpd.GeoDataFrame(sn_pl.to_pandas(), geometry=sn_data.reset_index().geometry)
 
     def _compute_timezones(self, df: pl.DataFrame, lat_col: str, lon_col: str) -> pl.DataFrame:
         # Deduplicate by rounding to 0.01° (~1km) — points this close share a timezone
@@ -850,13 +838,31 @@ class MLYMetadata:
         if "all" in indicator_list or "speed" in indicator_list:
             self.df = _compute_speed(self.df)
 
-        # create self.gdf as a GeoDataFrame for spatial operations
-        self.gdf = gpd.GeoDataFrame(
-            self.df.to_pandas(),
-            geometry=gpd.points_from_xy(self.df["lon"], self.df["lat"]),
-            crs=4326,
+        # Determine which expensive resources are actually needed
+        needs_street_network = (
+            unit == "street"
+            or "all" in indicator_list
+            or "relative_angle" in indicator_list
+            or "average_relative_angle" in indicator_list
         )
-        self.gdf = self.gdf.to_crs(crs=self.projected_crs)
+        needs_gdf = unit in ("grid", "street") or needs_street_network
+
+        if needs_street_network:
+            self._ensure_street_network()
+
+        # create self.gdf as a GeoDataFrame for spatial operations (only when needed)
+        if needs_gdf:
+            self.gdf = gpd.GeoDataFrame(
+                self.df.to_pandas(),
+                geometry=gpd.points_from_xy(self.df["lon"], self.df["lat"]),
+                crs=4326,
+            )
+            if self.projected_crs is not None:
+                self.gdf = self.gdf.to_crs(crs=self.projected_crs)
+            else:
+                # No street network loaded — derive projection from the points themselves
+                self.gdf = ox.projection.project_gdf(self.gdf)
+                self.projected_crs = self.gdf.crs
 
         # check indicator_list and pre-compute metadata, e.g., relative_angle
         if "all" in indicator_list or "relative_angle" in indicator_list:

@@ -21,7 +21,9 @@ def output_dir(base_output_dir, ensure_dir):
 @pytest.fixture(scope="module")
 def _metadata_cached(input_dir):
     """Download OSM street network once per module (expensive network call)."""
-    return MLYMetadata(str(input_dir / "metadata/mly_pids.csv"))
+    md = MLYMetadata(str(input_dir / "metadata/mly_pids.csv"))
+    md._ensure_street_network()  # pre-warm so copies in the per-test fixture are valid
+    return md
 
 
 @pytest.fixture
