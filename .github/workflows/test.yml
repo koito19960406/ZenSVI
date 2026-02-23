@@ -38,9 +38,7 @@ jobs:
         poetry config virtualenvs.in-project true
     
     - name: Install dependencies
-      run: |
-        poetry lock
-        poetry install --no-interaction --with dev
+      run: poetry install --no-interaction --with dev
 
     - name: Install VGGT dependencies
       run: poetry run pip install -r src/zensvi/transform/vggt/requirements.txt
