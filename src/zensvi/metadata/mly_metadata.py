@@ -821,6 +821,9 @@ class MLYMetadata:
         # Clear per-call caches so repeated compute_metadata calls don't use stale data
         self._joined_daynight_cache = None
         self._seasons_grouped_cache = None
+        # Reset self.df from disk so timezone/other columns added in a previous call
+        # don't cause DuplicateError when compute_metadata is called more than once.
+        self.df = pl.read_csv(self.path_input)
 
         # check indicator_list and pre-compute metadata, e.g., timezone and local datetime
         if (
