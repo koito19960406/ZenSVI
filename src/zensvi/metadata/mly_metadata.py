@@ -9,7 +9,7 @@ import osmnx as ox
 import pandas as pd
 import polars as pl
 from astral import LocationInfo, sun
-from shapely.geometry import LineString, Polygon
+from shapely.geometry import LineString, MultiPoint, Polygon
 from timezonefinder import TimezoneFinder
 from tqdm.auto import tqdm
 
@@ -277,17 +277,19 @@ class MLYMetadata:
         """Lazily load and prepare the street network. No-op if already loaded."""
         if self.street_network is not None:
             return
-        lat_min, lat_max = self.df["lat"].min(), self.df["lat"].max()
-        lon_min, lon_max = self.df["lon"].min(), self.df["lon"].max()
+        lats = self.df["lat"].to_list()
+        lons = self.df["lon"].to_list()
+        # Build a tight query polygon: convex hull of all points + ~200 m buffer.
+        # This avoids downloading the huge empty area that a raw bounding box would cover
+        # when input points are sparse or spread across non-contiguous areas.
+        buffer_deg = 200 / 111_000  # ~200 m expressed in degrees latitude
+        points_geom = MultiPoint(list(zip(lons, lats)))
+        query_polygon = points_geom.convex_hull.buffer(buffer_deg)
         print(
-            f"Downloading OSM street network for bbox "
-            f"(lat {lat_min:.4f}–{lat_max:.4f}, lon {lon_min:.4f}–{lon_max:.4f}). "
-            "This may take a while for large areas…"
+            f"Downloading OSM street network for {len(lats)} points "
+            f"(convex hull + 200 m buffer). This may take a while for large areas…"
         )
-        graph = ox.graph_from_bbox(
-            bbox=(lat_min, lat_max, lon_min, lon_max),
-            network_type="all",
-        )
+        graph = ox.graph_from_polygon(query_polygon, network_type="all")
         sn = ox.convert.graph_to_gdfs(graph, nodes=False)
         sn = ox.projection.project_gdf(sn)
         self.projected_crs = sn.crs
