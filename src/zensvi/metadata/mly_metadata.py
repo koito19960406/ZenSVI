@@ -423,8 +423,14 @@ class MLYMetadata:
                 relevant_geometries["intersection"].area / relevant_geometries["geometry"].area
             )
 
-        # Store the results back into the original metadata DataFrame
-        self.metadata = self.metadata.with_columns(pl.Series("coverage", relevant_geometries["coverage"]))
+        # Store the results back into the original metadata DataFrame.
+        # Only relevant_geometries (spatial-index hits) have coverage values; all
+        # other streets get 0.0.  Build a full-length array before converting to a
+        # Polars Series so the lengths always match self.metadata.
+        coverage_values = [0.0] * len(self.metadata)
+        for arr_pos, orig_idx in enumerate(possible_matches_index):
+            coverage_values[orig_idx] = relevant_geometries["coverage"].iloc[arr_pos]
+        self.metadata = self.metadata.with_columns(pl.Series("coverage", coverage_values))
 
     def _compute_count_metadata_grid_street(self) -> None:
         # Group by the specified columns and count the rows in each group
