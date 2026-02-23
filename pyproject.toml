@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zensvi"
-version = "1.4.4"
+version = "1.4.5"
 description = "This package handles downloading, cleaning, analyzing street view imagery in a one-stop and zen manner."
 authors = ["koito19960406"]
 license = "MIT"
@@ -33,7 +33,7 @@ contextily = ">=1.6.0"
 astral = ">=3.2"
 timezonefinder = ">=6.5.0"
 lightning = ">=2.2.3"
-torch = ">=2.3,<2.10"
+torch = ">=2.4,<2.10"
 pyarrow = ">=16.0.0"
 polars-lts-cpu = ">=0.20.0"
 torchvision = ">=0.15.0"
