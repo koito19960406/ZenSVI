@@ -9,7 +9,7 @@ import osmnx as ox
 import pandas as pd
 import polars as pl
 from astral import LocationInfo, sun
-from shapely.geometry import LineString, Polygon
+from shapely.geometry import LineString, MultiPoint, Polygon
 from timezonefinder import TimezoneFinder
 from tqdm.auto import tqdm
 
@@ -229,6 +229,9 @@ class MLYMetadata:
         # Street network is loaded lazily via _ensure_street_network()
         self.street_network = None
         self.projected_crs = None
+        # Per-call caches cleared at the start of compute_metadata
+        self._joined_daynight_cache = None
+        self._seasons_grouped_cache = None
 
         # create a dictionary of functions to compute metadata for each indicator at the image level
         self.indicator_metadata_image = {
@@ -274,15 +277,19 @@ class MLYMetadata:
         """Lazily load and prepare the street network. No-op if already loaded."""
         if self.street_network is not None:
             return
-        graph = ox.graph_from_bbox(
-            bbox=(
-                self.df["lat"].min(),
-                self.df["lat"].max(),
-                self.df["lon"].min(),
-                self.df["lon"].max(),
-            ),
-            network_type="all",
+        lats = self.df["lat"].to_list()
+        lons = self.df["lon"].to_list()
+        # Build a tight query polygon: convex hull of all points + ~200 m buffer.
+        # This avoids downloading the huge empty area that a raw bounding box would cover
+        # when input points are sparse or spread across non-contiguous areas.
+        buffer_deg = 200 / 111_000  # ~200 m expressed in degrees latitude
+        points_geom = MultiPoint(list(zip(lons, lats)))
+        query_polygon = points_geom.convex_hull.buffer(buffer_deg)
+        print(
+            f"Downloading OSM street network for {len(lats)} points "
+            f"(convex hull + 200 m buffer). This may take a while for large areas…"
         )
+        graph = ox.graph_from_polygon(query_polygon, network_type="all")
         sn = ox.convert.graph_to_gdfs(graph, nodes=False)
         sn = ox.projection.project_gdf(sn)
         self.projected_crs = sn.crs
@@ -372,16 +379,19 @@ class MLYMetadata:
         pass
 
     def _compute_h3_id_metadata_image(self) -> None:
-        ls_res = [x for x in range(16)]
-        for res in ls_res:
-            self.metadata = self.metadata.with_columns(
+        # Compute H3 IDs on unique (lat, lon) pairs to avoid N×16 Python UDF calls.
+        unique_ll = self.metadata.select(["lat", "lon"]).unique()
+        for res in range(16):
+            r = res  # avoid late-binding in lambda
+            unique_ll = unique_ll.with_columns(
                 pl.struct(["lat", "lon"])
                 .map_elements(
-                    lambda x: _latlng_to_h3(x["lat"], x["lon"], res),
+                    lambda x, r=r: _latlng_to_h3(x["lat"], x["lon"], r),
                     return_dtype=pl.String,
                 )
                 .alias(f"h3_{res}")
             )
+        self.metadata = self.metadata.join(unique_ll, on=["lat", "lon"], how="left")
 
     def _compute_coverage_metadata_grid_street(self) -> None:
         # check if self.metadata is geopandas
@@ -413,8 +423,14 @@ class MLYMetadata:
                 relevant_geometries["intersection"].area / relevant_geometries["geometry"].area
             )
 
-        # Store the results back into the original metadata DataFrame
-        self.metadata = self.metadata.with_columns(pl.Series("coverage", relevant_geometries["coverage"]))
+        # Store the results back into the original metadata DataFrame.
+        # Only relevant_geometries (spatial-index hits) have coverage values; all
+        # other streets get 0.0.  Build a full-length array before converting to a
+        # Polars Series so the lengths always match self.metadata.
+        coverage_values = [0.0] * len(self.metadata)
+        for arr_pos, orig_idx in enumerate(possible_matches_index):
+            coverage_values[orig_idx] = relevant_geometries["coverage"].iloc[arr_pos]
+        self.metadata = self.metadata.with_columns(pl.Series("coverage", coverage_values))
 
     def _compute_count_metadata_grid_street(self) -> None:
         # Group by the specified columns and count the rows in each group
@@ -543,14 +559,16 @@ class MLYMetadata:
             how="left",
         )
 
+    def _get_joined_daynight(self) -> pl.DataFrame:
+        """Return self.joined with daytime_nighttime column, computing once and caching."""
+        if self._joined_daynight_cache is None:
+            self._joined_daynight_cache = _day_or_night(self.joined)
+        return self._joined_daynight_cache
+
     def _compute_number_of_daytime_metadata_grid_street(self) -> None:
-        # number of points captured during daytime
-        # calculate the number of points captured during daytime using _day_or_night function
-        grouped = _day_or_night(self.joined)
+        grouped = self._get_joined_daynight()
         grouped = grouped.with_columns(pl.col("daytime_nighttime").eq(pl.lit("daytime")).alias("daytime"))
-        # Group by specified columns and sum the daytime values
         grouped = grouped.group_by(self.columns_to_group_by).agg(pl.col("daytime").sum().alias("number_of_daytime"))
-        # Join self.metadata with grouped on the specified columns, only including the 'number_of_daytime' column
         self.metadata = self.metadata.join(
             grouped.select([self.columns_to_group_by, "number_of_daytime"]),
             on=self.columns_to_group_by,
@@ -558,25 +576,33 @@ class MLYMetadata:
         )
 
     def _compute_number_of_nighttime_metadata_grid_street(self) -> None:
-        # number of points captured during nighttime
-        grouped = _day_or_night(self.joined)
+        grouped = self._get_joined_daynight()
         grouped = grouped.with_columns(pl.col("daytime_nighttime").eq(pl.lit("nighttime")).alias("nighttime"))
-        # Group by specified columns and sum the nighttime values
         grouped = grouped.group_by(self.columns_to_group_by).agg(pl.col("nighttime").sum().alias("number_of_nighttime"))
-        # Join self.metadata with grouped on the specified columns, only including the 'number_of_nighttime' column
         self.metadata = self.metadata.join(
             grouped.select([self.columns_to_group_by, "number_of_nighttime"]),
             on=self.columns_to_group_by,
             how="left",
         )
 
+    def _get_seasons_grouped_cache(self) -> pl.DataFrame:
+        """Compute all four season counts in one group_by, caching the result."""
+        if self._seasons_grouped_cache is None:
+            season_col = _season_expr("local_datetime", "lat")
+            self._seasons_grouped_cache = (
+                self.joined.with_columns(season_col.alias("_season"))
+                .group_by(self.columns_to_group_by)
+                .agg(
+                    (pl.col("_season") == "Spring").sum().alias("number_of_spring"),
+                    (pl.col("_season") == "Summer").sum().alias("number_of_summer"),
+                    (pl.col("_season") == "Autumn").sum().alias("number_of_autumn"),
+                    (pl.col("_season") == "Winter").sum().alias("number_of_winter"),
+                )
+            )
+        return self._seasons_grouped_cache
+
     def _compute_number_of_spring_metadata_grid_street(self) -> None:
-        season_col = _season_expr("local_datetime", "lat")
-        grouped = (
-            self.joined.with_columns(season_col.eq(pl.lit("Spring")).alias("spring"))
-            .group_by(self.columns_to_group_by)
-            .agg(pl.col("spring").sum().alias("number_of_spring"))
-        )
+        grouped = self._get_seasons_grouped_cache()
         self.metadata = self.metadata.join(
             grouped.select([self.columns_to_group_by, "number_of_spring"]),
             on=self.columns_to_group_by,
@@ -584,12 +610,7 @@ class MLYMetadata:
         )
 
     def _compute_number_of_summer_metadata_grid_street(self) -> None:
-        season_col = _season_expr("local_datetime", "lat")
-        grouped = (
-            self.joined.with_columns(season_col.eq(pl.lit("Summer")).alias("summer"))
-            .group_by(self.columns_to_group_by)
-            .agg(pl.col("summer").sum().alias("number_of_summer"))
-        )
+        grouped = self._get_seasons_grouped_cache()
         self.metadata = self.metadata.join(
             grouped.select([self.columns_to_group_by, "number_of_summer"]),
             on=self.columns_to_group_by,
@@ -597,12 +618,7 @@ class MLYMetadata:
         )
 
     def _compute_number_of_autumn_metadata_grid_street(self) -> None:
-        season_col = _season_expr("local_datetime", "lat")
-        grouped = (
-            self.joined.with_columns(season_col.eq(pl.lit("Autumn")).alias("autumn"))
-            .group_by(self.columns_to_group_by)
-            .agg(pl.col("autumn").sum().alias("number_of_autumn"))
-        )
+        grouped = self._get_seasons_grouped_cache()
         self.metadata = self.metadata.join(
             grouped.select([self.columns_to_group_by, "number_of_autumn"]),
             on=self.columns_to_group_by,
@@ -610,12 +626,7 @@ class MLYMetadata:
         )
 
     def _compute_number_of_winter_metadata_grid_street(self) -> None:
-        season_col = _season_expr("local_datetime", "lat")
-        grouped = (
-            self.joined.with_columns(season_col.eq(pl.lit("Winter")).alias("winter"))
-            .group_by(self.columns_to_group_by)
-            .agg(pl.col("winter").sum().alias("number_of_winter"))
-        )
+        grouped = self._get_seasons_grouped_cache()
         self.metadata = self.metadata.join(
             grouped.select([self.columns_to_group_by, "number_of_winter"]),
             on=self.columns_to_group_by,
@@ -688,12 +699,12 @@ class MLYMetadata:
         )
 
     def _compute_number_of_organizations_metadata_grid_street(self) -> None:
-        # number of unique organizations in the dataset
-        # calculate the number of unique organizations
+        if "organization_id" not in self.joined.columns:
+            self.metadata = self.metadata.with_columns(pl.lit(None).cast(pl.UInt32).alias("number_of_organizations"))
+            return
         grouped = self.joined.group_by(self.columns_to_group_by).agg(
             pl.col("organization_id").n_unique().alias("number_of_organizations")
         )
-        # Join self.metadata with grouped on the specified columns, only including the 'number_of_organizations' column
         self.metadata = self.metadata.join(
             grouped.select([self.columns_to_group_by, "number_of_organizations"]),
             on=self.columns_to_group_by,
@@ -806,6 +817,13 @@ class MLYMetadata:
 
         # set coverage buffer as a class attribute
         self.coverage_buffer = coverage_buffer
+
+        # Clear per-call caches so repeated compute_metadata calls don't use stale data
+        self._joined_daynight_cache = None
+        self._seasons_grouped_cache = None
+        # Reset self.df from disk so timezone/other columns added in a previous call
+        # don't cause DuplicateError when compute_metadata is called more than once.
+        self.df = pl.read_csv(self.path_input)
 
         # check indicator_list and pre-compute metadata, e.g., timezone and local datetime
         if (
