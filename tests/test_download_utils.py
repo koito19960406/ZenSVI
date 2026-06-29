@@ -107,6 +107,39 @@ class TestImageTool:
         assert tuple(arr[12, 5, :]) == (0, 0, 255)
 
 
+class TestFetchImageWithProxy:
+    """Tests for ImageTool.fetch_image_with_proxy URL construction."""
+
+    def test_uses_streetviewpixels_endpoint(self, monkeypatch):
+        """Should request the current streetviewpixels tile endpoint with correct params."""
+        from unittest.mock import MagicMock
+
+        captured = {}
+
+        def fake_get(url, **kwargs):
+            captured["url"] = url
+            return MagicMock(raw=MagicMock())
+
+        sentinel = object()
+        monkeypatch.setattr("zensvi.download.utils.imtool.requests.get", fake_get)
+        monkeypatch.setattr("zensvi.download.utils.imtool.Image.open", lambda raw: sentinel)
+
+        result = ImageTool.fetch_image_with_proxy(
+            pano_id="PANO", zoom=2, x=1, y=0, ua={"User-Agent": "test"}, proxies=[{}]
+        )
+
+        assert result is sentinel
+        url = captured["url"]
+        assert url.startswith("https://streetviewpixels-pa.googleapis.com/v1/tile")
+        assert "cb_client=maps_sv.tactile" in url
+        assert "panoid=PANO" in url
+        assert "x=1" in url
+        assert "y=0" in url
+        assert "zoom=2" in url
+        # The deprecated cbk0 endpoint must not be used.
+        assert "cbk0.google.com" not in url
+
+
 class TestCheckAndBuffer:
     """Tests for check_and_buffer function."""
 
