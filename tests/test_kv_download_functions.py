@@ -83,6 +83,16 @@ class TestGetPhotosNearPoint:
             assert kv.get_photos_near_point(1.0, 2.0, radius=50, min_radius=25) == []
 
 
+class TestRateLimit:
+    """Rate-limit responses are retriable; ordinary API errors are not."""
+
+    def test_rate_limit_error_is_retriable(self):
+        assert kv.is_retriable_exception(kv.RateLimitError("Too many requests")) is True
+
+    def test_value_error_not_retriable(self):
+        assert kv.is_retriable_exception(ValueError("API Error: bad request")) is False
+
+
 class TestDateValidation:
     """KVDownloader validates date format up front, before any network fetch."""
 

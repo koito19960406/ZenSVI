@@ -18,9 +18,15 @@ DEFAULT_RADIUS = 50  # meters. KartaView proximity queries time out (408) at lar
 MIN_RADIUS = 10  # meters. Floor when shrinking radius on a timeout.
 
 
+class RateLimitError(Exception):
+    """Raised when the KartaView API reports rate limiting (HTTP 429 / "Too many requests")."""
+
+
 # Function to determine whether the exception should trigger a retry
 def is_retriable_exception(exception):
     """Determine if the exception should trigger a retry."""
+    if isinstance(exception, RateLimitError):
+        return True  # Always retry rate-limit responses (with backoff)
     if isinstance(exception, requests.exceptions.RequestException):
         # Only retry for server errors (500, 503) and rate limits (429)
         if exception.response is not None:
@@ -48,6 +54,7 @@ def get_result_from_url(url):
             successful query, or None when the API reports an empty response (apiCode 601).
 
     Raises:
+        RateLimitError: When the API is rate limiting (retried with backoff).
         ValueError: On an API error (e.g. apiCode 400 bad request, 408 query timeout).
     """
     r = requests.get(url, timeout=30)
@@ -67,6 +74,9 @@ def get_result_from_url(url):
     # apiCode 601 indicates a successful but empty response (no data) — not an error
     if api_code == 601:
         return None
+    # Rate limiting (HTTP 429 / "Too many requests") — retriable with backoff.
+    if r.status_code == 429 or "too many requests" in api_message.lower():
+        raise RateLimitError(api_message)
     # Any other apiCode (e.g. 400 bad request, 408 query timeout) is an error
     raise ValueError(f"API Error: {api_message}")
 
