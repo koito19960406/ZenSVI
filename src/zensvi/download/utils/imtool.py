@@ -70,7 +70,10 @@ class ImageTool:
         while True:
             # Choose a random proxy for each request
             proxy = random.choice(proxies)
-            url_img = f"https://cbk0.google.com/cbk?output=tile&panoid={pano_id}&zoom={zoom}&x={x}&y={y}"
+            url_img = (
+                "https://streetviewpixels-pa.googleapis.com/v1/tile"
+                f"?cb_client=maps_sv.tactile&panoid={pano_id}&x={x}&y={y}&zoom={zoom}"
+            )
             try:
                 image = Image.open(requests.get(url_img, headers=ua, proxies=proxy, stream=True).raw)
                 return image
