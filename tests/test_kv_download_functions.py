@@ -4,9 +4,11 @@ from unittest.mock import patch
 
 import geopandas as gpd
 import pandas as pd
+import pytest
 from shapely.geometry import Polygon
 
 from zensvi.download.kartaview import download_functions as kv
+from zensvi.download.kv import KVDownloader
 
 
 def _photo(pid, lat, lng, seq_id="100", user_id="7"):
@@ -79,6 +81,20 @@ class TestGetPhotosNearPoint:
     def test_gives_up_at_min_radius(self):
         with patch.object(kv, "get_all_pages", side_effect=ValueError("Query timeout")):
             assert kv.get_photos_near_point(1.0, 2.0, radius=50, min_radius=25) == []
+
+
+class TestDateValidation:
+    """KVDownloader validates date format up front, before any network fetch."""
+
+    def test_invalid_start_date_raises_before_fetch(self):
+        dl = KVDownloader()
+        with pytest.raises(ValueError, match="start_date"):
+            dl._get_raw_pids(start_date="not-a-date", end_date=None)
+
+    def test_invalid_end_date_raises_before_fetch(self):
+        dl = KVDownloader()
+        with pytest.raises(ValueError, match="end_date"):
+            dl._get_raw_pids(start_date=None, end_date="2023/01/01")
 
 
 class TestFlattenPhotos:

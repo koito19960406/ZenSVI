@@ -184,7 +184,7 @@ def _flatten_photos(df):
 def get_points_in_shape(
     shape,
     distance=DEFAULT_RADIUS,
-    grid=False,
+    grid=True,
     grid_size=DEFAULT_RADIUS,
     radius=DEFAULT_RADIUS,
     verbosity=1,
@@ -192,15 +192,15 @@ def get_points_in_shape(
 ):
     """Discover all KartaView photo points within a shape.
 
-    Generates sample points within the shape using :class:`GeoProcessor` (street-network
-    sampling by default, with a grid fallback), runs a proximity query at each point,
-    dedupes the collected photos by id, and clips them to the shape.
+    Generates sample points within the shape using :class:`GeoProcessor` (an equal-distance
+    grid by default, which avoids the slow OSM street-network lookup), runs a proximity query
+    at each point, dedupes the collected photos by id, and clips them to the shape.
 
     Args:
         shape (geopandas.GeoDataFrame): Boundary shape (EPSG:4326) to search within.
-        distance (float): Spacing in meters between sample points along the street network.
-            Defaults to 50 (matched to the proximity radius). Defaults to 50.
-        grid (bool): Use grid sampling instead of the street network. Defaults to False.
+        distance (float): Spacing in meters between street-network sample points when
+            ``grid`` is False; matched to the proximity radius. Defaults to 50.
+        grid (bool): Use an equal-distance grid instead of the OSM street network. Defaults to True.
         grid_size (float): Grid cell size in meters when ``grid`` is True. Defaults to 50.
         radius (int): Proximity search radius in meters per sample point. Defaults to 50.
         verbosity (int): Progress-bar verbosity. Defaults to 1.
