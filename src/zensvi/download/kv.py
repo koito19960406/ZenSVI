@@ -29,13 +29,31 @@ class KVDownloader(BaseDownloader):
 
     Args:
         log_path (str, optional): Path to the log file. Defaults to None.
+        distance (int, optional): Spacing in meters between sample points generated within an
+            area; matched to the proximity search radius. Defaults to 50.
+        grid (bool, optional): Use grid sampling instead of the OSM street network. Defaults to False.
+        grid_size (int, optional): Grid cell size in meters when ``grid`` is True. Defaults to 50.
+        radius (int, optional): Proximity search radius in meters per sample point. Defaults to 50.
         max_workers (int, optional): Number of workers for parallel processing. Defaults to None.
         verbosity (int, optional): Level of verbosity for progress bars. Defaults to 1.
                                   0 = no progress bars, 1 = outer loops only, 2 = all loops.
     """
 
-    def __init__(self, log_path: Optional[str] = None, max_workers: Optional[int] = None, verbosity: int = 1) -> None:
+    def __init__(
+        self,
+        log_path: Optional[str] = None,
+        distance: int = 50,
+        grid: bool = False,
+        grid_size: int = 50,
+        radius: int = 50,
+        max_workers: Optional[int] = None,
+        verbosity: int = 1,
+    ) -> None:
         super().__init__(log_path)
+        self._distance = distance
+        self._grid = grid
+        self._grid_size = grid_size
+        self._radius = radius
         self._max_workers = max_workers
         self._verbosity = verbosity
         # initialize the logger
@@ -103,7 +121,15 @@ class KVDownloader(BaseDownloader):
             # convert to EPSG:4326
             gdf = gdf.to_crs("EPSG:4326")
         # use get pids with kv.get_points_in_shape
-        result_df = kv.get_points_in_shape(gdf)
+        result_df = kv.get_points_in_shape(
+            gdf,
+            distance=self._distance,
+            grid=self._grid,
+            grid_size=self._grid_size,
+            radius=self._radius,
+            verbosity=self.verbosity,
+            max_workers=self._max_workers,
+        )
         return result_df
 
     def _get_raw_pids(self, **kwargs: Any) -> pd.DataFrame:
