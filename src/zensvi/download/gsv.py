@@ -35,9 +35,13 @@ class GSVDownloader(BaseDownloader):
     Args:
         gsv_api_key (str, optional): Google Street View API key. Defaults to None.
         log_path (str, optional): Path to the log file. Defaults to None.
-        distance (int, optional): Distance parameter for the GeoProcessor. Defaults to 1.
-        grid (bool, optional): Grid parameter for the GeoProcessor. Defaults to False.
-        grid_size (int, optional): Grid size parameter for the GeoProcessor. Defaults to 1.
+        distance (int, optional): Sampling distance in meters along the OSM street network,
+            used only when ``grid`` is False. Defaults to 1.
+        grid (bool, optional): Use an equal-distance grid to generate sample points. Defaults to
+            True. A grid avoids the slow, network-dependent OSM street-network lookup and is
+            faster and more reliable; set to False to sample along the street network.
+        grid_size (int, optional): Grid cell size in meters when ``grid`` is True. Defaults to 50.
+            Smaller values increase coverage at the cost of more panorama-ID lookups.
         max_workers (int, optional): Number of workers for parallel processing. Defaults to None.
         verbosity (int, optional): Level of verbosity for progress bars. Defaults to 1.
                                   0 = no progress bars, 1 = outer loops only, 2 = all loops.
@@ -51,8 +55,8 @@ class GSVDownloader(BaseDownloader):
         gsv_api_key: Optional[str] = None,
         log_path: Optional[str] = None,
         distance: int = 1,
-        grid: bool = False,
-        grid_size: int = 1,
+        grid: bool = True,
+        grid_size: int = 50,
         max_workers: Optional[int] = None,
         verbosity: int = 1,
     ) -> None:
