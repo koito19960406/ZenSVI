@@ -135,26 +135,41 @@ class AMSDownloader(BaseDownloader):
 
         return results_df
 
-    def _get_raw_pids(self, lat: float, lon: float, buffer: int) -> List[str]:
-        """Get raw panorama IDs from the Amsterdam Street View API."""
-        url = f"https://api.data.amsterdam.nl/panorama/panoramas/?near={lon},{lat}&radius={buffer}&srid=4326"
+    def _get_raw_pids(self, lat: float, lon: float, buffer: int, max_pages: int = 1000) -> List[str]:
+        """Get raw panorama IDs from the Amsterdam Street View API.
 
-        for attempt in range(10):
-            try:
-                proxy = random.choice(self._proxies)
-                user_agent = random.choice(self._user_agents)
-                headers = {"User-Agent": user_agent["user_agent"]}  # Extract the string from the dictionary
-                response = requests.get(url, proxies=proxy, headers=headers)
-                response.raise_for_status()
-                data = json.loads(response.content)
-                panoramas = data["_embedded"]["panoramas"]
-                return [item["pano_id"] for item in panoramas]
-            except Exception as e:
-                if attempt == 9:  # Last attempt
-                    warnings.warn(f"Failed to get panorama IDs after 5 attempts: {e}")
-                    return []
-                print(f"Attempt {attempt + 1} failed: {e}")
-                continue
+        The API returns paginated results (~25 per page), so this follows the
+        ``_links.next`` links to collect every panorama within the radius, not just the
+        first page.
+        """
+        url = f"https://api.data.amsterdam.nl/panorama/panoramas/?near={lon},{lat}&radius={buffer}&srid=4326"
+        pano_ids: List[str] = []
+        pages = 0
+        while url and pages < max_pages:
+            data = None
+            for attempt in range(10):
+                try:
+                    proxy = random.choice(self._proxies)
+                    user_agent = random.choice(self._user_agents)
+                    headers = {"User-Agent": user_agent["user_agent"]}  # Extract the string from the dictionary
+                    response = requests.get(url, proxies=proxy, headers=headers)
+                    response.raise_for_status()
+                    data = json.loads(response.content)
+                    break
+                except Exception as e:
+                    if attempt == 9:  # Last attempt
+                        warnings.warn(f"Failed to get panorama IDs after 10 attempts: {e}")
+                        return pano_ids
+                    print(f"Attempt {attempt + 1} failed: {e}")
+                    continue
+            panoramas = data.get("_embedded", {}).get("panoramas", [])
+            pano_ids.extend(item["pano_id"] for item in panoramas)
+            if not panoramas:
+                break
+            next_link = data.get("_links", {}).get("next")
+            url = next_link.get("href") if isinstance(next_link, dict) else None
+            pages += 1
+        return pano_ids
 
     def _filter_pids_date(
         self, pid_df: pd.DataFrame, start_date: Optional[str], end_date: Optional[str]
@@ -199,8 +214,8 @@ class AMSDownloader(BaseDownloader):
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
         metadata_only: bool = False,
-        grid: bool = False,
-        grid_size: int = 100,
+        grid: bool = True,
+        grid_size: int = 50,
         max_workers: Optional[int] = None,
         verbosity: Optional[int] = None,
     ) -> None:
@@ -232,10 +247,12 @@ class AMSDownloader(BaseDownloader):
                 Format is isoformat (YYYY- MM-DD). Defaults to None.
             metadata_only (bool, optional): Whether to download metadata
                 only. Defaults to False.
-            grid (bool, optional): Grid parameter for the GeoProcessor.
-                Defaults to False.
-            grid_size (int, optional): Grid size parameter for the
-                GeoProcessor. Defaults to 1.
+            grid (bool, optional): Use an equal-distance grid to generate sample
+                points instead of the OSM street network. Defaults to True (faster
+                and avoids the slow, network-dependent Overpass lookup); set False to
+                sample along the street network.
+            grid_size (int, optional): Grid cell size in meters when ``grid`` is True.
+                Defaults to 50.
             max_workers (int, optional): Number of workers for parallel processing.
                 If not specified, uses the value set during initialization.
             verbosity (int, optional): Level of verbosity for progress bars.
