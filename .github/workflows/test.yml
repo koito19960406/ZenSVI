@@ -43,11 +43,22 @@ jobs:
     - name: Install VGGT dependencies
       run: poetry run pip install -r src/zensvi/transform/vggt/requirements.txt
 
+    # Cache downloaded HuggingFace models so ML tests don't re-download (and fail on) them each run.
+    - name: Cache HuggingFace models
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/huggingface
+        key: hf-models-${{ runner.os }}-py${{ matrix.python-version }}
+        restore-keys: |
+          hf-models-${{ runner.os }}-
+
     - name: Run tests with coverage
       run: poetry run pytest --cov=src/zensvi --cov-report=xml:coverage-service.xml
       env:
         MLY_API_KEY: ${{ secrets.MLY_API_KEY }}
         GSV_API_KEY: ${{ secrets.GSV_API_KEY }}
+        # Give HuggingFace Hub downloads more time to reduce transient connection failures.
+        HF_HUB_DOWNLOAD_TIMEOUT: "60"
     
     - name: Cache Codecov uploader
       uses: actions/cache@v3
