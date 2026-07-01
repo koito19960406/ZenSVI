@@ -18,7 +18,9 @@ pandas = ">=2.0.0"
 requests = ">=2.32.0,<3.0"
 Shapely = ">=2.0.0,<3.0"
 tqdm = ">=4.61.1"
-transformers = ">=4.40.0"
+# Cap below 4.53.0: newer releases have a broken import (NameError: name 'nn') in
+# transformers/integrations/accelerate.py (huggingface/transformers#43784). Lift once fixed upstream.
+transformers = ">=4.40.0,<4.53.0"
 networkx = ">=3.1"
 mapbox-vector-tile = ">=2.0.0"
 mercantile = ">=1.2.1"
