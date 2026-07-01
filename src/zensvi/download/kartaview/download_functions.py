@@ -2,15 +2,31 @@
 # author: yujunhou
 # contact: hou.yujun@u.nus.edu
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 import geopandas as gp
 import pandas as pd
 import requests
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
+from zensvi.download.utils.geoprocess import GeoProcessor
+from zensvi.utils.log import verbosity_tqdm
+
+API_BASE = "https://api.openstreetcam.org/2.0"
+MAX_ITEMS_PER_PAGE = 150  # KartaView 2.0 hard cap; larger values return apiCode 400.
+DEFAULT_RADIUS = 50  # meters. KartaView proximity queries time out (408) at larger radii in dense areas.
+MIN_RADIUS = 10  # meters. Floor when shrinking radius on a timeout.
+
+
+class RateLimitError(Exception):
+    """Raised when the KartaView API reports rate limiting (HTTP 429 / "Too many requests")."""
+
 
 # Function to determine whether the exception should trigger a retry
 def is_retriable_exception(exception):
     """Determine if the exception should trigger a retry."""
+    if isinstance(exception, RateLimitError):
+        return True  # Always retry rate-limit responses (with backoff)
     if isinstance(exception, requests.exceptions.RequestException):
         # Only retry for server errors (500, 503) and rate limits (429)
         if exception.response is not None:
@@ -27,82 +43,106 @@ def is_retriable_exception(exception):
     wait=wait_exponential(multiplier=1, min=2, max=10),  # Exponential backoff: 2s, 4s, 8s... up to 10s
     retry=retry_if_exception(is_retriable_exception),  # Only retry if `is_retriable_exception` returns True
 )
-def get_data_from_url(url):
-    """Get data from a KartaView API URL.
+def get_result_from_url(url):
+    """Query a KartaView 2.0 API URL and return its ``result`` object.
 
     Args:
         url (str): The KartaView API URL to query.
 
     Returns:
-        dict: The JSON response data if successful, None otherwise.
-    """
-    r = requests.get(url, timeout=10)  # Send GET request with a 10-second timeout
+        dict or None: The ``result`` dict (containing ``data`` and ``hasMoreData``) on a
+            successful query, or None when the API reports an empty response (apiCode 601).
 
-    # Try to parse the JSON response and handle errors based on the API response
+    Raises:
+        RateLimitError: When the API is rate limiting (retried with backoff).
+        ValueError: On an API error (e.g. apiCode 400 bad request, 408 query timeout).
+    """
+    r = requests.get(url, timeout=30)
+
     try:
         response_json = r.json()  # Parse the response as JSON
-        # Extract apiCode and apiMessage to check for errors
-        api_code = response_json.get("status", {}).get("apiCode", 0)
-        api_message = response_json.get("status", {}).get("apiMessage", "Unknown API error")
-
-        # If the status code is 400 (Bad Request), print the error message and raise an exception
-        if r.status_code == 400:
-            print(f"HTTP 400 Error: {api_message}")  # Print the API-specific error message
-            raise ValueError(f"API Error: {api_message}")  # Raise an exception to stop further processing
-
-        # If apiCode is 600, this indicates a successful request with the expected data
-        if api_code == 600:
-            return response_json.get("result", {}).get("data", None)  # Return the data from the response
-
-        # For any other error (apiCode other than 600), raise an exception
-        raise ValueError(f"API Error: {api_message}")  # Raise exception with API message
-
     except ValueError as e:
-        # Handle JSON parsing errors or other exceptions during the response processing
         raise ValueError(f"Error processing response JSON: {e}")
 
+    status = response_json.get("status", {})
+    api_code = status.get("apiCode", 0)
+    api_message = status.get("apiMessage", "Unknown API error")
 
-def data_to_dataframe(data):
-    """Convert JSON data to a pandas DataFrame.
+    # apiCode 600 indicates a successful request with the expected data
+    if api_code == 600:
+        return response_json.get("result", {}) or {}
+    # apiCode 601 indicates a successful but empty response (no data) — not an error
+    if api_code == 601:
+        return None
+    # Rate limiting (HTTP 429 / "Too many requests") — retriable with backoff.
+    if r.status_code == 429 or "too many requests" in api_message.lower():
+        raise RateLimitError(api_message)
+    # Any other apiCode (e.g. 400 bad request, 408 query timeout) is an error
+    raise ValueError(f"API Error: {api_message}")
+
+
+def get_all_pages(base_url, items_per_page=MAX_ITEMS_PER_PAGE):
+    """Fetch every page of a KartaView 2.0 list endpoint.
+
+    Pages with ``itemsPerPage<=150`` (the API cap) and loops until ``result.hasMoreData``
+    is False.
 
     Args:
-        data (dict): JSON data from KartaView API.
+        base_url (str): The endpoint URL, with any filter parameters but without
+            ``itemsPerPage``/``page``.
+        items_per_page (int): Items per page, capped at 150. Defaults to 150.
 
     Returns:
-        pd.DataFrame: DataFrame containing the data.
+        list: All items collected across pages.
     """
-    try:
-        df = pd.DataFrame(data)
-        return df
-    except Exception as e:
-        print(f"Error: {e}")
+    items_per_page = min(items_per_page, MAX_ITEMS_PER_PAGE)
+    all_data = []
+    page = 1
+    while True:
+        sep = "&" if "?" in base_url else "?"
+        url = f"{base_url}{sep}itemsPerPage={items_per_page}&page={page}"
+        result = get_result_from_url(url)
+        if not result:
+            break
+        data = result.get("data") or []
+        all_data.extend(data)
+        if not result.get("hasMoreData") or len(data) == 0:
+            break
+        page += 1
+    return all_data
 
 
-def get_points_in_sequence(sequenceId):
-    """Get all photo points in a KartaView sequence.
+def get_photos_near_point(lat, lon, radius=DEFAULT_RADIUS, min_radius=MIN_RADIUS):
+    """Fetch all KartaView photos near a point via the proximity endpoint.
+
+    KartaView 2.0 no longer supports bounding-box queries; discovery is point + radius on
+    ``/2.0/photo/``. The query times out (408) in dense areas at larger radii, so on a
+    timeout the radius is halved and retried down to ``min_radius``.
 
     Args:
-        sequenceId (str): ID of the KartaView sequence.
+        lat (float): Latitude of the query point.
+        lon (float): Longitude of the query point.
+        radius (int): Search radius in meters. Defaults to 50.
+        min_radius (int): Smallest radius to fall back to before giving up. Defaults to 10.
 
     Returns:
-        geopandas.GeoDataFrame: GeoDataFrame containing photo points, or empty DataFrame if no data.
+        list: Photo dicts near the point (each with ``id``, ``lat``, ``lng``, ``shotDate``,
+            ``fileurlProc``, nested ``sequence``, etc.). Empty if none found or all retries time out.
     """
-    try:
-        url = f"https://api.openstreetcam.org/2.0/sequence/{sequenceId}/photos?itemsPerPage=1000000&join=user"
+    r = radius
+    while r >= min_radius:
+        base_url = f"{API_BASE}/photo/?lat={lat}&lng={lon}&radius={r}" "&join=sequence&orderBy=id&orderDirection=desc"
         try:
-            data = get_data_from_url(url)
-        except Exception as e:
+            return get_all_pages(base_url)
+        except ValueError as e:
+            # Density-driven 408 timeout: shrink the radius and retry this point.
+            if "timeout" in str(e).lower() or "408" in str(e):
+                r = r // 2
+                continue
             print(f"Request failed: {e}")
-            data = None  # Explicitly set to None if the request fails
-        if data:
-            df = data_to_dataframe(data)
-            points = gp.GeoDataFrame(df, geometry=gp.points_from_xy(df.lng, df.lat))
-            return points
-        else:
-            empty_df = pd.DataFrame()
-            return empty_df
-    except Exception as e:
-        print(f"Error: {e}")
+            return []
+    print(f"Skipping point ({lat}, {lon}): KartaView still timed out at radius={min_radius}m")
+    return []
 
 
 def clip_points_with_shape(points, shape):
@@ -127,98 +167,101 @@ def clip_points_with_shape(points, shape):
         print(f"Error: {e}")
 
 
-def get_sequences_in_shape(shape):
-    """Get all KartaView sequences within a shape boundary.
+def _flatten_photos(df):
+    """Flatten the proximity-response photo frame to the downloader's schema.
+
+    Extracts ``sequenceId``/``userId`` from the nested ``sequence`` object, derives an
+    ``is_pano`` flag, and renames ``lng`` -> ``lon``.
 
     Args:
-        shape (geopandas.GeoDataFrame): GeoDataFrame containing boundary shape.
+        df (pandas.DataFrame): Raw photos from the proximity endpoint.
 
     Returns:
-        pd.DataFrame: DataFrame containing sequence data.
+        pandas.DataFrame: Photos with flat columns and no nested ``sequence`` dict.
     """
-    try:
-        ls = []  # empty list to collect sequences
-        shape = shape.explode(ignore_index=True)  # explode the shape gdf in case there's any multipolygon in any row
-        for _, row in shape.iterrows():
-            minx, miny, maxx, maxy = (
-                row.geometry.bounds[0],
-                row.geometry.bounds[1],
-                row.geometry.bounds[2],
-                row.geometry.bounds[3],
-            )  # find the extent of each polygon geometry
-            url = f"https://api.openstreetcam.org/2.0/sequence/?bRight={miny},{maxx}&tLeft={maxy},{minx}&itemsPerPage=1000000"  # use the extent to query for sequences existing in the extent
-            try:
-                data = get_data_from_url(url)
-            except Exception as e:
-                print(f"Request failed: {e}")
-                data = None  # Explicitly set to None if the request fails
-            if data:
-                df = data_to_dataframe(data)
-                ls.append(df)  # append the collected df of sequences to the list
-            else:
-                df = pd.DataFrame()  # if 0 sequences collected, create an empty dataframe
-                ls.append(df)
-        seqs = pd.concat(ls, ignore_index=True)  # concat all collected sequences into a dataframe
-        return seqs
-    except Exception as e:
-        print(f"Error: {e}")
+    if "sequence" in df.columns:
+        df["sequenceId"] = df["sequence"].apply(lambda s: s.get("id") if isinstance(s, dict) else None)
+        df["userId"] = df["sequence"].apply(lambda s: s.get("userId") if isinstance(s, dict) else None)
+        df = df.drop(columns=["sequence"])
+    if "fieldOfView" in df.columns:
+        df["is_pano"] = df["fieldOfView"].apply(lambda v: str(v) == "360")
+    elif "projection" in df.columns:
+        df["is_pano"] = df["projection"].apply(lambda v: str(v).upper() == "SPHERE")
+    df = df.rename(columns={"lng": "lon"})
+    return df
 
 
-def get_points_in_shape(shape):
-    """Get all KartaView photo points within a shape boundary.
+def get_points_in_shape(
+    shape,
+    distance=DEFAULT_RADIUS,
+    grid=True,
+    grid_size=DEFAULT_RADIUS,
+    radius=DEFAULT_RADIUS,
+    verbosity=1,
+    max_workers=None,
+):
+    """Discover all KartaView photo points within a shape.
+
+    Generates sample points within the shape using :class:`GeoProcessor` (an equal-distance
+    grid by default, which avoids the slow OSM street-network lookup), runs a proximity query
+    at each point, dedupes the collected photos by id, and clips them to the shape.
 
     Args:
-        shape (geopandas.GeoDataFrame): GeoDataFrame containing boundary shape.
+        shape (geopandas.GeoDataFrame): Boundary shape (EPSG:4326) to search within.
+        distance (float): Spacing in meters between street-network sample points when
+            ``grid`` is False; matched to the proximity radius. Defaults to 50.
+        grid (bool): Use an equal-distance grid instead of the OSM street network. Defaults to True.
+        grid_size (float): Grid cell size in meters when ``grid`` is True. Defaults to 50.
+        radius (int): Proximity search radius in meters per sample point. Defaults to 50.
+        verbosity (int): Progress-bar verbosity. Defaults to 1.
+        max_workers (int, optional): Threads for concurrent proximity queries. Defaults to None.
 
     Returns:
-        pd.DataFrame: DataFrame containing photo points and sequence metadata.
+        pandas.DataFrame or None: Photo points with columns including ``id``, ``lon``, ``lat``,
+            ``sequenceId``, ``shotDate``, ``fileurlProc``; or None if no photos are found.
     """
     try:
-        df_seqs = get_sequences_in_shape(shape)
-        if df_seqs.empty:
+        # 1. Generate sample points within the shape (same approach as GSVDownloader).
+        geo_processor = GeoProcessor(
+            shape.copy(), distance=distance, grid=grid, grid_size=grid_size, verbosity=verbosity
+        )
+        points_df = geo_processor.get_lat_lon()  # columns: longitude, latitude
+        if points_df is None or points_df.empty:
             print("No data from KartaView.")
-            return
-        else:
-            ls_gdf = []
-            for _, seq in df_seqs.iterrows():
-                sequenceId = seq["id"]
-                points = get_points_in_sequence(sequenceId)
-                points = clip_points_with_shape(points, shape)
-                ls_gdf.append(points)
-            points_all = pd.concat(ls_gdf).reset_index(drop=True)
-            if not points_all.empty:
-                points_all = (
-                    points_all.drop(columns=["cameraParameters", "geometry"])
-                    .rename(columns={"lng": "lon"})
-                    .join(
-                        df_seqs[
-                            [
-                                "id",
-                                "address",
-                                "cameraParameters",
-                                "countryCode",
-                                "deviceName",
-                                "distance",
-                                "sequenceType",
-                            ]
-                        ]
-                        .set_index("id")
-                        .rename(columns={"distance": "distanceSeq"}),
-                        on="sequenceId",
-                        how="left",
-                    )
-                )  # append the sequence metadata to each point based on sequence ID
-                points_all = points_all.drop_duplicates(subset=["id"])  # remove duplicated points, if any
-            nSeqs = 0
-            if not points_all.empty:
-                nSeqs = points_all["sequenceId"].nunique()
-            print(
-                "Download complete, collected",
-                nSeqs,
-                "sequences",
-                len(points_all),
-                "points",
-            )
-            return points_all
+            return None
+
+        # 2. Run a proximity query at each sample point (concurrently) and collect photos.
+        photos = []
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [
+                executor.submit(get_photos_near_point, row.latitude, row.longitude, radius)
+                for row in points_df.itertuples(index=False)
+            ]
+            for future in verbosity_tqdm(
+                as_completed(futures),
+                total=len(futures),
+                desc="Querying KartaView",
+                verbosity=verbosity,
+                level=1,
+            ):
+                photos.extend(future.result())
+
+        if not photos:
+            print("No data from KartaView.")
+            return None
+
+        # 3. Flatten, dedupe by photo id, and clip to the shape.
+        df = _flatten_photos(pd.DataFrame(photos))
+        df = df.drop_duplicates(subset=["id"]).reset_index(drop=True)
+        gdf = gp.GeoDataFrame(df, geometry=gp.points_from_xy(df.lon, df.lat), crs="EPSG:4326")
+        gdf = clip_points_with_shape(gdf, shape)
+        if gdf is None or gdf.empty:
+            print("No data from KartaView.")
+            return None
+
+        points_all = pd.DataFrame(gdf.drop(columns="geometry")).reset_index(drop=True)
+        nSeqs = points_all["sequenceId"].nunique() if "sequenceId" in points_all.columns else 0
+        print("Download complete, collected", nSeqs, "sequences", len(points_all), "points")
+        return points_all
     except Exception as e:
         print(f"Error: {e}")

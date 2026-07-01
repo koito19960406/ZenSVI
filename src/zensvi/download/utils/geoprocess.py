@@ -7,7 +7,7 @@ import numpy as np
 import osmnx as ox
 import pandas as pd
 from pyproj import Transformer
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point, Polygon, box
 from tqdm.auto import tqdm
 
 from zensvi.utils.log import verbosity_tqdm
@@ -189,7 +189,10 @@ class GeoProcessor:
         """
         west, south, east, north = polygon.bounds
 
-        polygon_geom = ox.utils_geo.bbox_to_poly(bbox=(west, south, east, north))
+        # Build the bbox polygon directly with shapely (box(minx, miny, maxx, maxy)) instead of
+        # osmnx's bbox_to_poly, whose tuple/keyword argument order differs across osmnx versions
+        # and previously swapped lon/lat — producing a globe-spanning polygon and an oversized grid.
+        polygon_geom = box(west, south, east, north)
         bounding_box = gpd.GeoDataFrame({"geometry": [polygon_geom]}, crs=crs)
         bounding_box_utm = ox.projection.project_gdf(bounding_box)
         utm_crs = bounding_box_utm.crs

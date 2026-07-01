@@ -140,6 +140,27 @@ class TestFetchImageWithProxy:
         assert "cbk0.google.com" not in url
 
 
+class TestCreatePointGrid:
+    """Tests for GeoProcessor.create_point_grid (grid sampling)."""
+
+    def test_grid_over_small_polygon_is_bounded(self):
+        """A ~40m polygon should yield a small, finite grid (regression: lon/lat were swapped)."""
+        import geopandas as gpd
+        from shapely.geometry import Point
+
+        from zensvi.download.utils.geoprocess import GeoProcessor
+
+        gdf = gpd.GeoDataFrame(geometry=[Point(103.7624, 1.3140)], crs="EPSG:4326")
+        gdf_m = gdf.to_crs(gdf.estimate_utm_crs())
+        gdf_m["geometry"] = gdf_m.buffer(40)
+        poly = gdf_m.to_crs("EPSG:4326").geometry.iloc[0]
+
+        gp = GeoProcessor(gdf, grid=True, grid_size=50)
+        points, utm_crs = gp.create_point_grid(poly, grid_size=50)
+        # An ~80m bbox at 50m spacing must produce only a handful of points, not millions.
+        assert 0 < len(points) <= 25
+
+
 class TestCheckAndBuffer:
     """Tests for check_and_buffer function."""
 
