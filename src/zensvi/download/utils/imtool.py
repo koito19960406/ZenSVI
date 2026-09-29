@@ -7,9 +7,16 @@ from typing import Dict, List, Optional, Union
 import numpy as np
 import requests
 from PIL import Image
-from requests.exceptions import ProxyError
 
 from zensvi.utils.log import Logger, verbosity_tqdm
+
+# Attempts per tile before giving up; each attempt picks a fresh random proxy.
+MAX_RETRIES = 5
+# (connect, read) seconds; tiles are larger than the panoid search response.
+REQUEST_TIMEOUT = (5, 30)
+# Network-level failures worth retrying with another proxy. SSLError and ProxyError are
+# subclasses of ConnectionError. Anything else is raised immediately.
+RETRYABLE_ERRORS = (requests.exceptions.ConnectionError, requests.exceptions.Timeout)
 
 
 class ImageTool:
@@ -65,21 +72,23 @@ class ImageTool:
             PIL.Image: The fetched image tile.
 
         Raises:
-            ProxyError: If the selected proxy fails to connect.
+            requests.exceptions.RequestException: If all ``MAX_RETRIES`` attempts fail with a
+                network error.
         """
-        while True:
+        url_img = (
+            "https://streetviewpixels-pa.googleapis.com/v1/tile"
+            f"?cb_client=maps_sv.tactile&panoid={pano_id}&x={x}&y={y}&zoom={zoom}"
+        )
+        for attempt in range(1, MAX_RETRIES + 1):
             # Choose a random proxy for each request
             proxy = random.choice(proxies)
-            url_img = (
-                "https://streetviewpixels-pa.googleapis.com/v1/tile"
-                f"?cb_client=maps_sv.tactile&panoid={pano_id}&x={x}&y={y}&zoom={zoom}"
-            )
             try:
-                image = Image.open(requests.get(url_img, headers=ua, proxies=proxy, stream=True).raw)
-                return image
-            except ProxyError as e:
-                print(f"Proxy {proxy} is not working. Exception: {e}")
-                continue
+                resp = requests.get(url_img, headers=ua, proxies=proxy, stream=True, timeout=REQUEST_TIMEOUT)
+                return Image.open(resp.raw)
+            except RETRYABLE_ERRORS as e:
+                print(f"Attempt {attempt}/{MAX_RETRIES} via proxy {proxy} failed: {e}")
+                if attempt == MAX_RETRIES:
+                    raise
 
     @staticmethod
     def is_bottom_black(image: Image.Image, row_count: int = 3, intensity_threshold: int = 10) -> bool:

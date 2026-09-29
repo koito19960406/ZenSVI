@@ -191,3 +191,96 @@ class TestCheckAndBuffer:
         result = check_and_buffer(gdf, 100)
         assert result.geom_type.iloc[0] == "Polygon"
         assert result.crs.to_epsg() == 4326
+
+
+class TestBoundedRetries:
+    """GSV requests must fail after a bounded number of attempts instead of looping forever."""
+
+    def test_panoids_raises_after_max_retries_on_connection_error(self, monkeypatch):
+        """A persistent connection/SSL error should surface, not hang."""
+        import requests
+
+        from zensvi.download.utils import get_pids
+
+        calls = []
+
+        def fake_get(url, **kwargs):
+            calls.append(kwargs)
+            raise requests.exceptions.SSLError("certificate verify failed")
+
+        monkeypatch.setattr("zensvi.download.utils.get_pids.requests.get", fake_get)
+        with pytest.raises(requests.exceptions.SSLError):
+            get_pids.panoids(1.34, 103.72, [None])
+        assert len(calls) == get_pids.MAX_RETRIES
+
+    def test_panoids_recovers_after_transient_error(self, monkeypatch):
+        """A transient proxy failure followed by success should return results."""
+        from unittest.mock import MagicMock
+
+        import requests
+
+        from zensvi.download.utils import get_pids
+
+        body = '[[1],[2,"PANO_ID"],[x],[[null,null,1.342,103.721]]]'
+        responses = [requests.exceptions.ProxyError("bad proxy"), MagicMock(text=body, status_code=200)]
+
+        def fake_get(url, **kwargs):
+            r = responses.pop(0)
+            if isinstance(r, Exception):
+                raise r
+            return r
+
+        monkeypatch.setattr("zensvi.download.utils.get_pids.requests.get", fake_get)
+        result = get_pids.panoids(1.34, 103.72, [None])
+        assert result[0]["panoid"] == "PANO_ID"
+
+    def test_panoids_does_not_retry_unexpected_errors(self, monkeypatch):
+        """Non-network errors are bugs, not flaky proxies: raise immediately."""
+        from zensvi.download.utils import get_pids
+
+        calls = []
+
+        def fake_get(url, **kwargs):
+            calls.append(1)
+            raise ValueError("boom")
+
+        monkeypatch.setattr("zensvi.download.utils.get_pids.requests.get", fake_get)
+        with pytest.raises(ValueError):
+            get_pids.panoids(1.34, 103.72, [None])
+        assert len(calls) == 1
+
+    def test_fetch_tile_raises_after_max_retries(self, monkeypatch):
+        """A persistently failing tile request should raise instead of looping."""
+        import requests
+
+        from zensvi.download.utils import imtool
+
+        calls = []
+
+        def fake_get(url, **kwargs):
+            calls.append(kwargs)
+            raise requests.exceptions.ProxyError("bad proxy")
+
+        monkeypatch.setattr("zensvi.download.utils.imtool.requests.get", fake_get)
+        with pytest.raises(requests.exceptions.ProxyError):
+            ImageTool.fetch_image_with_proxy("PANO", 2, 0, 0, {"User-Agent": "t"}, [None])
+        assert len(calls) == imtool.MAX_RETRIES
+
+    def test_requests_use_a_timeout(self, monkeypatch):
+        """Both GSV requests must pass a timeout so a stalled connection cannot hang forever."""
+        from unittest.mock import MagicMock
+
+        from zensvi.download.utils import get_pids
+
+        seen = []
+
+        def fake_get(url, **kwargs):
+            seen.append(kwargs.get("timeout"))
+            return MagicMock(text="", status_code=200, raw=MagicMock())
+
+        monkeypatch.setattr("zensvi.download.utils.get_pids.requests.get", fake_get)
+        monkeypatch.setattr("zensvi.download.utils.imtool.requests.get", fake_get)
+        monkeypatch.setattr("zensvi.download.utils.imtool.Image.open", lambda raw: object())
+        get_pids.panoids(1.34, 103.72, [None])
+        ImageTool.fetch_image_with_proxy("PANO", 2, 0, 0, {"User-Agent": "t"}, [None])
+        assert all(t for t in seen), seen

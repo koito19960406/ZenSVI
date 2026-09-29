@@ -4,6 +4,13 @@ from typing import Any, Dict, List
 
 import requests
 
+# Attempts per request before giving up; each attempt picks a fresh random proxy.
+MAX_RETRIES = 5
+REQUEST_TIMEOUT = 5
+# Network-level failures worth retrying with another proxy. SSLError and ProxyError are
+# subclasses of ConnectionError. Anything else is raised immediately.
+RETRYABLE_ERRORS = (requests.exceptions.ConnectionError, requests.exceptions.Timeout)
+
 
 def _panoids_url(lat: float, lon: float) -> str:
     """Construct URL for Google Street View panorama metadata.
@@ -30,18 +37,25 @@ def _panoids_data(lat: float, lon: float, proxies: List[Dict[str, str]]) -> str:
     Returns:
         str: Raw response text from the API
 
+    Raises:
+        requests.exceptions.RequestException: If all ``MAX_RETRIES`` attempts fail with a
+            network error, or the API responds with an HTTP error status.
+
     Note:
-        Will retry with different proxies if a request fails
+        Retries with a different random proxy on connection errors and timeouts.
     """
     url = _panoids_url(lat, lon)
-    while True:
+    for attempt in range(1, MAX_RETRIES + 1):
         proxy = random.choice(proxies)
         try:
-            resp = requests.get(url, proxies=proxy, timeout=5)
-            return resp.text
-        except Exception as e:
-            print(f"Proxy {proxy} is not working. Exception: {e}")
-            continue
+            resp = requests.get(url, proxies=proxy, timeout=REQUEST_TIMEOUT)
+            break
+        except RETRYABLE_ERRORS as e:
+            print(f"Attempt {attempt}/{MAX_RETRIES} via proxy {proxy} failed: {e}")
+            if attempt == MAX_RETRIES:
+                raise
+    resp.raise_for_status()
+    return resp.text
 
 
 def panoids(lat: float, lon: float, proxies: List[Dict[str, str]]) -> List[Dict[str, Any]]:
